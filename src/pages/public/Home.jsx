@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
@@ -120,7 +121,7 @@ const caregivers = [
         name: "Lê Phương Hoa",
         role: "Cử nhân Phục hồi chức năng",
         rating: "4.8",
-        image: "https://images.unsplash.com/photo-1594824453462-2ea20ec504bc?auto=format&fit=crop&q=80&w=400", // Đã fix
+        image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400", // Đã fix
         skills: ["XOA BÓP BẤM HUYỆT", "DINH DƯỠNG"],
         quote: `"Kết hợp y học hiện đại và các phương pháp phục hồi tự nhiên để tăng cường sức khỏe cho người lớn tuổi."`,
     },
@@ -233,12 +234,15 @@ export default function Home() {
                                 Nền tảng kết nối sinh viên Y khoa và Điều dưỡng chuyên nghiệp với các gia đình cần hỗ trợ chăm sóc người cao tuổi, mang lại sự an tâm tuyệt đối.
                             </p>
                             <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <button className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#102030] text-white rounded-lg font-medium hover:bg-[#1a365d] transition-all shadow-md hover:shadow-lg">
+                                <Link
+                                    to="/family"
+                                    className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#102030] text-white rounded-lg font-medium hover:bg-[#1a365d] transition-all shadow-md hover:shadow-lg"
+                                >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                     Tìm người chăm sóc
-                                </button>
+                                </Link>
                                 <button className="inline-flex items-center gap-2 px-6 py-3.5 border-2 border-[#00677c] text-[#00677c] rounded-lg font-medium hover:bg-blue-50 transition-all">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -355,9 +359,12 @@ export default function Home() {
                             Gia nhập cộng đồng CareLink ngay hôm nay để nhận được sự hỗ trợ tốt nhất cho gia đình bạn hoặc bắt đầu sự nghiệp chăm sóc chuyên nghiệp.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-                            <button className="px-8 py-4 bg-[#00677c] text-white font-semibold rounded-lg hover:bg-[#004f5e] transition-colors shadow-lg">
+                            <Link
+                                to="/family"
+                                className="px-8 py-4 bg-[#00677c] text-white font-semibold rounded-lg hover:bg-[#004f5e] transition-colors shadow-lg"
+                            >
                                 Tôi cần tìm người chăm sóc
-                            </button>
+                            </Link>
                             <button className="px-8 py-4 bg-white text-[#102030] font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg">
                                 Tôi muốn đăng ký đi làm
                             </button>
