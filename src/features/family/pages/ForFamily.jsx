@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import ServiceCard from "../components/ServiceCard";
@@ -124,12 +125,12 @@ export default function ForFamily() {
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto pt-2">
-                                <button
-                                    type="button"
-                                    className="px-8 py-3.5 bg-[#102030] text-white rounded-xl font-semibold hover:bg-[#1a365d] transition-all shadow-md"
+                                <Link
+                                    to="/services"
+                                    className="px-8 py-3.5 bg-[#102030] text-white rounded-xl font-semibold hover:bg-[#1a365d] transition-all shadow-md text-center inline-flex items-center justify-center"
                                 >
                                     Tìm chuyên gia phù hợp
-                                </button>
+                                </Link>
                             </div>
 
                             <div className="flex items-center gap-4 pt-4 border-t border-gray-100 w-full">
@@ -387,12 +388,12 @@ export default function ForFamily() {
                         </p>
 
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                            <button
-                                type="button"
-                                className="px-8 py-4 bg-[#102030] text-white font-semibold rounded-xl hover:bg-[#1a365d] transition-all shadow-xl hover:-translate-y-0.5"
+                            <Link
+                                to="/services"
+                                className="px-8 py-4 bg-[#102030] text-white font-semibold rounded-xl hover:bg-[#1a365d] transition-all shadow-xl hover:-translate-y-0.5 text-center inline-flex items-center justify-center"
                             >
                                 Tìm chuyên gia phù hợp
-                            </button>
+                            </Link>
                             <button
                                 type="button"
                                 className="px-8 py-4 bg-white border border-gray-200 text-[#102030] font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-sm"
