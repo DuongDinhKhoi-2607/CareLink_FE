@@ -8,7 +8,7 @@ export default function Header() {
     const navItems = [
         { name: "Trang chủ", path: "/", exact: true },
         { name: "Dành cho Gia đình", path: "/family", exact: false },
-        { name: "Tìm người chăm sóc", path: "/family", exact: false },
+        { name: "Tìm người chăm sóc", path: "/caregivers", exact: false },
         { name: "Dành cho Người chăm sóc", path: "#", exact: false },
         { name: "Tài nguyên", path: "#", exact: false },
     ];
@@ -16,8 +16,9 @@ export default function Header() {
     const isItemActive = (item) => {
         if (item.path === "#") return false;
         if (item.exact) return pathname === item.path;
-        // Với "Dành cho Gia đình", kích hoạt khi đang ở /family
+        // Kích hoạt nổi bật theo trang hiện tại
         if (item.name === "Dành cho Gia đình") return pathname === "/family";
+        if (item.name === "Tìm người chăm sóc") return pathname === "/caregivers";
         return false;
     };
 
