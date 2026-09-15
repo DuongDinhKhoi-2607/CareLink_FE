@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
+import { useNavigate } from "react-router-dom";
 import CaregiverCard from "../components/CaregiverCard";
 
 // Dữ liệu danh mục lọc
@@ -68,6 +67,8 @@ const caregiversData = [
 ];
 
 export default function CaregiverList() {
+    const navigate = useNavigate();
+
     // State tìm kiếm & bộ lọc
     const [location, setLocation] = useState("");
     const [keyword, setKeyword] = useState("");
@@ -97,18 +98,16 @@ export default function CaregiverList() {
     };
 
     const handleProfile = (caregiver) => {
-        alert(`Xem chi tiết hồ sơ của: ${caregiver.name}`);
+        navigate("/caregivers/profile", { state: { caregiver } });
     };
 
     const handleBook = (caregiver) => {
-        alert(`Tiến hành đặt lịch với: ${caregiver.name}`);
+        navigate("/caregivers/profile", { state: { caregiver } });
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#f8fafc] font-sans antialiased text-[#102030]">
-            <Header />
-
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+        <div className="w-full bg-[#f8fafc] flex-1 py-8 font-sans antialiased text-[#102030]">
+            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
 
                 {/* ============================================================ */}
                 {/* THANH TÌM KIẾM NHANH                                          */}
@@ -379,9 +378,7 @@ export default function CaregiverList() {
                         </nav>
                     </div>
                 </div>
-            </main>
-
-            <Footer />
+            </div>
         </div>
     );
 }
