@@ -1,7 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
 import ServiceCard from "../components/ServiceCard";
 
 // 1. Dữ liệu các dịch vụ phục hồi & sinh hoạt (HomeCareServicesSection)
@@ -97,10 +95,7 @@ const bookingSteps = [
 
 export default function ForFamily() {
     return (
-        <div className="min-h-screen flex flex-col bg-white overflow-x-hidden font-sans">
-            <Header />
-
-            <main className="flex flex-col w-full flex-1">
+        <div className="flex flex-col w-full">
                 {/* ============================================================ */}
                 {/* 1. ELDER CARE HERO SECTION                                   */}
                 {/* ============================================================ */}
@@ -427,9 +422,6 @@ export default function ForFamily() {
                         </div>
                     </div>
                 </section>
-            </main>
-
-            <Footer />
-        </div >
+        </div>
     );
 }

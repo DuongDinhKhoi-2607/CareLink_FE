@@ -1,7 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
 
 // 1. Dữ liệu các thẻ tính năng (Tại sao chọn CareLink)
 const featureCards = [
@@ -203,10 +201,7 @@ const CaregiverCard = ({ caregiver }) => (
 
 export default function Home() {
     return (
-        <div className="min-h-screen flex flex-col bg-white overflow-x-hidden font-sans">
-            <Header />
-
-            <main className="flex flex-col w-full flex-1">
+        <div className="flex flex-col w-full">
 
                 {/* 1. HERO SECTION */}
                 <section className="relative w-full h-[600px] lg:h-[800px] flex items-center">
@@ -371,10 +366,6 @@ export default function Home() {
                         </div>
                     </div>
                 </section>
-
-            </main>
-
-            <Footer />
         </div>
     );
 }
