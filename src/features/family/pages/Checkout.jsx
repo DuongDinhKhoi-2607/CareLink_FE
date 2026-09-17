@@ -91,7 +91,7 @@ const progressItems = [
 export default function Checkout() {
     const navigate = useNavigate();
     const [selectedPayment, setSelectedPayment] = useState("vnpay");
-    const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState("");
 
     // Lấy data của phương thức đang được chọn để làm màu chủ đạo cho các nút bấm
@@ -100,8 +100,7 @@ export default function Checkout() {
     const handlePayment = (e) => {
         e.preventDefault();
         if (!acceptedTerms) {
-            setPaymentStatus("Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách thanh toán trước khi tiếp tục.");
-            return;
+            setAcceptedTerms(true);
         }
 
         setPaymentStatus(`Đang kết nối cổng thanh toán ${selectedMethodData?.label}...`);
@@ -109,7 +108,7 @@ export default function Checkout() {
         // Chuyển hướng tới Family Dashboard sau khi thanh toán thành công
         setTimeout(() => {
             navigate("/dashboard");
-        }, 1200);
+        }, 1000);
     };
 
     return (
