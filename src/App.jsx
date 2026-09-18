@@ -10,6 +10,9 @@ import Chat from "./features/family/pages/Chat";
 import Checkout from "./features/family/pages/Checkout";
 import Dashboard from "./features/family/pages/Dashboard";
 import Review from "./features/family/pages/Review";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 import PageTransition from "./components/PageTransition";
 
 export default function App() {
@@ -32,6 +35,11 @@ export default function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
           </Route>
+
+          {/* Các trang xác thực độc lập */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Trang chọn loại dịch vụ có header độc lập */}
           <Route path="/services" element={<Services />} />
