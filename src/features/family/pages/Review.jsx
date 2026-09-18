@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Rating from "../components/Rating";
+import Rating from "../../../components/Rating";
 
 // 1. Danh sách 4 tiêu chí đánh giá kèm mô tả phụ tinh tế chuẩn y tế
 const ratingCriteria = [

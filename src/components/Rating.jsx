@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 /**
  * Component Rating (Đánh giá sao) chuẩn hiện đại:
+ * - Dùng chung cho toàn hệ thống CareLink (cả Family và Caregiver).
  * - Mặc định chưa chọn: Ngôi sao ruột TRẮNG, viền xám thanh lịch.
  * - Khi chọn / hover: Sáng VÀNG KIM rực rỡ đúng số lượng sao được chọn.
  * - Không bao giờ bị đen hay lỗi hiển thị trên mọi trình duyệt.
