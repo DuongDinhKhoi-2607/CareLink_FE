@@ -4,7 +4,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 const navigationItems = [
     {
         path: "/dashboard",
-        label: "MỤC LỤC",
+        label: "Tổng quan",
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
@@ -54,86 +54,182 @@ const navigationItems = [
 export default function DashboardLayout() {
     const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    // Trạng thái thu gọn/mở rộng thanh sidebar trên Desktop
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     return (
         <div className="min-h-screen bg-[#f7fafc] flex flex-col md:flex-row font-sans text-[#102030] antialiased">
-            {/* Sidebar bên trái */}
-            <aside className="w-full md:w-64 bg-[#f1f4f6] border-r border-[#c4c6cf4c] flex flex-col shrink-0">
-                <div className="p-5 border-b border-slate-200/60 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2.5 group cursor-pointer">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            {/* Sidebar bên trái hỗ trợ thu gọn mượt mà */}
+            <aside
+                className={`w-full ${
+                    isCollapsed ? "md:w-20" : "md:w-64"
+                } bg-[#f1f4f6] border-r border-[#c4c6cf4c] flex flex-col shrink-0 transition-all duration-300 ease-in-out`}
+            >
+                {/* Header của Sidebar */}
+                {isCollapsed ? (
+                    /* Trạng thái thu gọn: Chỉ hiện icon logo và nút mở rộng */
+                    <div className="p-4 border-b border-slate-200/60 flex flex-col items-center gap-3">
+                        <Link to="/" className="group cursor-pointer" title="Về trang chủ CareLink">
+                            <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                            </div>
+                        </Link>
+
+                        {/* Nút Mở rộng Sidebar */}
+                        <button
+                            type="button"
+                            onClick={() => setIsCollapsed(false)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
+                            title="Mở rộng thanh bên (Sidebar)"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
                             </svg>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xl font-bold text-[#102030] tracking-tight group-hover:text-[#00677c] transition-colors leading-none">
-                                Care<span className="text-[#00677c]">Link</span>
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-1">Bảng điều khiển</span>
-                        </div>
-                    </Link>
+                        </button>
+                    </div>
+                ) : (
+                    /* Trạng thái mở rộng: Hiện đầy đủ Logo và nút Thu gọn nằm sát mép phải */
+                    <div className="p-4 sm:p-5 border-b border-slate-200/60 flex items-center justify-between">
+                        <Link to="/" className="flex items-center gap-2.5 group cursor-pointer overflow-hidden">
+                            <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xl font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none truncate">
+                                    Care<span className="text-teal-600">Link</span>
+                                </span>
+                                <span className="text-[10px] tracking-widest text-teal-600 uppercase font-semibold mt-0.5 truncate">
+                                    Bảng điều khiển
+                                </span>
+                            </div>
+                        </Link>
 
-                    <button
-                        type="button"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-200/60"
-                        aria-label="Toggle menu"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+                        <div className="flex items-center gap-1">
+                            {/* Nút Thu gọn Sidebar trên Desktop (nằm sát bên phải thanh sidebar) */}
+                            <button
+                                type="button"
+                                onClick={() => setIsCollapsed(true)}
+                                className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
+                                title="Thu gọn thanh bên (Sidebar)"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+                                </svg>
+                            </button>
 
-                <nav className={`flex-1 px-4 py-6 flex flex-col gap-1.5 ${mobileMenuOpen ? "block" : "hidden md:flex"}`}>
+                            {/* Nút Hamburger menu trên Mobile */}
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-200/60"
+                                aria-label="Toggle menu"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Danh sách mục điều hướng */}
+                <nav
+                    className={`flex-1 ${
+                        isCollapsed ? "px-2" : "px-4"
+                    } py-6 flex flex-col gap-1.5 ${mobileMenuOpen ? "block" : "hidden md:flex"}`}
+                >
                     {navigationItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
                             <Link
                                 key={item.label}
                                 to={item.path}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${isActive
+                                title={item.label}
+                                className={`flex items-center ${
+                                    isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
+                                } rounded-xl text-sm font-semibold transition-all group relative ${
+                                    isActive
                                         ? "bg-[#4fd9fd] text-[#005c70] shadow-xs"
                                         : "text-[#43474e] hover:bg-white/80 hover:text-[#102030]"
-                                    }`}
+                                }`}
                             >
-                                <div className={isActive ? "text-[#005c70]" : "text-[#43474e]"}>
+                                <div className={`shrink-0 ${isActive ? "text-[#005c70]" : "text-[#43474e]"}`}>
                                     {item.icon}
                                 </div>
-                                <span>{item.label}</span>
+                                {!isCollapsed && <span className="truncate">{item.label}</span>}
+
+                                {/* Tooltip hiển thị khi thanh bên đang ở trạng thái thu gọn */}
+                                {isCollapsed && (
+                                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#102030] text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 shadow-lg">
+                                        {item.label}
+                                    </div>
+                                )}
                             </Link>
                         );
                     })}
                 </nav>
 
-                <div className={`p-4 border-t border-[#c4c6cf4c] flex flex-col gap-3 ${mobileMenuOpen ? "block" : "hidden md:flex"}`}>
-                    <div className="flex items-center gap-3 p-2 bg-[#e5e9eb80] rounded-xl shadow-xs">
-                        <img
-                            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
-                            alt="Nguyễn Gia Đình"
-                            className="w-10 h-10 rounded-full object-cover shrink-0 border border-white"
-                        />
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-bold text-[#181c1e] truncate">Nguyễn Gia Đình</span>
-                            <span className="text-[10px] font-bold text-[#43474e] tracking-wider uppercase">
-                                TÀI KHOẢN PREMIUM
-                            </span>
+                {/* Phần thông tin hồ sơ dưới cùng của Sidebar */}
+                {isCollapsed ? (
+                    /* Trạng thái thu gọn: Chỉ hiện Avatar và icon nút thêm */
+                    <div className="p-3 border-t border-[#c4c6cf4c] hidden md:flex flex-col items-center gap-3">
+                        <div className="relative group cursor-pointer" title="Gia đình Bác An - Tài khoản Premium">
+                            <img
+                                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
+                                alt="Gia đình Bác An"
+                                className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-white shadow-2xs"
+                            />
+                            <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#102030] text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 shadow-lg">
+                                Gia đình Bác An
+                            </div>
                         </div>
-                    </div>
 
-                    <button
-                        type="button"
-                        className="w-full py-2.5 px-4 bg-prussian-blue text-white rounded-xl text-xs font-semibold hover:bg-[#1a365d] transition-colors shadow-xs flex items-center justify-center gap-1.5"
+                        <button
+                            type="button"
+                            title="Thêm Người Thân"
+                            className="w-9 h-9 bg-prussian-blue text-white rounded-xl text-base font-semibold hover:bg-[#1a365d] transition-colors shadow-xs flex items-center justify-center cursor-pointer"
+                        >
+                            +
+                        </button>
+                    </div>
+                ) : (
+                    /* Trạng thái mở rộng đầy đủ */
+                    <div
+                        className={`p-4 border-t border-[#c4c6cf4c] flex flex-col gap-3 ${
+                            mobileMenuOpen ? "block" : "hidden md:flex"
+                        }`}
                     >
-                        <span>+</span>
-                        <span>Thêm Người Thân</span>
-                    </button>
-                </div>
+                        <div className="flex items-center gap-3 p-2 bg-[#e5e9eb80] rounded-xl shadow-xs">
+                            <img
+                                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
+                                alt="Gia đình Bác An"
+                                className="w-10 h-10 rounded-full object-cover shrink-0 border border-white"
+                            />
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-bold text-[#181c1e] truncate">Gia đình Bác An</span>
+                                <span className="text-[10px] font-bold text-[#43474e] tracking-wider uppercase">
+                                    TÀI KHOẢN PREMIUM
+                                </span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="w-full py-2.5 px-4 bg-prussian-blue text-white rounded-xl text-xs font-semibold hover:bg-[#1a365d] transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                            <span>+</span>
+                            <span>Thêm Người Thân</span>
+                        </button>
+                    </div>
+                )}
             </aside>
 
-            {/* Vùng nội dung chính */}
-            <main className="flex-1 w-full overflow-y-auto">
+            {/* Vùng nội dung chính: Tự động mở rộng khi sidebar thu gọn */}
+            <main className="flex-1 w-full overflow-y-auto transition-all duration-300">
                 <Outlet />
             </main>
         </div>
