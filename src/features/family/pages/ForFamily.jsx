@@ -102,7 +102,7 @@ export default function ForFamily() {
                 <section className="relative w-full py-16 lg:py-24 bg-white border-b border-gray-100">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12">
                         {/* Cột thông tin văn bản */}
-                        <div className="flex-1 flex flex-col items-start gap-6 max-w-xl">
+                        <div className="flex-1 flex flex-col items-start gap-6 max-w-xl lg:max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6f3f5] border border-[#00677c33]">
                                 <svg className="w-4 h-4 text-[#00677c]" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -110,7 +110,7 @@ export default function ForFamily() {
                                 <span className="text-xs font-semibold text-[#00677c]">Đã được kiểm định y tế</span>
                             </div>
 
-                            <h1 className="text-4xl sm:text-5xl font-bold text-[#102030] tracking-tight leading-tight">
+                            <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#102030] tracking-tight leading-[1.2]">
                                 Chăm sóc chuyên nghiệp <br />
                                 <span className="text-[#00677c]">cho ông bà, cha mẹ tại nhà</span>
                             </h1>
@@ -324,41 +324,47 @@ export default function ForFamily() {
                 {/* ============================================================ */}
                 <section className="w-full py-20 bg-[#f4f7f8] border-b border-gray-200">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
-                        {/* ĐÃ CHỈNH: Thêm hiệu ứng shadow, border để nền #102030 sang hơn */}
-                        <div className="w-full bg-[#102030] text-white rounded-[40px] p-8 sm:p-14 flex flex-col gap-12 shadow-2xl border border-gray-800 relative overflow-hidden">
+                        {/* Khung Cách đặt chuyên gia: Màu xanh đậm mềm mại chuẩn Figma (#183354 / gradient navy) */}
+                        <div className="w-full bg-gradient-to-br from-[#1b385e] to-[#122842] text-white rounded-[40px] p-8 sm:p-14 flex flex-col gap-12 shadow-2xl border border-white/10 relative overflow-hidden">
                             {/* Highlight nhạt phía trên bên phải */}
-                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#00677c] rounded-full blur-[80px] opacity-30 pointer-events-none" />
+                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#4fd9fd] rounded-full blur-[90px] opacity-15 pointer-events-none" />
 
                             <div className="relative z-10">
-                                <h2 className="text-3xl sm:text-4xl font-bold">Cách đặt chuyên gia chăm sóc</h2>
-                                <p className="text-gray-300 text-sm sm:text-base mt-2">
+                                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Cách đặt chuyên gia chăm sóc</h2>
+                                <p className="text-slate-300 text-sm sm:text-base mt-2">
                                     Đơn giản, nhanh chóng và minh bạch chỉ trong vài phút.
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
                                 {bookingSteps.map((step) => (
-                                    // ĐÃ CHỈNH: Bo khung từng bước, làm nền kính mờ để nổi bật con số
-                                    <div key={step.number} className="flex flex-col gap-4 p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors shadow-inner backdrop-blur-sm">
-                                        <div className="w-14 h-14 rounded-2xl bg-[#00677c] flex items-center justify-center shadow-lg">
-                                            <span className="text-2xl font-extrabold text-white">{step.number}</span>
+                                    <div key={step.number} className="flex flex-col gap-4 p-8 rounded-3xl bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] transition-all shadow-inner backdrop-blur-sm">
+                                        <div className="w-14 h-14 rounded-2xl bg-[#005263] border border-cyan-400/30 flex items-center justify-center shadow-md">
+                                            <span className="text-2xl font-extrabold text-[#8ae5fa]">{step.number}</span>
                                         </div>
                                         <h3 className="text-xl font-bold">{step.title}</h3>
-                                        <p className="text-sm text-gray-300 leading-relaxed">{step.description}</p>
+                                        <p className="text-sm text-slate-300 leading-relaxed">{step.description}</p>
                                     </div>
                                 ))}
                             </div>
 
-                            <aside className="border-t border-gray-700/60 pt-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
-                                <div>
-                                    <h4 className="text-lg font-bold">Bạn cần tư vấn trực tiếp?</h4>
-                                    <p className="text-sm text-gray-400 mt-1">
-                                        Đội ngũ chuyên viên y tế của chúng tôi luôn sẵn sàng hỗ trợ bạn lựa chọn.
-                                    </p>
+                            <aside className="rounded-2xl bg-white/[0.08] border border-white/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-[#5cd6f7]/20 border border-[#5cd6f7]/30 flex items-center justify-center shrink-0">
+                                        <svg className="w-6 h-6 text-[#5cd6f7]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-bold text-white">Bạn cần tư vấn trực tiếp?</h4>
+                                        <p className="text-xs text-slate-300 mt-0.5">
+                                            Đội ngũ chuyên viên y tế của chúng tôi luôn sẵn sàng hỗ trợ bạn lựa chọn.
+                                        </p>
+                                    </div>
                                 </div>
                                 <a
                                     href="tel:19006868"
-                                    className="px-8 py-3.5 bg-[#00677c] text-white rounded-xl font-bold hover:bg-[#005263] transition-all shadow-md whitespace-nowrap border border-[#00677c] hover:border-white/20"
+                                    className="px-6 py-3 bg-[#5cd6f7] hover:bg-[#43cbe9] text-[#0f2e3d] rounded-xl font-bold transition-all shadow-md whitespace-nowrap"
                                 >
                                     Gọi: 1900 6868 (Miễn phí)
                                 </a>

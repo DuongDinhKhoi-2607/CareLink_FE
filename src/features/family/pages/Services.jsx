@@ -71,16 +71,16 @@ export default function Services() {
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
                     {/* Logo CareLink chuẩn theo phong cách trang chủ & dành cho gia đình */}
                     <Link to="/" className="flex items-center gap-2.5 group cursor-pointer">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
+                            <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-2xl font-bold text-[#102030] tracking-tight group-hover:text-[#00677c] transition-colors leading-none">
-                                Care<span className="text-[#00677c]">Link</span>
+                            <span className="text-xl font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none">
+                                Care<span className="text-teal-600">Link</span>
                             </span>
-                            <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-0.5">Medical Care</span>
+                            <span className="text-[10px] tracking-widest text-teal-600 uppercase font-semibold mt-0.5">Medical Care</span>
                         </div>
                     </Link>
                     <Link to="/family" className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50/60">

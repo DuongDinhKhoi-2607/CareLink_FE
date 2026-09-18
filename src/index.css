@@ -1,8 +1,9 @@
-@import url("https://fonts.googleapis.com/css?family=Inter:var(--inter-bold-font-weight),var(--inter-medium-font-weight),700,600,var(--inter-regular-font-weight),var(--inter-bold-upper-font-weight),400");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
 /* 1. Định nghĩa Theme màu & Font cho Tailwind CSS v4 */
 @theme {
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --color-orient: #00677c;
   --color-prussian-blue: #102030;
 

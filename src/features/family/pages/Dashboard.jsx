@@ -86,7 +86,7 @@ export default function Dashboard() {
                 {/* ============================================================ */}
                 <div className="lg:col-span-8 flex flex-col gap-6">
                     {/* 1. Thẻ Buổi chăm sóc tiếp theo */}
-                    <section className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col gap-6">
+                    <section className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                             <span className="px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#00677c1a] text-orient">
                                 ĐÃ XÁC NHẬN
@@ -94,15 +94,16 @@ export default function Dashboard() {
                             <span className="text-xs font-semibold text-slate-400">Care Session #829</span>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-bold text-prussian-blue">Buổi chăm sóc tiếp theo</h2>
-                                <p className="text-sm font-medium text-[#43474e] mt-1">
-                                    Thời gian: <strong className="text-prussian-blue">Ngày mai, 09:00 - 11:00</strong>
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-prussian-blue">Buổi chăm sóc tiếp theo</h2>
+                            <p className="text-sm font-normal text-[#43474e] mt-1">
+                                Thời gian: Ngày mai, 09:00 - 11:00
+                            </p>
+                        </div>
 
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        {/* Hàng dưới đường gạch ngang: Thông tin Điều dưỡng bên trái & Các nút hành động bên phải */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                            <div className="flex items-center gap-3">
                                 <img
                                     src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=300"
                                     alt="Nguyễn Thùy Linh"
@@ -117,21 +118,21 @@ export default function Dashboard() {
                                     <span className="text-xs text-slate-500">Chuyên khoa Phục hồi chức năng</span>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-                            <Link
-                                to="/chat"
-                                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
-                            >
-                                Nhắn tin
-                            </Link>
-                            <Link
-                                to="/caregivers/profile"
-                                className="px-4 py-2 bg-prussian-blue text-white rounded-lg text-sm font-semibold hover:bg-[#1a365d] transition-colors"
-                            >
-                                Xem chi tiết
-                            </Link>
+                            <div className="flex items-center gap-3 shrink-0">
+                                <Link
+                                    to="/chat"
+                                    className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors"
+                                >
+                                    Nhắn tin
+                                </Link>
+                                <Link
+                                    to="/caregivers/profile"
+                                    className="px-4 py-2 bg-orient text-white rounded-xl text-sm font-semibold hover:bg-[#005263] transition-colors shadow-xs"
+                                >
+                                    Xem chi tiết
+                                </Link>
+                            </div>
                         </div>
                     </section>
 
@@ -161,7 +162,7 @@ export default function Dashboard() {
 
                         <Link
                             to="/review"
-                            className="px-6 py-3 bg-prussian-blue text-white rounded-xl text-sm font-bold hover:bg-[#1a365d] transition-all shadow-xs text-center shrink-0"
+                            className="px-6 py-2.5 bg-orient text-white rounded-xl text-sm font-semibold hover:bg-[#005263] transition-all shadow-xs hover:shadow-md text-center shrink-0"
                         >
                             Đánh giá dịch vụ
                         </Link>
@@ -275,21 +276,21 @@ export default function Dashboard() {
                         </div>
                     </section>
 
-                    {/* Thẻ 2: Hóa đơn & Phí nền tảng */}
-                    <section className="bg-prussian-blue text-white p-6 rounded-2xl shadow-sm flex flex-col gap-4 relative overflow-hidden">
+                    {/* Thẻ 2: Hóa đơn & Phí nền tảng (Đổi nền sang xanh đậm nhẹ nhàng chuẩn Figma) */}
+                    <section className="bg-gradient-to-br from-[#00677c] to-[#004f5e] text-white p-6 rounded-2xl shadow-sm flex flex-col gap-4 relative overflow-hidden">
                         <div className="flex items-center justify-between relative z-10">
                             <h3 className="text-base font-bold">Chi phí dịch vụ</h3>
-                            <svg className="w-5 h-5 text-teal-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-cyan-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                             </svg>
                         </div>
 
                         <div className="flex flex-col gap-1 relative z-10">
-                            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-300">
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-100/90">
                                 PHÍ NỀN TẢNG CARELINK
                             </span>
                             <span className="text-3xl font-extrabold text-white">60.000đ</span>
-                            <div className="inline-flex items-center gap-1 text-xs text-teal-300 mt-1">
+                            <div className="inline-flex items-center gap-1.5 text-xs text-cyan-200 mt-1">
                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
@@ -299,7 +300,7 @@ export default function Dashboard() {
 
                         <button
                             type="button"
-                            className="w-full py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold text-white transition-colors relative z-10"
+                            className="w-full py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-xs font-bold text-white transition-colors relative z-10 cursor-pointer"
                         >
                             Xem hóa đơn
                         </button>
