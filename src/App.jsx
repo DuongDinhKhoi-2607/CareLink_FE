@@ -18,8 +18,9 @@ import Review from "./features/family/pages/Review";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import MedicalHandbook from "./pages/public/MedicalHandbook";
 
-// Caregiver feature pages (từ bạn Nguyên)
+// Caregiver feature pages
 import ForCaregiver from "./features/caregiver/pages/ForCaregiver";
 import ChooseRole from "./features/caregiver/pages/ChooseRole";
 import Verification from "./features/caregiver/pages/Verification";
@@ -46,6 +47,8 @@ export default function App() {
             <Route path="/review" element={<Review />} />
             {/* Luồng người chăm sóc công khai */}
             <Route path="/caregiver" element={<ForCaregiver />} />
+            {/* Cẩm nang y tế & Sức khỏe gia đình */}
+            <Route path="/handbook" element={<MedicalHandbook />} />
           </Route>
 
           {/* Nhóm Bảng điều khiển Gia đình dùng riêng DashboardLayout (Sidebar điều hướng chuyên biệt) */}

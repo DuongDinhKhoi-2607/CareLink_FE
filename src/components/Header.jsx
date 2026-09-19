@@ -45,7 +45,7 @@ export default function Header() {
         { name: "Trang chủ", path: "/", exact: true },
         { name: "Dành cho Gia đình", path: "/family", exact: false },
         { name: "Dành cho Điều dưỡng", path: "/caregiver", exact: false },
-        { name: "Cẩm nang y tế", path: "#", exact: false },
+        { name: "Cẩm nang y tế", path: "/handbook", exact: false },
     ];
 
     const isItemActive = (item) => {
@@ -67,6 +67,11 @@ export default function Header() {
         // Phân hệ Dành cho Điều dưỡng: chỉ active trên luồng tuyển dụng/hồ sơ của điều dưỡng
         if (item.name === "Dành cho Điều dưỡng") {
             return pathname === "/caregiver" || (pathname.startsWith("/caregiver/") && !pathname.startsWith("/caregivers"));
+        }
+
+        // Phân hệ Cẩm nang y tế: trang bài viết y khoa
+        if (item.name === "Cẩm nang y tế") {
+            return pathname.startsWith("/handbook");
         }
 
         return false;
