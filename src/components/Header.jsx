@@ -9,16 +9,16 @@ export default function Header() {
         { name: "Trang chủ", path: "/", exact: true },
         { name: "Dành cho Gia đình", path: "/family", exact: false },
         { name: "Tìm người chăm sóc", path: "/caregivers", exact: false },
-        { name: "Dành cho Người chăm sóc", path: "#", exact: false },
+        { name: "Dành cho Người chăm sóc", path: "/caregiver", exact: false },
         { name: "Tài nguyên", path: "#", exact: false },
     ];
 
     const isItemActive = (item) => {
         if (item.path === "#") return false;
         if (item.exact) return pathname === item.path;
-        // Kích hoạt nổi bật theo trang hiện tại
         if (item.name === "Dành cho Gia đình") return pathname === "/family";
-        if (item.name === "Tìm người chăm sóc") return pathname === "/caregivers";
+        if (item.name === "Tìm người chăm sóc") return pathname.startsWith("/caregivers");
+        if (item.name === "Dành cho Người chăm sóc") return pathname.startsWith("/caregiver");
         return false;
     };
 
