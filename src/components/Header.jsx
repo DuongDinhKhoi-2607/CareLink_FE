@@ -45,7 +45,7 @@ export default function Header() {
         { name: "Trang chủ", path: "/", exact: true },
         { name: "Dành cho Gia đình", path: "/family", exact: false },
         { name: "Tìm Điều dưỡng", path: "/caregivers", exact: false },
-        { name: "Trở thành Điều dưỡng", path: "/register", exact: false },
+        { name: "Dành cho Điều dưỡng", path: "/caregiver", exact: false },
         { name: "Cẩm nang y tế", path: "#", exact: false },
     ];
 
@@ -54,6 +54,7 @@ export default function Header() {
         if (item.exact) return pathname === item.path;
         if (item.name === "Dành cho Gia đình") return pathname.startsWith("/family");
         if (item.name === "Tìm Điều dưỡng") return pathname.startsWith("/caregivers");
+        if (item.name === "Dành cho Điều dưỡng") return pathname.startsWith("/caregiver");
         return false;
     };
 
