@@ -105,12 +105,12 @@ export default function Dashboard() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
                             <div className="flex items-center gap-3">
                                 <img
-                                    src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=300"
+                                    src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
                                     alt="Nguyễn Thùy Linh"
                                     className="w-11 h-11 rounded-full object-cover shrink-0 border border-slate-200"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=300";
+                                        e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
                                     }}
                                 />
                                 <div className="flex flex-col">

@@ -122,7 +122,7 @@ export default function ForFamily() {
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto pt-2">
                                 <Link
                                     to="/services"
-                                    className="px-8 py-3.5 bg-[#102030] text-white rounded-xl font-semibold hover:bg-[#1a365d] transition-all shadow-md text-center inline-flex items-center justify-center"
+                                    className="px-8 py-3.5 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 text-center inline-flex items-center justify-center"
                                 >
                                     Tìm chuyên gia phù hợp
                                 </Link>
@@ -391,7 +391,7 @@ export default function ForFamily() {
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
                             <Link
                                 to="/services"
-                                className="px-8 py-4 bg-[#102030] text-white font-semibold rounded-xl hover:bg-[#1a365d] transition-all shadow-xl hover:-translate-y-0.5 text-center inline-flex items-center justify-center"
+                                className="px-8 py-4 bg-[#00677c] text-white font-semibold rounded-xl hover:bg-[#005566] transition-all shadow-xl hover:-translate-y-0.5 text-center inline-flex items-center justify-center"
                             >
                                 Tìm chuyên gia phù hợp
                             </Link>

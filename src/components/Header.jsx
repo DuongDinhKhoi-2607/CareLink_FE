@@ -44,16 +44,31 @@ export default function Header() {
     const navItems = [
         { name: "Trang chủ", path: "/", exact: true },
         { name: "Dành cho Gia đình", path: "/family", exact: false },
-        { name: "Tìm Điều dưỡng", path: "/caregivers", exact: false },
-        { name: "Trở thành Điều dưỡng", path: "/register", exact: false },
+        { name: "Dành cho Điều dưỡng", path: "/caregiver", exact: false },
         { name: "Cẩm nang y tế", path: "#", exact: false },
     ];
 
     const isItemActive = (item) => {
         if (item.path === "#") return false;
         if (item.exact) return pathname === item.path;
-        if (item.name === "Dành cho Gia đình") return pathname.startsWith("/family");
-        if (item.name === "Tìm Điều dưỡng") return pathname.startsWith("/caregivers");
+
+        // Phân hệ Dành cho Gia đình: bao trọn hành trình tìm kiếm và đặt lịch của Gia đình
+        if (item.name === "Dành cho Gia đình") {
+            return (
+                pathname.startsWith("/family") ||
+                pathname.startsWith("/services") ||
+                pathname.startsWith("/caregivers") ||
+                pathname === "/chat" ||
+                pathname === "/checkout" ||
+                pathname === "/review"
+            );
+        }
+
+        // Phân hệ Dành cho Điều dưỡng: chỉ active trên luồng tuyển dụng/hồ sơ của điều dưỡng
+        if (item.name === "Dành cho Điều dưỡng") {
+            return pathname === "/caregiver" || (pathname.startsWith("/caregiver/") && !pathname.startsWith("/caregivers"));
+        }
+
         return false;
     };
 
@@ -247,10 +262,10 @@ export default function Header() {
                             </Link>
                             <Link
                                 to="/register"
-                                className="px-4 py-2 text-xs sm:text-[13px] font-semibold text-white bg-[#002045] hover:bg-[#002d60] rounded-xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-1.5"
+                                className="px-4 py-2 text-xs sm:text-[13px] font-semibold text-white bg-[#00677c] hover:bg-[#005566] rounded-xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-1.5"
                             >
                                 <span>Tham gia ngay</span>
-                                <svg className="w-3.5 h-3.5 text-teal-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                 </svg>
                             </Link>
@@ -362,7 +377,7 @@ export default function Header() {
                                 <Link
                                     to="/register"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="text-center py-2 px-3 bg-[#002045] text-white rounded-xl text-xs font-semibold"
+                                    className="text-center py-2 px-3 bg-[#00677c] hover:bg-[#005566] text-white rounded-xl text-xs font-semibold shadow-sm"
                                 >
                                     Tham gia ngay
                                 </Link>
