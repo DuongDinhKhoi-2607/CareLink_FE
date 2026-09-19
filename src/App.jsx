@@ -9,6 +9,10 @@ import CaregiverProfile from "./features/family/pages/CaregiverProfile";
 import Chat from "./features/family/pages/Chat";
 import Checkout from "./features/family/pages/Checkout";
 import Dashboard from "./features/family/pages/Dashboard";
+import Appointments from "./features/family/pages/Appointments";
+import Relatives from "./features/family/pages/Relatives";
+import HealthReports from "./features/family/pages/HealthReports";
+import FamilyProfile from "./features/family/pages/FamilyProfile";
 import Review from "./features/family/pages/Review";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -34,6 +38,10 @@ export default function App() {
           {/* Nhóm Bảng điều khiển dùng riêng DashboardLayout (Sidebar điều hướng chuyên biệt) */}
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/appointments" element={<Appointments />} />
+            <Route path="/dashboard/relatives" element={<Relatives />} />
+            <Route path="/dashboard/health-reports" element={<HealthReports />} />
+            <Route path="/dashboard/settings" element={<FamilyProfile />} />
           </Route>
 
           {/* Các trang xác thực độc lập */}

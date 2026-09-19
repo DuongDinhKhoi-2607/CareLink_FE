@@ -21,6 +21,15 @@ const navigationItems = [
         ),
     },
     {
+        path: "/dashboard/relatives",
+        label: "Người thân",
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+        ),
+    },
+    {
         path: "/dashboard/health-reports",
         label: "Báo cáo sức khỏe",
         icon: (
@@ -188,13 +197,13 @@ export default function DashboardLayout() {
                             </div>
                         </div>
 
-                        <button
-                            type="button"
+                        <Link
+                            to="/dashboard/relatives"
                             title="Thêm Người Thân"
-                            className="w-9 h-9 bg-prussian-blue text-white rounded-xl text-base font-semibold hover:bg-[#1a365d] transition-colors shadow-xs flex items-center justify-center cursor-pointer"
+                            className="w-9 h-9 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-base font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer"
                         >
                             +
-                        </button>
+                        </Link>
                     </div>
                 ) : (
                     /* Trạng thái mở rộng đầy đủ */
@@ -217,13 +226,13 @@ export default function DashboardLayout() {
                             </div>
                         </div>
 
-                        <button
-                            type="button"
-                            className="w-full py-2.5 px-4 bg-prussian-blue text-white rounded-xl text-xs font-semibold hover:bg-[#1a365d] transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        <Link
+                            to="/dashboard/relatives"
+                            className="w-full py-2.5 px-4 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <span>+</span>
                             <span>Thêm Người Thân</span>
-                        </button>
+                        </Link>
                     </div>
                 )}
             </aside>
