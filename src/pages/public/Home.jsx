@@ -204,7 +204,7 @@ export default function Home() {
         <div className="flex flex-col w-full">
 
                 {/* 1. HERO SECTION */}
-                <section className="relative w-full h-[600px] lg:h-[800px] flex items-center">
+                <section className="relative w-full h-[600px] lg:h-[800px] flex items-center overflow-hidden">
                     <div className="absolute inset-0 z-0">
                         <div
                             className="w-full h-full bg-cover bg-center"
@@ -212,12 +212,15 @@ export default function Home() {
                                 backgroundImage: `url(https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=1920)`,
                             }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
+                        {/* Lớp phủ dải màu tinh tế: Bên trái trắng sáng sắc nét tôn chữ, bên phải giữ ảnh bác sĩ sáng rõ tự nhiên, mép phải mờ nhẹ nghệ thuật */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-42% to-transparent" />
+                        <div className="absolute inset-y-0 right-0 w-28 sm:w-36 bg-gradient-to-l from-white/35 to-transparent pointer-events-none" />
                     </div>
 
                     <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="max-w-2xl flex flex-col gap-6">
-                            <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-[#00677c] text-sm font-semibold w-fit border border-blue-100">
+                            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/95 text-[#00677c] text-xs sm:text-sm font-semibold w-fit border border-teal-200/80 shadow-2xs backdrop-blur-xs">
+                                <span className="w-2 h-2 rounded-full bg-[#00677c] animate-pulse" />
                                 Hệ thống kết nối chăm sóc sức khỏe 24/7
                             </span>
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#102030] tracking-tight leading-[1.1]">
@@ -225,25 +228,28 @@ export default function Home() {
                                 <br />
                                 <span className="text-[#00677c]">Kết nối chuyên môn</span>
                             </h1>
-                            <p className="text-lg text-gray-600 leading-relaxed max-w-lg">
+                            <p className="text-base sm:text-lg text-slate-700 font-normal leading-relaxed max-w-lg">
                                 Nền tảng kết nối sinh viên Y khoa và Điều dưỡng chuyên nghiệp với các gia đình cần hỗ trợ chăm sóc người cao tuổi, mang lại sự an tâm tuyệt đối.
                             </p>
                             <div className="flex flex-wrap items-center gap-4 pt-2">
                                 <Link
                                     to="/family"
-                                    className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#102030] text-white rounded-lg font-medium hover:bg-[#1a365d] transition-all shadow-md hover:shadow-lg"
+                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                     Tìm người chăm sóc
                                 </Link>
-                                <button className="inline-flex items-center gap-2 px-6 py-3.5 border-2 border-[#00677c] text-[#00677c] rounded-lg font-medium hover:bg-blue-50 transition-all">
+                                <Link
+                                    to="/caregiver"
+                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5"
+                                >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                     Đăng ký đi làm
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>

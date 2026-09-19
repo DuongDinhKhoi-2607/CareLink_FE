@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import Header from "../../../components/Header";
 import VerificationStepper from "../components/VerificationStepper";
 import DocumentUpload from "../components/DocumentUpload";
 
@@ -279,59 +280,8 @@ export default function Verification() {
     return (
         <div className="min-h-screen flex flex-col bg-[#f4f8fa]">
 
-            {/* ══ HEADER ══ */}
-            <header className="w-full bg-white border-b border-slate-200/80 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 group">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                        </div>
-                        <span className="text-xl font-bold text-[#102030] tracking-tight">
-                            Care<span className="text-[#00677c]">Link</span>
-                        </span>
-                    </Link>
-
-                    <nav className="hidden md:flex items-center gap-1">
-                        {[
-                            { label: "Tìm người chăm sóc", to: "/caregivers" },
-                            { label: "Dành cho Gia đình", to: "/family" },
-                            { label: "Dành cho Người chăm sóc", to: "/caregiver", active: true },
-                            { label: "Tài nguyên", to: "#" },
-                        ].map((item) => (
-                            <Link
-                                key={item.label}
-                                to={item.to}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                                    item.active
-                                        ? "text-[#00677c] font-semibold"
-                                        : "text-slate-600 hover:text-[#00677c] hover:bg-slate-100/70"
-                                }`}
-                            >
-                                {item.active && (
-                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#00677c] mr-1.5 align-middle" />
-                                )}
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    <div className="flex items-center gap-3">
-                        <button
-                            id="btn-register-job"
-                            className="px-5 py-2.5 bg-[#102030] text-white text-sm font-semibold rounded-xl hover:bg-[#1a3248] transition-all hover:-translate-y-0.5 shadow-sm"
-                        >
-                            Đăng ký việc làm
-                        </button>
-                        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
-                            <svg className="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
-                                <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* ══ HEADER CHUẨN CARELINK ══ */}
+            <Header />
 
             {/* ══ PAGE TITLE + STEPPER ══ */}
             <div className="w-full bg-white border-b border-slate-200/60 shadow-sm">
@@ -538,7 +488,7 @@ export default function Verification() {
                                 <button
                                     id="btn-submit-verification"
                                     type="submit"
-                                    className="w-full py-4 bg-[#102030] text-white rounded-2xl font-bold text-base hover:bg-[#00677c] transition-all duration-300 hover:-translate-y-0.5 shadow-lg hover:shadow-[#00677c]/30 hover:shadow-xl flex items-center justify-center gap-3 group"
+                                    className="w-full py-4 bg-[#00677c] text-white rounded-2xl font-bold text-base hover:bg-[#005264] transition-all duration-300 hover:-translate-y-0.5 shadow-lg hover:shadow-[#00677c]/30 hover:shadow-xl flex items-center justify-center gap-3 group cursor-pointer"
                                 >
                                     Gửi hồ sơ xác minh
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">

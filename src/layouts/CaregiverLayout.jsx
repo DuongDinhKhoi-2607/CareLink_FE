@@ -67,15 +67,18 @@ export default function CaregiverLayout() {
                 </button>
 
                 {/* Logo */}
-                <Link to="/" className="flex items-center gap-2 group shrink-0">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center shadow-sm">
+                <Link to="/" className="flex items-center gap-2 group shrink-0" title="Về trang chủ CareLink">
+                    <div className="w-8.5 h-8.5 rounded-lg bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
                     </div>
-                    <span className="text-lg font-bold text-[#102030] leading-none">
-                        Care<span className="text-[#00677c]">Link</span>
-                    </span>
+                    <div className="flex flex-col">
+                        <span className="text-base font-bold text-[#102030] leading-none">
+                            Care<span className="text-[#00677c]">Link</span>
+                        </span>
+                        <span className="text-[8.5px] tracking-widest text-[#00677c] uppercase font-semibold mt-0.5">Medical Care</span>
+                    </div>
                 </Link>
 
                 <div className="flex-1" />
