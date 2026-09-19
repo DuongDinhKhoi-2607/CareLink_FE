@@ -8,11 +8,13 @@ export default function PageTransition({ children }) {
 
     useEffect(() => {
         if (location.pathname !== displayLocation.pathname) {
-            // Nếu chuyển qua lại giữa các tab trong dashboard thì chuyển ngay lập tức, không xoay loader
-            const isDashboardTransition =
-                location.pathname.startsWith("/dashboard") && displayLocation.pathname.startsWith("/dashboard");
+            // Nếu chuyển qua lại giữa các tab trong admin, caregiver hoặc dashboard thì chuyển ngay lập tức, không xoay loader
+            const isInstantTransition =
+                (location.pathname.startsWith("/admin") && displayLocation.pathname.startsWith("/admin")) ||
+                (location.pathname.startsWith("/dashboard") && displayLocation.pathname.startsWith("/dashboard")) ||
+                (location.pathname.startsWith("/caregiver") && displayLocation.pathname.startsWith("/caregiver"));
 
-            if (isDashboardTransition) {
+            if (isInstantTransition) {
                 setDisplayLocation(location);
                 return;
             }
