@@ -1,14 +1,62 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 
-// Danh mục cẩm nang
+// 1. Danh mục cẩm nang (Đã thay Emojis bằng Inline SVGs sang trọng)
 const categories = [
-    { id: "all", label: "Tất cả bài viết", icon: "📚" },
-    { id: "elderly", label: "Chăm sóc người cao tuổi", icon: "👵" },
-    { id: "post-surgery", label: "Phục hồi sau phẫu thuật", icon: "🏥" },
-    { id: "therapy", label: "Vật lý trị liệu", icon: "🏃‍♂️" },
-    { id: "nutrition", label: "Dinh dưỡng & Dược phẩm", icon: "🥗" },
-    { id: "first-aid", label: "Sơ cấp cứu tại nhà", icon: "🚨" },
+    {
+        id: "all",
+        label: "Tất cả bài viết",
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+        )
+    },
+    {
+        id: "elderly",
+        label: "Chăm sóc người cao tuổi",
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+            </svg>
+        )
+    },
+    {
+        id: "post-surgery",
+        label: "Phục hồi sau phẫu thuật",
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+            </svg>
+        )
+    },
+    {
+        id: "therapy",
+        label: "Vật lý trị liệu",
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+        )
+    },
+    {
+        id: "nutrition",
+        label: "Dinh dưỡng & Dược phẩm",
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+            </svg>
+        )
+    },
+    {
+        id: "first-aid",
+        label: "Sơ cấp cứu tại nhà",
+        icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        )
+    },
 ];
 
 // Danh sách bài viết chuyên môn
@@ -208,8 +256,11 @@ export default function MedicalHandbook() {
                 <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center gap-6">
-                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-semibold text-teal-200 tracking-wide uppercase">
-                        🩺 Kiến thức y khoa thường thức CareLink
+                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-semibold text-teal-200 tracking-wide uppercase shadow-sm">
+                        <svg className="w-4 h-4 text-teal-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Kiến thức y khoa thường thức CareLink
                     </span>
 
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-3xl leading-[1.2]">
@@ -222,10 +273,10 @@ export default function MedicalHandbook() {
 
                     {/* Thanh tìm kiếm nhanh */}
                     <div className="w-full max-w-2xl mt-4 relative">
-                        <div className="relative flex items-center shadow-xl rounded-2xl bg-white text-slate-700 overflow-hidden border border-white/30 focus-within:ring-4 focus-within:ring-teal-400/30 transition-all">
+                        <div className="relative flex items-center shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl bg-white text-slate-700 overflow-hidden border border-white/30 focus-within:ring-4 focus-within:ring-teal-400/40 transition-all duration-300">
                             <span className="pl-5 text-slate-400">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                                 </svg>
                             </span>
                             <input
@@ -233,12 +284,12 @@ export default function MedicalHandbook() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Tìm kiếm bài viết theo bệnh lý, triệu chứng, chế độ ăn..."
-                                className="w-full py-4 pl-3 pr-5 text-sm sm:text-base outline-none bg-transparent placeholder-slate-400"
+                                className="w-full py-4 pl-3 pr-5 text-sm sm:text-base outline-none bg-transparent placeholder-slate-400 font-medium"
                             />
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery("")}
-                                    className="pr-4 text-xs font-semibold text-slate-400 hover:text-slate-600"
+                                    className="pr-4 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                                 >
                                     Xóa
                                 </button>
@@ -249,21 +300,20 @@ export default function MedicalHandbook() {
             </section>
 
             {/* ═══ 2. THANH DANH MỤC LỌC BÀI VIẾT ═══ */}
-            <nav className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <nav className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
                     {categories.map((cat) => {
                         const active = selectedCategory === cat.id;
                         return (
                             <button
                                 key={cat.id}
                                 onClick={() => setSelectedCategory(cat.id)}
-                                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-                                    active
-                                        ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/20"
-                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900"
-                                }`}
+                                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 whitespace-nowrap flex items-center gap-2 cursor-pointer border ${active
+                                    ? "bg-[#00677c] text-white border-[#00677c] shadow-lg shadow-[#00677c]/25 transform scale-105"
+                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
+                                    }`}
                             >
-                                <span>{cat.icon}</span>
+                                <span className={active ? "text-white" : "text-slate-500"}>{cat.icon}</span>
                                 <span>{cat.label}</span>
                             </button>
                         );
@@ -273,66 +323,65 @@ export default function MedicalHandbook() {
 
             {/* ═══ 3. THÂN TRANG & BÀI VIẾT ═══ */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
-                
+
                 {/* 3.1 BÀI VIẾT TIÊU ĐIỂM (FEATURED ARTICLE) */}
                 {selectedCategory === "all" && !searchQuery && featuredArticle && (
-                    <section className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300">
+                    <section className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 group cursor-pointer" onClick={() => setActiveArticleModal(featuredArticle)}>
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-                            <div className="lg:col-span-7 h-72 lg:h-auto relative overflow-hidden group">
+                            <div className="lg:col-span-7 h-72 lg:h-auto relative overflow-hidden">
                                 <img
                                     src={featuredArticle.image}
                                     alt={featuredArticle.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                 />
-                                <div className="absolute top-4 left-4 bg-[#00677c] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>⭐</span> Chuyên mục khuyên đọc
+                                <div className="absolute top-4 left-4 bg-[#00677c] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm border border-white/20">
+                                    <svg className="w-4 h-4 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                    Chuyên mục khuyên đọc
                                 </div>
                             </div>
 
-                            <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between gap-6">
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex items-center gap-2 text-xs font-semibold text-teal-700">
-                                        <span className="px-2.5 py-1 rounded-md bg-teal-50 border border-teal-200/70">
+                            <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between gap-6 bg-white">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-teal-700">
+                                        <span className="px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200/70">
                                             {featuredArticle.categoryName}
                                         </span>
-                                        <span>•</span>
+                                        <span className="text-slate-300">•</span>
                                         <span className="text-slate-500">{featuredArticle.readTime}</span>
                                     </div>
 
-                                    <h2
-                                        onClick={() => setActiveArticleModal(featuredArticle)}
-                                        className="text-2xl sm:text-3xl font-extrabold text-[#002045] hover:text-[#00677c] cursor-pointer transition-colors leading-snug"
-                                    >
+                                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#002045] group-hover:text-[#00677c] transition-colors leading-snug">
                                         {featuredArticle.title}
                                     </h2>
 
-                                    <p className="text-slate-600 text-sm sm:text-base leading-relaxed line-clamp-3">
+                                    <p className="text-slate-600 text-sm sm:text-base leading-relaxed line-clamp-3 font-medium">
                                         {featuredArticle.summary}
                                     </p>
                                 </div>
 
-                                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <div className="pt-6 border-t border-slate-100 flex items-center justify-between mt-2">
                                     <div className="flex items-center gap-3">
                                         <img
                                             src={featuredArticle.author.avatar}
                                             alt={featuredArticle.author.name}
-                                            className="w-10 h-10 rounded-full object-cover ring-2 ring-teal-500/20"
+                                            className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500/20"
                                         />
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-[#002045]">
+                                            <span className="text-sm font-bold text-[#002045]">
                                                 {featuredArticle.author.name}
                                             </span>
-                                            <span className="text-[11px] text-slate-500 truncate max-w-[200px]">
+                                            <span className="text-[11px] font-medium text-slate-500 truncate max-w-[200px]">
                                                 {featuredArticle.author.role}
                                             </span>
                                         </div>
                                     </div>
 
                                     <button
-                                        onClick={() => setActiveArticleModal(featuredArticle)}
-                                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#00677c] hover:text-teal-700 hover:translate-x-0.5 transition-all cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#00677c] group-hover:text-teal-700 group-hover:translate-x-1 transition-all cursor-pointer bg-teal-50 px-4 py-2 rounded-xl"
                                     >
-                                        <span>Đọc ngay</span>
+                                        Đọc ngay
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                         </svg>
@@ -345,88 +394,96 @@ export default function MedicalHandbook() {
 
                 {/* 3.2 LƯỚI BÀI VIẾT (ARTICLES GRID) */}
                 <section className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xl sm:text-2xl font-bold text-[#002045]">
+                    <div className="flex items-end justify-between border-b border-slate-200/60 pb-4">
+                        <h3 className="text-xl sm:text-2xl font-extrabold text-[#002045]">
                             {selectedCategory === "all" ? "Tất cả bài viết y khoa" : `Chuyên mục: ${categories.find(c => c.id === selectedCategory)?.label}`}
                         </h3>
-                        <span className="text-xs sm:text-sm text-slate-500 font-medium">
+                        <span className="text-xs sm:text-sm text-slate-500 font-bold bg-slate-100 px-3 py-1 rounded-full">
                             Hiển thị {filteredArticles.length} bài viết
                         </span>
                     </div>
 
                     {filteredArticles.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200/80 flex flex-col items-center gap-3">
-                            <span className="text-4xl">🔍</span>
-                            <p className="text-base font-bold text-slate-700">Không tìm thấy bài viết phù hợp</p>
-                            <p className="text-sm text-slate-500">Hãy thử tìm kiếm bằng từ khóa khác hoặc chọn chuyên mục "Tất cả bài viết".</p>
+                        <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-sm flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 mb-2">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                </svg>
+                            </div>
+                            <p className="text-lg font-bold text-slate-700">Không tìm thấy bài viết phù hợp</p>
+                            <p className="text-sm text-slate-500 font-medium max-w-sm">Hãy thử tìm kiếm bằng từ khóa khác hoặc chọn chuyên mục "Tất cả bài viết".</p>
                             <button
                                 onClick={() => {
                                     setSelectedCategory("all");
                                     setSearchQuery("");
                                 }}
-                                className="mt-2 px-4 py-2 bg-[#00677c] text-white rounded-xl text-xs font-semibold hover:bg-[#005264]"
+                                className="mt-4 px-6 py-2.5 bg-[#00677c] text-white rounded-xl text-sm font-bold hover:bg-[#005264] transition-colors shadow-md"
                             >
                                 Xem tất cả bài viết
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                             {filteredArticles.map((article) => (
                                 <article
                                     key={article.id}
-                                    className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group"
+                                    onClick={() => setActiveArticleModal(article)}
+                                    className="bg-white rounded-2xl border border-slate-200/60 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_30px_-5px_rgba(0,103,124,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden group cursor-pointer"
                                 >
                                     {/* Ảnh đại diện */}
-                                    <div className="h-48 relative overflow-hidden bg-slate-100">
+                                    <div className="h-52 relative overflow-hidden bg-slate-100">
                                         <img
                                             src={article.image}
                                             alt={article.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                         />
-                                        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-xs text-[11px] font-bold text-teal-800 shadow-xs">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                        <span className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm text-[11px] font-extrabold text-teal-800 shadow-sm border border-white/40">
                                             {article.categoryName}
                                         </span>
                                     </div>
 
                                     {/* Nội dung tóm tắt */}
-                                    <div className="p-5 flex-1 flex flex-col justify-between gap-4">
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                                    <div className="p-6 flex-1 flex flex-col justify-between gap-5 bg-white">
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex items-center gap-2 text-xs text-slate-400 font-bold">
                                                 <span>{article.date}</span>
-                                                <span>•</span>
-                                                <span>{article.readTime}</span>
+                                                <span className="text-slate-300">•</span>
+                                                <span className="flex items-center gap-1">
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    {article.readTime}
+                                                </span>
                                             </div>
 
-                                            <h4
-                                                onClick={() => setActiveArticleModal(article)}
-                                                className="text-base font-bold text-[#002045] group-hover:text-[#00677c] cursor-pointer transition-colors leading-snug line-clamp-2"
-                                            >
+                                            <h4 className="text-lg font-extrabold text-[#002045] group-hover:text-[#00677c] transition-colors leading-snug line-clamp-2">
                                                 {article.title}
                                             </h4>
 
-                                            <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                                            <p className="text-sm text-slate-600 leading-relaxed line-clamp-3 font-medium">
                                                 {article.summary}
                                             </p>
                                         </div>
 
                                         {/* Tác giả & CTA */}
-                                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
+                                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
                                                 <img
                                                     src={article.author.avatar}
                                                     alt={article.author.name}
-                                                    className="w-7 h-7 rounded-full object-cover ring-1 ring-teal-500/20"
+                                                    className="w-8 h-8 rounded-full object-cover ring-2 ring-teal-500/10"
                                                 />
-                                                <span className="text-xs font-semibold text-slate-700 truncate max-w-[130px]">
+                                                <span className="text-xs font-bold text-slate-700 truncate max-w-[130px]">
                                                     {article.author.name}
                                                 </span>
                                             </div>
 
-                                            <button
-                                                onClick={() => setActiveArticleModal(article)}
-                                                className="text-xs font-bold text-[#00677c] hover:underline cursor-pointer"
-                                            >
-                                                Chi tiết →
+                                            <button className="text-xs font-extrabold text-[#00677c] flex items-center gap-1 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                                Chi tiết
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </div>
@@ -436,140 +493,169 @@ export default function MedicalHandbook() {
                     )}
                 </section>
 
-                {/* ═══ 4. HỎI ĐÁP Y TẾ THƯỜNG GẶP (FAQ ACCORDION) ═══ */}
-                <section className="bg-gradient-to-br from-teal-50/70 to-blue-50/40 rounded-3xl p-6 sm:p-10 border border-teal-100 flex flex-col gap-6">
-                    <div className="text-center max-w-xl mx-auto flex flex-col gap-2">
-                        <span className="text-xs font-bold text-[#00677c] uppercase tracking-wider">Hỏi đáp y tế</span>
-                        <h3 className="text-2xl font-extrabold text-[#002045]">Câu hỏi thường gặp từ các gia đình</h3>
+                {/* ═══ 4. HỎI ĐÁP Y TẾ THƯỜNG GẶP (FAQ ACCORDION SANG TRỌNG) ═══ */}
+                <section className="bg-gradient-to-br from-teal-50/80 to-[#f0f8f9] rounded-[2rem] p-8 sm:p-12 border border-teal-100/60 shadow-sm flex flex-col gap-10">
+                    <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
+                        <span className="inline-block px-3 py-1 bg-teal-100 text-[#00677c] text-xs font-extrabold uppercase tracking-widest rounded-full w-fit mx-auto">
+                            Hỏi đáp y tế
+                        </span>
+                        <h3 className="text-2xl sm:text-3xl font-extrabold text-[#002045]">
+                            Câu hỏi thường gặp từ các gia đình
+                        </h3>
                     </div>
 
-                    <div className="max-w-3xl mx-auto w-full flex flex-col gap-3">
+                    <div className="max-w-3xl mx-auto w-full flex flex-col gap-4">
                         {faqs.map((faq, idx) => {
                             const isOpen = openFaqIndex === idx;
                             return (
                                 <div
                                     key={idx}
-                                    className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden transition-all"
+                                    className={`bg-white rounded-2xl shadow-sm overflow-hidden transition-all duration-300 border ${isOpen ? "border-[#00677c]/30 shadow-md ring-1 ring-[#00677c]/10" : "border-slate-200/60 hover:border-slate-300"
+                                        }`}
                                 >
                                     <button
                                         onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
-                                        className="w-full px-5 py-4 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#002045] hover:text-[#00677c] transition-colors cursor-pointer"
+                                        className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#002045] hover:text-[#00677c] transition-colors cursor-pointer outline-none"
                                     >
-                                        <span>{faq.q}</span>
-                                        <svg
-                                            className={`w-5 h-5 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-180 text-[#00677c]" : ""}`}
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                        </svg>
+                                        <span className="pr-4 leading-snug">{faq.q}</span>
+                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen ? 'bg-[#00677c] text-white rotate-180' : 'bg-slate-50 text-slate-400'}`}>
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                            </svg>
+                                        </span>
                                     </button>
-                                    {isOpen && (
-                                        <div className="px-5 pb-4 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
-                                            {faq.a}
+
+                                    {/* Animation xổ xuống mượt mà bằng CSS Grid */}
+                                    <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                                        <div className="overflow-hidden">
+                                            <div className="px-6 pb-6 text-sm text-slate-600 leading-relaxed font-medium border-t border-slate-100 pt-4">
+                                                {faq.a}
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
                 </section>
 
-                {/* ═══ 5. BANNER KÊU GỌI HÀNH ĐỘNG (CTA BANNER) ═══ */}
-                <section className="bg-gradient-to-r from-[#004857] to-[#00677c] rounded-3xl p-8 sm:p-12 text-white flex flex-col sm:flex-row items-center justify-between gap-8 shadow-xl">
-                    <div className="flex flex-col gap-2 text-center sm:text-left max-w-xl">
-                        <span className="text-xs font-bold text-teal-300 uppercase tracking-widest">Hỗ trợ 24/7</span>
-                        <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                            Gia đình cần điều dưỡng chuyên môn chăm sóc tại nhà?
+                {/* ═══ 5. BANNER KÊU GỌI HÀNH ĐỘNG (CTA BANNER VỚI SHINE EFFECT) ═══ */}
+                <section className="relative overflow-hidden bg-gradient-to-r from-[#003846] via-[#004857] to-[#00677c] rounded-[2rem] p-8 sm:p-14 text-white flex flex-col lg:flex-row items-center justify-between gap-10 shadow-2xl border border-[#00677c]/50">
+                    {/* Họa tiết nền */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
+                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-400/10 rounded-full blur-2xl pointer-events-none transform -translate-x-1/2 translate-y-1/2" />
+
+                    <div className="relative flex flex-col gap-4 text-center lg:text-left max-w-2xl z-10">
+                        <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-teal-200 uppercase tracking-widest w-fit mx-auto lg:mx-0 backdrop-blur-sm border border-white/10">
+                            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                            Hỗ trợ trực tuyến 24/7
+                        </span>
+                        <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                            Gia đình cần điều dưỡng chuyên môn <span className="text-teal-300">chăm sóc tại nhà?</span>
                         </h3>
-                        <p className="text-teal-100 text-sm sm:text-base">
+                        <p className="text-teal-50 text-base sm:text-lg opacity-90 font-medium leading-relaxed">
                             Đội ngũ điều dưỡng và sinh viên Y khoa CareLink đã được kiểm định chứng chỉ và sẵn sàng hỗ trợ tận tâm.
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                    <div className="relative flex flex-col sm:flex-row items-center gap-4 shrink-0 z-10 w-full lg:w-auto">
                         <Link
                             to="/family"
-                            className="w-full sm:w-auto px-7 py-3.5 bg-white text-[#00677c] hover:bg-teal-50 font-bold text-sm rounded-xl transition-all shadow-md text-center"
+                            className="group relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white text-[#00677c] font-extrabold text-sm rounded-xl transition-all shadow-lg text-center"
                         >
-                            Tìm Điều dưỡng ngay
+                            {/* Hiệu ứng Shine sáng lướt qua */}
+                            <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+                            <span className="relative">Tìm Điều dưỡng ngay</span>
                         </Link>
                         <a
                             href="tel:19001234"
-                            className="w-full sm:w-auto px-7 py-3.5 border-2 border-white/40 hover:border-white text-white font-bold text-sm rounded-xl transition-all text-center"
+                            className="w-full sm:w-auto px-8 py-4 border-2 border-white/30 hover:border-white hover:bg-white/10 text-white font-extrabold text-sm rounded-xl transition-all text-center flex items-center justify-center gap-2"
                         >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.54-4.24-7.136-7.136l1.292-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                            </svg>
                             Hotline: 1900 1234
                         </a>
                     </div>
                 </section>
             </main>
 
-            {/* ═══ 6. POPUP XEM NHANH BÀI VIẾT (QUICK READ MODAL) ═══ */}
+            {/* ═══ 6. POPUP XEM NHANH BÀI VIẾT (MODAL VỚI BACKDROP BLUR) ═══ */}
             {activeArticleModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-page-enter">
-                    <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
+                    {/* Hiệu ứng scale in mượt mà */}
+                    <div className="bg-white rounded-[2rem] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header Modal */}
-                        <div className="p-6 border-b border-slate-100 flex items-center justify-between gap-4">
-                            <span className="px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-bold">
+                        <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-4 bg-white z-10 shadow-sm">
+                            <span className="px-3.5 py-1.5 rounded-full bg-teal-50 text-teal-800 text-xs font-bold border border-teal-100">
                                 {activeArticleModal.categoryName}
                             </span>
                             <button
                                 onClick={() => setActiveArticleModal(null)}
-                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+                                className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
                             >
-                                ✕
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
 
                         {/* Thân bài viết cuộn */}
-                        <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
-                            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#002045] leading-snug">
+                        <div className="p-6 sm:p-10 overflow-y-auto space-y-8 no-scrollbar bg-slate-50/50">
+                            <h2 className="text-2xl sm:text-4xl font-extrabold text-[#002045] leading-tight">
                                 {activeArticleModal.title}
                             </h2>
 
-                            <div className="flex items-center gap-3 pt-1 pb-4 border-b border-slate-100">
-                                <img
-                                    src={activeArticleModal.author.avatar}
-                                    alt={activeArticleModal.author.name}
-                                    className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500/20"
-                                />
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-[#002045]">{activeArticleModal.author.name}</span>
-                                    <span className="text-xs text-slate-500">{activeArticleModal.author.role}</span>
+                            <div className="flex flex-wrap items-center gap-4 pb-6 border-b border-slate-200/60">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={activeArticleModal.author.avatar}
+                                        alt={activeArticleModal.author.name}
+                                        className="w-12 h-12 rounded-full object-cover ring-2 ring-teal-500/20"
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-extrabold text-[#002045]">{activeArticleModal.author.name}</span>
+                                        <span className="text-xs font-medium text-slate-500">{activeArticleModal.author.role}</span>
+                                    </div>
                                 </div>
-                                <span className="text-slate-300 ml-auto hidden sm:block">•</span>
-                                <span className="text-xs text-slate-400 hidden sm:block">{activeArticleModal.date}</span>
+                                <div className="hidden sm:flex items-center gap-3 text-sm text-slate-400 font-semibold ml-auto bg-white px-3 py-1.5 rounded-lg border border-slate-200/60">
+                                    <span>{activeArticleModal.date}</span>
+                                    <span>•</span>
+                                    <span>{activeArticleModal.readTime}</span>
+                                </div>
                             </div>
 
-                            <img
-                                src={activeArticleModal.image}
-                                alt={activeArticleModal.title}
-                                className="w-full h-64 sm:h-80 object-cover rounded-2xl shadow-sm"
-                            />
+                            <div className="rounded-2xl overflow-hidden shadow-sm border border-slate-200/50 bg-white p-2">
+                                <img
+                                    src={activeArticleModal.image}
+                                    alt={activeArticleModal.title}
+                                    className="w-full h-64 sm:h-96 object-cover rounded-xl"
+                                />
+                            </div>
 
                             <div
-                                className="text-sm sm:text-base text-slate-700 leading-relaxed space-y-4 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:text-[#002045] [&>h3]:pt-3 [&>ul]:list-disc [&>ul]:pl-5"
+                                className="text-sm sm:text-base text-slate-700 leading-loose space-y-5 
+                                [&>h3]:text-xl [&>h3]:font-extrabold [&>h3]:text-[#002045] [&>h3]:pt-4 
+                                [&>ul]:list-disc [&>ul]:pl-5 [&>p]:font-medium"
                                 dangerouslySetInnerHTML={{ __html: activeArticleModal.content }}
                             />
                         </div>
 
                         {/* Footer Modal */}
-                        <div className="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
-                            <span className="text-xs text-slate-500 hidden sm:block">
+                        <div className="p-5 sm:p-6 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+                            <span className="text-xs font-bold text-slate-400 hidden sm:block flex-1">
                                 Chia sẻ kiến thức vì sức khỏe cộng đồng
                             </span>
                             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                                 <button
                                     onClick={() => setActiveArticleModal(null)}
-                                    className="px-5 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-white transition-all cursor-pointer"
+                                    className="px-6 py-3 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-200 transition-all cursor-pointer"
                                 >
-                                    Đóng
+                                    Đóng bài viết
                                 </button>
                                 <Link
                                     to="/family"
-                                    className="px-5 py-2.5 bg-[#00677c] text-white text-xs font-bold rounded-xl hover:bg-[#005264] transition-all shadow-sm"
+                                    className="px-6 py-3 bg-[#00677c] text-white text-sm font-bold rounded-xl hover:bg-[#005264] hover:shadow-lg hover:shadow-teal-900/20 transition-all"
                                 >
                                     Đặt ca chăm sóc ngay
                                 </Link>
@@ -578,6 +664,14 @@ export default function MedicalHandbook() {
                     </div>
                 </div>
             )}
+
+            {/* Cấu hình keyframes cho hiệu ứng Shine */}
+            <style jsx>{`
+                @keyframes shine {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+            `}</style>
         </div>
     );
 }

@@ -31,6 +31,15 @@ import CaregiverReview from "./features/caregiver/pages/CaregiverReview";
 
 import PageTransition from "./components/PageTransition";
 
+// Admin feature pages
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./features/admin/pages/AdminDashboard";
+import CaregiverApprovals from "./features/admin/pages/CaregiverApprovals";
+import ServiceManagement from "./features/admin/pages/ServiceManagement";
+import AdminAppointments from "./features/admin/pages/AdminAppointments";
+import UserManagement from "./features/admin/pages/UserManagement";
+import AdminFinance from "./features/admin/pages/AdminFinance";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -78,6 +87,17 @@ export default function App() {
             <Route path="/caregiver/schedule" element={<CaregiverSchedule />} />
             <Route path="/caregiver/bookings" element={<CaregiverBookingRequests />} />
             <Route path="/caregiver/review" element={<CaregiverReview />} />
+          </Route>
+
+          {/* Nhóm Bảng điều khiển Quản trị dùng riêng AdminLayout */}
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/approvals" element={<CaregiverApprovals />} />
+            <Route path="/admin/services" element={<ServiceManagement />} />
+            <Route path="/admin/appointments" element={<AdminAppointments />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/finance" element={<AdminFinance />} />
           </Route>
         </Routes>
       </PageTransition>
