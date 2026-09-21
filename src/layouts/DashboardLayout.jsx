@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import LogoutModal from "../components/LogoutModal";
 
 const navigationItems = [
     {
@@ -62,9 +63,17 @@ const navigationItems = [
 
 export default function DashboardLayout() {
     const location = useLocation();
+    const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     // Trạng thái thu gọn/mở rộng thanh sidebar trên Desktop
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const handleLogout = () => {
+        localStorage.removeItem("carelink_user");
+        setShowLogoutModal(false);
+        navigate("/");
+    };
 
     return (
         <div className="min-h-screen bg-[#f7fafc] flex flex-col md:flex-row font-sans text-[#102030] antialiased">
@@ -72,7 +81,7 @@ export default function DashboardLayout() {
             <aside
                 className={`w-full ${
                     isCollapsed ? "md:w-20" : "md:w-64"
-                } bg-[#f1f4f6] border-r border-[#c4c6cf4c] flex flex-col shrink-0 transition-all duration-300 ease-in-out`}
+                } bg-[#f1f4f6] border-r border-[#c4c6cf4c] flex flex-col shrink-0 transition-all duration-300 ease-in-out md:self-stretch md:min-h-screen`}
             >
                 {/* Header của Sidebar */}
                 {isCollapsed ? (
@@ -184,9 +193,9 @@ export default function DashboardLayout() {
 
                 {/* Phần thông tin hồ sơ dưới cùng của Sidebar */}
                 {isCollapsed ? (
-                    /* Trạng thái thu gọn: Chỉ hiện Avatar và icon nút thêm */
-                    <div className="p-3 border-t border-[#c4c6cf4c] hidden md:flex flex-col items-center gap-3">
-                        <div className="relative group cursor-pointer" title="Gia đình Bác An - Tài khoản Premium">
+                    /* Trạng thái thu gọn: Chỉ hiện Avatar, nút Đăng xuất nhanh và nút thêm */
+                    <div className="p-3 border-t border-[#c4c6cf4c] hidden md:flex flex-col items-center gap-2.5">
+                        <div className="relative group cursor-pointer" title="Gia đình Bác An">
                             <img
                                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
                                 alt="Gia đình Bác An"
@@ -197,10 +206,22 @@ export default function DashboardLayout() {
                             </div>
                         </div>
 
+                        {/* Nút Đăng xuất nhanh màu đỏ khi thu gọn */}
+                        <button
+                            type="button"
+                            onClick={() => setShowLogoutModal(true)}
+                            className="w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                            title="Đăng xuất tài khoản"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                            </svg>
+                        </button>
+
                         <Link
                             to="/dashboard/relatives"
                             title="Thêm Người Thân"
-                            className="w-9 h-9 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-base font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer"
+                            className="w-8.5 h-8.5 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-base font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer"
                         >
                             +
                         </Link>
@@ -208,27 +229,40 @@ export default function DashboardLayout() {
                 ) : (
                     /* Trạng thái mở rộng đầy đủ */
                     <div
-                        className={`p-4 border-t border-[#c4c6cf4c] flex flex-col gap-3 ${
+                        className={`p-4 border-t border-[#c4c6cf4c] flex flex-col gap-2.5 ${
                             mobileMenuOpen ? "block" : "hidden md:flex"
                         }`}
                     >
-                        <div className="flex items-center gap-3 p-2 bg-[#e5e9eb80] rounded-xl shadow-xs">
-                            <img
-                                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
-                                alt="Gia đình Bác An"
-                                className="w-10 h-10 rounded-full object-cover shrink-0 border border-white"
-                            />
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-bold text-[#181c1e] truncate">Gia đình Bác An</span>
-                                <span className="text-[10px] font-bold text-[#43474e] tracking-wider uppercase">
-                                    TÀI KHOẢN PREMIUM
-                                </span>
+                        {/* Profile card kèm nút Đăng xuất màu đỏ sang xịn đẹp */}
+                        <div className="flex items-center justify-between p-2.5 bg-[#e5e9eb80] rounded-2xl shadow-xs border border-slate-200/50">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <img
+                                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
+                                    alt="Gia đình Bác An"
+                                    className="w-9.5 h-9.5 rounded-full object-cover shrink-0 border border-white shadow-2xs"
+                                />
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold text-[#181c1e] truncate">Gia đình Bác An</span>
+                                    <span className="text-[9.5px] font-bold text-teal-700 tracking-wider uppercase truncate">
+                                        TÀI KHOẢN GIA ĐÌNH
+                                    </span>
+                                </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowLogoutModal(true)}
+                                className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105 shrink-0"
+                                title="Đăng xuất tài khoản"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                                </svg>
+                            </button>
                         </div>
 
                         <Link
                             to="/dashboard/relatives"
-                            className="w-full py-2.5 px-4 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="w-full py-2 px-4 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <span>+</span>
                             <span>Thêm Người Thân</span>
@@ -241,6 +275,14 @@ export default function DashboardLayout() {
             <main className="flex-1 w-full overflow-y-auto transition-all duration-300">
                 <Outlet />
             </main>
+
+            {/* Popup xác nhận đăng xuất cho Gia đình */}
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogout}
+                roleName="tài khoản Gia đình"
+            />
         </div>
     );
 }

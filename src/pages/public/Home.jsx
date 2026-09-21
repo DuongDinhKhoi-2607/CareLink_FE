@@ -203,175 +203,217 @@ export default function Home() {
     return (
         <div className="flex flex-col w-full">
 
-                {/* 1. HERO SECTION */}
-                <section className="relative w-full h-[600px] lg:h-[800px] flex items-center overflow-hidden">
-                    <div className="absolute inset-0 z-0">
-                        <div
-                            className="w-full h-full bg-cover bg-center"
-                            style={{
-                                backgroundImage: `url(https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=1920)`,
-                            }}
-                        />
-                        {/* Lớp phủ dải màu tinh tế: Bên trái trắng sáng sắc nét tôn chữ, bên phải giữ ảnh bác sĩ sáng rõ tự nhiên, mép phải mờ nhẹ nghệ thuật */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-42% to-transparent" />
-                        <div className="absolute inset-y-0 right-0 w-28 sm:w-36 bg-gradient-to-l from-white/35 to-transparent pointer-events-none" />
-                    </div>
+            {/* 1. HERO SECTION */}
+            <section className="relative w-full h-[600px] lg:h-[800px] flex items-center overflow-hidden">
+                <div className="absolute inset-0 z-0">
+                    <div
+                        className="w-full h-full bg-cover bg-center"
+                        style={{
+                            backgroundImage: `url(https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=1920)`,
+                        }}
+                    />
+                    {/* Lớp phủ dải màu tinh tế: Bên trái trắng sáng sắc nét tôn chữ, bên phải giữ ảnh bác sĩ sáng rõ tự nhiên, mép phải mờ nhẹ nghệ thuật */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-42% to-transparent" />
+                    <div className="absolute inset-y-0 right-0 w-28 sm:w-36 bg-gradient-to-l from-white/35 to-transparent pointer-events-none" />
+                </div>
 
-                    <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="max-w-2xl flex flex-col gap-6">
-                            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/95 text-[#00677c] text-xs sm:text-sm font-semibold w-fit border border-teal-200/80 shadow-2xs backdrop-blur-xs">
-                                <span className="w-2 h-2 rounded-full bg-[#00677c] animate-pulse" />
-                                Hệ thống kết nối chăm sóc sức khỏe 24/7
-                            </span>
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#102030] tracking-tight leading-[1.1]">
-                                Chăm sóc tận tâm,
-                                <br />
-                                <span className="text-[#00677c]">Kết nối chuyên môn</span>
-                            </h1>
-                            <p className="text-base sm:text-lg text-slate-700 font-normal leading-relaxed max-w-lg">
-                                Nền tảng kết nối sinh viên Y khoa và Điều dưỡng chuyên nghiệp với các gia đình cần hỗ trợ chăm sóc người cao tuổi, mang lại sự an tâm tuyệt đối.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <Link
-                                    to="/family"
-                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    Tìm người chăm sóc
-                                </Link>
-                                <Link
-                                    to="/caregiver"
-                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    Đăng ký đi làm
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* 2. SECTION: TẠI SAO CHỌN CARELINK? */}
-                <section className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col gap-10">
-                    <div className="flex flex-col items-center text-center gap-3">
-                        <h2 className="text-3xl font-bold text-[#102030]">Tại sao chọn CareLink?</h2>
-                        <div className="w-24 h-1.5 bg-[#00677c] rounded-full" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 items-stretch">
-                        <div className="lg:col-span-4">
-                            <FeatureCard feature={featureCards[0]} />
-                        </div>
-
-                        <article className="lg:col-span-8 flex flex-col sm:flex-row rounded-xl shadow-md overflow-hidden bg-gradient-to-br from-[#003846] to-[#00677c]">
-                            <div className="p-8 flex flex-col justify-center w-full sm:w-3/5 text-white">
-                                <h3 className="text-2xl font-bold mb-4">An tâm cho mọi gia đình</h3>
-                                <p className="text-gray-200 text-sm leading-relaxed mb-8">
-                                    Hệ thống giám sát lộ trình chăm sóc, bảo hiểm y tế đi kèm và báo cáo sức khỏe chi tiết được gửi trực tiếp đến người thân mỗi ngày.
-                                </p>
-                                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/20">
-                                    <div>
-                                        <strong className="text-3xl font-bold block">5000+</strong>
-                                        <span className="text-xs text-blue-100">Gia đình tin dùng</span>
-                                    </div>
-                                    <div>
-                                        <strong className="text-3xl font-bold block">1200+</strong>
-                                        <span className="text-xs text-blue-100">Điều dưỡng viên</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div
-                                className="hidden sm:block w-2/5 bg-cover bg-center"
-                                style={{
-                                    backgroundImage: `url(https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=600)`,
-                                }}
-                            />
-                        </article>
-
-                        {featureCards.slice(1).map((feature) => (
-                            <div key={feature.title} className="lg:col-span-4">
-                                <FeatureCard feature={feature} />
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* 3. SECTION: QUY TRÌNH HOẠT ĐỘNG */}
-                {/* Đã đổi background thành xám đậm hơn một chút: bg-[#f4f7f8] */}
-                <section className="w-full bg-[#f4f7f8] py-20 border-y border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
-                        <div className="flex flex-col items-center text-center gap-3">
-                            <h2 className="text-3xl font-bold text-[#102030]">Quy trình hoạt động</h2>
-                            <p className="text-gray-600">Dễ dàng tìm kiếm sự hỗ trợ chuyên nghiệp chỉ trong 4 bước</p>
-                        </div>
-
-                        <div className="relative">
-                            {/* ĐƯỜNG KẺ NGANG ĐẸP MẮT (Chỉ hiện trên màn hình lớn) */}
-                            <div className="hidden lg:block absolute top-[40px] left-[12.5%] right-[12.5%] h-[2px] bg-gray-200 z-0" />
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-                                {processSteps.map((step, index) => (
-                                    <div key={step.title} className="flex flex-col items-center text-center group">
-                                        <div className="w-20 h-20 mb-6 rounded-full bg-white shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform relative z-10">
-                                            {step.iconNode}
-                                        </div>
-                                        <h3 className="text-lg font-bold text-[#102030] mb-2">{step.title}</h3>
-                                        <p className="text-sm text-gray-500 leading-relaxed max-w-[200px]">{step.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* 4. SECTION: ĐỘI NGŨ ĐIỀU DƯỠNG TIÊU BIỂU */}
-                <section className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col gap-10">
-                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                        <div>
-                            <h2 className="text-3xl font-bold text-[#102030] mb-2">Đội ngũ điều dưỡng tiêu biểu</h2>
-                            <p className="text-gray-600">Gặp gỡ những người đồng hành tận tâm nhất của chúng tôi</p>
-                        </div>
-                        <button className="inline-flex items-center gap-2 font-semibold text-[#00677c] hover:underline">
-                            Xem tất cả ứng viên
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {caregivers.map((caregiver) => (
-                            <CaregiverCard key={caregiver.name} caregiver={caregiver} />
-                        ))}
-                    </div>
-                </section>
-
-                {/* 5. SECTION: CTA BANNER CUỐI TRANG */}
-                <section className="w-full bg-[#102030] text-white py-20 px-4">
-                    <div className="max-w-3xl mx-auto flex flex-col items-center text-center gap-8">
-                        <h2 className="text-3xl sm:text-4xl font-bold leading-tight">
-                            Sẵn sàng để bắt đầu hành trình chăm sóc?
-                        </h2>
-                        <p className="text-lg text-gray-300 leading-relaxed">
-                            Gia nhập cộng đồng CareLink ngay hôm nay để nhận được sự hỗ trợ tốt nhất cho gia đình bạn hoặc bắt đầu sự nghiệp chăm sóc chuyên nghiệp.
+                <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-2xl flex flex-col gap-6">
+                        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/95 text-[#00677c] text-xs sm:text-sm font-semibold w-fit border border-teal-200/80 shadow-2xs backdrop-blur-xs">
+                            <span className="w-2 h-2 rounded-full bg-[#00677c] animate-pulse" />
+                            Hệ thống kết nối chăm sóc sức khỏe 24/7
+                        </span>
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#102030] tracking-tight leading-[1.1]">
+                            Chăm sóc tận tâm,
+                            <br />
+                            <span className="text-[#00677c]">Kết nối chuyên môn</span>
+                        </h1>
+                        <p className="text-base sm:text-lg text-slate-700 font-normal leading-relaxed max-w-lg">
+                            Nền tảng kết nối sinh viên Y khoa và Điều dưỡng chuyên nghiệp với các gia đình cần hỗ trợ chăm sóc người cao tuổi, mang lại sự an tâm tuyệt đối.
                         </p>
-                        <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+                        <div className="flex flex-wrap items-center gap-4 pt-2">
                             <Link
                                 to="/family"
-                                className="px-8 py-4 bg-[#00677c] text-white font-semibold rounded-lg hover:bg-[#004f5e] transition-colors shadow-lg"
+                                className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
                             >
-                                Tôi cần tìm người chăm sóc
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Tìm người chăm sóc
                             </Link>
-                            <button className="px-8 py-4 bg-white text-[#102030] font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg">
-                                Tôi muốn đăng ký đi làm
-                            </button>
+                            <Link
+                                to="/caregiver"
+                                className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Đăng ký đi làm
+                            </Link>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
+
+            {/* 2. SECTION: TẠI SAO CHỌN CARELINK? */}
+            <section className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col gap-10">
+                <div className="flex flex-col items-center text-center gap-3">
+                    <h2 className="text-3xl font-bold text-[#102030]">Tại sao chọn CareLink?</h2>
+                    <div className="w-24 h-1.5 bg-[#00677c] rounded-full" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 items-stretch">
+                    <div className="lg:col-span-4">
+                        <FeatureCard feature={featureCards[0]} />
+                    </div>
+
+                    <article className="lg:col-span-8 flex flex-col sm:flex-row rounded-xl shadow-md overflow-hidden bg-gradient-to-br from-[#003846] to-[#00677c]">
+                        <div className="p-8 flex flex-col justify-center w-full sm:w-3/5 text-white">
+                            <h3 className="text-2xl font-bold mb-4">An tâm cho mọi gia đình</h3>
+                            <p className="text-gray-200 text-sm leading-relaxed mb-8">
+                                Hệ thống giám sát lộ trình chăm sóc, bảo hiểm y tế đi kèm và báo cáo sức khỏe chi tiết được gửi trực tiếp đến người thân mỗi ngày.
+                            </p>
+                            <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/20">
+                                <div>
+                                    <strong className="text-3xl font-bold block">5000+</strong>
+                                    <span className="text-xs text-blue-100">Gia đình tin dùng</span>
+                                </div>
+                                <div>
+                                    <strong className="text-3xl font-bold block">1200+</strong>
+                                    <span className="text-xs text-blue-100">Điều dưỡng viên</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            className="hidden sm:block w-2/5 bg-cover bg-center"
+                            style={{
+                                backgroundImage: `url(https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=600)`,
+                            }}
+                        />
+                    </article>
+
+                    {featureCards.slice(1).map((feature) => (
+                        <div key={feature.title} className="lg:col-span-4">
+                            <FeatureCard feature={feature} />
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* 3. SECTION: QUY TRÌNH HOẠT ĐỘNG */}
+            {/* Đã đổi background thành xám đậm hơn một chút: bg-[#f4f7f8] */}
+            <section className="w-full bg-[#f4f7f8] py-20 border-y border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+                    <div className="flex flex-col items-center text-center gap-3">
+                        <h2 className="text-3xl font-bold text-[#102030]">Quy trình hoạt động</h2>
+                        <p className="text-gray-600">Dễ dàng tìm kiếm sự hỗ trợ chuyên nghiệp chỉ trong 4 bước</p>
+                    </div>
+
+                    <div className="relative">
+                        {/* ĐƯỜNG KẺ NGANG ĐẸP MẮT (Chỉ hiện trên màn hình lớn) */}
+                        <div className="hidden lg:block absolute top-[40px] left-[12.5%] right-[12.5%] h-[2px] bg-gray-200 z-0" />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
+                            {processSteps.map((step, index) => (
+                                <div key={step.title} className="flex flex-col items-center text-center group">
+                                    <div className="w-20 h-20 mb-6 rounded-full bg-white shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform relative z-10">
+                                        {step.iconNode}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-[#102030] mb-2">{step.title}</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed max-w-[200px]">{step.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 4. SECTION: ĐỘI NGŨ ĐIỀU DƯỠNG TIÊU BIỂU */}
+            <section className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-6 flex flex-col gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold text-[#102030] mb-2">Đội ngũ điều dưỡng tiêu biểu</h2>
+                        <p className="text-gray-600">Gặp gỡ những người đồng hành tận tâm nhất của chúng tôi</p>
+                    </div>
+                    <button className="inline-flex items-center gap-2 font-semibold text-[#00677c] hover:underline">
+                        Xem tất cả ứng viên
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {caregivers.map((caregiver) => (
+                        <CaregiverCard key={caregiver.name} caregiver={caregiver} />
+                    ))}
+                </div>
+            </section>
+
+            {/* 5. SECTION: CTA BANNER CUỐI TRANG - Thiết kế Sang xịn, tông màu dịu mắt, trang nhã và dễ nhìn */}
+            <section className="w-full pt-1 pb-10 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-slate-50 to-[#f1f5f9] border border-slate-200/90 p-8 sm:p-12 text-center relative overflow-hidden shadow-xs">
+
+                    <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center gap-4.5">
+                        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-xs font-semibold text-[#00677c] shadow-2xs border border-slate-200">
+                            <span className="w-2 h-2 rounded-full bg-[#00677c]" />
+                            Mạng lưới chăm sóc y tế chuyên nghiệp
+                        </span>
+
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight leading-snug">
+                            Sẵn sàng để bắt đầu hành trình chăm sóc?
+                        </h2>
+
+                        <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl">
+                            Gia nhập cộng đồng CareLink ngay hôm nay để nhận được sự hỗ trợ tốt nhất cho gia đình bạn hoặc bắt đầu sự nghiệp chăm sóc chuyên nghiệp.
+                        </p>
+
+                        <div className="flex flex-wrap items-center justify-center gap-3.5 mt-2">
+                            <Link
+                                to="/family"
+                                className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-[#00677c] text-white font-semibold text-sm sm:text-base rounded-xl hover:bg-[#005466] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 shadow-sm group"
+                            >
+                                <span>Tôi cần tìm người chăm sóc</span>
+                                <svg className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            </Link>
+
+                            <Link
+                                to="/caregiver/choose-role"
+                                className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm sm:text-base rounded-xl border border-slate-300 hover:border-[#00677c] hover:text-[#00677c] transition-all duration-200 hover:-translate-y-0.5 shadow-2xs group"
+                            >
+                                <svg className="w-4.5 h-4.5 text-[#00677c] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.765z" />
+                                </svg>
+                                <span>Tôi muốn đăng ký đi làm</span>
+                            </Link>
+                        </div>
+
+                        {/* 3 cam kết nhỏ bên dưới tạo sự tin cậy chuẩn y tế */}
+                        <div className="flex flex-wrap items-center justify-center gap-6 mt-2 text-xs text-slate-500 font-medium">
+                            <span className="flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-teal-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                100% nhân sự y tế xác thực
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-teal-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Hỗ trợ & kết nối nhanh 24/7
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-teal-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Chi phí minh bạch rõ ràng
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     );
 }

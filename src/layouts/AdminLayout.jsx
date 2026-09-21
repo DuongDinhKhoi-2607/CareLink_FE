@@ -17,7 +17,9 @@ import {
     X,
     ChevronRight,
     Plus,
+    LogOut,
 } from "lucide-react";
+import LogoutModal from "../components/LogoutModal";
 
 const adminNavItems = [
     {
@@ -64,6 +66,15 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const handleLogout = () => {
+        localStorage.removeItem("carelink_user");
+        setShowLogoutModal(false);
+        setUserMenuOpen(false);
+        navigate("/");
+    };
 
     // Xử lý active item chính xác
     const isCurrentActive = (item) => {
@@ -131,27 +142,85 @@ export default function AdminLayout() {
                         <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
                     </button>
 
-                    {/* Admin Profile Chip chung cho team FE */}
-                    <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-                        <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 text-[#00677c] font-black text-xs flex items-center justify-center border border-teal-200 shadow-2xs">
-                            AD
-                        </div>
-                        <div className="hidden sm:block text-left">
-                            <div className="text-xs font-bold text-slate-800">Ban Quản trị CareLink</div>
-                            <div className="text-[10px] text-teal-700 font-medium flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Administrator
+                    {/* Admin Profile Chip with Logout Dropdown & Quick Logout Button */}
+                    <div className="relative flex items-center gap-2 pl-2 border-l border-slate-200">
+                        <button
+                            type="button"
+                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                            className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group text-left"
+                            title="Tài khoản quản trị viên"
+                        >
+                            <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 text-[#00677c] font-black text-xs flex items-center justify-center border border-teal-200 shadow-2xs group-hover:scale-105 transition-transform">
+                                AD
                             </div>
-                        </div>
+                            <div className="hidden sm:block text-left">
+                                <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                                    Ban Quản trị CareLink
+                                </div>
+                                <div className="text-[10px] text-teal-700 font-medium flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Administrator
+                                </div>
+                            </div>
+                        </button>
+
+                        {/* Nút đăng xuất nhanh màu đỏ */}
+                        <button
+                            type="button"
+                            onClick={() => setShowLogoutModal(true)}
+                            className="w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 flex items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
+                            title="Đăng xuất khỏi hệ thống"
+                        >
+                            <LogOut className="w-4 h-4" />
+                        </button>
+
+                        {/* Menu Dropdown khi nhấn vào Avatar/Tên */}
+                        {userMenuOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                                <div className="absolute right-0 top-11 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl py-2 z-50">
+                                    <div className="px-3.5 py-2 border-b border-slate-100">
+                                        <p className="text-xs font-bold text-slate-800">Ban Quản trị CareLink</p>
+                                        <p className="text-[11px] text-slate-400 truncate">admin@carelink.vn</p>
+                                        <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-[10px]">
+                                            Vai trò: Administrator
+                                        </span>
+                                    </div>
+                                    <div className="py-1">
+                                        <Link
+                                            to="/"
+                                            onClick={() => setUserMenuOpen(false)}
+                                            className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-[#00677c] transition-colors"
+                                        >
+                                            <Home className="w-4 h-4 text-slate-400" />
+                                            <span>Về trang chủ Website</span>
+                                        </Link>
+                                    </div>
+                                    <div className="pt-1 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setUserMenuOpen(false);
+                                                setShowLogoutModal(true);
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer"
+                                        >
+                                            <LogOut className="w-4 h-4 text-rose-500" />
+                                            <span>Đăng xuất tài khoản</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
 
-            {/* ── BODY (SIDEBAR + MAIN CONTENT) ── */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* ── DESKTOP SIDEBAR ── */}
+            {/* ── BODY (SIDEBAR + MAIN CONTENT: Sidebar kéo dài tự nhiên theo nội dung từng trang) ── */}
+            <div className="flex flex-1 items-stretch min-h-[calc(100vh-4rem)]">
+                {/* ── DESKTOP SIDEBAR: Tự động co giãn dài theo đúng độ dài nội dung của trang, bắt đầu sát dưới header ── */}
                 <aside
-                    className={`hidden lg:flex flex-col bg-white border-r border-slate-200/90 shadow-[2px_0_6px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out shrink-0 ${
+                    className={`hidden lg:flex flex-col bg-white border-r border-slate-200/90 shadow-[2px_0_6px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out shrink-0 self-stretch ${
                         isCollapsed ? "w-20" : "w-64"
                     }`}
                 >
@@ -244,7 +313,7 @@ export default function AdminLayout() {
                         })}
                     </nav>
 
-                    {/* Sidebar Footer */}
+                    {/* Sidebar Footer — Đã lược bỏ nút Đăng xuất vì góc trên bên phải đã có nút exit */}
                     <div className="p-3 border-t border-slate-100 space-y-1">
                         <Link
                             to="/admin"
@@ -317,13 +386,21 @@ export default function AdminLayout() {
                     </div>
                 )}
 
-                {/* ── MAIN CONTENT OUTLET ── */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                {/* ── MAIN CONTENT OUTLET: Tự do co giãn theo nội dung từng trang ── */}
+                <main className="flex-1 w-full p-4 sm:p-6 lg:p-8">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
                 </main>
             </div>
+
+            {/* Popup xác nhận đăng xuất cho Quản trị viên */}
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogout}
+                roleName="tài khoản Quản trị viên (Admin)"
+            />
         </div>
     );
 }
