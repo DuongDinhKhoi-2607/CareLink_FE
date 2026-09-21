@@ -12,18 +12,43 @@ export default function Login() {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);
+
+        const input = (emailOrPhone || "").trim().toLowerCase();
+        let targetRole = "family";
+        let targetName = "Bác Nguyễn Văn An";
+        let targetRoute = "/dashboard";
+
+        if (input.includes("admin")) {
+            targetRole = "admin";
+            targetName = "Ban Quản trị CareLink";
+            targetRoute = "/admin";
+        } else if (input.includes("caregiver") || input.includes("dieuduong") || input.includes("nguyen")) {
+            targetRole = "caregiver";
+            targetName = "Nguyên (Caregiver)";
+            targetRoute = "/caregiver/dashboard";
+        } else {
+            targetRole = "family";
+            targetName = emailOrPhone ? (emailOrPhone.includes("@") ? emailOrPhone.split("@")[0] : emailOrPhone) : "Bác Nguyễn Văn An";
+            targetRoute = "/dashboard";
+        }
+
         // Lưu phiên đăng nhập người dùng vào localStorage
         localStorage.setItem("carelink_user", JSON.stringify({
-            name: emailOrPhone ? (emailOrPhone.includes("@") ? emailOrPhone.split("@")[0] : "Bác Nguyễn Văn An") : "Bác Nguyễn Văn An",
-            email: emailOrPhone || "giadinh@carelink.vn",
-            role: "family",
-            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+            name: targetName,
+            email: emailOrPhone || `${targetRole}@carelink.vn`,
+            role: targetRole,
+            avatar: targetRole === "admin" 
+                ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80" 
+                : targetRole === "caregiver" 
+                ? "https://images.unsplash.com/photo-1594824813572-87002fa8c591?w=150&auto=format&fit=crop&q=80" 
+                : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
         }));
-        // Giả lập xử lý đăng nhập và chuyển hướng đến Dashboard
+
+        // Chuyển hướng đến đúng trang của từng role
         setTimeout(() => {
             setIsLoading(false);
-            navigate("/dashboard");
-        }, 800);
+            navigate(targetRoute);
+        }, 500);
     };
 
     return (
