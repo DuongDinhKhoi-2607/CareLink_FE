@@ -416,62 +416,6 @@ export default function ForCaregiver() {
                     </div>
                 </div>
             </section>
-
-            {/* ══════════════════════════════════════════════════════ */}
-            {/* FOOTER                                                 */}
-            {/* ══════════════════════════════════════════════════════ */}
-            <footer className="w-full bg-[#102030] py-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Top row */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-white/10">
-                        {/* Logo */}
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-[#00677c] flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                            </div>
-                            <span className="text-xl font-bold text-white tracking-tight">
-                                Care<span className="text-[#4dd6e8]">Link</span>
-                            </span>
-                        </div>
-
-                        {/* Links */}
-                        <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                            {["Privacy Policy", "Terms of Service", "Trust & Safety", "Contact Support", "HIPAA Compliance"].map((link) => (
-                                <a
-                                    key={link}
-                                    href="#"
-                                    className="text-xs text-white/50 hover:text-white/90 transition-colors"
-                                >
-                                    {link}
-                                </a>
-                            ))}
-                        </nav>
-                    </div>
-
-                    {/* Bottom row */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6">
-                        <p className="text-xs text-white/30 leading-relaxed max-w-lg">
-                            © 2024 CareLink Medical Care. All rights reserved. CareLink là nền tảng kết nối trung gian. Chúng tôi không chịu trách nhiệm pháp lý về các vấn đề chuyên môn phát sinh giữa gia đình và người chăm sóc.
-                        </p>
-                        {/* Social icons */}
-                        <div className="flex items-center gap-3">
-                            {[
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />,
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />,
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />,
-                            ].map((d, i) => (
-                                <button key={i} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                                    <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                        {d}
-                                    </svg>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </footer>
         </div>
     );
 }
