@@ -1,230 +1,103 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { categories, articles, faqs } from "../../data/handbookData";
 
-// 1. Danh mục cẩm nang (Đã thay Emojis bằng Inline SVGs sang trọng)
-const categories = [
-    {
-        id: "all",
-        label: "Tất cả bài viết",
-        icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-            </svg>
-        )
-    },
-    {
-        id: "elderly",
-        label: "Chăm sóc người cao tuổi",
-        icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-            </svg>
-        )
-    },
-    {
-        id: "post-surgery",
-        label: "Phục hồi sau phẫu thuật",
-        icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
-            </svg>
-        )
-    },
-    {
-        id: "therapy",
-        label: "Vật lý trị liệu",
-        icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-        )
-    },
-    {
-        id: "nutrition",
-        label: "Dinh dưỡng & Dược phẩm",
-        icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
-            </svg>
-        )
-    },
-    {
-        id: "first-aid",
-        label: "Sơ cấp cứu tại nhà",
-        icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        )
-    },
-];
+// ─── Icon map cho danh mục (giữ SVG ở component, data thuần ở file riêng) ───
+const categoryIcons = {
+    all: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+    ),
+    elderly: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+        </svg>
+    ),
+    "post-surgery": (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+        </svg>
+    ),
+    therapy: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+        </svg>
+    ),
+    nutrition: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+        </svg>
+    ),
+    "first-aid": (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    ),
+};
 
-// Danh sách bài viết chuyên môn
-const articlesData = [
-    {
-        id: 1,
-        featured: true,
-        category: "elderly",
-        categoryName: "Chăm sóc người cao tuổi",
-        title: "5 Dấu hiệu suy giảm sức khỏe ở người cao tuổi gia đình không nên chủ quan",
-        summary: "Nhận biết sớm các triệu chứng thầm lặng về tim mạch, huyết áp và sa sút trí tuệ để có biện pháp can thiệp y tế kịp thời, bảo vệ an toàn cho cha mẹ.",
-        readTime: "6 phút đọc",
-        date: "20/09/2026",
-        author: {
-            name: "BS. CKII Nguyễn Minh Tuấn",
-            role: "Chuyên khoa Lão khoa - Cố vấn Y khoa CareLink",
-            avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150",
-        },
-        image: "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=1200",
-        content: `
-            <h3>1. Sự thay đổi đột ngột về giấc ngủ và cảm xúc</h3>
-            <p>Người cao tuổi thường ngủ ít hơn, nhưng nếu đột ngột ngủ li bì cả ngày hoặc mất ngủ kéo dài kèm theo cảm giác bồn chồn, đây có thể là dấu hiệu cảnh báo của rối loạn tuần hoàn não hoặc trầm cảm tuổi già.</p>
-            
-            <h3>2. Khó khăn trong việc giữ thăng bằng và di chuyển</h3>
-            <p>Những bước đi ngập ngừng, loạng choạng hay thường xuyên va quẹt đồ đạc là biểu hiện của suy giảm chức năng tiền đình hoặc yếu cơ chi dưới. Cần có người chăm sóc hỗ trợ khi di chuyển trong nhà vệ sinh hoặc cầu thang.</p>
+// ─── Source icon nhỏ dùng chung ───
+const SourceIcon = () => (
+    <svg className="w-4 h-4 text-teal-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+    </svg>
+);
 
-            <h3>3. Hay quên các sự kiện vừa mới diễn ra</h3>
-            <p>Nếu người thân quên chìa khóa hay quên kính mắt thì bình thường, nhưng nếu họ quên tên con cháu, quên đã ăn cơm chưa hay đi lạc ngay trên con đường quen thuộc, gia đình cần đưa đi khám chuyên khoa thần kinh ngay.</p>
+// ─── Theme màu & style riêng cho từng danh mục để không trùng lặp và dịu mắt ───
+const categoryStyles = {
+    all: {
+        badge: "bg-slate-100 text-slate-800 border-slate-200/90",
+        pill: "bg-white/95 text-slate-800 border-slate-200/80 shadow-xs",
+        iconColor: "text-slate-600",
+    },
+    elderly: {
+        badge: "bg-amber-50 text-amber-900 border-amber-200/90",
+        pill: "bg-amber-50/95 text-amber-950 border-amber-200/80 shadow-xs",
+        iconColor: "text-amber-700",
+    },
+    nutrition: {
+        badge: "bg-orange-50 text-orange-950 border-orange-200/90",
+        pill: "bg-orange-50/95 text-orange-950 border-orange-200/80 shadow-xs",
+        iconColor: "text-orange-700",
+    },
+    "post-surgery": {
+        badge: "bg-indigo-50 text-indigo-950 border-indigo-200/90",
+        pill: "bg-indigo-50/95 text-indigo-950 border-indigo-200/80 shadow-xs",
+        iconColor: "text-indigo-700",
+    },
+    therapy: {
+        badge: "bg-sky-50 text-sky-950 border-sky-200/90",
+        pill: "bg-sky-50/95 text-sky-950 border-sky-200/80 shadow-xs",
+        iconColor: "text-sky-700",
+    },
+    "first-aid": {
+        badge: "bg-rose-50 text-rose-950 border-rose-200/90",
+        pill: "bg-rose-50/95 text-rose-950 border-rose-200/80 shadow-xs",
+        iconColor: "text-rose-700",
+    },
+};
 
-            <h3>4. Khẩu vị thay đổi, chán ăn và sụt cân không rõ nguyên nhân</h3>
-            <p>Mất cảm giác thèm ăn kéo dài có thể xuất phát từ các vấn đề răng miệng, tiêu hóa hoặc bệnh lý chuyển hóa tiềm ẩn như đái tháo đường, suy thận mạn.</p>
-
-            <h3>5. Huyết áp dao động thất thường</h3>
-            <p>Cần theo dõi huyết áp định kỳ 2 lần mỗi ngày (sáng và tối). Huyết áp tăng vọt trên 140/90 mmHg hoặc tụt đột ngột đều tiềm ẩn nguy cơ đột quỵ và té ngã.</p>
-        `,
-    },
-    {
-        id: 2,
-        featured: false,
-        category: "nutrition",
-        categoryName: "Dinh dưỡng & Dược phẩm",
-        title: "Chế độ dinh dưỡng vàng cho bệnh nhân cao huyết áp và đái tháo đường",
-        summary: "Nguyên tắc thiết kế thực đơn khoa học kiểm soát đường huyết, giảm muối và tăng cường vi khoáng giúp tim mạch luôn khỏe mạnh.",
-        readTime: "5 phút đọc",
-        date: "18/09/2026",
-        author: {
-            name: "ThS. BS Trần Hoài Nam",
-            role: "Chuyên gia Dinh dưỡng Lâm sàng",
-            avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=150",
-        },
-        image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=800",
-        content: `
-            <h3>Nguyên tắc giảm muối DASH</h3>
-            <p>Lượng muối nạp vào mỗi ngày không nên vượt quá 5g (khoảng 1 muỗng cà phê gạt ngang). Hạn chế thực phẩm chế biến sẵn, đồ hộp, nước chấm cô đặc.</p>
-            <h3>Ưu tiên ngũ cốc nguyên hạt</h3>
-            <p>Thay gạo trắng bằng gạo lứt, yến mạch hoặc khoai lang luộc giúp phóng thích đường chậm, không làm đường huyết tăng vọt sau bữa ăn.</p>
-            <h3>Chia nhỏ bữa ăn</h3>
-            <p>Nên chia thành 4-5 bữa nhỏ trong ngày để dạ dày người cao tuổi dễ tiêu hóa và hấp thu tối ưu.</p>
-        `,
-    },
-    {
-        id: 3,
-        featured: false,
-        category: "elderly",
-        categoryName: "Chăm sóc người cao tuổi",
-        title: "Kỹ thuật lật trở và phòng ngừa loét tì đè ở người nằm bất động lâu ngày",
-        summary: "Hướng dẫn thực hành chuẩn điều dưỡng về chu kỳ xoay trở 2 giờ một lần, chăm sóc da và sử dụng đệm hơi chống loét chuyên dụng.",
-        readTime: "7 phút đọc",
-        date: "15/09/2026",
-        author: {
-            name: "ĐD. Lê Thị Mai",
-            role: "Điều dưỡng Trưởng BV Chợ Rẫy (8 năm KN)",
-            avatar: "https://images.unsplash.com/photo-1594824813589-9a2bf405e3f4?auto=format&fit=crop&q=80&w=150",
-        },
-        image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=800",
-        content: `
-            <h3>Quy tắc 2 giờ vàng</h3>
-            <p>Đối với bệnh nhân nằm liệt giường hoặc sau đột quỵ, cần thay đổi tư thế nằm nghiêng trái, nằm ngửa, nằm nghiêng phải đều đặn mỗi 2 tiếng một lần.</p>
-            <h3>Vệ sinh da khô thoáng</h3>
-            <p>Lau rửa nhẹ nhàng vùng cùng cụt, gót chân, bả vai bằng nước ấm, lau khô bằng khăn mềm và thoa kem dưỡng ẩm bảo vệ da.</p>
-        `,
-    },
-    {
-        id: 4,
-        featured: false,
-        category: "first-aid",
-        categoryName: "Sơ cấp cứu tại nhà",
-        title: "Nhận diện cơn Đột quỵ trong 'Giờ Vàng' với quy tắc F.A.S.T cứu sống người bệnh",
-        summary: "Thời gian là não bộ! Hướng dẫn xử trí đúng cách trong 3-4.5 giờ đầu tiên khi người thân có dấu hiệu tai biến mạch máu não.",
-        readTime: "4 phút đọc",
-        date: "12/09/2026",
-        author: {
-            name: "BS. CKI Hoàng Việt",
-            role: "Bác sĩ Cấp cứu Hồi sức",
-            avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=150",
-        },
-        image: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800",
-        content: `
-            <h3>Quy tắc FAST cần thuộc lòng</h3>
-            <ul>
-                <li><strong>F (Face - Mặt):</strong> Mặt mất cân đối, méo miệng khi cười.</li>
-                <li><strong>A (Arm - Tay):</strong> Yếu hoặc liệt một bên tay, không nhấc lên được.</li>
-                <li><strong>S (Speech - Lời nói):</strong> Nói ngọng, phát âm khó hoặc không hiểu lời nói.</li>
-                <li><strong>T (Time - Thời gian):</strong> Gọi ngay cấp cứu 115, không châm cứu, cạo gió hay cho uống thuốc hạ áp tùy tiện.</li>
-            </ul>
-        `,
-    },
-    {
-        id: 5,
-        featured: false,
-        category: "therapy",
-        categoryName: "Vật lý trị liệu",
-        title: "Các bài tập vận động nhẹ nhàng giúp cải thiện giấc ngủ và khớp gối cho ông bà",
-        summary: "5 động tác co duỗi thụ động và chủ động giúp lưu thông khí huyết, giảm cứng khớp buổi sáng và kích thích giấc ngủ ngon tự nhiên.",
-        readTime: "5 phút đọc",
-        date: "10/09/2026",
-        author: {
-            name: "KTV. Phạm Đức Anh",
-            role: "Chuyên viên Phục hồi chức năng",
-            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
-        },
-        image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=800",
-        content: `
-            <h3>Động tác 1: Gập duỗi cổ chân trên giường</h3>
-            <p>Giúp bơm máu tĩnh mạch từ chi dưới về tim, phòng ngừa thuyên tắc mạch sâu.</p>
-            <h3>Động tác 2: Nâng chân thẳng</h3>
-            <p>Tăng cường cơ tứ đầu đùi, giảm áp lực tì đè lên khớp gối khi đứng dậy.</p>
-        `,
-    },
-    {
-        id: 6,
-        featured: false,
-        category: "post-surgery",
-        categoryName: "Phục hồi sau phẫu thuật",
-        title: "Lộ trình chăm sóc 30 ngày vàng sau mổ thay khớp háng và khớp gối",
-        summary: "Những lưu ý an toàn về tư thế ngồi, đi vệ sinh, phòng tránh trật khớp nhân tạo và chế độ tập luyện phục hồi cử động.",
-        readTime: "8 phút đọc",
-        date: "05/09/2026",
-        author: {
-            name: "BS. Đoàn Minh Khoa",
-            role: "Chấn thương Chỉnh hình",
-            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=150",
-        },
-        image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800",
-        content: `
-            <h3>Tránh bắt chéo chân</h3>
-            <p>Tuyệt đối không bắt chéo chân hoặc gập háng quá 90 độ trong 3 tháng đầu sau mổ.</p>
-            <h3>Sử dụng khung tập đi</h3>
-            <p>Luôn có điều dưỡng hoặc người nhà giám sát khi tập bước đi với khung hỗ trợ.</p>
-        `,
-    },
-];
-
-// Hỏi đáp thường gặp
-const faqs = [
-    {
-        q: "Làm thế nào để biết người cao tuổi cần được chăm sóc y tế chuyên nghiệp tại nhà?",
-        a: "Khi người thân gặp khó khăn trong sinh hoạt hàng ngày (tắm rửa, ăn uống, đi lại), có vết thương hở cần thay băng, đặt sonde dạ dày/sonde tiểu, hoặc sau phẫu thuật cần theo dõi sinh hiệu liên tục.",
-    },
-    {
-        q: "Đo huyết áp cho người cao tuổi vào thời điểm nào là chuẩn xác nhất?",
-        a: "Nên đo 2 lần mỗi ngày: buổi sáng sau khi thức dậy và đi vệ sinh (trước khi ăn sáng và uống thuốc), và buổi tối trước khi đi ngủ. Nghỉ ngơi yên tĩnh 5-10 phút trước khi đo.",
-    },
-    {
-        q: "Khi nào cần gọi Điều dưỡng CareLink đến hỗ trợ gấp?",
-        a: "Khi gia đình cần hỗ trợ tiêm truyền theo y lệnh bác sĩ, thay ống thông tiểu, chăm sóc vết loét có dấu hiệu nhiễm trùng, hoặc cần điều dưỡng túc trực ca đêm theo dõi sát sinh hiệu.",
-    },
-];
+// ─── Badge "Đã kiểm duyệt y khoa" với icon Khiên y tế chuyên môn ───
+const ReviewedBadge = ({ variant = "default" }) => {
+    if (variant === "card") {
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 text-emerald-800 text-[10px] font-extrabold border border-emerald-200/80 shadow-xs backdrop-blur-sm">
+                <svg className="w-3 h-3 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM13.707 8.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>Đã kiểm duyệt</span>
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-800 text-xs font-bold border border-emerald-500/25 shadow-2xs">
+            <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM13.707 8.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>Đã kiểm duyệt y khoa</span>
+        </span>
+    );
+};
 
 export default function MedicalHandbook() {
     const [selectedCategory, setSelectedCategory] = useState("all");
@@ -232,9 +105,8 @@ export default function MedicalHandbook() {
     const [activeArticleModal, setActiveArticleModal] = useState(null);
     const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
-    // Lọc bài viết
     const filteredArticles = useMemo(() => {
-        return articlesData.filter((article) => {
+        return articles.filter((article) => {
             const matchesCategory =
                 selectedCategory === "all" || article.category === selectedCategory;
             const matchesSearch =
@@ -245,13 +117,12 @@ export default function MedicalHandbook() {
         });
     }, [selectedCategory, searchQuery]);
 
-    const featuredArticle = articlesData.find((a) => a.featured);
+    const featuredArticle = articles.find((a) => a.featured);
 
     return (
         <div className="min-h-screen bg-[#f8fafc] text-slate-800 antialiased font-sans">
-            {/* ═══ 1. HERO BANNER CHUYÊN MÔN ═══ */}
+            {/* ═══ 1. HERO BANNER ═══ */}
             <section className="relative bg-gradient-to-b from-teal-900 via-[#004857] to-[#00677c] text-white py-16 lg:py-20 overflow-hidden">
-                {/* Background patterns */}
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
                 <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
 
@@ -268,10 +139,10 @@ export default function MedicalHandbook() {
                     </h1>
 
                     <p className="text-base sm:text-lg text-teal-100/90 max-w-2xl leading-relaxed">
-                        Tập hợp kiến thức chuẩn y khoa từ các bác sĩ chuyên khoa và điều dưỡng tận tâm. Cùng bạn lắng nghe, thấu hiểu và chăm sóc người thân yêu trọn vẹn mỗi ngày.
+                        Tập hợp kiến thức chuẩn y khoa từ các nguồn uy tín tại Việt Nam. Cùng bạn lắng nghe, thấu hiểu và chăm sóc người thân yêu trọn vẹn mỗi ngày.
                     </p>
 
-                    {/* Thanh tìm kiếm nhanh */}
+                    {/* Thanh tìm kiếm */}
                     <div className="w-full max-w-2xl mt-4 relative">
                         <div className="relative flex items-center shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl bg-white text-slate-700 overflow-hidden border border-white/30 focus-within:ring-4 focus-within:ring-teal-400/40 transition-all duration-300">
                             <span className="pl-5 text-slate-400">
@@ -299,7 +170,17 @@ export default function MedicalHandbook() {
                 </div>
             </section>
 
-            {/* ═══ 2. THANH DANH MỤC LỌC BÀI VIẾT ═══ */}
+            {/* ═══ DISCLAIMER Y KHOA ═══ */}
+            <div className="bg-amber-50/80 border-b border-amber-200/60">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-900 font-medium text-center flex-wrap">
+                    <svg className="w-4 h-4 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    <span>Nội dung được tổng hợp từ các nguồn y khoa uy tín, mang tính tham khảo. Vui lòng tham vấn bác sĩ trước khi áp dụng.</span>
+                </div>
+            </div>
+
+            {/* ═══ 2. THANH DANH MỤC ═══ */}
             <nav className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
                     {categories.map((cat) => {
@@ -313,7 +194,7 @@ export default function MedicalHandbook() {
                                     : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
                                     }`}
                             >
-                                <span className={active ? "text-white" : "text-slate-500"}>{cat.icon}</span>
+                                <span className={active ? "text-white" : "text-slate-500"}>{categoryIcons[cat.id]}</span>
                                 <span>{cat.label}</span>
                             </button>
                         );
@@ -321,10 +202,10 @@ export default function MedicalHandbook() {
                 </div>
             </nav>
 
-            {/* ═══ 3. THÂN TRANG & BÀI VIẾT ═══ */}
+            {/* ═══ 3. THÂN TRANG ═══ */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
 
-                {/* 3.1 BÀI VIẾT TIÊU ĐIỂM (FEATURED ARTICLE) */}
+                {/* 3.1 BÀI VIẾT TIÊU ĐIỂM */}
                 {selectedCategory === "all" && !searchQuery && featuredArticle && (
                     <section className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 group cursor-pointer" onClick={() => setActiveArticleModal(featuredArticle)}>
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
@@ -343,37 +224,44 @@ export default function MedicalHandbook() {
                             </div>
 
                             <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between gap-6 bg-white">
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-teal-700">
-                                        <span className="px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200/70">
-                                            {featuredArticle.categoryName}
+                                <div className="flex flex-col gap-5 sm:gap-6">
+                                    <div className="flex items-center gap-2.5 text-xs font-bold">
+                                        <span className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 shadow-2xs ${categoryStyles[featuredArticle.category]?.badge || 'bg-slate-100 text-slate-800 border-slate-200'}`}>
+                                            <span className={categoryStyles[featuredArticle.category]?.iconColor}>
+                                                {categoryIcons[featuredArticle.category]}
+                                            </span>
+                                            <span>{featuredArticle.categoryName}</span>
                                         </span>
-                                        <span className="text-slate-300">•</span>
-                                        <span className="text-slate-500">{featuredArticle.readTime}</span>
+                                        {featuredArticle.reviewed && <ReviewedBadge />}
                                     </div>
 
                                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#002045] group-hover:text-[#00677c] transition-colors leading-snug">
                                         {featuredArticle.title}
                                     </h2>
 
-                                    <p className="text-slate-600 text-sm sm:text-base leading-relaxed line-clamp-3 font-medium">
+                                    <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium">
                                         {featuredArticle.summary}
+                                        <span className="inline-flex items-center gap-1.5 ml-2.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-xs font-bold align-middle whitespace-nowrap border border-slate-200/80 shadow-2xs">
+                                            <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span>{featuredArticle.readTime}</span>
+                                        </span>
                                     </p>
                                 </div>
 
                                 <div className="pt-6 border-t border-slate-100 flex items-center justify-between mt-2">
-                                    <div className="flex items-center gap-3">
-                                        <img
-                                            src={featuredArticle.author.avatar}
-                                            alt={featuredArticle.author.name}
-                                            className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500/20"
-                                        />
+                                    {/* Nguồn tham khảo thay cho tác giả giả */}
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-200/60 flex items-center justify-center">
+                                            <SourceIcon />
+                                        </div>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-[#002045]">
-                                                {featuredArticle.author.name}
+                                                {featuredArticle.source}
                                             </span>
-                                            <span className="text-[11px] font-medium text-slate-500 truncate max-w-[200px]">
-                                                {featuredArticle.author.role}
+                                            <span className="text-[11px] font-medium text-slate-500 truncate max-w-[240px]">
+                                                {featuredArticle.sourceDetail} • {featuredArticle.date}
                                             </span>
                                         </div>
                                     </div>
@@ -392,7 +280,7 @@ export default function MedicalHandbook() {
                     </section>
                 )}
 
-                {/* 3.2 LƯỚI BÀI VIẾT (ARTICLES GRID) */}
+                {/* 3.2 LƯỚI BÀI VIẾT */}
                 <section className="flex flex-col gap-6">
                     <div className="flex items-end justify-between border-b border-slate-200/60 pb-4">
                         <h3 className="text-xl sm:text-2xl font-extrabold text-[#002045]">
@@ -438,9 +326,19 @@ export default function MedicalHandbook() {
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                        <span className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm text-[11px] font-extrabold text-teal-800 shadow-sm border border-white/40">
-                                            {article.categoryName}
+                                        {/* Category pill */}
+                                        <span className={`absolute top-4 left-4 px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold shadow-sm border backdrop-blur-md flex items-center gap-1.5 ${categoryStyles[article.category]?.pill || 'bg-white/95 text-slate-800 border-white/60'}`}>
+                                            <span className={categoryStyles[article.category]?.iconColor}>
+                                                {categoryIcons[article.category]}
+                                            </span>
+                                            <span>{article.categoryName}</span>
                                         </span>
+                                        {/* Badge kiểm duyệt */}
+                                        {article.reviewed && (
+                                            <span className="absolute top-4 right-4">
+                                                <ReviewedBadge variant="card" />
+                                            </span>
+                                        )}
                                     </div>
 
                                     {/* Nội dung tóm tắt */}
@@ -466,16 +364,14 @@ export default function MedicalHandbook() {
                                             </p>
                                         </div>
 
-                                        {/* Tác giả & CTA */}
+                                        {/* Nguồn thay cho tác giả */}
                                         <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <img
-                                                    src={article.author.avatar}
-                                                    alt={article.author.name}
-                                                    className="w-8 h-8 rounded-full object-cover ring-2 ring-teal-500/10"
-                                                />
-                                                <span className="text-xs font-bold text-slate-700 truncate max-w-[130px]">
-                                                    {article.author.name}
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-full bg-teal-50 border border-teal-200/50 flex items-center justify-center">
+                                                    <SourceIcon />
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-700 truncate max-w-[150px]">
+                                                    {article.source}
                                                 </span>
                                             </div>
 
@@ -493,42 +389,49 @@ export default function MedicalHandbook() {
                     )}
                 </section>
 
-                {/* ═══ 4. HỎI ĐÁP Y TẾ THƯỜNG GẶP (FAQ ACCORDION SANG TRỌNG) ═══ */}
-                <section className="bg-gradient-to-br from-teal-50/80 to-[#f0f8f9] rounded-[2rem] p-8 sm:p-12 border border-teal-100/60 shadow-sm flex flex-col gap-10">
+                {/* ═══ 4. FAQ ═══ */}
+                <section className="bg-gradient-to-br from-[#fbf8f3] via-[#f7f2ea] to-[#efe7da] rounded-[2rem] p-8 sm:p-12 border border-[#e8dfd1] shadow-[0_4px_24px_-8px_rgba(60,40,20,0.06)] flex flex-col gap-10">
                     <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-                        <span className="inline-block px-3 py-1 bg-teal-100 text-[#00677c] text-xs font-extrabold uppercase tracking-widest rounded-full w-fit mx-auto">
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-[#ede2d1] text-[#7a5833] text-xs font-extrabold uppercase tracking-widest rounded-full w-fit mx-auto border border-[#dfd2bd] shadow-2xs">
+                            <svg className="w-3.5 h-3.5 text-[#966d3b]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                            </svg>
                             Hỏi đáp y tế
                         </span>
-                        <h3 className="text-2xl sm:text-3xl font-extrabold text-[#002045]">
+                        <h3 className="text-2xl sm:text-3xl font-extrabold text-[#2a221b] tracking-tight">
                             Câu hỏi thường gặp từ các gia đình
                         </h3>
+                        <p className="text-sm sm:text-base text-[#6f6254] font-medium max-w-lg mx-auto">
+                            Giải đáp những thắc mắc phổ biến giúp người nhà an tâm hơn khi chăm sóc và lựa chọn dịch vụ y tế.
+                        </p>
                     </div>
 
-                    <div className="max-w-3xl mx-auto w-full flex flex-col gap-4">
+                    <div className="max-w-3xl mx-auto w-full flex flex-col gap-3.5">
                         {faqs.map((faq, idx) => {
                             const isOpen = openFaqIndex === idx;
                             return (
                                 <div
                                     key={idx}
-                                    className={`bg-white rounded-2xl shadow-sm overflow-hidden transition-all duration-300 border ${isOpen ? "border-[#00677c]/30 shadow-md ring-1 ring-[#00677c]/10" : "border-slate-200/60 hover:border-slate-300"
+                                    className={`bg-white/95 backdrop-blur-xs rounded-2xl shadow-xs overflow-hidden transition-all duration-300 border ${isOpen
+                                        ? "border-[#00677c]/40 shadow-md ring-2 ring-[#00677c]/10 bg-white"
+                                        : "border-[#e5dcce] hover:border-[#d5c6b2]"
                                         }`}
                                 >
                                     <button
                                         onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
-                                        className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#002045] hover:text-[#00677c] transition-colors cursor-pointer outline-none"
+                                        className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-[#2a221b] hover:text-[#00677c] transition-colors cursor-pointer outline-none"
                                     >
                                         <span className="pr-4 leading-snug">{faq.q}</span>
-                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen ? 'bg-[#00677c] text-white rotate-180' : 'bg-slate-50 text-slate-400'}`}>
+                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen ? 'bg-[#00677c] text-white rotate-180 shadow-xs' : 'bg-[#f4ede2] text-[#7a6a57]'}`}>
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                             </svg>
                                         </span>
                                     </button>
 
-                                    {/* Animation xổ xuống mượt mà bằng CSS Grid */}
                                     <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                                         <div className="overflow-hidden">
-                                            <div className="px-6 pb-6 text-sm text-slate-600 leading-relaxed font-medium border-t border-slate-100 pt-4">
+                                            <div className="px-6 pb-6 text-sm text-[#4d4233] leading-relaxed font-medium border-t border-[#ede4d6] pt-4 bg-[#fdfbf8]/60">
                                                 {faq.a}
                                             </div>
                                         </div>
@@ -539,9 +442,8 @@ export default function MedicalHandbook() {
                     </div>
                 </section>
 
-                {/* ═══ 5. BANNER KÊU GỌI HÀNH ĐỘNG (CTA BANNER VỚI SHINE EFFECT) ═══ */}
+                {/* ═══ 5. CTA BANNER ═══ */}
                 <section className="relative overflow-hidden bg-gradient-to-r from-[#003846] via-[#004857] to-[#00677c] rounded-[2rem] p-8 sm:p-14 text-white flex flex-col lg:flex-row items-center justify-between gap-10 shadow-2xl border border-[#00677c]/50">
-                    {/* Họa tiết nền */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
                     <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-400/10 rounded-full blur-2xl pointer-events-none transform -translate-x-1/2 translate-y-1/2" />
 
@@ -563,7 +465,6 @@ export default function MedicalHandbook() {
                             to="/family"
                             className="group relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white text-[#00677c] font-extrabold text-sm rounded-xl transition-all shadow-lg text-center"
                         >
-                            {/* Hiệu ứng Shine sáng lướt qua */}
                             <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
                             <span className="relative">Tìm Điều dưỡng ngay</span>
                         </Link>
@@ -580,21 +481,42 @@ export default function MedicalHandbook() {
                 </section>
             </main>
 
-            {/* ═══ 6. POPUP XEM NHANH BÀI VIẾT (MODAL VỚI BACKDROP BLUR) ═══ */}
+            {/* ═══ 6. MODAL XEM BÀI VIẾT ═══ */}
             {activeArticleModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
-                    {/* Hiệu ứng scale in mượt mà */}
-                    <div className="bg-white rounded-[2rem] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-[2rem] max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header Modal */}
-                        <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-4 bg-white z-10 shadow-sm">
-                            <span className="px-3.5 py-1.5 rounded-full bg-teal-50 text-teal-800 text-xs font-bold border border-teal-100">
-                                {activeArticleModal.categoryName}
-                            </span>
+                        <div className="px-6 py-4.5 sm:px-8 border-b border-slate-100 flex items-center justify-between gap-4 bg-gradient-to-r from-slate-50/70 via-white to-slate-50/40 z-10 shadow-2xs">
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                                {/* Category Tag with icon */}
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border shadow-2xs ${categoryStyles[activeArticleModal.category]?.badge || 'bg-slate-100 text-slate-800 border-slate-200'}`}>
+                                    <span className={categoryStyles[activeArticleModal.category]?.iconColor}>
+                                        {categoryIcons[activeArticleModal.category]}
+                                    </span>
+                                    <span>{activeArticleModal.categoryName}</span>
+                                </span>
+
+                                {/* Divider dot */}
+                                <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-slate-300" />
+
+                                {/* Medical Verification Seal */}
+                                {activeArticleModal.reviewed && <ReviewedBadge />}
+
+                                {/* Read time badge */}
+                                <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-slate-500 font-semibold bg-white px-2.5 py-1 rounded-md border border-slate-200/70 shadow-2xs">
+                                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{activeArticleModal.readTime}</span>
+                                </span>
+                            </div>
+
                             <button
                                 onClick={() => setActiveArticleModal(null)}
-                                className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs hover:rotate-90 duration-200"
+                                title="Đóng bài viết"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
@@ -606,16 +528,15 @@ export default function MedicalHandbook() {
                                 {activeArticleModal.title}
                             </h2>
 
+                            {/* Nguồn + ngày */}
                             <div className="flex flex-wrap items-center gap-4 pb-6 border-b border-slate-200/60">
                                 <div className="flex items-center gap-3">
-                                    <img
-                                        src={activeArticleModal.author.avatar}
-                                        alt={activeArticleModal.author.name}
-                                        className="w-12 h-12 rounded-full object-cover ring-2 ring-teal-500/20"
-                                    />
+                                    <div className="w-11 h-11 rounded-full bg-teal-50 border-2 border-teal-200/50 flex items-center justify-center">
+                                        <SourceIcon />
+                                    </div>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-extrabold text-[#002045]">{activeArticleModal.author.name}</span>
-                                        <span className="text-xs font-medium text-slate-500">{activeArticleModal.author.role}</span>
+                                        <span className="text-sm font-extrabold text-[#002045]">Nguồn: {activeArticleModal.source}</span>
+                                        <span className="text-xs font-medium text-slate-500">{activeArticleModal.sourceDetail}</span>
                                     </div>
                                 </div>
                                 <div className="hidden sm:flex items-center gap-3 text-sm text-slate-400 font-semibold ml-auto bg-white px-3 py-1.5 rounded-lg border border-slate-200/60">
@@ -625,6 +546,7 @@ export default function MedicalHandbook() {
                                 </div>
                             </div>
 
+                            {/* Ảnh minh hoạ */}
                             <div className="rounded-2xl overflow-hidden shadow-sm border border-slate-200/50 bg-white p-2">
                                 <img
                                     src={activeArticleModal.image}
@@ -633,12 +555,52 @@ export default function MedicalHandbook() {
                                 />
                             </div>
 
+                            {/* Nội dung HTML */}
                             <div
-                                className="text-sm sm:text-base text-slate-700 leading-loose space-y-5 
-                                [&>h3]:text-xl [&>h3]:font-extrabold [&>h3]:text-[#002045] [&>h3]:pt-4 
-                                [&>ul]:list-disc [&>ul]:pl-5 [&>p]:font-medium"
+                                className="text-sm sm:text-base text-slate-700 leading-[1.9] space-y-5 
+                                [&>h3]:text-lg [&>h3]:sm:text-xl [&>h3]:font-extrabold [&>h3]:text-[#002045] [&>h3]:pt-4 [&>h3]:flex [&>h3]:items-center [&>h3]:gap-2
+                                [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ul>li]:pl-1
+                                [&>p]:font-medium [&>p]:text-slate-600"
                                 dangerouslySetInnerHTML={{ __html: activeArticleModal.content }}
                             />
+
+                            {/* ═══ TÀI LIỆU THAM KHẢO ═══ */}
+                            {activeArticleModal.references && activeArticleModal.references.length > 0 && (
+                                <div className="mt-6 bg-gradient-to-br from-slate-50 to-slate-100/80 rounded-2xl p-6 sm:p-8 border border-slate-200/60">
+                                    <h4 className="text-sm font-extrabold text-[#002045] flex items-center gap-2 mb-5">
+                                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                        </svg>
+                                        Tài liệu tham khảo
+                                    </h4>
+                                    <ul className="space-y-3">
+                                        {activeArticleModal.references.map((ref, i) => (
+                                            <li key={i} className="flex items-start gap-3 group/ref">
+                                                <span className="text-teal-600 font-extrabold text-xs mt-0.5 shrink-0 bg-teal-50 w-6 h-6 rounded-md flex items-center justify-center border border-teal-200/50">{i + 1}</span>
+                                                <a
+                                                    href={ref.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs sm:text-sm text-slate-600 font-medium hover:text-[#00677c] transition-colors group-hover/ref:underline underline-offset-2 flex items-center gap-1.5"
+                                                >
+                                                    <span>{ref.text}</span>
+                                                    <svg className="w-3.5 h-3.5 text-slate-400 group-hover/ref:text-[#00677c] shrink-0 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                    </svg>
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Disclaimer nhỏ */}
+                            <div className="flex items-start gap-2.5 bg-amber-50/70 rounded-xl p-4 border border-amber-200/50 text-xs text-amber-800 font-medium">
+                                <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                                </svg>
+                                <span>Bài viết được tổng hợp từ các nguồn y khoa uy tín tại Việt Nam, mang tính chất tham khảo và giáo dục sức khỏe. Không thay thế cho việc thăm khám và tư vấn trực tiếp từ bác sĩ chuyên khoa.</span>
+                            </div>
                         </div>
 
                         {/* Footer Modal */}
@@ -665,8 +627,8 @@ export default function MedicalHandbook() {
                 </div>
             )}
 
-            {/* Cấu hình keyframes cho hiệu ứng Shine */}
-            <style jsx>{`
+            {/* Keyframes cho hiệu ứng Shine */}
+            <style>{`
                 @keyframes shine {
                     0% { transform: translateX(-100%); }
                     100% { transform: translateX(100%); }
