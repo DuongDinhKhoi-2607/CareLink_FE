@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
 
 /* ─── Role card data ─── */
 const roles = [
@@ -184,33 +185,8 @@ export default function ChooseRole() {
                 </div>
             </main>
 
-            {/* ══ FOOTER ══ */}
-            <footer className="w-full bg-white border-t border-slate-200 py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    {/* Logo + copyright */}
-                    <div className="flex flex-col items-start gap-1">
-                        <span className="text-base font-bold text-[#102030]">
-                            Care<span className="text-[#00677c]">Link</span>
-                        </span>
-                        <span className="text-xs text-slate-400">
-                            © 2024 CareLink. All rights reserved. HIPAA Compliant Platform.
-                        </span>
-                    </div>
-
-                    {/* Links */}
-                    <div className="flex items-center gap-5">
-                        {["Privacy Policy", "Terms of Service", "HIPAA Notice", "Contact Us"].map((link) => (
-                            <a
-                                key={link}
-                                href="#"
-                                className="text-xs text-slate-500 hover:text-[#00677c] transition-colors"
-                            >
-                                {link}
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            </footer>
+            {/* ══ SHARED FOOTER ══ */}
+            <Footer />
         </div>
     );
 }
