@@ -6,52 +6,145 @@ export default function ServiceSelectionCard({
     icon,
     badgeText,
     badgeType = "normal", // 'normal' | 'special'
+    priceRange,
+    recommendedDuration,
+    features = [],
     isSelected,
     onClick,
 }) {
+    const isSpecial = badgeType === "special";
+
     return (
         <article
             onClick={onClick}
-            className={`relative flex flex-col p-6 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
+            tabIndex={0}
+            role="radio"
+            aria-checked={isSelected}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onClick?.();
+                }
+            }}
+            className={`group relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl transition-all duration-200 cursor-pointer select-none outline-none ${
                 isSelected
-                    ? "border-[#00677c] bg-[#f0f9fa] shadow-[0_12px_30px_-8px_rgba(0,103,124,0.18)] ring-1 ring-[#00677c]/20 scale-[1.02]"
-                    : "border-slate-200/80 bg-white hover:border-[#00677c]/40 hover:shadow-md hover:-translate-y-0.5"
+                    ? "bg-[#f4f9f8] border-2 border-[#00677c] shadow-[0_12px_32px_-8px_rgba(0,103,124,0.18)] ring-2 ring-[#00677c]/10 -translate-y-0.5"
+                    : "bg-white border border-[#dde4e1] hover:border-[#00677c]/50 hover:shadow-[0_10px_28px_-6px_rgba(16,32,48,0.06)] hover:-translate-y-0.5"
             }`}
         >
-            {/* Nếu đang được chọn, hiển thị icon checkmark góc phải */}
-            {isSelected && (
-                <div className="absolute top-4 right-4 text-[#00677c]">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                </div>
-            )}
+            {/* Vùng thông tin chính */}
+            <div>
+                {/* Hàng 1: Icon đại diện + Badge chuyên môn + Checkmark trạng thái */}
+                <div className="flex items-center justify-between gap-3 mb-5">
+                    <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 ${
+                            isSelected
+                                ? "bg-[#00677c] text-white shadow-sm"
+                                : "bg-[#f0f6f4] text-[#00677c] border border-[#dce8e4] group-hover:bg-[#00677c] group-hover:text-white"
+                        }`}
+                    >
+                        {icon}
+                    </div>
 
-            <div className="flex items-start justify-between mb-4 pr-7">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isSelected ? "bg-[#00677c] text-white shadow-sm" : "bg-slate-50 text-[#00677c] border border-slate-100"}`}>
-                    {icon}
+                    <div className="flex items-center gap-2">
+                        {/* Badge tiêu chuẩn nhân sự */}
+                        <span
+                            className={`px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide transition-all ${
+                                isSpecial
+                                    ? isSelected
+                                        ? "bg-sky-100 text-sky-900 border border-sky-300"
+                                        : "bg-[#edf4fa] text-[#0f4b7a] border border-[#cbe0f1]"
+                                    : isSelected
+                                        ? "bg-teal-100 text-teal-900 border border-teal-300"
+                                        : "bg-[#eaf5f2] text-[#11685e] border border-[#c4e6dc]"
+                            }`}
+                        >
+                            {badgeText}
+                        </span>
+
+                        {/* Icon Checkmark xác nhận đã chọn */}
+                        <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                                isSelected
+                                    ? "bg-[#00677c] text-white scale-100"
+                                    : "border-2 border-slate-300 text-transparent group-hover:border-slate-400 scale-95"
+                            }`}
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Badge phân loại chuyên môn được tối ưu màu sắc sang xịn theo Phương án 1 */}
-                <div className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-                    badgeType === "special"
-                        ? isSelected
-                            ? "bg-white text-blue-700 border border-blue-300 shadow-xs"
-                            : "bg-blue-50 text-blue-700 border border-blue-200"
-                        : isSelected
-                            ? "bg-white text-[#00677c] border border-[#00677c]/30 shadow-xs"
-                            : "bg-teal-50/80 text-[#00677c] border border-teal-200/70"
-                }`}>
-                    {badgeText}
-                </div>
+                {/* Tiêu đề dịch vụ */}
+                <h3
+                    className={`text-lg sm:text-xl font-bold tracking-tight mb-2.5 transition-colors ${
+                        isSelected ? "text-[#00677c]" : "text-[#102030] group-hover:text-[#00677c]"
+                    }`}
+                >
+                    {title}
+                </h3>
+
+                {/* Mô tả giải pháp */}
+                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                    {description}
+                </p>
+
+                {/* Danh mục công việc chính (Checklist cụ thể) */}
+                {features.length > 0 && (
+                    <ul className="flex flex-col gap-2 mb-6 pt-1">
+                        {features.map((feat, index) => (
+                            <li key={index} className="flex items-start gap-2.5 text-xs text-slate-600 leading-normal">
+                                <svg
+                                    className={`w-4 h-4 shrink-0 mt-0.5 transition-colors ${
+                                        isSelected ? "text-[#00677c]" : "text-[#187d74]/80"
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                <span>{feat}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
 
-            <h3 className={`text-lg font-bold mb-2 transition-colors ${isSelected ? "text-[#00677c]" : "text-[#102030]"}`}>
-                {title}
-            </h3>
-            <p className="text-sm text-slate-500 leading-relaxed">
-                {description}
-            </p>
+            {/* Vùng chân thẻ: Mức phí tham khảo minh bạch + Thời lượng khuyến nghị */}
+            <div className="pt-4 border-t border-slate-200/80 flex items-end justify-between gap-3 mt-2">
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                        Chi phí tham khảo
+                    </span>
+                    <span className="text-base sm:text-lg font-bold text-[#102030]">
+                        {priceRange}
+                    </span>
+                    {recommendedDuration && (
+                        <span className="text-[11px] text-slate-600 mt-0.5">
+                            {recommendedDuration}
+                        </span>
+                    )}
+                </div>
+
+                <div className="shrink-0">
+                    <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                            isSelected
+                                ? "bg-[#00677c] text-white shadow-xs"
+                                : "text-[#00677c] bg-[#eef6f4] group-hover:bg-[#00677c] group-hover:text-white"
+                        }`}
+                    >
+                        {isSelected ? "Đã chọn" : "Chọn dịch vụ"}
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </span>
+                </div>
+            </div>
         </article>
     );
 }
