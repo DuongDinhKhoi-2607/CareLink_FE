@@ -45,11 +45,11 @@ export default function Register() {
 
     return (
         <div className="bg-[#F8FAFC] text-slate-800 font-sans min-h-screen flex flex-col justify-between antialiased selection:bg-teal-100 selection:text-teal-900">
-            {/* Header đồng bộ logo và font */}
-            <header className="w-full bg-white border-b border-slate-200/80 py-3.5 px-6 md:px-12 sticky top-0 z-30 shadow-xs">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
+            {/* Header đồng bộ logo và kích thước với Header ngoài trang Home */}
+            <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] sticky top-0 z-50 transition-all">
+                <div className="w-full max-w-[1536px] mx-auto px-4 sm:px-8 lg:px-12 h-18 flex items-center justify-between">
                     {/* Logo CareLink */}
-                    <Link to="/" className="flex items-center gap-2.5 group cursor-pointer" title="Về trang chủ CareLink">
+                    <Link to="/" className="flex items-center gap-2.5 group shrink-0 cursor-pointer" title="Về trang chủ CareLink">
                         <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
                             <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -66,7 +66,7 @@ export default function Register() {
                     </Link>
 
                     {/* Right Link */}
-                    <div className="flex items-center gap-3 sm:gap-4 text-xs font-medium">
+                    <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-[13px] font-medium">
                         <Link
                             to="/"
                             className="flex items-center gap-1.5 text-slate-600 hover:text-[#002045] px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"

@@ -204,26 +204,25 @@ export default function Home() {
         <div className="flex flex-col w-full">
 
             {/* 1. HERO SECTION */}
-            <section className="relative w-full h-[600px] lg:h-[800px] flex items-center overflow-hidden">
+            <section className="relative w-full h-[560px] sm:h-[620px] lg:h-[700px] flex items-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
                     <div
-                        className="w-full h-full bg-cover bg-center"
+                        className="w-full h-full bg-cover bg-[position:82%_center] sm:bg-[position:85%_center] lg:bg-[position:right_center]"
                         style={{
-                            backgroundImage: `url(https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=1920)`,
+                            backgroundImage: `url('/images/home_hero.jpg')`,
                         }}
                     />
-                    {/* Lớp phủ dải màu tinh tế: Bên trái trắng sáng sắc nét tôn chữ, bên phải giữ ảnh bác sĩ sáng rõ tự nhiên, mép phải mờ nhẹ nghệ thuật */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-42% to-transparent" />
-                    <div className="absolute inset-y-0 right-0 w-28 sm:w-36 bg-gradient-to-l from-white/35 to-transparent pointer-events-none" />
+                    {/* Lớp phủ dải màu êm dịu: Chuyển màu mượt mà, khử chói sáng, giúp đọc chữ rõ nét và thư thái cho mắt */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/75 via-28% via-white/25 via-42% to-transparent pointer-events-none" />
                 </div>
 
                 <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-2xl flex flex-col gap-6">
-                        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/95 text-[#00677c] text-xs sm:text-sm font-semibold w-fit border border-teal-200/80 shadow-2xs backdrop-blur-xs">
+                        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/90 text-[#00677c] text-xs sm:text-sm font-semibold w-fit border border-teal-200/70 shadow-xs">
                             <span className="w-2 h-2 rounded-full bg-[#00677c] animate-pulse" />
                             Hệ thống kết nối chăm sóc sức khỏe 24/7
                         </span>
-                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#102030] tracking-tight leading-[1.1]">
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#102030] tracking-tight leading-[1.15]">
                             Chăm sóc tận tâm,
                             <br />
                             <span className="text-[#00677c]">Kết nối chuyên môn</span>
@@ -314,7 +313,7 @@ export default function Home() {
                         <div className="hidden lg:block absolute top-[40px] left-[12.5%] right-[12.5%] h-[2px] bg-gray-200 z-0" />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-                            {processSteps.map((step, index) => (
+                            {processSteps.map((step) => (
                                 <div key={step.title} className="flex flex-col items-center text-center group">
                                     <div className="w-20 h-20 mb-6 rounded-full bg-white shadow-[0_4px_15px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform relative z-10">
                                         {step.iconNode}

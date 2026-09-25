@@ -58,6 +58,8 @@ export default function App() {
             <Route path="/caregiver" element={<ForCaregiver />} />
             {/* Cẩm nang y tế & Sức khỏe gia đình */}
             <Route path="/handbook" element={<MedicalHandbook />} />
+            {/* Trang chọn loại dịch vụ */}
+            <Route path="/services" element={<Services />} />
           </Route>
 
           {/* Nhóm Bảng điều khiển Gia đình dùng riêng DashboardLayout (Sidebar điều hướng chuyên biệt) */}
@@ -73,9 +75,6 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          {/* Trang chọn loại dịch vụ có header độc lập */}
-          <Route path="/services" element={<Services />} />
 
           {/* Caregiver flow — trang onboarding có header riêng */}
           <Route path="/caregiver/choose-role" element={<ChooseRole />} />

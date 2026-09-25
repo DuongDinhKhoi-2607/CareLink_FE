@@ -52,7 +52,7 @@ export default function Review() {
         }));
     };
 
-    // Hàm xử lý gửi đánh giá
+    // Hàm xử lý gửi đánh giá (không tự động chuyển trang, hiển thị màn cảm ơn để người dùng tự bấm)
     const handleSubmitReview = (e) => {
         e.preventDefault();
         // Bắt buộc khách phải chọn mức độ hài lòng tổng thể trước
@@ -62,21 +62,12 @@ export default function Review() {
         }
 
         setSubmitted(true);
-        setFeedbackMessage("Đánh giá của bạn đã được gửi thành công. Cảm ơn bạn đã đồng hành cùng CareLink!");
-
-        // Sau 1.2 giây tự động quay về Bảng điều khiển (Dashboard)
-        setTimeout(() => {
-            navigate("/dashboard");
-        }, 1200);
+        setFeedbackMessage("");
     };
 
     // Hàm bỏ qua đánh giá
     const handleSkipReview = () => {
-        setSubmitted(false);
-        setFeedbackMessage("Bạn đã chọn bỏ qua đánh giá lúc này.");
-        setTimeout(() => {
-            navigate("/dashboard");
-        }, 600);
+        navigate("/dashboard");
     };
 
     return (
@@ -162,12 +153,13 @@ export default function Review() {
                 </article>
 
                 {/* ============================================================ */}
-                {/* 2. KHỐI FORM NHẬP ĐÁNH GIÁ & BÌNH LUẬN                         */}
+                {/* 2. KHỐI FORM NHẬP ĐÁNH GIÁ HOẶC MÀN HÌNH CẢM ƠN              */}
                 {/* ============================================================ */}
-                <form
-                    onSubmit={handleSubmitReview}
-                    className="p-8 sm:p-10 bg-white rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-10"
-                >
+                {!submitted ? (
+                    <form
+                        onSubmit={handleSubmitReview}
+                        className="p-8 sm:p-10 bg-white rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-10"
+                    >
                     {/* KHỐI 1: ĐÁNH GIÁ MỨC ĐỘ HÀI LÒNG TỔNG THỂ */}
                     <div className="flex flex-col items-center text-center gap-3 pb-8 border-b border-slate-100">
                         <span className="text-sm font-bold uppercase tracking-wider text-slate-500">
@@ -239,9 +231,8 @@ export default function Review() {
                                                 size="sm"
                                             />
                                             {/* Hiển thị số sao nhỏ tinh tế bên cạnh */}
-                                            <span className={`text-xs font-bold min-w-[26px] text-right ${
-                                                currentStar > 0 ? "text-[#f59e0b]" : "text-slate-300"
-                                            }`}>
+                                            <span className={`text-xs font-bold min-w-[26px] text-right ${currentStar > 0 ? "text-[#f59e0b]" : "text-slate-300"
+                                                }`}>
                                                 {currentStar > 0 ? `${currentStar}/5` : ""}
                                             </span>
                                         </div>
@@ -280,22 +271,20 @@ export default function Review() {
                             <button
                                 type="button"
                                 onClick={() => setRehire("yes")}
-                                className={`px-7 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${
-                                    rehire === "yes"
+                                className={`px-7 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${rehire === "yes"
                                         ? "bg-[#00677c] text-white border-[#00677c] shadow-sm scale-105"
                                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
-                                }`}
+                                    }`}
                             >
                                 Có
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setRehire("no")}
-                                className={`px-7 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${
-                                    rehire === "no"
-                                        ? "bg-[#102030] text-white border-[#102030] shadow-sm scale-105"
+                                className={`px-7 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${rehire === "no"
+                                        ? "bg-slate-700 text-white border-slate-700 shadow-sm scale-105"
                                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
-                                }`}
+                                    }`}
                             >
                                 Không
                             </button>
@@ -306,9 +295,12 @@ export default function Review() {
                     <div className="flex flex-col gap-3.5 pt-2">
                         <button
                             type="submit"
-                            className="w-full py-4 bg-[#102030] text-white rounded-xl text-base font-bold hover:bg-[#1a365d] transition-all shadow-md hover:shadow-lg flex items-center justify-center cursor-pointer active:scale-[0.99]"
+                            className="w-full py-4 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-base font-bold transition-all shadow-md hover:shadow-lg hover:shadow-[#00677c]/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                         >
-                            {submitted ? "Đã gửi đánh giá thành công" : "Gửi đánh giá"}
+                            <svg className="w-5 h-5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                            <span>{submitted ? "Đã gửi đánh giá thành công" : "Gửi đánh giá"}</span>
                         </button>
 
                         <button
@@ -322,9 +314,8 @@ export default function Review() {
                         {feedbackMessage && (
                             <p
                                 role="status"
-                                className={`text-sm text-center font-bold mt-1 ${
-                                    submitted ? "text-emerald-600" : "text-rose-500"
-                                } animate-pulse`}
+                                className={`text-sm text-center font-bold mt-1 ${submitted ? "text-emerald-600" : "text-rose-500"
+                                    } animate-pulse`}
                             >
                                 {feedbackMessage}
                             </p>
@@ -335,6 +326,77 @@ export default function Review() {
                         </p>
                     </div>
                 </form>
+            ) : (
+                /* ============================================================ */
+                /* 3. MÀN HÌNH CẢM ƠN — NGƯỜI DÙNG TỰ BẤM VỀ DASHBOARD          */
+                /* ============================================================ */
+                <div className="p-8 sm:p-14 bg-white rounded-3xl border border-slate-200/80 shadow-sm flex flex-col items-center text-center gap-6 animate-fade-in">
+                    {/* Icon tích xanh lớn */}
+                    <div className="w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                    </div>
+
+                    {/* Tiêu đề & nội dung cảm ơn */}
+                    <div className="flex flex-col gap-2 max-w-lg">
+                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3.5 py-1 rounded-full border border-emerald-200/70 inline-block self-center">
+                            ĐÃ GỬI ĐÁNH GIÁ THÀNH CÔNG
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#102030] mt-1">
+                            Cảm ơn bạn đã đóng góp ý kiến!
+                        </h2>
+                        <p className="text-sm sm:text-base text-slate-500 leading-relaxed mt-1">
+                            Ý kiến phản hồi chân thực của bạn là cơ sở quan trọng giúp điều dưỡng <strong>Nguyễn Thùy Linh</strong> và cộng đồng y tế CareLink không ngừng nâng cao chất lượng dịch vụ.
+                        </p>
+                    </div>
+
+                    {/* Tóm tắt nhanh số sao đã chấm */}
+                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-xl text-left">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">⭐</span>
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase">Đánh giá tổng thể</p>
+                                <p className="text-sm font-extrabold text-[#00677c]">
+                                    {overallRating === 5 && "Rất hài lòng (5/5 sao)"}
+                                    {overallRating === 4 && "Hài lòng (4/5 sao)"}
+                                    {overallRating === 3 && "Bình thường (3/5 sao)"}
+                                    {overallRating === 2 && "Chưa hài lòng (2/5 sao)"}
+                                    {overallRating === 1 && "Rất không hài lòng (1/5 sao)"}
+                                </p>
+                            </div>
+                        </div>
+                        {rehire && (
+                            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-teal-50 text-[#00677c] border border-teal-200/60">
+                                {rehire === "yes" ? "Thuê lại: Có" : "Thuê lại: Không"}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Nút hành động quay về Dashboard hoặc Trang chủ: 2 nút đều nhau, chữ nằm gọn trên 1 hàng */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg pt-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/dashboard")}
+                            className="w-full min-h-[52px] py-3.5 px-5 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg hover:shadow-[#00677c]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] whitespace-nowrap"
+                        >
+                            <svg className="w-4.5 h-4.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                            </svg>
+                            <span>Quay về Bảng điều khiển</span>
+                        </button>
+                        <Link
+                            to="/"
+                            className="w-full min-h-[52px] py-3.5 px-5 bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 rounded-xl text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2 text-center cursor-pointer whitespace-nowrap active:scale-[0.98]"
+                        >
+                            <svg className="w-4.5 h-4.5 text-slate-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                            </svg>
+                            <span>Về Trang chủ</span>
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             </div>
         </div>

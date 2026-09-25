@@ -391,8 +391,8 @@ export default function CaregiverProfile() {
                                     type="button"
                                     onClick={handleContact}
                                     className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold transition-all shadow-sm ${contacted
-                                            ? "bg-slate-100 text-slate-500 cursor-default"
-                                            : "bg-[#00677c] text-white hover:bg-[#005263] hover:shadow-md"
+                                        ? "bg-slate-100 text-slate-500 cursor-default"
+                                        : "bg-[#00677c] text-white hover:bg-[#005263] hover:shadow-md"
                                         }`}
                                 >
                                     {contacted ? "Đã gửi yêu cầu liên hệ" : "Liên hệ ngay"}
@@ -402,8 +402,8 @@ export default function CaregiverProfile() {
                                     type="button"
                                     onClick={() => setSaved(!saved)}
                                     className={`w-full py-3 px-4 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 ${saved
-                                            ? "bg-rose-50 text-rose-600 border-rose-200"
-                                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                        ? "bg-rose-50 text-rose-600 border-rose-200"
+                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                                         }`}
                                 >
                                     <span>{saved ? "♥" : "♡"}</span>

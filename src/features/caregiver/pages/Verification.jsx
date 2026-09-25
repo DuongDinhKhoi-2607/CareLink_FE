@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Header from "../../../components/Header";
 import VerificationStepper from "../components/VerificationStepper";
-import DocumentUpload from "../components/DocumentUpload";
 
 /* ─── Shared input components ─── */
 const Field = ({ label, required, type = "text", placeholder, name, value, onChange, children }) => (
@@ -134,7 +133,7 @@ const SectionHeader = ({ title, optional }) => (
 );
 
 /* ─── Interview Waiting Screen ─── */
-function InterviewWaiting({ role, steps }) {
+function InterviewWaiting() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f8fa] px-4 py-16">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 sm:p-14 flex flex-col items-center gap-7 text-center max-w-lg w-full">
