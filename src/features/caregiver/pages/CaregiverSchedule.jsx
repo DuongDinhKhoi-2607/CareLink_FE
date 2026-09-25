@@ -2,7 +2,6 @@ import React, { useState } from "react";
 
 /* ─── Constants ─── */
 const DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-const FULL_DAYS = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
 const DATES = ["15/09", "16/09", "17/09", "18/09", "19/09", "20/09", "21/09"];
 const TIME_SLOTS = [
     "06:00 – 08:00",
@@ -132,7 +131,7 @@ function LegendItem({ color, label }) {
 ═══════════════════════════════════════════ */
 export default function CaregiverSchedule() {
     const [slots, setSlots] = useState(initSlots);
-    const [requests, setRequests] = useState([
+    const [requests] = useState([
         { id: 1, family: "Nguyễn Thị Lan", service: "Chăm sóc người cao tuổi · 3h", date: "19/09/2026", time: "08:00 – 11:00", note: "Bà ngoại cần hỗ trợ đi lại và uống thuốc." },
         { id: 2, family: "Trần Văn Minh", service: "Phục hồi chức năng · 2h", date: "20/09/2026", time: "14:00 – 16:00", note: null },
         { id: 3, family: "Phạm Ngọc Anh", service: "Chăm sóc trẻ sơ sinh · 4h", date: "21/09/2026", time: "06:00 – 10:00", note: "Em bé 3 tháng tuổi, gia đình cần người thay ca ban đêm." },

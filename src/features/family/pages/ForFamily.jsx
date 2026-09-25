@@ -2,7 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import ServiceCard from "../components/ServiceCard";
 
-// 1. Dữ liệu các dịch vụ phục hồi & sinh hoạt (HomeCareServicesSection)
+// ============================================================
+// DATA
+// ============================================================
+
 const recoveryServices = [
     "Thay băng, rửa vết thương",
     "Quản lý thuốc và liều lượng",
@@ -15,419 +18,820 @@ const dailyAssistanceTags = [
     "Bầu bạn tâm sự",
 ];
 
-// 2. Dữ liệu quy trình xác minh & chỉ số (CareQualityAssuranceSection)
 const verificationSteps = [
     {
-        title: "Kiểm tra lý lịch tư pháp",
-        description: "Xác minh hồ sơ sạch, không có tiền án tiền sự thông qua cơ quan chức năng.",
+        number: "01",
+        title: "Xác minh hồ sơ",
+        description:
+            "Kiểm tra thông tin cá nhân và hồ sơ chuyên môn trước khi tham gia nền tảng.",
     },
     {
-        title: "Xác thực chứng chỉ hành nghề",
-        description: "Mọi điều dưỡng đều phải có bằng cấp từ các trường y tế chính quy.",
+        number: "02",
+        title: "Xác thực chuyên môn",
+        description:
+            "Đối chiếu bằng cấp, chứng chỉ và kinh nghiệm phù hợp với từng nhóm dịch vụ.",
     },
     {
-        title: "Đánh giá kỹ năng chuyên môn",
-        description: "Thực hiện bài kiểm tra thực hành nghiêm ngặt tại trung tâm đào tạo của chúng tôi.",
+        number: "03",
+        title: "Đánh giá & kết nối",
+        description:
+            "Đánh giá mức độ phù hợp để gia đình có thêm thông tin trước khi lựa chọn người chăm sóc.",
     },
 ];
 
-const assuranceMetrics = [
-    {
-        value: "100%",
-        label: "ĐÃ XÁC MINH",
-        borderColor: "border-[#00677c33]",
-        icon: (
-            <svg className="w-8 h-8 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-            </svg>
-        ),
-    },
-    {
-        value: "Zero",
-        label: "SỰ CỐ AN NINH",
-        borderColor: "border-[#0020451a]",
-        icon: (
-            <svg className="w-8 h-8 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
-            </svg>
-        ),
-    },
-    {
-        value: "4.9/5",
-        label: "ĐÁNH GIÁ TRUNG BÌNH",
-        borderColor: "border-[#0020451a]",
-        icon: (
-            <svg className="w-8 h-8 text-[#00677c]" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-        ),
-    },
-    {
-        value: "Bảo mật",
-        label: "CHUẨN HIPAA",
-        borderColor: "border-[#00677c33]",
-        icon: (
-            <svg className="w-8 h-8 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-        ),
-    },
-];
-
-// 3. Dữ liệu các bước đặt lịch (CareSpecialistBookingSection)
 const bookingSteps = [
     {
         number: "01",
         title: "Mô tả nhu cầu",
-        description: "Cho chúng tôi biết tình trạng sức khỏe và thời gian bạn cần hỗ trợ thông qua ứng dụng hoặc website.",
+        description:
+            "Cho chúng tôi biết người thân cần hỗ trợ gì, thời gian và khu vực chăm sóc.",
     },
     {
         number: "02",
-        title: "Chọn chuyên gia",
-        description: "Hệ thống sẽ gợi ý danh sách 3 chuyên gia phù hợp nhất dựa trên kỹ năng và vị trí địa lý.",
+        title: "Khám phá người chăm sóc",
+        description:
+            "Xem hồ sơ, chuyên môn và thông tin liên quan để tìm người phù hợp.",
     },
     {
         number: "03",
-        title: "Bắt đầu chăm sóc",
-        description: "Phỏng vấn nhanh và xác nhận lịch hẹn. Chuyên gia sẽ có mặt tại nhà bạn đúng thời gian cam kết.",
+        title: "Xác nhận lịch chăm sóc",
+        description:
+            "Trao đổi, xác nhận lịch hẹn và bắt đầu hành trình chăm sóc tại nhà.",
     },
 ];
 
+// ============================================================
+// SMALL ICON COMPONENTS
+// ============================================================
+
+function CheckIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
+    );
+}
+
+function ArrowIcon({ className = "w-4 h-4" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M5 12h14" />
+            <path d="m13 6 6 6-6 6" />
+        </svg>
+    );
+}
+
+function HeartIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+        </svg>
+    );
+}
+
+function ShieldIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M12 3 20 6v5c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6l8-3Z" />
+            <path d="m9 12 2 2 4-4" />
+        </svg>
+    );
+}
+
+function UserIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <circle cx="12" cy="8" r="3.5" />
+            <path d="M4.5 20c.8-3.6 3.2-5.5 7.5-5.5s6.7 1.9 7.5 5.5" />
+        </svg>
+    );
+}
+
+function ActivityIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M3 12h4l2.2-6 4.1 12 2.2-6H21" />
+        </svg>
+    );
+}
+
+// ============================================================
+// PAGE
+// ============================================================
+
 export default function ForFamily() {
     return (
-        <div className="flex flex-col w-full">
-                {/* ============================================================ */}
-                {/* 1. ELDER CARE HERO SECTION                                   */}
-                {/* ============================================================ */}
-                <section className="relative w-full py-16 lg:py-24 bg-white border-b border-gray-100">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12">
-                        {/* Cột thông tin văn bản */}
-                        <div className="flex-1 flex flex-col items-start gap-6 max-w-xl lg:max-w-2xl">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6f3f5] border border-[#00677c33]">
-                                <svg className="w-4 h-4 text-[#00677c]" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-xs font-semibold text-[#00677c]">Đã được kiểm định y tế</span>
+        <div className="w-full bg-[#F7F6F2] text-[#102A2F] antialiased">
+
+            {/* ========================================================
+                1. HERO
+            ======================================================== */}
+
+            <section className="relative overflow-hidden">
+
+                {/* Soft background decoration */}
+                <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#DDEDEA]/50 blur-3xl pointer-events-none" />
+
+                <div className="relative max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-10 lg:pt-16 pb-16 lg:pb-24">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] gap-12 lg:gap-16 items-center">
+
+                        {/* =========================
+                            HERO COPY
+                        ========================= */}
+
+                        <div className="max-w-[590px]">
+
+                            {/* Eyebrow */}
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className="w-8 h-px bg-[#187D74]" />
+
+                                <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] text-[#187D74]">
+                                    Dành cho gia đình
+                                </span>
                             </div>
 
-                            <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#102030] tracking-tight leading-[1.2]">
-                                Chăm sóc chuyên nghiệp <br />
-                                <span className="text-[#00677c]">cho ông bà, cha mẹ tại nhà</span>
+                            {/* Heading */}
+                            <h1 className="text-[42px] sm:text-[50px] lg:text-[55px] font-semibold tracking-[-0.045em] leading-[1.04] text-[#102A2F]">
+                                Chăm sóc người thân,
+                                <span className="block text-[#187D74]">
+                                    an tâm ở nhà.
+                                </span>
                             </h1>
 
-                            <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-                                Kết nối với đội ngũ điều dưỡng và chuyên gia chăm sóc sức khỏe tận tâm, mang lại sự an tâm tuyệt đối cho gia đình bạn ngay tại tổ ấm thân thương.
+                            {/* Description */}
+                            <p className="mt-7 max-w-[520px] text-[16px] sm:text-[17px] leading-7 text-[#657473]">
+                                Kết nối gia đình với những người chăm sóc phù hợp
+                                cho nhu cầu sức khỏe và sinh hoạt hằng ngày —
+                                ngay tại không gian thân thuộc của người thân.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto pt-2">
+                            {/* CTA */}
+                            <div className="flex flex-col sm:flex-row gap-3 mt-9">
+
                                 <Link
                                     to="/services"
-                                    className="px-8 py-3.5 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 text-center inline-flex items-center justify-center"
+                                    className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        gap-2
+                                        h-12
+                                        px-6
+                                        rounded-xl
+                                        bg-[#187D74]
+                                        text-white
+                                        text-sm
+                                        font-semibold
+                                        shadow-[0_10px_25px_-12px_rgba(24,125,116,0.7)]
+                                        hover:bg-[#126A63]
+                                        hover:-translate-y-0.5
+                                        transition-all
+                                    "
                                 >
-                                    Tìm chuyên gia phù hợp
+                                    Tìm người chăm sóc
+                                    <ArrowIcon />
+                                </Link>
+
+                                <Link
+                                    to="/services"
+                                    className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        h-12
+                                        px-6
+                                        rounded-xl
+                                        border
+                                        border-[#CBD5D2]
+                                        bg-white/60
+                                        text-[#294247]
+                                        text-sm
+                                        font-semibold
+                                        hover:bg-white
+                                        hover:border-[#AFC0BC]
+                                        transition-all
+                                    "
+                                >
+                                    Khám phá dịch vụ
                                 </Link>
                             </div>
 
-                            <div className="flex items-center gap-4 pt-4 border-t border-gray-100 w-full">
-                                <div className="flex -space-x-2">
-                                    <img
-                                        className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                                        src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=100"
-                                        alt="Chuyên gia y tế"
-                                    />
-                                    <img
-                                        className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                                        src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=100"
-                                        alt="Điều dưỡng viên"
-                                    />
-                                    <img
-                                        className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                                        src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400"
-                                        alt="Người chăm sóc"
-                                    />
+                            {/* Trust line */}
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-8 pt-7 border-t border-[#DDE3E0]">
+
+                                <div className="flex items-center gap-2 text-[12px] text-[#61706F]">
+                                    <ShieldIcon className="w-4 h-4 text-[#187D74]" />
+                                    <span>Thông tin hồ sơ rõ ràng</span>
                                 </div>
-                                <div>
-                                    <strong className="text-sm font-bold text-[#102030] block">2,500+</strong>
-                                    <span className="text-xs text-gray-500">Chuyên gia đã sẵn sàng</span>
+
+                                <div className="flex items-center gap-2 text-[12px] text-[#61706F]">
+                                    <HeartIcon className="w-4 h-4 text-[#187D74]" />
+                                    <span>Chăm sóc tại nhà</span>
                                 </div>
+
                             </div>
                         </div>
 
-                        {/* Cột ảnh hero */}
-                        <div className="flex-1 w-full relative">
-                            <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-[4/3]">
+                        {/* =========================
+                            HERO IMAGE
+                        ========================= */}
+
+                        <div className="relative">
+
+                            <div className="relative overflow-hidden rounded-[28px] aspect-[4/3] lg:aspect-[1.08/1] shadow-[0_28px_70px_-30px_rgba(15,42,47,0.35)]">
+
                                 <img
-                                    src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=1000"
-                                    alt="Chăm sóc người già tại nhà"
-                                    className="w-full h-full object-cover"
+                                    src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=85&w=1400"
+                                    alt="Người chăm sóc đồng hành cùng người cao tuổi tại nhà"
+                                    className="absolute inset-0 w-full h-full object-cover"
                                 />
+
+                                {/* Soft image gradient */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-[#102A2F]/20 via-transparent to-white/10 pointer-events-none" />
+
                             </div>
 
-                            <div className="absolute -bottom-6 left-6 right-6 sm:left-10 sm:right-10 bg-white/95 backdrop-blur-md p-5 rounded-2xl border border-gray-200 shadow-xl flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-[#e6f3f5] flex items-center justify-center shrink-0">
-                                    <svg className="w-6 h-6 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.48-5.72A11.956 11.956 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-[#102030]">Bảo hiểm trách nhiệm 10 tỷ VNĐ</h4>
-                                    <p className="text-xs text-gray-500 mt-0.5">Cam kết an toàn tuyệt đối cho người thân của bạn.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                            {/* Floating information — intentionally subtle */}
+                            <div className="absolute left-5 sm:left-7 bottom-5 sm:bottom-7">
 
-                {/* ============================================================ */}
-                {/* 2. HOME CARE SERVICES SECTION (Bento Grid)                   */}
-                {/* ============================================================ */}
-                <section className="w-full py-20 bg-[#f4f7f8] border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
-                        <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-                            <h2 className="text-3xl font-bold text-[#102030]">Dịch vụ chăm sóc toàn diện</h2>
-                            <p className="text-gray-600 text-sm sm:text-base">
-                                Chúng tôi cung cấp các giải pháp y tế chuyên biệt, được thiết kế riêng cho nhu cầu của từng thành viên trong gia đình.
-                            </p>
-                        </div>
+                                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/92 backdrop-blur-md border border-white/70 shadow-[0_12px_35px_-15px_rgba(15,42,47,0.3)]">
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                            {/* ĐÃ CHỈNH: lg:col-span-8 thành lg:col-span-7 để thu hẹp lại 1 chút */}
-                            <div className="lg:col-span-7">
-                                <ServiceCard
-                                    title="Chăm sóc sau phẫu thuật (Post-op care)"
-                                    description="Chăm sóc phục hồi sau phẫu thuật chuyên nghiệp. Đảm bảo vết thương mau lành và ngăn ngừa biến chứng với sự giám sát của điều dưỡng có bằng cấp."
-                                    tags={recoveryServices}
-                                    icon={
-                                        <svg className="w-6 h-6 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                        </svg>
-                                    }
-                                    className="bg-white h-full"
-                                />
-                            </div>
-
-                            {/* ĐÃ CHỈNH: lg:col-span-4 thành lg:col-span-5 để kéo giãn sang trái & Thêm border, shadow để sang xịn hơn */}
-                            <div className="lg:col-span-5">
-                                <article className="h-full bg-[#102030] text-white rounded-3xl p-8 flex flex-col justify-between shadow-2xl border border-white/10 relative overflow-hidden transition-transform hover:-translate-y-1">
-                                    {/* Ánh sáng glow mờ nền xanh tôn vinh màu sắc */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#00677c] rounded-full blur-3xl opacity-20 pointer-events-none" />
-
-                                    <div className="flex flex-col gap-3 relative z-10">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/5">
-                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                            </svg>
-                                        </div>
-                                        <h3 className="text-xl font-bold mt-2">Hỗ trợ sinh hoạt (Daily assistance)</h3>
-                                        <p className="text-sm text-gray-300 leading-relaxed">
-                                            Hỗ trợ các hoạt động sinh hoạt hàng ngày với sự tôn trọng và thấu hiểu sâu sắc.
-                                        </p>
+                                    <div className="w-9 h-9 rounded-xl bg-[#E4F1EE] flex items-center justify-center text-[#187D74]">
+                                        <CheckIcon className="w-4 h-4" />
                                     </div>
-                                    <div className="flex flex-wrap gap-2 pt-6 relative z-10">
-                                        {dailyAssistanceTags.map((tag) => (
-                                            <span key={tag} className="px-3 py-1.5 rounded-full bg-white/10 border border-white/5 text-xs font-medium text-white shadow-sm">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </article>
-                            </div>
 
-                            <div className="lg:col-span-4">
-                                <ServiceCard
-                                    title="Theo dõi y tế chuyên sâu"
-                                    description="Theo dõi sát sao các chỉ số sinh tồn và diễn biến bệnh lý mãn tính như tiểu đường, huyết áp."
-                                    icon={
-                                        <svg className="w-6 h-6 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                                        </svg>
-                                    }
-                                    className="bg-white h-full"
-                                />
-                            </div>
-
-                            <div className="lg:col-span-8">
-                                <article className="h-full bg-[#e6f3f5] rounded-3xl p-8 border border-[#00677c33] flex flex-col sm:flex-row items-center justify-between gap-6 transition-transform hover:-translate-y-1">
-                                    <div className="flex flex-col gap-3 max-w-md">
-                                        <h3 className="text-xl font-bold text-[#102030]">Chăm sóc theo yêu cầu 24/7</h3>
-                                        <p className="text-sm text-gray-600 leading-relaxed">
-                                            Đội ngũ phản ứng nhanh luôn sẵn sàng cho các tình huống cần hỗ trợ khẩn cấp hoặc chăm sóc ngắn hạn.
-                                        </p>
-                                        <button
-                                            type="button"
-                                            className="w-fit mt-2 px-6 py-2.5 bg-[#00677c] text-white rounded-xl text-sm font-semibold hover:bg-[#005263] transition-all shadow-md hover:shadow-lg"
-                                        >
-                                            Kết nối ngay bây giờ
-                                        </button>
-                                    </div>
-                                    <img
-                                        src="https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400"
-                                        alt="Chăm sóc 24/7"
-                                        className="w-full sm:w-48 h-36 object-cover rounded-2xl shadow-md border border-white"
-                                    />
-                                </article>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* ============================================================ */}
-                {/* 3. CARE QUALITY ASSURANCE SECTION                            */}
-                {/* ============================================================ */}
-                <section className="w-full py-20 bg-white border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-16">
-                        <div className="flex-1 flex flex-col gap-8">
-                            <div>
-                                <h2 className="text-3xl font-bold text-[#102030] leading-tight">
-                                    An tâm với hệ thống <br />
-                                    <span className="text-[#00677c]">xác minh 5 bước nghiêm ngặt</span>
-                                </h2>
-                                <p className="text-gray-600 text-sm sm:text-base mt-3">
-                                    Tiêu chuẩn tuyển chọn khắt khe để đảm bảo chỉ những điều dưỡng viên ưu tú nhất được đồng hành cùng gia đình bạn.
-                                </p>
-                            </div>
-
-                            <div className="flex flex-col gap-6">
-                                {verificationSteps.map((step, idx) => (
-                                    <div key={step.title} className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-[#00677c] text-white font-bold flex items-center justify-center shrink-0 shadow-md">
-                                            {idx + 1}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-base font-bold text-[#102030]">{step.title}</h4>
-                                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">{step.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="flex-1 grid grid-cols-2 gap-6 w-full">
-                            {assuranceMetrics.map((metric) => (
-                                <div
-                                    key={metric.label}
-                                    className={`p-6 rounded-3xl bg-[#f4f7f8] border ${metric.borderColor} flex flex-col items-center text-center gap-3 shadow-sm hover:shadow-md transition-all`}
-                                >
-                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                                        {metric.icon}
-                                    </div>
-                                    <strong className="text-3xl font-bold text-[#102030]">{metric.value}</strong>
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{metric.label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* ============================================================ */}
-                {/* 4. CARE SPECIALIST BOOKING SECTION                           */}
-                {/* ============================================================ */}
-                <section className="w-full py-20 bg-[#f4f7f8] border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
-                        {/* Khung Cách đặt chuyên gia: Màu xanh đậm mềm mại chuẩn Figma (#183354 / gradient navy) */}
-                        <div className="w-full bg-gradient-to-br from-[#1b385e] to-[#122842] text-white rounded-[40px] p-8 sm:p-14 flex flex-col gap-12 shadow-2xl border border-white/10 relative overflow-hidden">
-                            {/* Highlight nhạt phía trên bên phải */}
-                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#4fd9fd] rounded-full blur-[90px] opacity-15 pointer-events-none" />
-
-                            <div className="relative z-10">
-                                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Cách đặt chuyên gia chăm sóc</h2>
-                                <p className="text-slate-300 text-sm sm:text-base mt-2">
-                                    Đơn giản, nhanh chóng và minh bạch chỉ trong vài phút.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                                {bookingSteps.map((step) => (
-                                    <div key={step.number} className="flex flex-col gap-4 p-8 rounded-3xl bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] transition-all shadow-inner backdrop-blur-sm">
-                                        <div className="w-14 h-14 rounded-2xl bg-[#005263] border border-cyan-400/30 flex items-center justify-center shadow-md">
-                                            <span className="text-2xl font-extrabold text-[#8ae5fa]">{step.number}</span>
-                                        </div>
-                                        <h3 className="text-xl font-bold">{step.title}</h3>
-                                        <p className="text-sm text-slate-300 leading-relaxed">{step.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <aside className="rounded-2xl bg-white/[0.08] border border-white/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-[#5cd6f7]/20 border border-[#5cd6f7]/30 flex items-center justify-center shrink-0">
-                                        <svg className="w-6 h-6 text-[#5cd6f7]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                                        </svg>
-                                    </div>
                                     <div>
-                                        <h4 className="text-base font-bold text-white">Bạn cần tư vấn trực tiếp?</h4>
-                                        <p className="text-xs text-slate-300 mt-0.5">
-                                            Đội ngũ chuyên viên y tế của chúng tôi luôn sẵn sàng hỗ trợ bạn lựa chọn.
+                                        <p className="text-[11px] font-semibold text-[#263C40]">
+                                            Quy trình lựa chọn rõ ràng
+                                        </p>
+
+                                        <p className="text-[10px] text-[#7A8785] mt-0.5">
+                                            Tìm hiểu trước khi kết nối
                                         </p>
                                     </div>
+
                                 </div>
-                                <a
-                                    href="tel:19006868"
-                                    className="px-6 py-3 bg-[#5cd6f7] hover:bg-[#43cbe9] text-[#0f2e3d] rounded-xl font-bold transition-all shadow-md whitespace-nowrap"
-                                >
-                                    Gọi: 1900 6868 (Miễn phí)
-                                </a>
-                            </aside>
+                            </div>
+
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
 
-                {/* ============================================================ */}
-                {/* 5. ELDER CARE CTA SECTION                                    */}
-                {/* ============================================================ */}
-                {/* ĐÃ CHỈNH: Đổi màu nền sang bg-[#f4f7f8] (Xám nhạt) */}
-                <section className="w-full py-24 bg-[#f4f7f8]">
-                    <div className="max-w-4xl mx-auto px-4 text-center flex flex-col items-center gap-6">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-[#102030] leading-tight">
-                            Sẵn sàng để người thân được <br />
-                            <span className="text-[#00677c]">chăm sóc tốt nhất?</span>
-                        </h2>
+            {/* ========================================================
+                2. SERVICES
+            ======================================================== */}
 
-                        <p className="text-gray-600 text-base max-w-xl leading-relaxed">
-                            Hàng ngàn gia đình đã tin tưởng chọn CareLink để đồng hành cùng sức khỏe của ông bà, cha mẹ.
+            <section className="bg-[#EEEFEA] border-y border-[#E0E3DE]">
+
+                <div className="max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-10 py-20 lg:py-24">
+
+                    {/* Section heading */}
+                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-12">
+
+                        <div className="max-w-[650px]">
+
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="w-7 h-px bg-[#187D74]" />
+
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#187D74]">
+                                    Dịch vụ chăm sóc
+                                </span>
+                            </div>
+
+                            <h2 className="text-[34px] sm:text-[40px] font-semibold tracking-[-0.035em] leading-tight text-[#102A2F]">
+                                Một người chăm sóc phù hợp
+                                <span className="block text-[#687675]">
+                                    có thể tạo nên rất nhiều khác biệt.
+                                </span>
+                            </h2>
+
+                        </div>
+
+                        <p className="max-w-[380px] text-sm leading-6 text-[#697876]">
+                            Từ hỗ trợ sinh hoạt hằng ngày đến theo dõi sức khỏe,
+                            gia đình có thể lựa chọn dịch vụ dựa trên nhu cầu
+                            thực tế của người thân.
                         </p>
 
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                            <Link
-                                to="/services"
-                                className="px-8 py-4 bg-[#00677c] text-white font-semibold rounded-xl hover:bg-[#005566] transition-all shadow-xl hover:-translate-y-0.5 text-center inline-flex items-center justify-center"
-                            >
-                                Tìm chuyên gia phù hợp
-                            </Link>
-                            <button
-                                type="button"
-                                className="px-8 py-4 bg-white border border-gray-200 text-[#102030] font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-sm"
-                            >
-                                Tải ứng dụng cho gia đình
-                            </button>
-                        </div>
-
-                        {/* ĐÃ CHỈNH: Thêm 3 huy hiệu chứng nhận (Trust Badges) y hệt như thiết kế Figma */}
-                        <div className="flex items-center justify-center gap-8 mt-12 pt-8 border-t border-gray-200/60">
-                            {/* Huy hiệu 1: Chứng chỉ chất lượng */}
-                            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white shadow-sm border border-gray-100 text-[#00677c] hover:scale-110 transition-transform">
-                                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-
-                            {/* Huy hiệu 2: Y tế chuẩn mực */}
-                            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#e6f3f5] shadow-sm border border-[#00677c]/10 text-[#00677c] hover:scale-110 transition-transform">
-                                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
-
-                            {/* Huy hiệu 3: Bảo mật tuyệt đối */}
-                            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white shadow-sm border border-gray-100 text-[#00677c] hover:scale-110 transition-transform">
-                                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                        </div>
                     </div>
-                </section>
+
+                    {/* Editorial service grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                        {/* Large service */}
+                        <div className="lg:col-span-7">
+                            <ServiceCard
+                                title="Chăm sóc sau phẫu thuật"
+                                description="Hỗ trợ quá trình phục hồi tại nhà với các công việc chăm sóc phù hợp và sự theo dõi cần thiết."
+                                tags={recoveryServices}
+                                icon={
+                                    <ActivityIcon className="w-5 h-5 text-[#187D74]" />
+                                }
+                                className="
+                                    h-full
+                                    bg-[#FBFAF7]
+                                    border
+                                    border-[#E1E5E1]
+                                    rounded-[24px]
+                                    shadow-none
+                                    hover:shadow-[0_18px_40px_-28px_rgba(15,42,47,0.35)]
+                                    transition-all
+                                "
+                            />
+                        </div>
+
+                        {/* Dark editorial card */}
+                        <div className="lg:col-span-5">
+
+                            <article className="
+                                h-full
+                                min-h-[280px]
+                                relative
+                                overflow-hidden
+                                rounded-[24px]
+                                bg-[#16383B]
+                                text-white
+                                p-8
+                                sm:p-9
+                                flex
+                                flex-col
+                                justify-between
+                            ">
+
+                                {/* Decorative circle */}
+                                <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-[#4AA69C]/20 blur-2xl" />
+
+                                <div className="relative z-10">
+
+                                    <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
+                                        <HeartIcon className="w-5 h-5 text-[#B9E1DB]" />
+                                    </div>
+
+                                    <h3 className="mt-7 text-[25px] font-semibold tracking-[-0.025em]">
+                                        Hỗ trợ sinh hoạt
+                                    </h3>
+
+                                    <p className="mt-3 text-sm leading-6 text-white/65 max-w-[400px]">
+                                        Những hỗ trợ nhỏ trong cuộc sống hằng ngày
+                                        có thể giúp người thân cảm thấy thoải mái
+                                        và được đồng hành hơn.
+                                    </p>
+
+                                </div>
+
+                                <div className="relative z-10 flex flex-wrap gap-2 mt-8">
+
+                                    {dailyAssistanceTags.map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="
+                                                px-3
+                                                py-1.5
+                                                rounded-lg
+                                                bg-white/[0.08]
+                                                border
+                                                border-white/10
+                                                text-[11px]
+                                                text-white/80
+                                            "
+                                        >
+                                            {tag}
+                                        </span>
+                                    ))}
+
+                                </div>
+
+                            </article>
+
+                        </div>
+
+                        {/* Smaller service */}
+                        <div className="lg:col-span-5">
+
+                            <ServiceCard
+                                title="Theo dõi sức khỏe"
+                                description="Hỗ trợ theo dõi các chỉ số và tình trạng sức khỏe theo nhu cầu của từng người."
+                                icon={
+                                    <ActivityIcon className="w-5 h-5 text-[#187D74]" />
+                                }
+                                className="
+                                    h-full
+                                    bg-[#FBFAF7]
+                                    border
+                                    border-[#E1E5E1]
+                                    rounded-[24px]
+                                    shadow-none
+                                    hover:shadow-[0_18px_40px_-28px_rgba(15,42,47,0.35)]
+                                    transition-all
+                                "
+                            />
+
+                        </div>
+
+                        {/* Image editorial card */}
+                        <div className="lg:col-span-7">
+
+                            <article className="
+                                h-full
+                                min-h-[260px]
+                                relative
+                                overflow-hidden
+                                rounded-[24px]
+                                bg-[#DCEAE7]
+                            ">
+
+                                <img
+                                    src="https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=85&w=1000"
+                                    alt="Chăm sóc người cao tuổi"
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                />
+
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#102A2F]/80 via-[#102A2F]/35 to-transparent" />
+
+                                <div className="relative z-10 h-full min-h-[260px] p-8 sm:p-9 flex flex-col justify-end">
+
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-white/70">
+                                        Linh hoạt theo nhu cầu
+                                    </span>
+
+                                    <h3 className="mt-2 text-[26px] font-semibold text-white tracking-[-0.025em]">
+                                        Chăm sóc tại nhà
+                                    </h3>
+
+                                    <p className="mt-2 max-w-[430px] text-sm leading-6 text-white/75">
+                                        Gia đình có thể tìm kiếm và kết nối với
+                                        người chăm sóc phù hợp với thời gian
+                                        và nhu cầu cụ thể.
+                                    </p>
+
+                                </div>
+
+                            </article>
+
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            {/* ========================================================
+                3. VERIFICATION
+            ======================================================== */}
+
+            <section className="bg-[#F7F6F2]">
+
+                <div className="max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-10 py-20 lg:py-28">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[0.82fr_1.18fr] gap-14 lg:gap-24 items-start">
+
+                        {/* Left */}
+                        <div className="lg:sticky lg:top-24">
+
+                            <div className="flex items-center gap-3 mb-5">
+                                <span className="w-7 h-px bg-[#187D74]" />
+
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#187D74]">
+                                    Minh bạch & tin cậy
+                                </span>
+                            </div>
+
+                            <h2 className="text-[36px] sm:text-[42px] font-semibold tracking-[-0.04em] leading-[1.08] text-[#102A2F]">
+                                Biết rõ người
+                                <span className="block text-[#187D74]">
+                                    bạn đang kết nối.
+                                </span>
+                            </h2>
+
+                            <p className="mt-6 text-[15px] leading-7 text-[#697876] max-w-[460px]">
+                                CareLink hướng đến một quy trình minh bạch,
+                                nơi gia đình có thể tìm hiểu thông tin trước
+                                khi lựa chọn người chăm sóc.
+                            </p>
+
+                            <div className="mt-8 flex items-center gap-3">
+
+                                <div className="w-10 h-10 rounded-xl bg-[#E3EFEC] flex items-center justify-center text-[#187D74]">
+                                    <ShieldIcon className="w-5 h-5" />
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold text-[#304447]">
+                                        Quy trình xác minh
+                                    </p>
+
+                                    <p className="text-[11px] text-[#7B8785] mt-0.5">
+                                        Từ hồ sơ đến thông tin chuyên môn
+                                    </p>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {/* Right timeline */}
+                        <div className="relative">
+
+                            {/* Vertical line */}
+                            <div className="absolute left-[19px] top-5 bottom-5 w-px bg-[#D6DFDC]" />
+
+                            <div className="space-y-10">
+
+                                {verificationSteps.map((step) => (
+                                    <div
+                                        key={step.number}
+                                        className="relative flex gap-6"
+                                    >
+
+                                        {/* Number */}
+                                        <div className="
+                                            relative
+                                            z-10
+                                            w-10
+                                            h-10
+                                            shrink-0
+                                            rounded-full
+                                            bg-[#187D74]
+                                            text-white
+                                            flex
+                                            items-center
+                                            justify-center
+                                            text-[11px]
+                                            font-semibold
+                                            shadow-[0_5px_15px_-8px_rgba(24,125,116,0.7)]
+                                        ">
+                                            {step.number}
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="pt-1 pb-2">
+
+                                            <h3 className="text-[19px] font-semibold tracking-[-0.015em] text-[#20373B]">
+                                                {step.title}
+                                            </h3>
+
+                                            <p className="mt-2 max-w-[570px] text-[14px] leading-6 text-[#71807E]">
+                                                {step.description}
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+                                ))}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            {/* ========================================================
+                4. HOW IT WORKS
+            ======================================================== */}
+
+            <section className="bg-[#16383B] text-white overflow-hidden">
+
+                <div className="max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-10 py-20 lg:py-24">
+
+                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12">
+
+                        <div>
+
+                            <div className="flex items-center gap-3 mb-5">
+                                <span className="w-7 h-px bg-[#8FCBC3]" />
+
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A9D8D2]">
+                                    Bắt đầu thật đơn giản
+                                </span>
+                            </div>
+
+                            <h2 className="text-[36px] sm:text-[44px] font-semibold tracking-[-0.04em] leading-tight">
+                                Từ nhu cầu
+                                <span className="text-[#A9D8D2]">
+                                    {" "}đến kết nối.
+                                </span>
+                            </h2>
+
+                        </div>
+
+                        <p className="max-w-[390px] text-sm leading-6 text-white/60">
+                            Một quy trình ngắn gọn để gia đình có thể tập trung
+                            vào điều quan trọng nhất: người thân của mình.
+                        </p>
+
+                    </div>
+
+                    {/* Steps */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white/10">
+
+                        {bookingSteps.map((step, index) => (
+                            <div
+                                key={step.number}
+                                className={`
+                                    relative
+                                    py-9
+                                    md:px-8
+                                    ${index !== 0 ? "md:border-l border-white/10" : ""}
+                                `}
+                            >
+
+                                <span className="text-[12px] font-semibold tracking-[0.16em] text-[#8FCBC3]">
+                                    {step.number}
+                                </span>
+
+                                <h3 className="mt-5 text-[23px] font-semibold tracking-[-0.02em]">
+                                    {step.title}
+                                </h3>
+
+                                <p className="mt-3 text-sm leading-6 text-white/55 max-w-[330px]">
+                                    {step.description}
+                                </p>
+
+                            </div>
+                        ))}
+
+                    </div>
+
+                    {/* Bottom CTA */}
+                    <div className="mt-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+
+                        <div className="flex items-center gap-3">
+
+                            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
+                                <UserIcon className="w-5 h-5 text-[#A9D8D2]" />
+                            </div>
+
+                            <div>
+                                <p className="text-sm font-semibold">
+                                    Bạn chưa biết bắt đầu từ đâu?
+                                </p>
+
+                                <p className="text-[11px] text-white/50 mt-0.5">
+                                    Khám phá các dịch vụ phù hợp với gia đình.
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <Link
+                            to="/services"
+                            className="
+                                inline-flex
+                                items-center
+                                justify-center
+                                gap-2
+                                h-11
+                                px-5
+                                rounded-xl
+                                bg-[#A9D8D2]
+                                text-[#16383B]
+                                text-sm
+                                font-semibold
+                                hover:bg-white
+                                transition-colors
+                            "
+                        >
+                            Xem người chăm sóc
+                            <ArrowIcon className="w-4 h-4" />
+                        </Link>
+
+                    </div>
+
+                </div>
+            </section>
+
+            {/* ========================================================
+                5. FINAL CTA
+            ======================================================== */}
+
+            <section className="bg-[#F7F6F2]">
+
+                <div className="max-w-[1000px] mx-auto px-5 sm:px-8 py-24 lg:py-32 text-center">
+
+                    <div className="flex justify-center mb-6">
+
+                        <div className="w-11 h-11 rounded-2xl bg-[#E1EFEC] text-[#187D74] flex items-center justify-center">
+                            <HeartIcon className="w-5 h-5" />
+                        </div>
+
+                    </div>
+
+                    <h2 className="text-[36px] sm:text-[46px] font-semibold tracking-[-0.045em] leading-[1.08] text-[#102A2F]">
+                        Để việc chăm sóc
+                        <span className="block text-[#187D74]">
+                            trở nên nhẹ nhàng hơn.
+                        </span>
+                    </h2>
+
+                    <p className="max-w-[560px] mx-auto mt-6 text-[15px] leading-7 text-[#6D7B79]">
+                        Bắt đầu tìm hiểu các dịch vụ và người chăm sóc phù hợp
+                        với nhu cầu của gia đình bạn.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 mt-9">
+
+                        <Link
+                            to="/services"
+                            className="
+                                inline-flex
+                                items-center
+                                justify-center
+                                gap-2
+                                h-12
+                                px-7
+                                rounded-xl
+                                bg-[#187D74]
+                                text-white
+                                text-sm
+                                font-semibold
+                                shadow-[0_10px_25px_-12px_rgba(24,125,116,0.65)]
+                                hover:bg-[#126A63]
+                                hover:-translate-y-0.5
+                                transition-all
+                            "
+                        >
+                            Tìm người chăm sóc
+                            <ArrowIcon />
+                        </Link>
+
+                        <Link
+                            to="/"
+                            className="
+                                inline-flex
+                                items-center
+                                justify-center
+                                h-12
+                                px-7
+                                rounded-xl
+                                bg-white
+                                border
+                                border-[#D8DFDC]
+                                text-[#304447]
+                                text-sm
+                                font-semibold
+                                hover:bg-[#FBFAF7]
+                                transition-all
+                            "
+                        >
+                            Tìm hiểu thêm về CareLink
+                        </Link>
+
+                    </div>
+
+                </div>
+            </section>
+
         </div>
     );
 }

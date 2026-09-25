@@ -21,6 +21,7 @@ export default function Rating({
     readonly = false,
     size = "md",
     showValue = false,
+    showLabel = false,
 }) {
     const [hovered, setHovered] = useState(0);
 
@@ -41,9 +42,9 @@ export default function Rating({
             )}
 
             <div className="flex items-center gap-2">
-                {/* Stars */}
+                {/* Stars container */}
                 <div
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1.5"
                     onMouseLeave={() => !readonly && setHovered(0)}
                 >
                     {Array.from({ length: max }, (_, i) => {
@@ -56,17 +57,16 @@ export default function Rating({
                                 disabled={readonly}
                                 onClick={() => !readonly && onChange?.(star)}
                                 onMouseEnter={() => !readonly && setHovered(star)}
-                                className={`transition-all duration-150 focus:outline-none ${
-                                    readonly ? "cursor-default" : "cursor-pointer hover:scale-110"
-                                }`}
+                                className={`p-1 -m-1 inline-flex items-center justify-center focus:outline-none group select-none ${readonly ? "cursor-default" : "cursor-pointer"
+                                    }`}
                                 aria-label={`${star} sao`}
                             >
                                 <svg
-                                    className={`${starSize} transition-colors duration-150 ${
-                                        filled
+                                    className={`${starSize} transition-transform duration-150 ${!readonly ? "group-hover:scale-120 group-active:scale-95" : ""
+                                        } ${filled
                                             ? "text-amber-400 drop-shadow-[0_1px_2px_rgba(251,191,36,0.5)]"
-                                            : "text-slate-200"
-                                    }`}
+                                            : "text-slate-200 group-hover:text-slate-300"
+                                        }`}
                                     viewBox="0 0 24 24"
                                     fill={filled ? "currentColor" : "none"}
                                     stroke="currentColor"
@@ -83,15 +83,15 @@ export default function Rating({
                     })}
                 </div>
 
-                {/* Value label */}
-                {!readonly && active > 0 && (
-                    <span className="text-xs font-semibold text-amber-500 animate-fade-in">
+                {/* Value label - Chỉ hiện khi showLabel=true */}
+                {showLabel && !readonly && active > 0 && (
+                    <span className="text-xs font-semibold text-amber-500 animate-fade-in whitespace-nowrap">
                         {labels[active]}
                     </span>
                 )}
 
                 {showValue && value > 0 && (
-                    <span className="text-sm font-bold text-[#102030]">
+                    <span className="text-sm font-bold text-[#102030] whitespace-nowrap">
                         {value.toFixed(1)}
                     </span>
                 )}
