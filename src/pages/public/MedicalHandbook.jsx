@@ -104,6 +104,7 @@ export default function MedicalHandbook() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeArticleModal, setActiveArticleModal] = useState(null);
     const [openFaqIndex, setOpenFaqIndex] = useState(0);
+    const [showDisclaimer, setShowDisclaimer] = useState(true);
 
     const filteredArticles = useMemo(() => {
         return articles.filter((article) => {
@@ -125,6 +126,38 @@ export default function MedicalHandbook() {
             <section className="relative bg-gradient-to-b from-teal-900 via-[#004857] to-[#00677c] text-white py-16 lg:py-20 overflow-hidden">
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
                 <div className="absolute -top-24 -right-24 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
+
+                {/* Thông báo Disclaimer y khoa sáng rõ, nổi bật, sang xịn đẹp sát góc trên bên phải */}
+                {showDisclaimer && (
+                    <div className="absolute top-3 sm:top-4 right-3 sm:right-5 lg:right-6 z-20 max-w-[340px] sm:max-w-[390px] bg-white/95 backdrop-blur-md border-2 border-white/90 text-slate-800 rounded-2xl p-3 sm:py-3 sm:px-4 shadow-[0_12px_32px_rgba(0,0,0,0.22)] flex items-start gap-2.5 text-left transition-all hover:shadow-[0_14px_36px_rgba(0,0,0,0.28)]">
+                        <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                            <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="flex-1 min-w-0 pr-0.5">
+                            <div className="flex items-center gap-1.5 leading-none">
+                                <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-800">
+                                    Lưu ý y khoa
+                                </span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            </div>
+                            <p className="text-[11.5px] sm:text-xs leading-relaxed text-slate-600 font-medium mt-1">
+                                Nội dung mang tính tham khảo từ nguồn uy tín. Vui lòng tham vấn bác sĩ trước khi áp dụng.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowDisclaimer(false)}
+                            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors shrink-0 cursor-pointer -mt-0.5 -mr-1"
+                            title="Đóng thông báo"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
 
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center gap-6">
                     <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-semibold text-teal-200 tracking-wide uppercase shadow-sm">
@@ -169,16 +202,6 @@ export default function MedicalHandbook() {
                     </div>
                 </div>
             </section>
-
-            {/* ═══ DISCLAIMER Y KHOA ═══ */}
-            <div className="bg-amber-50/80 border-b border-amber-200/60">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-900 font-medium text-center flex-wrap">
-                    <svg className="w-4 h-4 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                    </svg>
-                    <span>Nội dung được tổng hợp từ các nguồn y khoa uy tín, mang tính tham khảo. Vui lòng tham vấn bác sĩ trước khi áp dụng.</span>
-                </div>
-            </div>
 
             {/* ═══ 2. THANH DANH MỤC ═══ */}
             <nav className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">

@@ -67,7 +67,7 @@ export default function Login() {
                     targetRole === "admin"
                         ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
                         : targetRole === "caregiver"
-                            ? "https://images.unsplash.com/photo-1594824813572-87002fa8c591?w=150&auto=format&fit=crop&q=80"
+                            ? "/images/caregiver_avatar.svg"
                             : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             })
         );

@@ -220,27 +220,27 @@ export default function AdminLayout() {
             <div className="flex flex-1 items-stretch min-h-[calc(100vh-4rem)]">
                 {/* ── DESKTOP SIDEBAR: Tự động co giãn dài theo đúng độ dài nội dung của trang, bắt đầu sát dưới header ── */}
                 <aside
-                    className={`hidden lg:flex flex-col bg-white border-r border-slate-200/90 shadow-[2px_0_6px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out shrink-0 self-stretch ${
+                    className={`hidden lg:flex flex-col bg-[#1c2a38] border-r border-[#2a3c4e] shadow-[4px_0_15px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out shrink-0 self-stretch ${
                         isCollapsed ? "w-20" : "w-64"
                     }`}
                 >
                     {/* Brand Banner - Logo chuẩn CareLink kèm nút Toggle ngay bên trong góc phải */}
                     <div
-                        className={`h-16 flex items-center border-b border-slate-100 overflow-hidden transition-all ${
+                        className={`h-16 flex items-center border-b border-[#2a3c4e]/80 overflow-hidden transition-all ${
                             isCollapsed ? "justify-center px-2" : "justify-between px-4"
                         }`}
                     >
                         {!isCollapsed ? (
                             <>
                                 <Link to="/admin" className="flex items-center gap-2.5 overflow-hidden group">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#008ba3] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
                                         <Plus className="w-4.5 h-4.5 text-white" strokeWidth={2.6} />
                                     </div>
                                     <div className="flex flex-col truncate leading-tight">
-                                        <span className="text-lg font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none">
-                                            Care<span className="text-teal-600">Link</span>
+                                        <span className="text-lg font-bold text-white tracking-tight group-hover:text-teal-300 transition-colors leading-none">
+                                            Care<span className="text-teal-400">Link</span>
                                         </span>
-                                        <span className="text-[9px] tracking-widest text-teal-600 uppercase font-bold mt-1">
+                                        <span className="text-[9px] tracking-widest text-teal-400 uppercase font-bold mt-1">
                                             ADMIN PORTAL
                                         </span>
                                     </div>
@@ -248,7 +248,7 @@ export default function AdminLayout() {
                                 <button
                                     type="button"
                                     onClick={() => setIsCollapsed(true)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#00677c] hover:bg-teal-50 border border-slate-200/70 transition-colors cursor-pointer shrink-0"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 border border-white/10 transition-colors cursor-pointer shrink-0"
                                     title="Thu gọn thanh menu"
                                 >
                                     <PanelLeftClose className="w-4.5 h-4.5" />
@@ -258,7 +258,7 @@ export default function AdminLayout() {
                             <button
                                 type="button"
                                 onClick={() => setIsCollapsed(false)}
-                                className="w-10 h-10 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] flex items-center justify-center transition-colors cursor-pointer border border-teal-200 shadow-2xs"
+                                className="w-10 h-10 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 flex items-center justify-center transition-colors cursor-pointer border border-teal-500/30 shadow-2xs"
                                 title="Mở rộng thanh menu"
                             >
                                 <PanelLeftOpen className="w-5 h-5" />
@@ -269,7 +269,7 @@ export default function AdminLayout() {
                     {/* Navigation Items */}
                     <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
                         {!isCollapsed && (
-                            <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                            <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400/80 uppercase tracking-widest">
                                 Quản trị hệ thống
                             </div>
                         )}
@@ -281,12 +281,12 @@ export default function AdminLayout() {
                                     to={item.path}
                                     className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                                         active
-                                            ? "bg-teal-50 text-[#00677c] font-semibold shadow-xs"
-                                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                            ? "bg-teal-500/20 text-teal-300 font-semibold shadow-xs"
+                                            : "text-slate-300 hover:text-white hover:bg-white/8"
                                     } ${isCollapsed ? "justify-center" : ""}`}
                                     title={isCollapsed ? item.label : undefined}
                                 >
-                                    <span className={active ? "text-[#00677c]" : "text-slate-400 group-hover:text-slate-600"}>
+                                    <span className={active ? "text-teal-400" : "text-slate-400 group-hover:text-slate-200"}>
                                         {item.icon}
                                     </span>
                                     {!isCollapsed && <span className="truncate">{item.label}</span>}
@@ -297,7 +297,7 @@ export default function AdminLayout() {
                                             className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
                                                 isCollapsed
                                                     ? "absolute top-1 right-1 w-2 h-2 p-0 bg-rose-500 rounded-full"
-                                                    : "ml-auto bg-teal-100 text-[#00677c]"
+                                                    : "ml-auto bg-teal-500/25 text-teal-300 border border-teal-400/30"
                                             }`}
                                         >
                                             {!isCollapsed && item.badge}
@@ -306,7 +306,7 @@ export default function AdminLayout() {
 
                                     {/* Active border indicator */}
                                     {active && (
-                                        <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#00677c] rounded-r-full"></span>
+                                        <span className="absolute left-0 top-2 bottom-2 w-1 bg-teal-400 rounded-r-full shadow-[0_0_8px_rgba(45,212,191,0.6)]"></span>
                                     )}
                                 </Link>
                             );
@@ -314,10 +314,10 @@ export default function AdminLayout() {
                     </nav>
 
                     {/* Sidebar Footer — Đã lược bỏ nút Đăng xuất vì góc trên bên phải đã có nút exit */}
-                    <div className="p-3 border-t border-slate-100 space-y-1">
+                    <div className="p-3 border-t border-[#2a3c4e]/80 space-y-1">
                         <Link
                             to="/admin"
-                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors ${
+                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-colors ${
                                 isCollapsed ? "justify-center" : ""
                             }`}
                             title="Cài đặt hệ thống"
@@ -327,7 +327,7 @@ export default function AdminLayout() {
                         </Link>
                         <Link
                             to="/"
-                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-500 hover:text-[#00677c] hover:bg-teal-50 transition-colors ${
+                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-teal-300 hover:bg-white/8 transition-colors ${
                                 isCollapsed ? "justify-center" : ""
                             }`}
                             title="Về Website CareLink"
@@ -341,19 +341,19 @@ export default function AdminLayout() {
                 {/* ── MOBILE DRAWER OVERLAY ── */}
                 {mobileOpen && (
                     <div className="fixed inset-0 z-50 lg:hidden flex">
-                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={() => setMobileOpen(false)}></div>
-                        <div className="relative w-72 bg-white h-full flex flex-col shadow-2xl z-10">
-                            <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100">
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={() => setMobileOpen(false)}></div>
+                        <div className="relative w-72 bg-[#1c2a38] text-white h-full flex flex-col shadow-2xl z-10 border-r border-[#2a3c4e]">
+                            <div className="h-16 flex items-center justify-between px-5 border-b border-[#2a3c4e]/80">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-xs">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00677c] to-[#008ba3] flex items-center justify-center text-white shadow-xs">
                                         <Plus className="w-4 h-4 text-white" strokeWidth={2.6} />
                                     </div>
                                     <div>
-                                        <div className="text-base font-bold text-[#002045]">Care<span className="text-teal-600">Link</span></div>
-                                        <div className="text-[9px] font-bold text-[#00677c] uppercase">ADMIN PORTAL</div>
+                                        <div className="text-base font-bold text-white">Care<span className="text-teal-400">Link</span></div>
+                                        <div className="text-[9px] font-bold text-teal-400 uppercase">ADMIN PORTAL</div>
                                     </div>
                                 </div>
-                                <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer">
+                                <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
@@ -366,15 +366,15 @@ export default function AdminLayout() {
                                             to={item.path}
                                             onClick={() => setMobileOpen(false)}
                                             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium ${
-                                                active ? "bg-teal-50 text-[#00677c] font-semibold" : "text-slate-600 hover:bg-slate-50"
+                                                active ? "bg-teal-500/20 text-teal-300 font-semibold" : "text-slate-300 hover:bg-white/8"
                                             }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className={active ? "text-[#00677c]" : "text-slate-400"}>{item.icon}</span>
+                                                <span className={active ? "text-teal-400" : "text-slate-400"}>{item.icon}</span>
                                                 <span>{item.label}</span>
                                             </div>
                                             {item.badge && (
-                                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-100 text-[#00677c]">
+                                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-500/25 text-teal-300 border border-teal-400/30">
                                                     {item.badge}
                                                 </span>
                                             )}
