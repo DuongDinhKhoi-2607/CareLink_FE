@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cbf3f0" />
+      <stop offset="100%" stop-color="#a4e5e0" />
+    </linearGradient>
+    <linearGradient id="scrubGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#008ba3" />
+      <stop offset="100%" stop-color="#00677c" />
+    </linearGradient>
+    <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f0fdf4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="80" cy="80" r="76" fill="url(#bgGrad)" stroke="#2ec4b6" stroke-width="4" />
+
+  <!-- Scrub / Shirt Body -->
+  <path d="M40 148 C40 115, 60 106, 80 106 C100 106, 120 115, 120 148 Z" fill="url(#scrubGrad)" />
+  
+  <!-- Scrub V-Neck Collar -->
+  <path d="M68 106 L80 124 L92 106 Z" fill="#ffdfba" />
+
+  <!-- Stethoscope around neck -->
+  <path d="M60 116 C60 135, 100 135, 100 116" fill="none" stroke="#e0e1dd" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="80" cy="138" r="5" fill="#48cae4" stroke="#ffffff" stroke-width="1.5" />
+
+  <!-- Neck -->
+  <rect x="73" y="92" width="14" height="18" fill="#ffdfba" rx="4" />
+
+  <!-- Hair Back -->
+  <ellipse cx="80" cy="70" rx="36" ry="34" fill="#3d261d" />
+
+  <!-- Head / Face -->
+  <ellipse cx="80" cy="74" rx="27" ry="26" fill="#ffe5d9" />
+
+  <!-- Hair Bangs / Front -->
+  <path d="M53 68 C53 48, 107 48, 107 68 C100 60, 92 63, 80 63 C68 63, 60 60, 53 68 Z" fill="#3d261d" />
+
+  <!-- Cute Eyes (Happy/Blinking arches) -->
+  <path d="M67 74 Q72 69 77 74" fill="none" stroke="#2b2d42" stroke-width="3" stroke-linecap="round" />
+  <path d="M83 74 Q88 69 93 74" fill="none" stroke="#2b2d42" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Cheerful Smile -->
+  <path d="M74 83 Q80 89 86 83" fill="none" stroke="#e76f51" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Rosy Cute Cheeks -->
+  <ellipse cx="66" cy="80" rx="4.5" ry="3" fill="#ffb4a2" opacity="0.8" />
+  <ellipse cx="94" cy="80" rx="4.5" ry="3" fill="#ffb4a2" opacity="0.8" />
+
+  <!-- Cute Nurse Cap -->
+  <path d="M62 48 L98 48 L95 36 L65 36 Z" fill="url(#capGrad)" stroke="#e0e1dd" stroke-width="1.5" />
+  <circle cx="80" cy="42" r="5" fill="#00677c" />
+  <!-- Plus Cross on Cap -->
+  <path d="M78 42 H82 M80 40 V44" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+</svg>

@@ -200,6 +200,16 @@ const CaregiverCard = ({ caregiver }) => (
 );
 
 export default function Home() {
+    // Lấy thông tin user hiện tại để chặn / ẩn nút không phù hợp vai trò
+    const [user] = React.useState(() => {
+        try {
+            const saved = localStorage.getItem("carelink_user");
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
+    });
+
     return (
         <div className="flex flex-col w-full">
 
@@ -231,24 +241,31 @@ export default function Home() {
                             Nền tảng kết nối sinh viên Y khoa và Điều dưỡng chuyên nghiệp với các gia đình cần hỗ trợ chăm sóc người cao tuổi, mang lại sự an tâm tuyệt đối.
                         </p>
                         <div className="flex flex-wrap items-center gap-4 pt-2">
-                            <Link
-                                to="/family"
-                                className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                Tìm người chăm sóc
-                            </Link>
-                            <Link
-                                to="/caregiver"
-                                className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                Đăng ký đi làm
-                            </Link>
+                            {/* Nút "Tìm người chăm sóc" dành cho Gia đình & khách vãng lai: ẨN khi user là caregiver */}
+                            {user?.role !== "caregiver" && (
+                                <Link
+                                    to="/family"
+                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    Tìm người chăm sóc
+                                </Link>
+                            )}
+
+                            {/* Nút "Đăng ký đi làm" dành cho Điều dưỡng & khách vãng lai: ẨN khi user là family */}
+                            {user?.role !== "family" && (
+                                <Link
+                                    to={user?.role === "caregiver" ? "/caregiver/dashboard" : "/caregiver"}
+                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    {user?.role === "caregiver" ? "Bảng điều khiển Caregiver" : "Đăng ký đi làm"}
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -368,25 +385,31 @@ export default function Home() {
                         </p>
 
                         <div className="flex flex-wrap items-center justify-center gap-3.5 mt-2">
-                            <Link
-                                to="/family"
-                                className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-[#00677c] text-white font-semibold text-sm sm:text-base rounded-xl hover:bg-[#005466] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 shadow-sm group"
-                            >
-                                <span>Tôi cần tìm người chăm sóc</span>
-                                <svg className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
-                            </Link>
+                            {/* Nút tìm người chăm sóc: ẨN khi user là caregiver */}
+                            {user?.role !== "caregiver" && (
+                                <Link
+                                    to="/family"
+                                    className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-[#00677c] text-white font-semibold text-sm sm:text-base rounded-xl hover:bg-[#005466] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 shadow-sm group"
+                                >
+                                    <span>Tôi cần tìm người chăm sóc</span>
+                                    <svg className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                    </svg>
+                                </Link>
+                            )}
 
-                            <Link
-                                to="/caregiver/choose-role"
-                                className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm sm:text-base rounded-xl border border-slate-300 hover:border-[#00677c] hover:text-[#00677c] transition-all duration-200 hover:-translate-y-0.5 shadow-2xs group"
-                            >
-                                <svg className="w-4.5 h-4.5 text-[#00677c] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.765z" />
-                                </svg>
-                                <span>Tôi muốn đăng ký đi làm</span>
-                            </Link>
+                            {/* Nút đăng ký đi làm: ẨN khi user là family */}
+                            {user?.role !== "family" && (
+                                <Link
+                                    to={user?.role === "caregiver" ? "/caregiver/dashboard" : "/caregiver/choose-role"}
+                                    className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm sm:text-base rounded-xl border border-slate-300 hover:border-[#00677c] hover:text-[#00677c] transition-all duration-200 hover:-translate-y-0.5 shadow-2xs group"
+                                >
+                                    <svg className="w-4.5 h-4.5 text-[#00677c] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.765z" />
+                                    </svg>
+                                    <span>{user?.role === "caregiver" ? "Vào Bảng điều khiển Caregiver" : "Tôi muốn đăng ký đi làm"}</span>
+                                </Link>
+                            )}
                         </div>
 
                         {/* 3 cam kết nhỏ bên dưới tạo sự tin cậy chuẩn y tế */}

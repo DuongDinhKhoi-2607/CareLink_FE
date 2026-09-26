@@ -29,7 +29,7 @@ export default function Register() {
             role: role,
             avatar: role === "family"
                 ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                : "https://images.unsplash.com/photo-1594824813629-8736d5e7a9e3?w=150&auto=format&fit=crop&q=80"
+                : "/images/caregiver_avatar.svg"
         }));
         // Giả lập tiến trình đăng ký tài khoản
         setTimeout(() => {
