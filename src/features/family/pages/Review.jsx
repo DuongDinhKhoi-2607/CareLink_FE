@@ -113,12 +113,12 @@ export default function Review() {
 
                     <div className="flex flex-col sm:flex-row sm:items-center gap-5">
                         <img
-                            src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=300"
+                            src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
                             alt="Nguyễn Thùy Linh"
                             className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-200 shadow-xs"
                             onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=300";
+                                e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
                             }}
                         />
                         <div className="flex-1 flex flex-col min-w-0">

@@ -62,7 +62,7 @@ export default function Dashboard() {
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-prussian-blue">
-                        Chào buổi sáng, Gia đình
+                        Chào buổi sáng, anh An
                     </h1>
                     <p className="text-base text-[#43474e] mt-1">
                         Dưới đây là cập nhật sức khỏe mới nhất của người thân bạn.
@@ -121,7 +121,7 @@ export default function Dashboard() {
 
                             <div className="flex items-center gap-3 shrink-0">
                                 <Link
-                                    to="/chat"
+                                    to="/dashboard/messages"
                                     className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors"
                                 >
                                     Nhắn tin
@@ -328,16 +328,16 @@ export default function Dashboard() {
                             Tin nhắn với điều dưỡng
                         </h4>
                         <Link
-                            to="/chat"
+                            to="/dashboard/messages"
                             className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
                         >
                             <img
-                                src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=150"
+                                src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=150"
                                 alt="Linh"
                                 className="w-10 h-10 rounded-full object-cover shrink-0 border border-white"
                                 onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=150";
+                                    e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=150";
                                 }}
                             />
                             <div className="flex-1 min-w-0">

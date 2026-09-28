@@ -44,15 +44,12 @@ export default function Login() {
             targetRole = "caregiver";
             targetName = "Nguyên (Caregiver)";
             targetRoute = "/caregiver/dashboard";
-        } else {
             targetRole = "family";
-
-            targetName = emailOrPhone
+            targetName = emailOrPhone && !emailOrPhone.includes("family")
                 ? emailOrPhone.includes("@")
                     ? emailOrPhone.split("@")[0]
                     : emailOrPhone
-                : "Bác Nguyễn Văn An";
-
+                : "Nguyễn Văn An";
             targetRoute = "/dashboard";
         }
 

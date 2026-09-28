@@ -505,7 +505,7 @@ export default function Appointments() {
                                         {/* Nút Nhắn tin */}
                                         {!apt.canCancel && (
                                             <Link
-                                                to="/chat"
+                                                to="/dashboard/messages"
                                                 className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-2xs"
                                             >
                                                 <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -623,7 +623,7 @@ export default function Appointments() {
                                 Đóng
                             </button>
                             <Link
-                                to="/chat"
+                                to="/dashboard/messages"
                                 className="px-4 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs"
                             >
                                 Nhắn tin điều dưỡng

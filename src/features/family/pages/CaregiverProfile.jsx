@@ -13,7 +13,7 @@ const verificationItems = [
 // Chi tiết hồ sơ nhanh
 const profileDetails = [
     { text: "4.9 (128 đánh giá)", isRating: true },
-    { text: "Đống Đa, Hà Nội", isRating: false },
+    { text: "Bình Thạnh, TP. HCM", isRating: false },
     { text: "3 năm kinh nghiệm", isRating: false },
 ];
 
@@ -30,11 +30,11 @@ const skills = [
 const certificates = [
     {
         name: "Chứng chỉ Điều dưỡng Cơ bản",
-        provider: "ĐH Y HÀ NỘI • 2022",
+        provider: "ĐH Y DƯỢC TP.HCM • 2022",
     },
     {
         name: "Chứng chỉ Kỹ thuật Tiêm truyền",
-        provider: "BV BẠCH MAI • 2023",
+        provider: "BV CHỢ RẪY • 2023",
     },
 ];
 
@@ -44,7 +44,7 @@ const experiences = [
         period: "HIỆN TẠI",
         current: true,
         title: "Thực tập sinh Điều dưỡng",
-        organization: "Bệnh viện Đại học Y Hà Nội",
+        organization: "Bệnh viện Chợ Rẫy TP.HCM",
         description:
             "Hỗ trợ chăm sóc bệnh nhân tại khoa Nội tổng hợp, theo dõi chỉ số sinh tồn, thực hiện y lệnh của bác sĩ và hướng dẫn phục hồi chức năng cơ bản cho bệnh nhân sau phẫu thuật.",
     },
@@ -112,10 +112,10 @@ export default function CaregiverProfile() {
     const [saved, setSaved] = useState(false);
     const [contacted, setContacted] = useState(false);
 
-    // Fallback ảnh online chất lượng cao, bền vững
-    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=600";
+    // Fallback ảnh online chất lượng cao, bền vững (dùng chung avatar ĐD. Nguyễn Thùy Linh)
+    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
     const displayName = caregiver?.name || "Nguyễn Thùy Linh";
-    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Hà Nội";
+    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
 
     const handleContact = () => {
         setContacted(true);

@@ -129,33 +129,38 @@ export default function MedicalHandbook() {
 
                 {/* Thông báo Disclaimer y khoa sáng rõ, nổi bật, sang xịn đẹp sát góc trên bên phải */}
                 {showDisclaimer && (
-                    <div className="absolute top-3 sm:top-4 right-3 sm:right-5 lg:right-6 z-20 max-w-[340px] sm:max-w-[390px] bg-white/95 backdrop-blur-md border-2 border-white/90 text-slate-800 rounded-2xl p-3 sm:py-3 sm:px-4 shadow-[0_12px_32px_rgba(0,0,0,0.22)] flex items-start gap-2.5 text-left transition-all hover:shadow-[0_14px_36px_rgba(0,0,0,0.28)]">
-                        <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                            <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="flex-1 min-w-0 pr-0.5">
-                            <div className="flex items-center gap-1.5 leading-none">
-                                <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-800">
+                    <div className="absolute top-3 sm:top-4 right-2 sm:right-4 lg:right-6 z-20 w-fit max-w-[315px] sm:max-w-[340px] bg-white/95 backdrop-blur-md border border-white/90 text-slate-800 rounded-2xl p-2.5 sm:py-2.5 sm:px-3 shadow-[0_10px_28px_rgba(0,0,0,0.18)] transition-all hover:shadow-[0_12px_32px_rgba(0,0,0,0.22)] text-left">
+                        {/* Hàng trên cùng: Icon + Tiêu đề 'Lưu ý y khoa' cùng hàng với Nút đóng 'X' */}
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                <div className="w-5.5 h-5.5 rounded-lg bg-amber-100 text-amber-700 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <svg className="w-3.5 h-3.5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <span className="text-[11px] sm:text-[11.5px] font-extrabold uppercase tracking-wider text-amber-900">
                                     Lưu ý y khoa
                                 </span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
                             </div>
-                            <p className="text-[11.5px] sm:text-xs leading-relaxed text-slate-600 font-medium mt-1">
-                                Nội dung mang tính tham khảo từ nguồn uy tín. Vui lòng tham vấn bác sĩ trước khi áp dụng.
-                            </p>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowDisclaimer(false)}
+                                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors shrink-0 cursor-pointer -mr-1"
+                                title="Đóng thông báo"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setShowDisclaimer(false)}
-                            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors shrink-0 cursor-pointer -mt-0.5 -mr-1"
-                            title="Đóng thông báo"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+
+                        {/* Hàng dưới: Nội dung được đẩy xuống dưới, bo gọn đúng 2 dòng đều đẹp */}
+                        <p className="text-[12px] sm:text-[12.5px] leading-snug sm:leading-relaxed text-slate-600 font-medium mt-1 sm:mt-1.5">
+                            Nội dung mang tính tham khảo từ nguồn uy tín.
+                            <br className="hidden sm:inline" /> Vui lòng tham vấn bác sĩ trước khi áp dụng.
+                        </p>
                     </div>
                 )}
 
@@ -524,14 +529,6 @@ export default function MedicalHandbook() {
 
                                 {/* Medical Verification Seal */}
                                 {activeArticleModal.reviewed && <ReviewedBadge />}
-
-                                {/* Read time badge */}
-                                <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-slate-500 font-semibold bg-white px-2.5 py-1 rounded-md border border-slate-200/70 shadow-2xs">
-                                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span>{activeArticleModal.readTime}</span>
-                                </span>
                             </div>
 
                             <button

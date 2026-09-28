@@ -42,12 +42,12 @@ const caregiversData = [
         specialty: "Chăm sóc người già",
         qualifications: "Sinh viên Điều dưỡng",
         availability: ["Ngày thường", "Cuối tuần", "Ca ngày"],
-        location: "Đống Đa, Hà Nội",
-        city: "Hà Nội",
-        quote: "Sinh viên điều dưỡng tận tâm, chu đáo trong việc hỗ trợ vận động, ăn uống và trò chuyện cùng người cao tuổi.",
+        location: "Bình Thạnh, TP. HCM",
+        city: "Thành phố Hồ Chí Minh",
+        quote: "Sinh viên điều dưỡng ĐH Y Dược TP.HCM tận tâm, chu đáo trong việc hỗ trợ vận động, ăn uống và theo dõi sức khỏe người cao tuổi.",
         rating: 4.9,
         image:
-            "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400",
+            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
     },
     {
         id: 2,
