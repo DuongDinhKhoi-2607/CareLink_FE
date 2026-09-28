@@ -21,9 +21,9 @@ const footerLinkGroups = [
     {
         title: "PHÁP LÝ & BẢO MẬT",
         links: [
-            { label: "Chính sách bảo mật", path: "#" },
-            { label: "Điều khoản dịch vụ", path: "#" },
-            { label: "Tiêu chuẩn y tế HIPAA", path: "#" },
+            { label: "Chính sách bảo mật", path: "/privacy" },
+            { label: "Điều khoản dịch vụ", path: "/terms" },
+            { label: "Tiêu chuẩn y tế HIPAA", path: "/privacy" },
         ],
     },
 ];

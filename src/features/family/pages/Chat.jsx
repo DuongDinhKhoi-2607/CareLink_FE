@@ -7,13 +7,13 @@ const initialMessages = [
     {
         id: 1,
         side: "outgoing",
-        text: "Xin chào em, bà của chị năm nay 75 tuổi, vừa xuất viện sau phẫu thuật và\ncần hỗ trợ thay băng cũng như theo dõi huyết áp mỗi ngày.",
+        text: "Xin chào em, mẹ của anh năm nay 75 tuổi, vừa xuất viện sau phẫu thuật,\ncần hỗ trợ thay băng cũng như theo dõi huyết áp mỗi ngày.",
         time: "10:05 AM",
     },
     {
         id: 2,
         side: "incoming",
-        text: "Dạ em có thể hỗ trợ. Cho em hỏi hiện tại bà có thể tự đi lại hay cần hỗ trợ\nhoàn toàn ạ?",
+        text: "Dạ em có thể hỗ trợ. Cho em hỏi hiện tại bà có thể tự đi lại hay cần hỗ trợ hoàn toàn ạ?",
         time: "10:08 AM",
     },
     {
@@ -25,7 +25,7 @@ const initialMessages = [
     {
         id: 4,
         side: "incoming",
-        text: "Dạ em hiểu rồi. Em đề xuất chăm sóc khoảng 2 giờ mỗi ngày để theo dõi\nsức khỏe và hỗ trợ sinh hoạt.",
+        text: "Dạ em hiểu rồi. Em đề xuất chăm sóc khoảng 2 giờ mỗi ngày để theo dõi sức khỏe và hỗ trợ sinh hoạt.",
         time: "10:12 AM",
     },
 ];
@@ -70,7 +70,7 @@ const bookingDetails = [
     },
     {
         label: "ĐỊA ĐIỂM",
-        value: "Đống Đa, Hà Nội",
+        value: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP. HCM",
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -112,9 +112,9 @@ export default function Chat() {
     const location = useLocation();
     const caregiver = location?.state?.caregiver;
 
-    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400";
+    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
     const displayName = caregiver?.name || "Nguyễn Thùy Linh";
-    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Hà Nội";
+    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
 
     const [messages, setMessages] = useState(initialMessages);
     const [message, setMessage] = useState("");

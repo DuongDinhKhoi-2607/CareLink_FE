@@ -8,6 +8,7 @@ import Services from "./features/family/pages/Services";
 import CaregiverList from "./features/family/pages/CaregiverList";
 import CaregiverProfile from "./features/family/pages/CaregiverProfile";
 import Chat from "./features/family/pages/Chat";
+import DashboardMessages from "./features/family/pages/DashboardMessages";
 import Checkout from "./features/family/pages/Checkout";
 import Dashboard from "./features/family/pages/Dashboard";
 import Appointments from "./features/family/pages/Appointments";
@@ -19,6 +20,8 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import MedicalHandbook from "./pages/public/MedicalHandbook";
+import PrivacyPolicy from "./pages/public/PrivacyPolicy";
+import TermsOfService from "./pages/public/TermsOfService";
 
 // Caregiver feature pages
 import ForCaregiver from "./features/caregiver/pages/ForCaregiver";
@@ -60,6 +63,11 @@ export default function App() {
             <Route path="/handbook" element={<MedicalHandbook />} />
             {/* Trang chọn loại dịch vụ */}
             <Route path="/services" element={<Services />} />
+            {/* Pháp lý, Điều khoản & Chính sách bảo mật */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/dieu-khoan-dich-vu" element={<TermsOfService />} />
           </Route>
 
           {/* Nhóm Bảng điều khiển Gia đình dùng riêng DashboardLayout (Sidebar điều hướng chuyên biệt) */}
@@ -68,6 +76,8 @@ export default function App() {
             <Route path="/dashboard/appointments" element={<Appointments />} />
             <Route path="/dashboard/relatives" element={<Relatives />} />
             <Route path="/dashboard/health-reports" element={<HealthReports />} />
+            <Route path="/dashboard/messages" element={<DashboardMessages />} />
+            <Route path="/dashboard/chat" element={<DashboardMessages />} />
             <Route path="/dashboard/settings" element={<FamilyProfile />} />
           </Route>
 

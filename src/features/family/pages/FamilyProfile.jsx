@@ -6,10 +6,10 @@ export default function FamilyProfile() {
 
     // Section 1: Thông tin cá nhân
     const [personalInfo, setPersonalInfo] = useState({
-        name: "Nguyễn Gia Đình",
-        email: "nguyengiadinh@example.com",
+        name: "Nguyễn Văn An",
+        email: "nguyenvanan@carelink.vn",
         phone: "0901 234 567",
-        role: "Chủ hộ gia đình (Tài khoản Premium)",
+        role: "Đại diện Gia đình Bác An (Tài khoản Premium)",
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
     });
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);

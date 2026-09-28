@@ -44,6 +44,27 @@ export default function Header() {
         }
     };
 
+    // Tên và email hiển thị an toàn, thân thiện
+    const getDisplayName = () => {
+        if (!user) return "Nguyễn Văn An";
+        if (typeof user.name === "string" && user.name.trim() && user.name !== "user" && user.name.toLowerCase() !== "family") {
+            return user.name;
+        }
+        if (user.role === "caregiver") return "Nguyên (Caregiver)";
+        if (user.role === "admin") return "Ban Quản trị CareLink";
+        return "Nguyễn Văn An";
+    };
+
+    const getDisplayEmail = () => {
+        if (!user) return "nguyenvanan@carelink.vn";
+        if (typeof user.email === "string" && user.email.trim() && user.email !== "user@example.com" && user.email !== "family@carelink.vn") {
+            return user.email;
+        }
+        if (user.role === "caregiver") return "caregiver@carelink.vn";
+        if (user.role === "admin") return "admin@carelink.vn";
+        return "nguyenvanan@carelink.vn";
+    };
+
     // Avatar an toàn có fallback chuẩn SVG hoạt hình không bao giờ bị lỗi
     const getUserAvatar = () => {
         if (user?.role === "caregiver") {
@@ -124,8 +145,8 @@ export default function Header() {
                         const isLink = item.path !== "#";
 
                         const linkClasses = `px-3 py-1.5 rounded-full text-[13px] transition-all flex items-center gap-1.5 shrink-0 ${active
-                                ? "bg-teal-50 text-teal-700 font-semibold shadow-2xs"
-                                : "text-slate-600 hover:text-teal-700 hover:bg-slate-100/70 font-medium"
+                            ? "bg-teal-50 text-teal-700 font-semibold shadow-2xs"
+                            : "text-slate-600 hover:text-teal-700 hover:bg-slate-100/70 font-medium"
                             }`;
 
                         if (isLink) {
@@ -187,7 +208,7 @@ export default function Header() {
                                     />
                                     <div className="hidden sm:flex flex-col text-left">
                                         <span className="text-xs font-bold text-[#002045] leading-tight max-w-[130px] truncate group-hover:text-teal-600 transition-colors">
-                                            {user.name && user.name !== "user" ? user.name : (user.role === "caregiver" ? "Nguyên (Caregiver)" : user.role === "admin" ? "Ban Quản trị" : "Gia đình Bác An")}
+                                            {getDisplayName()}
                                         </span>
                                         <span className="text-[10px] font-semibold text-teal-600 leading-none">
                                             {user.role === "caregiver" ? "Điều dưỡng" : user.role === "admin" ? "Administrator" : "Gia đình"}
@@ -219,13 +240,13 @@ export default function Header() {
                                                 />
                                                 <div className="flex flex-col min-w-0">
                                                     <span className="text-xs font-bold text-[#002045] truncate">
-                                                        {user.name && user.name !== "user" ? user.name : (user.role === "caregiver" ? "Nguyên (Caregiver)" : user.role === "admin" ? "Ban Quản trị CareLink" : "Gia đình Bác An")}
+                                                        {getDisplayName()}
                                                     </span>
                                                     <span className="inline-block w-fit mt-0.5 px-1.5 py-0.2 rounded-md bg-teal-50 text-teal-700 text-[10px] font-semibold">
                                                         {user.role === "caregiver" ? "🩺 Điều dưỡng / SV Y" : user.role === "admin" ? "🛡️ Administrator" : "🏠 Tài khoản Gia đình"}
                                                     </span>
                                                     <span className="text-[11px] text-slate-400 truncate mt-0.5">
-                                                        {user.email && user.email !== "user@example.com" ? user.email : (user.role === "caregiver" ? "caregiver@carelink.vn" : user.role === "admin" ? "admin@carelink.vn" : "giadinh@carelink.vn")}
+                                                        {getDisplayEmail()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -290,7 +311,7 @@ export default function Header() {
                                                             <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                                                             </svg>
-                                                            <span>Lịch hẹn của tôi</span>
+                                                            <span>Lịch hẹn</span>
                                                         </Link>
 
                                                         <Link
@@ -375,8 +396,8 @@ export default function Header() {
                             const isLink = item.path !== "#";
 
                             const mobileClasses = `px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-between ${active
-                                    ? "bg-teal-50 text-teal-700 font-semibold"
-                                    : "text-slate-700 hover:bg-slate-50"
+                                ? "bg-teal-50 text-teal-700 font-semibold"
+                                : "text-slate-700 hover:bg-slate-50"
                                 }`;
 
                             if (isLink) {

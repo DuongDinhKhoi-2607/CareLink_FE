@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
 
+// 6 tính năng cốt lõi của Bảng điều khiển Gia đình (Đã tách nút Về trang chủ ra khu vực riêng để tránh bấm nhầm)
 const navigationItems = [
     {
         path: "/dashboard",
@@ -41,7 +42,7 @@ const navigationItems = [
         ),
     },
     {
-        path: "/chat",
+        path: "/dashboard/messages",
         label: "Tin nhắn",
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -65,8 +66,34 @@ export default function DashboardLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    // Trạng thái thu gọn/mở rộng thanh sidebar trên Desktop
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const mainRef = useRef(null);
+
+    // Tự động cuộn lên đầu trang khi chuyển đổi giữa các tab dịch vụ trong Dashboard
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        if (mainRef.current) {
+            mainRef.current.scrollTop = 0;
+        }
+    }, [location.pathname]);
+
+    // Lưu và giữ nguyên trạng thái thu gọn sidebar theo lựa chọn của người dùng (không bị tự bung ra khi chuyển tab)
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem("carelink_family_sidebar_collapsed") === "true";
+        } catch {
+            return false;
+        }
+    });
+
+    const handleToggleCollapse = (collapsed) => {
+        setIsCollapsed(collapsed);
+        try {
+            localStorage.setItem("carelink_family_sidebar_collapsed", String(collapsed));
+        } catch {
+            // ignore
+        }
+    };
+
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleLogout = () => {
@@ -76,20 +103,19 @@ export default function DashboardLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f7fafc] flex flex-col md:flex-row font-sans text-[#102030] antialiased">
-            {/* Sidebar bên trái hỗ trợ thu gọn mượt mà */}
+        <div className="min-h-screen md:h-screen bg-[#f7fafc] flex flex-col md:flex-row font-sans text-[#102030] antialiased md:overflow-hidden">
+            {/* Sidebar bên trái: Chiều rộng 245px, màu sắc ngà ánh xanh dịu mắt, ấm áp chuẩn Gia đình */}
             <aside
-                className={`w-full ${
-                    isCollapsed ? "md:w-20" : "md:w-64"
-                } bg-[#f1f4f6] border-r border-[#c4c6cf4c] flex flex-col shrink-0 transition-all duration-300 ease-in-out md:self-stretch md:min-h-screen`}
+                className={`w-full ${isCollapsed ? "md:w-[72px]" : "md:w-[245px]"
+                    } bg-[#f0f5f7] border-r border-slate-200/80 flex flex-col shrink-0 transition-all duration-300 ease-in-out md:self-stretch md:h-screen`}
             >
                 {/* Header của Sidebar */}
                 {isCollapsed ? (
                     /* Trạng thái thu gọn: Chỉ hiện icon logo và nút mở rộng */
-                    <div className="p-4 border-b border-slate-200/60 flex flex-col items-center gap-3">
+                    <div className="p-3.5 border-b border-slate-200/60 flex flex-col items-center gap-3">
                         <Link to="/" className="group cursor-pointer" title="Về trang chủ CareLink">
-                            <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                 </svg>
                             </div>
@@ -98,43 +124,43 @@ export default function DashboardLayout() {
                         {/* Nút Mở rộng Sidebar */}
                         <button
                             type="button"
-                            onClick={() => setIsCollapsed(false)}
+                            onClick={() => handleToggleCollapse(false)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
                             title="Mở rộng thanh bên (Sidebar)"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
                             </svg>
                         </button>
                     </div>
                 ) : (
                     /* Trạng thái mở rộng: Hiện đầy đủ Logo và nút Thu gọn nằm sát mép phải */
-                    <div className="p-4 sm:p-5 border-b border-slate-200/60 flex items-center justify-between">
-                        <Link to="/" className="flex items-center gap-2.5 group cursor-pointer overflow-hidden">
-                            <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                    <div className="p-4 border-b border-slate-200/60 flex items-center justify-between">
+                        <Link to="/" className="flex items-center gap-2 group cursor-pointer overflow-hidden">
+                            <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                 </svg>
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className="text-xl font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none truncate">
+                                <span className="text-lg font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none truncate">
                                     Care<span className="text-teal-600">Link</span>
                                 </span>
-                                <span className="text-[10px] tracking-widest text-teal-600 uppercase font-semibold mt-0.5 truncate">
-                                    Bảng điều khiển
+                                <span className="text-[9.5px] tracking-wider text-slate-500 uppercase font-bold mt-0.5 truncate">
+                                    BẢNG ĐIỀU KHIỂN
                                 </span>
                             </div>
                         </Link>
 
                         <div className="flex items-center gap-1">
-                            {/* Nút Thu gọn Sidebar trên Desktop (nằm sát bên phải thanh sidebar) */}
+                            {/* Nút Thu gọn Sidebar trên Desktop */}
                             <button
                                 type="button"
-                                onClick={() => setIsCollapsed(true)}
+                                onClick={() => handleToggleCollapse(true)}
                                 className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
                                 title="Thu gọn thanh bên (Sidebar)"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
                                 </svg>
                             </button>
@@ -143,10 +169,10 @@ export default function DashboardLayout() {
                             <button
                                 type="button"
                                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-200/60"
+                                className="md:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-200/60"
                                 aria-label="Toggle menu"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                                 </svg>
                             </button>
@@ -156,9 +182,8 @@ export default function DashboardLayout() {
 
                 {/* Danh sách mục điều hướng */}
                 <nav
-                    className={`flex-1 ${
-                        isCollapsed ? "px-2" : "px-4"
-                    } py-6 flex flex-col gap-1.5 ${mobileMenuOpen ? "block" : "hidden md:flex"}`}
+                    className={`flex-1 ${isCollapsed ? "px-2" : "px-3"
+                        } py-4 flex flex-col gap-1.5 ${mobileMenuOpen ? "block" : "hidden md:flex"}`}
                 >
                     {navigationItems.map((item) => {
                         const isActive = location.pathname === item.path;
@@ -167,15 +192,13 @@ export default function DashboardLayout() {
                                 key={item.label}
                                 to={item.path}
                                 title={item.label}
-                                className={`flex items-center ${
-                                    isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
-                                } rounded-xl text-sm font-semibold transition-all group relative ${
-                                    isActive
-                                        ? "bg-[#4fd9fd] text-[#005c70] shadow-xs"
-                                        : "text-[#43474e] hover:bg-white/80 hover:text-[#102030]"
-                                }`}
+                                className={`flex items-center ${isCollapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
+                                    } rounded-xl text-[13.5px] sm:text-[14px] font-semibold transition-all duration-200 active:scale-[0.98] group relative ${isActive
+                                        ? "bg-gradient-to-r from-[#00677c] to-[#005566] text-white shadow-xs"
+                                        : "text-slate-600 hover:bg-white hover:text-[#00677c] hover:translate-x-0.5"
+                                    }`}
                             >
-                                <div className={`shrink-0 ${isActive ? "text-[#005c70]" : "text-[#43474e]"}`}>
+                                <div className={`shrink-0 ${isActive ? "text-white" : "text-slate-400 group-hover:text-[#00677c]"}`}>
                                     {item.icon}
                                 </div>
                                 {!isCollapsed && <span className="truncate">{item.label}</span>}
@@ -189,12 +212,13 @@ export default function DashboardLayout() {
                             </Link>
                         );
                     })}
+
                 </nav>
 
                 {/* Phần thông tin hồ sơ dưới cùng của Sidebar */}
                 {isCollapsed ? (
-                    /* Trạng thái thu gọn: Chỉ hiện Avatar, nút Đăng xuất nhanh và nút thêm */
-                    <div className="p-3 border-t border-[#c4c6cf4c] hidden md:flex flex-col items-center gap-2.5">
+                    /* Trạng thái thu gọn: Avatar, Đăng xuất, Thêm và Về trang chủ */
+                    <div className="p-3 border-t border-slate-200/70 hidden md:flex flex-col items-center gap-2.5">
                         <div className="relative group cursor-pointer" title="Gia đình Bác An">
                             <img
                                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
@@ -225,15 +249,25 @@ export default function DashboardLayout() {
                         >
                             +
                         </Link>
+
+                        {/* Nút Home khi thu gọn */}
+                        <Link
+                            to="/"
+                            title="Về trang chủ CareLink"
+                            className="w-8.5 h-8.5 rounded-xl text-slate-400 hover:text-[#00677c] hover:bg-slate-200/70 flex items-center justify-center transition-all cursor-pointer"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                            </svg>
+                        </Link>
                     </div>
                 ) : (
                     /* Trạng thái mở rộng đầy đủ */
                     <div
-                        className={`p-4 border-t border-[#c4c6cf4c] flex flex-col gap-2.5 ${
-                            mobileMenuOpen ? "block" : "hidden md:flex"
-                        }`}
+                        className={`p-4 border-t border-slate-200/70 flex flex-col gap-2.5 ${mobileMenuOpen ? "block" : "hidden md:flex"
+                            }`}
                     >
-                        {/* Profile card kèm nút Đăng xuất màu đỏ sang xịn đẹp */}
+                        {/* Profile card kèm nút Đăng xuất màu đỏ */}
                         <div className="flex items-center justify-between p-2.5 bg-[#e5e9eb80] rounded-2xl shadow-xs border border-slate-200/50">
                             <div className="flex items-center gap-2.5 min-w-0">
                                 <img
@@ -260,6 +294,7 @@ export default function DashboardLayout() {
                             </button>
                         </div>
 
+                        {/* Nút + Thêm Người Thân */}
                         <Link
                             to="/dashboard/relatives"
                             className="w-full py-2 px-4 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
@@ -267,13 +302,27 @@ export default function DashboardLayout() {
                             <span>+</span>
                             <span>Thêm Người Thân</span>
                         </Link>
+
+                        {/* Nút Về trang chủ đặt ngay dưới Thêm Người Thân, cực kỳ gọn gàng và tự nhiên */}
+                        <Link
+                            to="/"
+                            title="Quay lại trang chủ CareLink"
+                            className="w-full py-1.5 px-3 text-slate-500 hover:text-[#00677c] hover:bg-slate-200/60 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                        >
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            </svg>
+                            <span>Về trang chủ</span>
+                        </Link>
                     </div>
                 )}
             </aside>
 
-            {/* Vùng nội dung chính: Tự động mở rộng khi sidebar thu gọn */}
-            <main className="flex-1 w-full overflow-y-auto transition-all duration-300">
-                <Outlet />
+            {/* Vùng nội dung chính: Tự động mở rộng khi sidebar thu gọn và cuộn mượt mà */}
+            <main ref={mainRef} className="flex-1 w-full overflow-y-auto transition-all duration-300">
+                <div key={location.pathname} className="animate-dashboard-tab w-full">
+                    <Outlet />
+                </div>
             </main>
 
             {/* Popup xác nhận đăng xuất cho Gia đình */}
