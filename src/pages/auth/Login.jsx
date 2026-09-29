@@ -29,13 +29,13 @@ export default function Login() {
         const input = (emailOrPhone || "").trim().toLowerCase();
 
         let targetRole = "family";
-        let targetName = "Bác Nguyễn Văn An";
+        let targetName = "Nguyễn Văn An";
         let targetRoute = "/dashboard";
 
         if (input.includes("admin")) {
             targetRole = "admin";
             targetName = "Ban Quản trị CareLink";
-            targetRoute = "/admin";
+            targetRoute = "/admin/dashboard";
         } else if (
             input.includes("caregiver") ||
             input.includes("dieuduong") ||
@@ -47,9 +47,7 @@ export default function Login() {
         } else {
             targetRole = "family";
             targetName = emailOrPhone && !emailOrPhone.includes("family")
-                ? emailOrPhone.includes("@")
-                    ? emailOrPhone.split("@")[0]
-                    : emailOrPhone
+                ? (emailOrPhone.includes("@") ? emailOrPhone.split("@")[0] : emailOrPhone)
                 : "Nguyễn Văn An";
             targetRoute = "/dashboard";
         }
@@ -65,16 +63,16 @@ export default function Login() {
                     targetRole === "admin"
                         ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
                         : targetRole === "caregiver"
-                            ? "/images/caregiver_avatar.svg"
+                            ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
                             : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             })
         );
 
-        // Chuyển hướng sau khi đăng nhập
+        // Chuyển hướng sau khi đăng nhập (dùng window.location.href để reset sạch state giao diện)
         setTimeout(() => {
             setIsLoading(false);
-            navigate(targetRoute);
-        }, 500);
+            window.location.href = targetRoute;
+        }, 300);
     };
 
     return (
