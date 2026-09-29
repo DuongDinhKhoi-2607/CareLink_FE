@@ -20,30 +20,76 @@ export default function Login() {
 
     // =========================================================
     // LOGIN LOGIC
-    // Giữ nguyên logic hiện tại của CareLink
     // =========================================================
+    const handleQuickLogin = (role) => {
+        let email = "caregiver@carelink.vn";
+        let targetRole = "caregiver";
+        let targetName = "Điều dưỡng Nguyễn Thùy Linh";
+        let targetRoute = "/caregiver/dashboard";
+        let avatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+
+        if (role === "admin") {
+            email = "admin@carelink.vn";
+            targetRole = "admin";
+            targetName = "Ban Quản trị CareLink";
+            targetRoute = "/admin";
+            avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80";
+        } else if (role === "family") {
+            email = "family@carelink.vn";
+            targetRole = "family";
+            targetName = "Nguyễn Văn An";
+            targetRoute = "/dashboard";
+            avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+        }
+
+        setEmailOrPhone(email);
+        setPassword("123456");
+        setIsLoading(true);
+
+        localStorage.setItem(
+            "carelink_user",
+            JSON.stringify({
+                name: targetName,
+                email: email,
+                role: targetRole,
+                avatar: avatar,
+            })
+        );
+
+        setTimeout(() => {
+            setIsLoading(false);
+            window.location.href = targetRoute;
+        }, 300);
+    };
+
     const handleSubmit = (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setIsLoading(true);
 
         const input = (emailOrPhone || "").trim().toLowerCase();
 
         let targetRole = "family";
-        let targetName = "Bác Nguyễn Văn An";
+        let targetName = "Nguyễn Văn An";
         let targetRoute = "/dashboard";
+        let targetAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
 
         if (input.includes("admin")) {
             targetRole = "admin";
             targetName = "Ban Quản trị CareLink";
             targetRoute = "/admin";
+            targetAvatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80";
         } else if (
             input.includes("caregiver") ||
             input.includes("dieuduong") ||
-            input.includes("linh")
+            input.includes("dieu duong") ||
+            input.includes("nurse") ||
+            input.includes("linh") ||
+            input.includes("care")
         ) {
             targetRole = "caregiver";
             targetName = "Điều dưỡng Nguyễn Thùy Linh";
             targetRoute = "/caregiver/dashboard";
+            targetAvatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
         } else {
             targetRole = "family";
             targetName = emailOrPhone && !emailOrPhone.includes("family")
@@ -61,20 +107,15 @@ export default function Login() {
                 name: targetName,
                 email: emailOrPhone || `${targetRole}@carelink.vn`,
                 role: targetRole,
-                avatar:
-                    targetRole === "admin"
-                        ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
-                        : targetRole === "caregiver"
-                            ? "/images/caregiver_avatar.svg"
-                            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                avatar: targetAvatar,
             })
         );
 
-        // Chuyển hướng sau khi đăng nhập
+        // Chuyển hướng sau khi đăng nhập (dùng window.location.href để load sạch state các layout)
         setTimeout(() => {
             setIsLoading(false);
-            navigate(targetRoute);
-        }, 500);
+            window.location.href = targetRoute;
+        }, 400);
     };
 
     return (
@@ -214,6 +255,42 @@ export default function Login() {
                                 onSubmit={handleSubmit}
                                 className="space-y-5"
                             >
+                                {/* Quick Demo Access Bar (1 chạm vào thẳng đúng role) */}
+                                <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-2xl">
+                                    <div className="flex items-center justify-between text-[11px] font-bold text-teal-900 mb-2">
+                                        <span className="flex items-center gap-1">⚡ Đăng nhập nhanh Demo:</span>
+                                        <span className="text-[10px] font-medium text-teal-600">1 chạm vào thẳng</span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleQuickLogin("family")}
+                                            className="py-1.5 px-1 bg-white hover:bg-teal-50 border border-teal-200 text-teal-900 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 flex flex-col items-center gap-0.5 cursor-pointer"
+                                            title="Đăng nhập tài khoản Gia đình"
+                                        >
+                                            <span>🏠 Gia đình</span>
+                                            <span className="text-[9px] text-slate-400 font-normal">/dashboard</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleQuickLogin("caregiver")}
+                                            className="py-1.5 px-1 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow active:scale-95 flex flex-col items-center gap-0.5 cursor-pointer"
+                                            title="Đăng nhập tài khoản Điều dưỡng"
+                                        >
+                                            <span>🩺 Điều dưỡng</span>
+                                            <span className="text-[9px] text-teal-100 font-medium">/caregiver</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleQuickLogin("admin")}
+                                            className="py-1.5 px-1 bg-white hover:bg-teal-50 border border-teal-200 text-teal-900 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 flex flex-col items-center gap-0.5 cursor-pointer"
+                                            title="Đăng nhập tài khoản Admin"
+                                        >
+                                            <span>🛡️ Admin</span>
+                                            <span className="text-[9px] text-slate-400 font-normal">/admin</span>
+                                        </button>
+                                    </div>
+                                </div>
 
                                 {/* ==============================
                                     EMAIL / PHONE
