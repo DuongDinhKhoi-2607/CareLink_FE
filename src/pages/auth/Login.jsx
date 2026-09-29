@@ -39,11 +39,12 @@ export default function Login() {
         } else if (
             input.includes("caregiver") ||
             input.includes("dieuduong") ||
-            input.includes("nguyen")
+            input.includes("linh")
         ) {
             targetRole = "caregiver";
-            targetName = "Nguyên (Caregiver)";
+            targetName = "Điều dưỡng Nguyễn Thùy Linh";
             targetRoute = "/caregiver/dashboard";
+        } else {
             targetRole = "family";
             targetName = emailOrPhone && !emailOrPhone.includes("family")
                 ? emailOrPhone.includes("@")
