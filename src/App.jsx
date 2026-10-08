@@ -42,6 +42,7 @@ import ServiceManagement from "./features/admin/pages/ServiceManagement";
 import AdminAppointments from "./features/admin/pages/AdminAppointments";
 import UserManagement from "./features/admin/pages/UserManagement";
 import AdminFinance from "./features/admin/pages/AdminFinance";
+import AdminHandbook from "./features/admin/pages/AdminHandbook";
 
 export default function App() {
   return (
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="/admin/appointments" element={<AdminAppointments />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
+            <Route path="/admin/handbook" element={<AdminHandbook />} />
           </Route>
         </Routes>
       </PageTransition>

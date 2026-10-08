@@ -77,7 +77,7 @@ const categoryStyles = {
     },
 };
 
-// ─── Badge "Đã kiểm duyệt y khoa" với icon Khiên y tế chuyên môn ───
+// ─── Badge "Nguồn tham khảo uy tín" với icon Khiên y tế chuyên môn ───
 const ReviewedBadge = ({ variant = "default" }) => {
     if (variant === "card") {
         return (
@@ -85,7 +85,7 @@ const ReviewedBadge = ({ variant = "default" }) => {
                 <svg className="w-3 h-3 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM13.707 8.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>Đã kiểm duyệt</span>
+                <span>Nguồn uy tín</span>
             </span>
         );
     }
@@ -94,7 +94,7 @@ const ReviewedBadge = ({ variant = "default" }) => {
             <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM13.707 8.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            <span>Đã kiểm duyệt y khoa</span>
+            <span>Nguồn tham khảo uy tín</span>
         </span>
     );
 };
@@ -158,8 +158,7 @@ export default function MedicalHandbook() {
 
                         {/* Hàng dưới: Nội dung được đẩy xuống dưới, bo gọn đúng 2 dòng đều đẹp */}
                         <p className="text-[12px] sm:text-[12.5px] leading-snug sm:leading-relaxed text-slate-600 font-medium mt-1 sm:mt-1.5">
-                            Nội dung mang tính tham khảo từ nguồn uy tín.
-                            <br className="hidden sm:inline" /> Vui lòng tham vấn bác sĩ trước khi áp dụng.
+                            Nội dung mang tính tham khảo, được tổng hợp từ các nguồn y khoa uy tín và không thay thế chẩn đoán hoặc điều trị của bác sĩ. Vui lòng tham vấn nhân viên y tế khi cần.
                         </p>
                     </div>
                 )}
@@ -177,7 +176,7 @@ export default function MedicalHandbook() {
                     </h1>
 
                     <p className="text-base sm:text-lg text-teal-100/90 max-w-2xl leading-relaxed">
-                        Tập hợp kiến thức chuẩn y khoa từ các nguồn uy tín tại Việt Nam. Cùng bạn lắng nghe, thấu hiểu và chăm sóc người thân yêu trọn vẹn mỗi ngày.
+                        Tổng hợp kiến thức chăm sóc sức khỏe từ các nguồn tham khảo uy tín, giúp gia đình có thêm thông tin trong quá trình chăm sóc người thân.
                     </p>
 
                     {/* Thanh tìm kiếm */}
@@ -192,7 +191,7 @@ export default function MedicalHandbook() {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Tìm kiếm bài viết theo bệnh lý, triệu chứng, chế độ ăn..."
+                                placeholder="Tìm kiếm theo chủ đề, triệu chứng hoặc nhu cầu chăm sóc..."
                                 className="w-full py-4 pl-3 pr-5 text-sm sm:text-base outline-none bg-transparent placeholder-slate-400 font-medium"
                             />
                             {searchQuery && (
@@ -295,6 +294,10 @@ export default function MedicalHandbook() {
                                     </div>
 
                                     <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveArticleModal(featuredArticle);
+                                        }}
                                         className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#00677c] group-hover:text-teal-700 group-hover:translate-x-1 transition-all cursor-pointer bg-teal-50 px-4 py-2 rounded-xl"
                                     >
                                         Đọc ngay
@@ -315,7 +318,7 @@ export default function MedicalHandbook() {
                             {selectedCategory === "all" ? "Tất cả bài viết y khoa" : `Chuyên mục: ${categories.find(c => c.id === selectedCategory)?.label}`}
                         </h3>
                         <span className="text-xs sm:text-sm text-slate-500 font-bold bg-slate-100 px-3 py-1 rounded-full">
-                            Hiển thị {filteredArticles.length} bài viết
+                            {filteredArticles.length} bài viết
                         </span>
                     </div>
 
@@ -403,7 +406,13 @@ export default function MedicalHandbook() {
                                                 </span>
                                             </div>
 
-                                            <button className="text-xs font-extrabold text-[#00677c] flex items-center gap-1 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveArticleModal(article);
+                                                }}
+                                                className="text-xs font-extrabold text-[#00677c] flex items-center gap-1 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 cursor-pointer"
+                                            >
                                                 Chi tiết
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -555,12 +564,12 @@ export default function MedicalHandbook() {
                                         <SourceIcon />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-extrabold text-[#002045]">Nguồn: {activeArticleModal.source}</span>
+                                        <span className="text-sm font-extrabold text-[#002045]">Nguồn tham khảo: {activeArticleModal.source}</span>
                                         <span className="text-xs font-medium text-slate-500">{activeArticleModal.sourceDetail}</span>
                                     </div>
                                 </div>
                                 <div className="hidden sm:flex items-center gap-3 text-sm text-slate-400 font-semibold ml-auto bg-white px-3 py-1.5 rounded-lg border border-slate-200/60">
-                                    <span>{activeArticleModal.date}</span>
+                                    <span>Cập nhật lần cuối: {activeArticleModal.date}</span>
                                     <span>•</span>
                                     <span>{activeArticleModal.readTime}</span>
                                 </div>
@@ -619,7 +628,7 @@ export default function MedicalHandbook() {
                                 <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
                                 </svg>
-                                <span>Bài viết được tổng hợp từ các nguồn y khoa uy tín tại Việt Nam, mang tính chất tham khảo và giáo dục sức khỏe. Không thay thế cho việc thăm khám và tư vấn trực tiếp từ bác sĩ chuyên khoa.</span>
+                                <span><strong>Lưu ý:</strong> Nội dung mang tính tham khảo từ các nguồn y khoa uy tín, không thay thế chẩn đoán hoặc chỉ định điều trị của bác sĩ. Vui lòng tham vấn nhân viên y tế khi cần thiết.</span>
                             </div>
                         </div>
 
