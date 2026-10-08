@@ -9,7 +9,7 @@ export const categories = [
     { id: "elderly", label: "Chăm sóc người cao tuổi" },
     { id: "post-surgery", label: "Phục hồi sau phẫu thuật" },
     { id: "therapy", label: "Vật lý trị liệu" },
-    { id: "nutrition", label: "Dinh dưỡng & Dược phẩm" },
+    { id: "nutrition", label: "Dinh dưỡng & Sức khỏe" },
     { id: "first-aid", label: "Sơ cấp cứu tại nhà" },
 ];
 
@@ -74,7 +74,7 @@ export const articles = [
         id: 2,
         featured: false,
         category: "nutrition",
-        categoryName: "Dinh dưỡng & Dược phẩm",
+        categoryName: "Dinh dưỡng & Sức khỏe",
         title: "Chế độ dinh dưỡng vàng cho bệnh nhân cao huyết áp và đái tháo đường",
         summary:
             "Nguyên tắc thiết kế thực đơn khoa học theo chế độ DASH, kiểm soát đường huyết, giảm muối và tăng cường vi khoáng giúp tim mạch luôn khỏe mạnh.",
@@ -130,7 +130,7 @@ export const articles = [
         categoryName: "Chăm sóc người cao tuổi",
         title: "Kỹ thuật lật trở và phòng ngừa loét tì đè ở người nằm bất động lâu ngày",
         summary:
-            "Hướng dẫn thực hành chuẩn điều dưỡng về chu kỳ xoay trở 2 giờ một lần, chăm sóc da và sử dụng đệm hơi chống loét chuyên dụng.",
+            "Hướng dẫn thực hành chăm sóc giảm áp lực tì đè định kỳ, bảo vệ làn da và sử dụng đệm hơi chống loét chuyên dụng cho người bệnh nằm lâu ngày.",
         readTime: "8 phút đọc",
         date: "15/09/2026",
         source: "Vinmec",
@@ -138,8 +138,8 @@ export const articles = [
         image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=800",
         reviewed: true,
         content: `
-            <h3>Quy tắc 2 giờ vàng</h3>
-            <p>Đối với bệnh nhân nằm liệt giường hoặc sau đột quỵ, cần thay đổi tư thế nằm nghiêng trái, nằm ngửa, nằm nghiêng phải đều đặn mỗi 2 tiếng một lần (cả ngày lẫn đêm) để giải phóng áp lực, giúp máu lưu thông trở lại nuôi dưỡng da.</p>
+            <h3>Thay đổi tư thế định kỳ</h3>
+            <p>Người bệnh nằm lâu cần được thay đổi tư thế định kỳ theo tình trạng và hướng dẫn của nhân viên y tế (luân phiên nghiêng trái, nằm ngửa, nghiêng phải), đồng thời kiểm tra da thường xuyên để giải phóng áp lực và phát hiện sớm dấu hiệu tổn thương.</p>
 
             <h3>Kỹ thuật xoay trở an toàn</h3>
             <p>Tuyệt đối <strong>không kéo lê</strong> bệnh nhân trên bề mặt giường vì lực ma sát sẽ làm tổn thương lớp biểu bì, dễ gây loét. Cần nâng bệnh nhân lên hoặc sử dụng tấm lót hỗ trợ để di chuyển. Khi lật nghiêng, nên nghiêng khoảng 30 độ và chèn gối dọc theo lưng để giữ tư thế ổn định. Đặt gối lót giữa hai đầu gối và dưới cánh tay để giảm áp lực cục bộ.</p>
@@ -361,11 +361,11 @@ export const faqs = [
         a: "Nên đo 2 lần mỗi ngày: buổi sáng sau khi thức dậy và đi vệ sinh (trước khi ăn sáng và uống thuốc), và buổi tối trước khi đi ngủ. Nghỉ ngơi yên tĩnh 5-10 phút trước khi đo.",
     },
     {
-        q: "Khi nào cần gọi Điều dưỡng CareLink đến hỗ trợ gấp?",
-        a: "Khi gia đình cần hỗ trợ tiêm truyền theo y lệnh bác sĩ, thay ống thông tiểu, chăm sóc vết loét có dấu hiệu nhiễm trùng, hoặc cần điều dưỡng túc trực ca đêm theo dõi sát sinh hiệu.",
+        q: "Khi nào gia đình nên đặt dịch vụ chăm sóc tại nhà?",
+        a: "Gia đình có thể cân nhắc đặt dịch vụ chăm sóc tại nhà khi người thân cần hỗ trợ sinh hoạt, theo dõi sức khỏe trong quá trình hồi phục hoặc cần người đồng hành chăm sóc theo lịch đã đặt. Các thủ thuật như tiêm, truyền chỉ được thực hiện khi có chỉ định phù hợp của nhân viên y tế và theo quy trình chuyên môn. Nếu có dấu hiệu nguy hiểm hoặc tình trạng cấp cứu, gia đình hãy liên hệ ngay cơ sở y tế hoặc gọi cấp cứu 115 thay vì chờ dịch vụ tại nhà.",
     },
     {
         q: "Chi phí dịch vụ chăm sóc tại nhà của CareLink được tính như thế nào?",
-        a: "Chi phí được tính theo ca (4 giờ hoặc 8 giờ) tùy theo loại dịch vụ và mức độ chăm sóc. Gia đình có thể xem bảng giá chi tiết trên trang Dịch Vụ hoặc liên hệ hotline để được tư vấn miễn phí.",
+        a: "Chi phí được xác định theo từng loại dịch vụ và thời lượng cụ thể của ca chăm sóc (từ 60 đến 240 phút tùy gói dịch vụ). Gia đình có thể xem mức giá minh bạch và thông tin chi tiết trên trang Dịch Vụ trước khi đặt lịch.",
     },
 ];

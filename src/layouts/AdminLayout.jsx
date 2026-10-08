@@ -18,6 +18,7 @@ import {
     ChevronRight,
     Plus,
     LogOut,
+    BookOpen,
 } from "lucide-react";
 import LogoutModal from "../components/LogoutModal";
 
@@ -58,6 +59,12 @@ const adminNavItems = [
         aliases: ["/admin/finance"],
         label: "Tài chính",
         icon: <Wallet className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
+    },
+    {
+        path: "/admin/handbook",
+        aliases: ["/admin/handbook"],
+        label: "Cẩm nang y tế",
+        icon: <BookOpen className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
     },
 ];
 
