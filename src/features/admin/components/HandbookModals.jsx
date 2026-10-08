@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, Star, Eye, ShieldCheck, AlertCircle } from "lucide-react";
+import { X, Check, Star, Eye, ShieldCheck, AlertCircle, Plus, Trash2, ExternalLink } from "lucide-react";
 import { categories } from "../../../data/handbookData";
 
 const SOURCE_SUGGESTIONS = [
@@ -29,13 +29,33 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
         status: "published",
         content: `<h3>1. Hướng dẫn chăm sóc tổng quan</h3>
 <p>Nội dung chi tiết về các nguyên tắc chăm sóc sức khỏe và hướng dẫn phòng ngừa...</p>`,
+        references: [],
     });
 
     useEffect(() => {
         if (initialData) {
-            setFormData(initialData);
+            setFormData({
+                ...initialData,
+                references: Array.isArray(initialData.references) ? initialData.references : [],
+            });
+        } else {
+            setFormData({
+                title: "",
+                category: "elderly",
+                categoryName: "Chăm sóc người cao tuổi",
+                summary: "",
+                readTime: "5 phút đọc",
+                source: "Vinmec",
+                sourceDetail: "Tổng hợp từ chuyên mục Lão khoa",
+                image: "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=1200",
+                featured: false,
+                status: "published",
+                content: `<h3>1. Hướng dẫn chăm sóc tổng quan</h3>
+<p>Nội dung chi tiết về các nguyên tắc chăm sóc sức khỏe và hướng dẫn phòng ngừa...</p>`,
+                references: [],
+            });
         }
-    }, [initialData]);
+    }, [initialData, isOpen]);
 
     const handleCategoryChange = (catId) => {
         const found = categories.find((c) => c.id === catId);
@@ -43,6 +63,28 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
             ...prev,
             category: catId,
             categoryName: found ? found.label : catId,
+        }));
+    };
+
+    const handleAddReference = () => {
+        setFormData((prev) => ({
+            ...prev,
+            references: [...(prev.references || []), { text: "", url: "" }],
+        }));
+    };
+
+    const handleUpdateReference = (index, field, value) => {
+        setFormData((prev) => {
+            const nextRefs = [...(prev.references || [])];
+            nextRefs[index] = { ...nextRefs[index], [field]: value };
+            return { ...prev, references: nextRefs };
+        });
+    };
+
+    const handleRemoveReference = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            references: (prev.references || []).filter((_, i) => i !== index),
         }));
     };
 
@@ -56,7 +98,13 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
             alert("Vui lòng nhập tóm tắt ngắn cho bài viết!");
             return;
         }
-        onSave(formData);
+        const cleanedReferences = (formData.references || []).filter(
+            (r) => (r.text && r.text.trim()) || (r.url && r.url.trim())
+        );
+        onSave({
+            ...formData,
+            references: cleanedReferences,
+        });
     };
 
     if (!isOpen) return null;
@@ -217,6 +265,66 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
                         />
                     </div>
 
+                    {/* Danh sách tài liệu tham khảo */}
+                    <div className="space-y-2.5 p-3.5 bg-slate-50/70 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <label className="font-bold text-slate-700 block">
+                                    Tài liệu tham khảo liên kết ({formData.references?.length || 0})
+                                </label>
+                                <span className="text-[11px] text-slate-500">
+                                    Nguồn trích dẫn minh bạch giúp bài viết tăng độ tin cậy
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleAddReference}
+                                className="px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-[#00677c] font-bold text-xs rounded-lg border border-teal-200 flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Thêm nguồn</span>
+                            </button>
+                        </div>
+
+                        {(!formData.references || formData.references.length === 0) ? (
+                            <p className="text-xs text-slate-400 italic py-1">
+                                Chưa có tài liệu tham khảo nào. Bấm "Thêm nguồn" nếu bài viết có trích dẫn từ bài báo/nghiên cứu y khoa.
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {formData.references.map((ref, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                                        <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                            {idx + 1}
+                                        </span>
+                                        <input
+                                            type="text"
+                                            value={ref.text}
+                                            onChange={(e) => handleUpdateReference(idx, "text", e.target.value)}
+                                            placeholder="Tên bài báo / tài liệu (VD: Vinmec - Bệnh sa sút trí tuệ)"
+                                            className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00677c]"
+                                        />
+                                        <input
+                                            type="url"
+                                            value={ref.url}
+                                            onChange={(e) => handleUpdateReference(idx, "url", e.target.value)}
+                                            placeholder="Đường dẫn URL (https://...)"
+                                            className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00677c]"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveReference(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md cursor-pointer transition-colors shrink-0"
+                                            title="Xóa tài liệu"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Switches: Nổi bật & Trạng thái xuất bản */}
                     <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -310,7 +418,7 @@ export function HandbookPreviewModal({ article, onClose }) {
                             </span>
                         )}
                         <span className="text-xs text-slate-400 ml-auto font-medium">
-                            {article.readTime} • {article.date}
+                            {article.readTime} • {article.date || "Vừa cập nhật"}
                         </span>
                     </div>
 
@@ -355,6 +463,38 @@ export function HandbookPreviewModal({ article, onClose }) {
                         className="prose prose-slate max-w-none text-slate-700 text-xs sm:text-sm leading-relaxed space-y-3"
                         dangerouslySetInnerHTML={{ __html: article.content }}
                     />
+
+                    {/* Danh sách tài liệu tham khảo preview */}
+                    {article.references && article.references.length > 0 && (
+                        <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-slate-100/80 rounded-xl border border-slate-200/80">
+                            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-3">
+                                <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                                Tài liệu tham khảo ({article.references.length})
+                            </h4>
+                            <ul className="space-y-2">
+                                {article.references.map((ref, idx) => (
+                                    <li key={idx} className="flex items-start gap-2.5 text-xs">
+                                        <span className="text-teal-700 font-bold shrink-0 bg-teal-50 w-5 h-5 rounded flex items-center justify-center border border-teal-200 text-[11px]">
+                                            {idx + 1}
+                                        </span>
+                                        {ref.url ? (
+                                            <a
+                                                href={ref.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-slate-600 hover:text-[#00677c] underline underline-offset-2 flex items-center gap-1.5 break-all font-medium"
+                                            >
+                                                <span>{ref.text || ref.url}</span>
+                                                <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+                                            </a>
+                                        ) : (
+                                            <span className="text-slate-600 font-medium">{ref.text}</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     {/* Khung Lưu ý y khoa bắt buộc */}
                     <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed">
