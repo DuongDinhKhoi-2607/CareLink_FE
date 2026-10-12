@@ -5,11 +5,21 @@ import LogoutModal from "../components/LogoutModal";
 const navItems = [
     {
         path: "/caregiver/dashboard",
-        label: "Dashboard",
+        label: "Tổng quan",
         badge: null,
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+        ),
+    },
+    {
+        path: "/caregiver/messages",
+        label: "Tin nhắn & Trao đổi",
+        badge: null,
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.874-.985c.34-.798.536-1.636.57-2.484C3.805 16.035 3 14.123 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
             </svg>
         ),
     },
@@ -51,6 +61,25 @@ export default function CaregiverLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    // Lưu trạng thái thu gọn vào localStorage để khi chuyển route (Dashboard, Đánh giá...) vẫn giữ nguyên
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem("carelink_caregiver_sidebar_collapsed") === "true";
+        } catch {
+            return false;
+        }
+    });
+
+    const toggleSidebarCollapse = () => {
+        setIsCollapsed((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem("carelink_caregiver_sidebar_collapsed", String(next));
+            } catch {}
+            return next;
+        });
+    };
 
     const handleLogout = () => {
         localStorage.removeItem("carelink_user");
@@ -175,33 +204,74 @@ export default function CaregiverLayout() {
 
             {/* ── Khung nội dung: Sidebar tự động kéo dài 100% theo nội dung từng trang (items-stretch + self-stretch) ── */}
             <div className="flex flex-1 items-stretch min-h-[calc(100vh-4rem)]">
-                {/* ── DESKTOP SIDEBAR: Co giãn dài theo đúng độ dài nội dung, không có khoảng trống trắng phía dưới ── */}
-                <aside className="hidden lg:flex flex-col w-64 bg-[#102030] shrink-0 self-stretch">
+                {/* ── DESKTOP SIDEBAR: Có nút thu gọn/mở rộng, animation mượt mà, lưu trạng thái localStorage ── */}
+                <aside
+                    className={`hidden lg:flex flex-col ${
+                        isCollapsed ? "w-20" : "w-64"
+                    } bg-[#102030] shrink-0 self-stretch transition-all duration-300 ease-in-out relative border-r border-slate-800/50`}
+                >
+                    {/* Header danh mục + Nút Thu gọn / Mở rộng */}
+                    <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} px-4 pt-5 pb-2 transition-all`}>
+                        {!isCollapsed && (
+                            <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider px-2">
+                                Danh mục chính
+                            </p>
+                        )}
+                        <button
+                            type="button"
+                            onClick={toggleSidebarCollapse}
+                            title={isCollapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"}
+                            className="p-1.5 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-all cursor-pointer active:scale-95 bg-white/5 border border-white/5"
+                        >
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`}
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+                            </svg>
+                        </button>
+                    </div>
+
                     {/* Nav items */}
-                    <nav className="flex flex-col gap-1 p-4 pt-6 flex-1">
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-2">Navigation</p>
+                    <nav className="flex flex-col gap-1.5 p-3 flex-1">
                         {navItems.map((item) => {
                             const active = isActive(item.path);
                             return (
                                 <Link
                                     key={item.path}
                                     to={item.path}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                                    title={isCollapsed ? item.label : undefined}
+                                    className={`flex items-center ${
+                                        isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5"
+                                    } rounded-xl transition-all duration-200 group relative ${
                                         active
-                                            ? "bg-[#00677c] text-white shadow-lg shadow-[#00677c40]"
+                                            ? "bg-[#00677c] text-white shadow-md shadow-[#00677c40]"
                                             : "text-white/60 hover:text-white hover:bg-white/10"
                                     }`}
                                 >
-                                    <span className={`transition-colors ${active ? "text-white" : "text-white/50 group-hover:text-white"}`}>
+                                    <span className={`shrink-0 transition-colors ${active ? "text-white" : "text-white/60 group-hover:text-white"}`}>
                                         {item.icon}
                                     </span>
-                                    <span className="text-sm font-semibold flex-1">{item.label}</span>
-                                    {item.badge && !active && (
-                                        <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                            {item.badge}
-                                        </span>
+
+                                    {!isCollapsed && (
+                                        <span className="text-sm font-semibold flex-1 truncate">{item.label}</span>
                                     )}
-                                    {active && (
+
+                                    {/* Badge hiển thị */}
+                                    {item.badge && !active && (
+                                        isCollapsed ? (
+                                            <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-[#102030]" />
+                                        ) : (
+                                            <span className="ml-auto min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                                                {item.badge}
+                                            </span>
+                                        )
+                                    )}
+
+                                    {active && !isCollapsed && (
                                         <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />
                                     )}
                                 </Link>
@@ -210,16 +280,19 @@ export default function CaregiverLayout() {
                     </nav>
 
                     {/* Bottom — Về trang chính */}
-                    <div className="p-4 border-t border-white/10 shrink-0">
+                    <div className="p-3 border-t border-white/10 shrink-0">
                         <button
                             type="button"
                             onClick={() => navigate("/caregiver")}
-                            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium cursor-pointer"
+                            title={isCollapsed ? "Về trang chính CareLink" : undefined}
+                            className={`w-full flex items-center ${
+                                isCollapsed ? "justify-center py-2.5 px-0" : "gap-2.5 px-3 py-2.5"
+                            } rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium cursor-pointer`}
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                             </svg>
-                            Về trang chính
+                            {!isCollapsed && <span>Về trang chính</span>}
                         </button>
                     </div>
                 </aside>

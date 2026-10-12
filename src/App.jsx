@@ -30,6 +30,7 @@ import Verification from "./features/caregiver/pages/Verification";
 import CaregiverDashboard from "./features/caregiver/pages/CaregiverDashboard";
 import CaregiverSchedule from "./features/caregiver/pages/CaregiverSchedule";
 import CaregiverBookingRequests from "./features/caregiver/pages/CaregiverBookingRequests";
+import CaregiverMessages from "./features/caregiver/pages/CaregiverMessages";
 import CaregiverReview from "./features/caregiver/pages/CaregiverReview";
 
 import PageTransition from "./components/PageTransition";
@@ -94,6 +95,7 @@ export default function App() {
           {/* Caregiver Dashboard — layout riêng với sidebar của Điều dưỡng */}
           <Route element={<CaregiverLayout />}>
             <Route path="/caregiver/dashboard" element={<CaregiverDashboard />} />
+            <Route path="/caregiver/messages" element={<CaregiverMessages />} />
             <Route path="/caregiver/schedule" element={<CaregiverSchedule />} />
             <Route path="/caregiver/bookings" element={<CaregiverBookingRequests />} />
             <Route path="/caregiver/review" element={<CaregiverReview />} />
