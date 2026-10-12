@@ -1,40 +1,45 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import SubmitHealthRecordModal from "../components/SubmitHealthRecordModal";
+import ViewHealthRecordModal from "../../family/components/ViewHealthRecordModal";
 
 /* ─── Mock booking data — sẽ thay bằng API ─── */
 const MOCK_BOOKINGS = [
     {
-        id: "BK-20260918-001",
+        id: "BK-20261013-001",
         status: "pending",
-        requestedAt: "18/09/2026 · 08:32",
+        requestedAt: "13/10/2026 · 08:32",
+        source: "chat",
         family: {
-            name: "Nguyễn Thị Lan",
+            name: "Nguyễn Thị Lan (Mẹ anh An)",
             phone: "0901 234 567",
-            address: "15 Nguyễn Trãi, Quận 1, TP.HCM",
-            rating: 4.8,
+            address: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP.HCM",
+            rating: 4.9,
             totalSessions: 12,
         },
         patient: {
-            name: "Nguyễn Văn An",
-            age: 78,
-            gender: "Nam",
-            condition: "Tai biến mạch máu não (phục hồi giai đoạn 2)",
-            mobility: "Cần hỗ trợ di chuyển",
-            allergies: "Penicillin",
-            notes: "Bệnh nhân đang uống thuốc chống đông máu. Cần theo dõi huyết áp 2 lần/ngày.",
+            name: "Bà Nguyễn Thị Lan",
+            age: 75,
+            gender: "Nữ",
+            condition: "Hậu phẫu phục hồi khớp gối",
+            mobility: "Cần hỗ trợ tập đi lại",
+            allergies: "Không có",
+            notes: "Ca đã thống nhất qua Chat. Bác vừa mổ khớp gối, cần hỗ trợ tập co duỗi nhẹ và đo huyết áp buổi sáng.",
         },
         service: {
-            type: "Chăm sóc người cao tuổi",
-            date: "20/09/2026",
-            time: "07:00 – 11:00",
-            duration: "4 giờ",
-            fee: "480.000 VNĐ",
-            tasks: ["Hỗ trợ vệ sinh cá nhân", "Cho ăn và uống thuốc", "Vật lý trị liệu nhẹ", "Theo dõi huyết áp"],
+            type: "Chăm sóc phục hồi sau phẫu thuật",
+            date: "14/10/2026",
+            time: "08:00 – 10:00",
+            duration: "2 giờ",
+            fee: "350.000 VNĐ",
+            tasks: ["Hỗ trợ tập co duỗi nhẹ", "Đo huyết áp & sinh hiệu", "Theo dõi vết mổ", "Hỗ trợ vận động"],
         },
     },
     {
-        id: "BK-20260918-002",
+        id: "BK-20261013-002",
         status: "pending",
-        requestedAt: "18/09/2026 · 10:15",
+        requestedAt: "13/10/2026 · 10:15",
+        source: "direct",
         family: {
             name: "Trần Văn Minh",
             phone: "0912 345 678",
@@ -53,7 +58,7 @@ const MOCK_BOOKINGS = [
         },
         service: {
             type: "Chăm sóc sau phẫu thuật",
-            date: "21/09/2026",
+            date: "15/10/2026",
             time: "14:00 – 18:00",
             duration: "4 giờ",
             fee: "520.000 VNĐ",
@@ -91,7 +96,7 @@ const MOCK_BOOKINGS = [
     },
     {
         id: "BK-20260917-004",
-        status: "accepted",
+        status: "completed",
         requestedAt: "17/09/2026 · 09:00",
         family: {
             name: "Lê Thị Hoa",
@@ -116,6 +121,18 @@ const MOCK_BOOKINGS = [
             duration: "3 giờ",
             fee: "360.000 VNĐ",
             tasks: ["Tiêm insulin", "Đo đường huyết & huyết áp", "Chuẩn bị bữa ăn phù hợp", "Hỗ trợ vệ sinh sáng"],
+        },
+        healthRecord: {
+            bloodPressureSystolic: 125,
+            bloodPressureDiastolic: 80,
+            heartRate: 74,
+            temperature: 36.8,
+            bloodGlucose: 110,
+            woundStatus: "Khô ráo, liền tốt",
+            mobilityStatus: "Tập đi lại chậm với khung hỗ trợ",
+            mentalStatus: "Tỉnh táo, hợp tác tích cực",
+            nurseNotes: "Đã tiêm insulin đúng liều chỉ định 12UI, đo đường huyết 110 mg/dL trước ăn. Bác Dũng ăn ngon miệng, đã uống thuốc huyết áp lúc 07:00.",
+            createdAt: "19/09/2026 · 09:15",
         },
     },
     {
@@ -151,9 +168,11 @@ const MOCK_BOOKINGS = [
 
 /* ─── Helpers ─── */
 const STATUS_MAP = {
-    pending:  { label: "Chờ xác nhận", bg: "bg-amber-50",   text: "text-amber-600",  dot: "bg-amber-400",  border: "border-amber-200" },
-    accepted: { label: "Đã chấp nhận", bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-500", border: "border-emerald-200" },
-    rejected: { label: "Đã từ chối",   bg: "bg-red-50",     text: "text-red-500",    dot: "bg-red-400",    border: "border-red-200" },
+    pending:     { label: "Chờ xác nhận", bg: "bg-amber-50",   text: "text-amber-600",  dot: "bg-amber-400",  border: "border-amber-200" },
+    accepted:    { label: "Đã chấp nhận", bg: "bg-sky-50",     text: "text-sky-600",    dot: "bg-sky-500",    border: "border-sky-200" },
+    in_progress: { label: "Đang thực hiện", bg: "bg-teal-50",   text: "text-teal-700",   dot: "bg-teal-500 animate-pulse", border: "border-teal-200" },
+    completed:   { label: "Đã hoàn thành", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-200" },
+    rejected:    { label: "Đã từ chối",   bg: "bg-red-50",     text: "text-red-500",    dot: "bg-red-400",    border: "border-red-200" },
 };
 
 function StarRow({ rating }) {
@@ -336,7 +355,7 @@ function BookingCard({ booking, onAccept, onReject }) {
                             <button
                                 id={`accept-${id}`}
                                 onClick={() => onAccept(id)}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00677c] text-white text-sm font-bold hover:bg-[#005263] active:scale-[0.98] transition-all shadow-sm hover:shadow-lg hover:shadow-[#00677c30]"
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00677c] text-white text-sm font-bold hover:bg-[#005263] active:scale-[0.98] transition-all shadow-sm hover:shadow-lg hover:shadow-[#00677c30] cursor-pointer"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -346,7 +365,7 @@ function BookingCard({ booking, onAccept, onReject }) {
                             <button
                                 id={`reject-${id}`}
                                 onClick={() => onReject(id)}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white border-2 border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 hover:border-red-300 active:scale-[0.98] transition-all"
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white border-2 border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 hover:border-red-300 active:scale-[0.98] transition-all cursor-pointer"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -356,25 +375,73 @@ function BookingCard({ booking, onAccept, onReject }) {
                         </div>
                     )}
 
-                    {!isPending && (
-                        <div className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold ${
-                            status === "accepted" ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
-                        }`}>
-                            {status === "accepted" ? (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Đã chấp nhận ca
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Đã từ chối
-                                </>
-                            )}
+                    {status === "accepted" && (
+                        <div className="flex flex-col gap-2 mt-auto">
+                            <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-center justify-between">
+                                <span className="text-xs font-semibold text-sky-800">Ca đã tiếp nhận thành công</span>
+                                <span className="text-[10px] font-bold text-sky-600 bg-white px-2 py-0.5 rounded-full border border-sky-200">Sẵn sàng</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => onStart(id)}
+                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-[#00677c] hover:from-teal-700 hover:to-[#005263] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                ▶ Bắt đầu ca chăm sóc
+                            </button>
+                        </div>
+                    )}
+
+                    {status === "in_progress" && (
+                        <div className="flex flex-col gap-2 mt-auto">
+                            <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 flex items-center justify-between">
+                                <span className="text-xs font-bold text-teal-800 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-teal-500 animate-ping" />
+                                    Ca đang diễn ra trực tiếp
+                                </span>
+                                <span className="text-[10px] text-teal-700 font-semibold">Cần nhập bệnh án</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => onReport(booking)}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005263] hover:to-[#007489] text-white text-xs font-extrabold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                📋 Ghi nhận Bệnh án & Hoàn thành ca
+                            </button>
+                        </div>
+                    )}
+
+                    {status === "completed" && (
+                        <div className="flex flex-col gap-2 mt-auto">
+                            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+                                <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                                    ✓ Ca đã hoàn thành
+                                </span>
+                                <span className="text-[10px] text-emerald-700 font-semibold">Đã nộp bệnh án</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onViewRecord(booking)}
+                                    className="flex-1 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] font-bold text-xs border border-teal-200 transition-colors cursor-pointer text-center"
+                                >
+                                    Xem bệnh án đã nộp
+                                </button>
+                                <Link
+                                    to="/caregiver/review"
+                                    className="flex-1 py-2.5 rounded-xl bg-[#00677c] hover:bg-[#005263] text-white font-bold text-xs transition-colors shadow-2xs text-center flex items-center justify-center gap-1"
+                                >
+                                    ⭐ Đánh giá gia đình
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
+                    {status === "rejected" && (
+                        <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-red-50 text-red-500 mt-auto">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Đã từ chối nhận ca
                         </div>
                     )}
                 </div>
@@ -388,7 +455,7 @@ function FilterTab({ label, count, active, onClick }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 active
                     ? "bg-[#102030] text-white shadow-sm"
                     : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-[#102030]"
@@ -411,34 +478,70 @@ function FilterTab({ label, count, active, onClick }) {
 ═══════════════════════════════════════════ */
 export default function CaregiverBookingRequests() {
     const [bookings, setBookings] = useState(MOCK_BOOKINGS);
-    const [filter, setFilter] = useState("pending"); // "all" | "pending" | "accepted" | "rejected"
+    const [filter, setFilter] = useState("all"); // "all" | "pending" | "accepted" | "in_progress" | "completed" | "rejected"
+    const [reportingBooking, setReportingBooking] = useState(null);
+    const [viewingRecordBooking, setViewingRecordBooking] = useState(null);
+    const [toastMessage, setToastMessage] = useState(null);
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+    };
 
     const handleAccept = (id) => {
         setBookings((prev) =>
             prev.map((b) => (b.id === id ? { ...b, status: "accepted" } : b))
         );
+        showToast("Đã chấp nhận ca thành công! Ca chuyển sang trạng thái sẵn sàng thực hiện.");
     };
 
     const handleReject = (id) => {
         setBookings((prev) =>
             prev.map((b) => (b.id === id ? { ...b, status: "rejected" } : b))
         );
+        showToast("Đã từ chối nhận ca hẹn.");
+    };
+
+    const handleStart = (id) => {
+        setBookings((prev) =>
+            prev.map((b) => (b.id === id ? { ...b, status: "in_progress" } : b))
+        );
+        showToast("Ca chăm sóc đã bắt đầu! Bạn có thể ghi nhận sinh hiệu khi kết thúc ca.");
+    };
+
+    const handleSaveHealthRecordSuccess = (healthRecordDto) => {
+        setBookings((prev) =>
+            prev.map((b) =>
+                b.id === healthRecordDto.bookingId
+                    ? {
+                          ...b,
+                          status: "completed",
+                          healthRecord: healthRecordDto,
+                      }
+                    : b
+            )
+        );
+        showToast("Bệnh án đã được lưu thành công vào hồ sơ! Ca chăm sóc đã hoàn tất.");
     };
 
     const counts = {
-        all:      bookings.length,
-        pending:  bookings.filter((b) => b.status === "pending").length,
-        accepted: bookings.filter((b) => b.status === "accepted").length,
-        rejected: bookings.filter((b) => b.status === "rejected").length,
+        all:         bookings.length,
+        pending:     bookings.filter((b) => b.status === "pending").length,
+        accepted:    bookings.filter((b) => b.status === "accepted").length,
+        in_progress: bookings.filter((b) => b.status === "in_progress").length,
+        completed:   bookings.filter((b) => b.status === "completed").length,
+        rejected:    bookings.filter((b) => b.status === "rejected").length,
     };
 
     const filtered = filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
 
     const TABS = [
-        { key: "pending",  label: "Chờ xác nhận" },
-        { key: "all",      label: "Tất cả" },
-        { key: "accepted", label: "Đã chấp nhận" },
-        { key: "rejected", label: "Đã từ chối" },
+        { key: "all",         label: "Tất cả" },
+        { key: "pending",     label: "Chờ xác nhận" },
+        { key: "accepted",    label: "Đã chấp nhận" },
+        { key: "in_progress", label: "Đang diễn ra" },
+        { key: "completed",   label: "Đã hoàn thành" },
+        { key: "rejected",    label: "Đã từ chối" },
     ];
 
     return (
@@ -446,9 +549,9 @@ export default function CaregiverBookingRequests() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#102030]">Booking Requests</h1>
-                    <p className="text-sm text-slate-400 mt-1">
-                        Xem xét và phản hồi yêu cầu đặt lịch từ các gia đình.
+                    <h1 className="text-2xl font-bold text-[#102030]">Yêu cầu nhận ca</h1>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Xem xét và phản hồi yêu cầu đặt lịch từ các gia đình, bắt đầu ca và ghi nhận bệnh án sau ca.
                     </p>
                 </div>
 
@@ -497,8 +600,36 @@ export default function CaregiverBookingRequests() {
                             booking={booking}
                             onAccept={handleAccept}
                             onReject={handleReject}
+                            onStart={handleStart}
+                            onReport={(b) => setReportingBooking(b)}
+                            onViewRecord={(b) => setViewingRecordBooking(b)}
                         />
                     ))}
+                </div>
+            )}
+
+            {/* Modal Ghi nhận bệnh án lâm sàng */}
+            <SubmitHealthRecordModal
+                isOpen={Boolean(reportingBooking)}
+                onClose={() => setReportingBooking(null)}
+                booking={reportingBooking}
+                onSaveSuccess={handleSaveHealthRecordSuccess}
+            />
+
+            {/* Modal Xem bệnh án đã nộp */}
+            <ViewHealthRecordModal
+                isOpen={Boolean(viewingRecordBooking)}
+                onClose={() => setViewingRecordBooking(null)}
+                booking={viewingRecordBooking}
+                healthRecord={viewingRecordBooking?.healthRecord}
+                showHistoryLink={false}
+            />
+
+            {/* Toast feedback */}
+            {toastMessage && (
+                <div className="fixed bottom-6 right-6 z-50 px-5 py-3.5 bg-slate-900 text-white rounded-2xl shadow-xl flex items-center gap-3 border border-slate-700 animate-page-enter">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-xs font-bold">{toastMessage}</span>
                 </div>
             )}
         </div>

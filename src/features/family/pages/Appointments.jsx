@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import ViewHealthRecordModal from "../components/ViewHealthRecordModal";
+import CreateDisputeModal from "../components/CreateDisputeModal";
 
 export default function Appointments() {
     const [activeTab, setActiveTab] = useState("upcoming"); // 'upcoming' | 'ongoing' | 'completed'
@@ -8,6 +10,9 @@ export default function Appointments() {
     const [monthFilter, setMonthFilter] = useState("09/2026");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedAppointment, setSelectedAppointment] = useState(null); // Cho modal xem chi tiết
+    const [viewingHealthRecord, setViewingHealthRecord] = useState(null); // Cho modal xem báo cáo sức khỏe
+    const [disputingAppointment, setDisputingAppointment] = useState(null); // Cho modal khiếu nại
+    const [toastMessage, setToastMessage] = useState(null);
 
     // Mock data chuẩn theo đúng giao diện thực tế và ảnh mẫu của user
     const [appointments, setAppointments] = useState([
@@ -143,6 +148,18 @@ export default function Appointments() {
             reviewed: true,
             rating: 5,
             reviewComment: "Điều dưỡng An rất đúng giờ, trò chuyện chu đáo giúp bố tôi vui vẻ và tích cực tập đi hơn.",
+            healthRecord: {
+                bloodPressureSystolic: 124,
+                bloodPressureDiastolic: 80,
+                heartRate: 72,
+                temperature: 36.8,
+                bloodGlucose: null,
+                woundStatus: "Khô ráo, liền tốt, không phù nề",
+                mobilityStatus: "Đi dạo công viên nhẹ nhàng 25 phút",
+                mentalStatus: "Tinh thần vui vẻ, giao tiếp hoạt bát",
+                nurseNotes: "Bác Bình đáp ứng tốt bài tập vận động đi dạo. Đã uống thuốc huyết áp theo đơn đúng 09:00. Dặn người nhà tiếp tục duy trì uống đủ 1.5L nước/ngày.",
+                createdAt: "16/09/2026 · 11:30",
+            },
             tasks: ["Trò chuyện, đọc sách báo", "Đi dạo công viên nhẹ nhàng"],
             price: "350.000đ",
         },
@@ -153,6 +170,26 @@ export default function Appointments() {
         if (window.confirm("Bạn có chắc chắn muốn yêu cầu hủy ca chăm sóc này không?")) {
             setAppointments((prev) => prev.filter((apt) => apt.id !== id));
         }
+    };
+
+    // Xử lý gửi khiếu nại thành công
+    const handleDisputeSuccess = (disputeDto) => {
+        setAppointments((prev) =>
+            prev.map((apt) =>
+                apt.id === disputeDto.bookingId
+                    ? {
+                          ...apt,
+                          dispute: disputeDto,
+                          status: "disputed",
+                          statusLabel: "ĐANG KHIẾU NẠI",
+                          statusBadge: "bg-rose-50 text-rose-700 border border-rose-200",
+                          dotColor: "bg-rose-500",
+                      }
+                    : apt
+            )
+        );
+        setToastMessage(`Đã gửi khiếu nại #${disputeDto.code} thành công! Ban Quản trị CareLink sẽ liên hệ hỗ trợ trong 24h.`);
+        setTimeout(() => setToastMessage(null), 5000);
     };
 
     // Lọc theo Tab, Tìm kiếm, Dịch vụ, Trạng thái
@@ -502,8 +539,57 @@ export default function Appointments() {
                                             </button>
                                         )}
 
-                                        {/* Nút Nhắn tin */}
-                                        {!apt.canCancel && (
+                                        {/* Ca đã hoàn thành: Xem báo cáo sức khỏe */}
+                                        {apt.tab === "completed" && apt.healthRecord && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewingHealthRecord(apt)}
+                                                className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-[#00677c] font-bold rounded-xl text-xs sm:text-sm transition-all border border-teal-200/80 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                                title="Xem các chỉ số sinh hiệu và nhật ký chăm sóc"
+                                            >
+                                                <svg className="w-3.5 h-3.5 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                                </svg>
+                                                <span>Báo cáo sức khỏe</span>
+                                            </button>
+                                        )}
+
+                                        {/* Ca đã hoàn thành: Hiển thị badge đánh giá hoặc nút Đánh giá */}
+                                        {apt.tab === "completed" && (
+                                            apt.reviewed ? (
+                                                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200">
+                                                    ⭐ {apt.rating}/5 Đã đánh giá
+                                                </span>
+                                            ) : (
+                                                <Link
+                                                    to="/review"
+                                                    className="px-3.5 py-2 bg-[#00677c] text-white hover:bg-[#005263] font-semibold rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-1 shadow-2xs"
+                                                >
+                                                    Đánh giá ca
+                                                </Link>
+                                            )
+                                        )}
+
+                                        {/* Ca đã hoàn thành: Khiếu nại / Báo cáo sự cố */}
+                                        {apt.tab === "completed" && (
+                                            apt.dispute ? (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-200">
+                                                    ⚠ Đang khiếu nại
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDisputingAppointment(apt)}
+                                                    className="px-3 py-2 bg-white hover:bg-rose-50 text-rose-600 font-semibold rounded-xl text-xs sm:text-sm transition-all border border-rose-200/80 flex items-center gap-1 cursor-pointer"
+                                                    title="Báo cáo sự cố hoặc khiếu nại ca trực"
+                                                >
+                                                    Khiếu nại ca
+                                                </button>
+                                            )
+                                        )}
+
+                                        {/* Nút Nhắn tin cho ca chưa hoàn thành */}
+                                        {apt.tab !== "completed" && !apt.canCancel && (
                                             <Link
                                                 to="/dashboard/messages"
                                                 className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-2xs"
@@ -612,6 +698,99 @@ export default function Appointments() {
                                     </ul>
                                 </div>
                             )}
+
+                            {/* Báo cáo sức khỏe lâm sàng cho ca đã hoàn tất */}
+                            {selectedAppointment.tab === "completed" && selectedAppointment.healthRecord && (
+                                <div className="p-3.5 bg-teal-50/70 border border-teal-200/80 rounded-xl space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 font-bold text-teal-900 text-xs">
+                                            <span className="w-2 h-2 rounded-full bg-teal-500" />
+                                            Báo cáo sức khỏe lâm sàng
+                                        </div>
+                                        <span className="text-[10px] text-teal-700 font-medium">
+                                            Đã cập nhật sinh hiệu
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs text-slate-700 pt-1">
+                                        <div className="flex items-center gap-3">
+                                            <span>HA: <strong>{selectedAppointment.healthRecord.bloodPressureSystolic}/{selectedAppointment.healthRecord.bloodPressureDiastolic} mmHg</strong></span>
+                                            <span>Mạch: <strong>{selectedAppointment.healthRecord.heartRate} bpm</strong></span>
+                                            <span>Nhiệt độ: <strong>{selectedAppointment.healthRecord.temperature}°C</strong></span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const currentApt = selectedAppointment;
+                                                setSelectedAppointment(null);
+                                                setViewingHealthRecord(currentApt);
+                                            }}
+                                            className="px-2.5 py-1 bg-[#00677c] hover:bg-[#005566] text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                                        >
+                                            Xem chi tiết
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Đánh giá ca chăm sóc cho ca đã hoàn tất */}
+                            {selectedAppointment.tab === "completed" && (
+                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-bold text-slate-800 text-[11px]">
+                                            Đánh giá chất lượng dịch vụ
+                                        </span>
+                                        {selectedAppointment.reviewed ? (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                                ⭐ {selectedAppointment.rating}/5 sao · Đã gửi
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400">Chưa đánh giá</span>
+                                        )}
+                                    </div>
+
+                                    {selectedAppointment.reviewed ? (
+                                        <p className="text-slate-600 italic text-[11px] leading-relaxed bg-white p-2.5 rounded-lg border border-slate-100">
+                                            "{selectedAppointment.reviewComment}"
+                                        </p>
+                                    ) : (
+                                        <div className="flex items-center justify-between pt-1">
+                                            <span className="text-[11px] text-slate-500">
+                                                Chia sẻ phản hồi của bạn về ca trực
+                                            </span>
+                                            <Link
+                                                to="/review"
+                                                className="px-3 py-1 bg-[#00677c] text-white font-semibold text-[11px] rounded-lg hover:bg-[#005566] transition-colors"
+                                            >
+                                                Đánh giá ngay
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Khiếu nại ca trực nếu có sự cố */}
+                            {selectedAppointment.tab === "completed" && (
+                                <div className="flex items-center justify-between pt-1 text-xs">
+                                    <span className="text-slate-500">Có vấn đề phát sinh trong ca trực?</span>
+                                    {selectedAppointment.dispute ? (
+                                        <span className="text-rose-600 font-bold">
+                                            ⚠ Đang khiếu nại (#{selectedAppointment.dispute.code})
+                                        </span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const currentApt = selectedAppointment;
+                                                setSelectedAppointment(null);
+                                                setDisputingAppointment(currentApt);
+                                            }}
+                                            className="text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+                                        >
+                                            Báo cáo sự cố / Khiếu nại ca
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
@@ -630,6 +809,31 @@ export default function Appointments() {
                             </Link>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Modal Xem Báo cáo sức khỏe lâm sàng */}
+            <ViewHealthRecordModal
+                isOpen={Boolean(viewingHealthRecord)}
+                onClose={() => setViewingHealthRecord(null)}
+                booking={viewingHealthRecord}
+                healthRecord={viewingHealthRecord?.healthRecord}
+                showHistoryLink={true}
+            />
+
+            {/* Modal Gửi Khiếu nại ca chăm sóc */}
+            <CreateDisputeModal
+                isOpen={Boolean(disputingAppointment)}
+                onClose={() => setDisputingAppointment(null)}
+                appointment={disputingAppointment}
+                onSubmitSuccess={handleDisputeSuccess}
+            />
+
+            {/* Toast thông báo */}
+            {toastMessage && (
+                <div className="fixed bottom-6 right-6 z-50 px-5 py-3.5 bg-slate-900 text-white rounded-2xl shadow-xl flex items-center gap-3 border border-slate-700 animate-page-enter">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-xs font-bold">{toastMessage}</span>
                 </div>
             )}
         </div>
