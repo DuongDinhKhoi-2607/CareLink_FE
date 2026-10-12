@@ -681,10 +681,10 @@ export default function AppointmentDetailModal({
                                                     <div className="rounded-xl border border-rose-200 bg-white p-4 space-y-3.5">
                                                         <div className="flex items-center justify-between">
                                                             <p className="text-xs font-bold text-slate-800">
-                                                                Phán quyết khiếu nại (Admin Backoffice)
+                                                                Phán quyết khiếu nại (Ban Quản Trị)
                                                             </p>
-                                                            <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                                                                ResolveDisputeDto
+                                                            <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                                                                Quy trình thẩm định & Đối soát
                                                             </span>
                                                         </div>
 

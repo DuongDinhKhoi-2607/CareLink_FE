@@ -37,7 +37,7 @@ const MOCK_BOOKINGS = [
     },
     {
         id: "BK-20261013-002",
-        status: "pending",
+        status: "in_progress",
         requestedAt: "13/10/2026 · 10:15",
         source: "direct",
         family: {

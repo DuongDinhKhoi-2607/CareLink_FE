@@ -570,14 +570,14 @@ export default function AdminFinance() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                    <th className="py-3.5 px-4 sm:px-6">Mã yêu cầu</th>
-                                    <th className="py-3.5 px-4">Điều dưỡng</th>
-                                    <th className="py-3.5 px-4">Số tiền</th>
-                                    <th className="py-3.5 px-4">Ngân hàng</th>
-                                    <th className="py-3.5 px-4">Số tài khoản</th>
-                                    <th className="py-3.5 px-4">Ngày yêu cầu</th>
-                                    <th className="py-3.5 px-4">Trạng thái</th>
-                                    <th className="py-3.5 px-4 sm:px-6 text-right">Thao tác</th>
+                                    <th className="py-3.5 px-4 sm:px-5 w-28 whitespace-nowrap">Mã yêu cầu</th>
+                                    <th className="py-3.5 px-4 min-w-[150px]">Điều dưỡng</th>
+                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Số tiền</th>
+                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Ngân hàng</th>
+                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Số tài khoản</th>
+                                    <th className="py-3.5 px-4 w-28 whitespace-nowrap">Ngày yêu cầu</th>
+                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Trạng thái</th>
+                                    <th className="py-3.5 px-4 sm:px-5 w-48 text-center whitespace-nowrap">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -594,7 +594,7 @@ export default function AdminFinance() {
                                         const isPending = w.status === "Chờ duyệt";
                                         return (
                                             <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="py-3.5 px-4 sm:px-6">
+                                                <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
                                                     <span className="font-black text-[#00677c]">{w.id}</span>
                                                 </td>
                                                 <td className="py-3.5 px-4">
@@ -608,18 +608,18 @@ export default function AdminFinance() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <span className="font-black text-slate-900">{formatVND(w.amount)}</span>
                                                 </td>
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <span className="flex items-center gap-1 text-slate-600">
                                                         <Landmark className="w-3.5 h-3.5 text-slate-400" />
                                                         {w.bank}
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5 px-4 font-mono text-slate-600">{w.accountNumber}</td>
-                                                <td className="py-3.5 px-4 text-slate-500">{w.requestDate}</td>
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 font-mono text-slate-600 whitespace-nowrap">{w.accountNumber}</td>
+                                                <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">{w.requestDate}</td>
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <div>
                                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${sc.badge}`}>
                                                             <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
@@ -632,13 +632,13 @@ export default function AdminFinance() {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-3.5 px-4 sm:px-6">
+                                                <td className="py-3.5 px-4 sm:px-5 text-center whitespace-nowrap">
                                                     {isPending ? (
-                                                        <div className="flex items-center gap-2 justify-end">
+                                                        <div className="flex items-center gap-1.5 justify-center">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleApprove(w.id)}
-                                                                className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1"
+                                                                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                                                             >
                                                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                                                 Duyệt chi
@@ -646,14 +646,14 @@ export default function AdminFinance() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setRejectTarget(w)}
-                                                                className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1"
+                                                                className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                                                             >
                                                                 <XCircle className="w-3.5 h-3.5" />
                                                                 Từ chối
                                                             </button>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-slate-400 text-right block">—</span>
+                                                        <span className="text-xs text-slate-400 text-center block">—</span>
                                                     )}
                                                 </td>
                                             </tr>
