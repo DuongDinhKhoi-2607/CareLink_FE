@@ -25,8 +25,8 @@ const initialTransactions = [
         caregiver: "Lê Hoàng Long",
         type: "Gia đình thanh toán",
         amount: 960000,
-        platformFee: 96000,
-        caregiverPay: 864000,
+        platformFee: 50000,
+        caregiverPay: 910000,
         date: "23/09/2026",
         time: "08:42",
         status: "Thành công",
@@ -38,8 +38,8 @@ const initialTransactions = [
         caregiver: "Nguyễn Thị Phương Thảo",
         type: "Gia đình thanh toán",
         amount: 960000,
-        platformFee: 96000,
-        caregiverPay: 864000,
+        platformFee: 50000,
+        caregiverPay: 910000,
         date: "22/09/2026",
         time: "06:15",
         status: "Thành công",
@@ -51,8 +51,8 @@ const initialTransactions = [
         caregiver: "Trần Thị Mai",
         type: "Gia đình thanh toán",
         amount: 1440000,
-        platformFee: 144000,
-        caregiverPay: 1296000,
+        platformFee: 50000,
+        caregiverPay: 1390000,
         date: "22/09/2026",
         time: "18:30",
         status: "Thành công",
@@ -90,8 +90,8 @@ const initialTransactions = [
         caregiver: "Vũ Thị Bích Trâm",
         type: "Gia đình thanh toán",
         amount: 720000,
-        platformFee: 72000,
-        caregiverPay: 648000,
+        platformFee: 50000,
+        caregiverPay: 670000,
         date: "20/09/2026",
         time: "15:45",
         status: "Đang khiếu nại",
@@ -397,14 +397,14 @@ export default function AdminFinance() {
                 {/* Phí sàn */}
                 <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phí sàn (10%)</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phí sàn (50.000₫/ca)</span>
                         <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
                             <CircleDollarSign className="w-5 h-5" strokeWidth={2} />
                         </div>
                     </div>
                     <div className="mt-3">
                         <div className="text-xl font-extrabold text-slate-900 tracking-tight">{formatVND(totalPlatformFee)}</div>
-                        <div className="text-xs text-slate-400 mt-2">Doanh thu CareLink sau chiết khấu</div>
+                        <div className="text-xs text-slate-400 mt-2">Cố định 50.000₫ mỗi ca hoàn thành</div>
                     </div>
                 </div>
 
@@ -418,7 +418,7 @@ export default function AdminFinance() {
                     </div>
                     <div className="mt-3">
                         <div className="text-xl font-extrabold text-slate-900 tracking-tight">{formatVND(totalCaregiverPay)}</div>
-                        <div className="text-xs text-slate-400 mt-2">90% doanh thu chuyển đến điều dưỡng</div>
+                        <div className="text-xs text-slate-400 mt-2">Thu nhập điều dưỡng sau khi trừ phí sàn 50.000₫/ca</div>
                     </div>
                 </div>
             </div>

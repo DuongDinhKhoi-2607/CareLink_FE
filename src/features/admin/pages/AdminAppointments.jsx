@@ -67,6 +67,29 @@ const initialAppointments = [
         totalAmount: "960.000 ₫",
         relative: "Ông Phạm Quốc Bình",
         relativeAge: "72 tuổi",
+        healthRecord: {
+            bloodPressureSystolic: 120,
+            bloodPressureDiastolic: 80,
+            heartRate: 74,
+            temperature: 36.8,
+            bloodGlucose: 105,
+            woundStatus: "Vết mổ khô, không rỉ dịch hay sưng đỏ, mép mổ liền tốt.",
+            mobilityStatus: "Tự xoay trở được, ngồi dậy với sự trợ giúp nhẹ.",
+            mentalStatus: "Tỉnh táo, tiếp xúc tốt, hợp tác vui vẻ.",
+            nurseNotes: "Đã thay băng vô khuẩn lúc 08:30. Hướng dẫn cụ tập thở sâu và cử động bàn chân chống huyết khối tĩnh mạch. Gia đình cho cụ uống nước ấm và dinh dưỡng theo thực đơn.",
+            submittedAt: "22/09/2026 14:15",
+            nurseName: "Nguyễn Thị Phương Thảo",
+        },
+        familyReview: {
+            rating: 5,
+            comment: "Điều dưỡng Thảo rất tận tâm, thay băng nhẹ nhàng và đúng kỹ thuật vệ sinh. Bố tôi phục hồi tích cực.",
+            date: "22/09/2026",
+        },
+        caregiverReview: {
+            rating: 5,
+            comment: "Gia đình chuẩn bị đầy đủ vật tư thay băng, đón tiếp lịch thiệp và hỗ trợ điều dưỡng rất chu đáo.",
+            date: "22/09/2026",
+        },
     },
     {
         id: "CA-2004",
@@ -103,6 +126,23 @@ const initialAppointments = [
         totalAmount: "720.000 ₫",
         relative: "Cụ Võ Văn Nam",
         relativeAge: "82 tuổi",
+        dispute: {
+            code: "DSP-2005",
+            status: "Đang xác minh",
+            statusNote: "Hệ thống đang chờ Admin đối soát biên bản ca trực và liên hệ 2 bên",
+            reason: "Điều dưỡng đến muộn 45 phút, không hoàn thành đủ các nội dung hỗ trợ vận động buổi sáng như thỏa thuận ban đầu.",
+            createdAt: "20/09/2026 15:30",
+        },
+        familyReview: {
+            rating: 2,
+            comment: "Điều dưỡng đến muộn 45 phút khiến giờ sinh hoạt của cụ bị đảo lộn. Đã gửi khiếu nại lên ban quản trị.",
+            date: "20/09/2026",
+        },
+        caregiverReview: {
+            rating: 4,
+            comment: "Đoạn đường vào nhà bị ngập triều cường nên em đến muộn, em đã gọi điện xin lỗi trước và xin bù thêm giờ cuối ca.",
+            date: "20/09/2026",
+        },
     },
     {
         id: "CA-2006",
@@ -139,6 +179,16 @@ const initialAppointments = [
         totalAmount: "1.440.000 ₫",
         relative: "Bà Bùi Thị Nga",
         relativeAge: "80 tuổi",
+        familyReview: {
+            rating: 5,
+            comment: "Điều dưỡng Mai rất kiên nhẫn và hòa nhã với người già. Cụ rất quý cháu.",
+            date: "22/09/2026",
+        },
+        caregiverReview: {
+            rating: 5,
+            comment: "Môi trường chăm sóc ấm cúng, người nhà rất chu đáo và hỗ trợ nhiệt tình.",
+            date: "22/09/2026",
+        },
     },
 ];
 
@@ -184,15 +234,46 @@ const STATUS_CONFIG = {
         iconBg: "bg-rose-100 text-rose-700",
         label: "Có khiếu nại",
     },
+    "Đã hoàn tiền": {
+        dot: "bg-teal-500",
+        badge: "bg-teal-50 text-teal-700 border-teal-200",
+        card: "bg-teal-50/80 border-teal-300 ring-2 ring-teal-400/20",
+        icon: <RotateCcw className="w-4.5 h-4.5" strokeWidth={2.2} />,
+        iconBg: "bg-teal-100 text-teal-700",
+        label: "Đã hoàn tiền",
+    },
 };
 
 
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────────
 export default function AdminAppointments() {
-    const [appointments] = useState(initialAppointments);
+    const [appointments, setAppointments] = useState(initialAppointments);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+
+    const handleResolveDispute = (appointmentId, resolution) => {
+        setAppointments((prev) =>
+            prev.map((app) => {
+                if (app.id !== appointmentId) return app;
+                const isRefund = resolution.resolutionType === 1;
+                const updatedDispute = {
+                    ...app.dispute,
+                    status: isRefund ? "Đã giải quyết" : "Bác bỏ",
+                    statusNote: `Admin kết luận: ${isRefund ? `Hoàn trả ${Number(resolution.refundAmount).toLocaleString("vi-VN")} ₫.` : "Bác bỏ khiếu nại."} Ghi chú: ${resolution.resolutionNote}`,
+                };
+                const updatedApp = {
+                    ...app,
+                    status: isRefund ? "Đã hoàn tiền" : "Hoàn thành",
+                    dispute: updatedDispute,
+                };
+                if (selectedAppointment?.id === appointmentId) {
+                    setSelectedAppointment(updatedApp);
+                }
+                return updatedApp;
+            })
+        );
+    };
 
     const countByStatus = (s) => appointments.filter((a) => a.status === s).length;
 
@@ -222,6 +303,7 @@ export default function AdminAppointments() {
                 <AppointmentDetailModal
                     appointment={selectedAppointment}
                     statusConfig={STATUS_CONFIG}
+                    onResolveDispute={handleResolveDispute}
                     onClose={() => setSelectedAppointment(null)}
                 />
             )}
