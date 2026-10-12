@@ -22,7 +22,7 @@ const DEFAULT_STATE = {
         relation: "Mẹ anh An",
         condition: "Hậu phẫu khớp gối giai đoạn hồi phục, cần đo huyết áp & hỗ trợ vận động nhẹ",
         serviceName: "Chăm sóc phục hồi sau phẫu thuật",
-        scheduledDate: "Ngày mai, 24/05/2026",
+        scheduledDate: "Ngày mai, 14/10/2026",
         scheduledTime: "08:00 – 10:00 (2 giờ)",
         duration: "2 giờ",
         address: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP. HCM",
@@ -98,7 +98,8 @@ export const setDemoStatus = (status, rejectReason = "") => {
             {
                 id: Date.now(),
                 sender: "system",
-                text: "📋 Gia đình anh An đã gửi yêu cầu đặt lịch chăm sóc (08:00 – 10:00 ngày mai). Đang chờ Điều dưỡng xác nhận nhận ca.",
+                systemType: "confirm",
+                text: "Gia đình đã gửi yêu cầu đặt lịch chăm sóc (08:00 – 10:00 ngày mai). Đang chờ Điều dưỡng xác nhận nhận ca.",
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -108,7 +109,8 @@ export const setDemoStatus = (status, rejectReason = "") => {
             {
                 id: Date.now(),
                 sender: "system",
-                text: "↩️ Gia đình đã rút lại yêu cầu đặt lịch để tiếp tục trao đổi thêm.",
+                systemType: "revoke",
+                text: "Gia đình đã rút lại yêu cầu đặt lịch để tiếp tục trao đổi thêm.",
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -118,7 +120,8 @@ export const setDemoStatus = (status, rejectReason = "") => {
             {
                 id: Date.now(),
                 sender: "system",
-                text: "✅ Điều dưỡng Nguyễn Thùy Linh đã đồng ý nhận ca! Gia đình vui lòng tiến hành thanh toán để hoàn tất đặt lịch.",
+                systemType: "accept",
+                text: "Điều dưỡng Nguyễn Thùy Linh đã đồng ý nhận ca! Gia đình vui lòng tiến hành thanh toán để hoàn tất đặt lịch.",
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -128,7 +131,8 @@ export const setDemoStatus = (status, rejectReason = "") => {
             {
                 id: Date.now(),
                 sender: "system",
-                text: `❌ Điều dưỡng từ chối yêu cầu: "${rejectReason || "Bận đột xuất vào khung giờ này"}". Cuộc trao đổi đã kết thúc.`,
+                systemType: "reject",
+                text: `Điều dưỡng từ chối yêu cầu: "${rejectReason || "Bận đột xuất vào khung giờ này"}". Cuộc trao đổi đã kết thúc.`,
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -138,7 +142,8 @@ export const setDemoStatus = (status, rejectReason = "") => {
             {
                 id: Date.now(),
                 sender: "system",
-                text: "🚪 Gia đình đã dừng cuộc trao đổi này.",
+                systemType: "close",
+                text: "Gia đình đã dừng cuộc trao đổi này.",
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -159,6 +164,32 @@ export const addDemoMessage = (sender, text) => {
     const updated = {
         ...current,
         messages: [...current.messages, newMsg],
+        updatedAt: new Date().toISOString(),
+    };
+    saveDemoChatState(updated);
+    return updated;
+};
+
+export const updateDemoBookingInfo = (partialInfo) => {
+    const current = getDemoChatState();
+    const updated = {
+        ...current,
+        bookingInfo: {
+            ...current.bookingInfo,
+            ...partialInfo,
+        },
+        // Nếu đang ở family_confirmed thì chuyển về idle để 2 bên xác nhận lại lịch mới
+        status: current.status === "family_confirmed" ? "idle" : current.status,
+        messages: [
+            ...current.messages,
+            {
+                id: Date.now(),
+                sender: "system",
+                systemType: "update",
+                text: `Gia đình đã cập nhật lịch: ${partialInfo.scheduledTime || current.bookingInfo.scheduledTime}, ${partialInfo.scheduledDate || current.bookingInfo.scheduledDate}. Hai bên vui lòng kiểm tra và xác nhận lại thỏa thuận mới.`,
+                time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            },
+        ],
         updatedAt: new Date().toISOString(),
     };
     saveDemoChatState(updated);

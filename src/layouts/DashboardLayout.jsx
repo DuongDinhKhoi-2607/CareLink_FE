@@ -319,7 +319,7 @@ export default function DashboardLayout() {
             </aside>
 
             {/* Vùng nội dung chính: Tự động mở rộng khi sidebar thu gọn và cuộn mượt mà */}
-            <main ref={mainRef} className="flex-1 w-full overflow-y-auto transition-all duration-300">
+            <main ref={mainRef} className="flex-1 min-w-0 w-full overflow-y-auto transition-all duration-300">
                 <div key={location.pathname} className="animate-dashboard-tab w-full">
                     <Outlet />
                 </div>

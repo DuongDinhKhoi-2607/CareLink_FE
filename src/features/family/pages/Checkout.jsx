@@ -273,7 +273,7 @@ export default function Checkout() {
                     {/* ============================================================ */}
                     {/* CỘT PHẢI: THÔNG TIN THANH TOÁN & BẢO MẬT (5 CỘT)             */}
                     {/* ============================================================ */}
-                    <aside className="lg:col-span-5 flex flex-col gap-6 sticky top-24">
+                    <aside className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-24">
 
                         {/* Thẻ 1: Thông tin thanh toán & Tiến trình */}
                         <div className="p-6 rounded-2xl bg-[#9ae5fd4c] border border-[#9ae5fd] flex flex-col gap-4 shadow-xs">

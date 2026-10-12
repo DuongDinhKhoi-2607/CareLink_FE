@@ -394,7 +394,7 @@ export default function AdminLayout() {
                 )}
 
                 {/* ── MAIN CONTENT OUTLET: Tự do co giãn theo nội dung từng trang ── */}
-                <main className="flex-1 w-full p-4 sm:p-6 lg:p-8">
+                <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>

@@ -5,6 +5,7 @@ import {
     getDemoChatState,
     setDemoStatus,
     addDemoMessage,
+    updateDemoBookingInfo,
     resetDemoChat,
     subscribeDemoChat,
 } from "../../../data/chatDemoStore";
@@ -31,7 +32,7 @@ const defaultBookingDetails = [
     },
     {
         label: "NGÀY DỰ KIẾN",
-        value: "Ngày mai, 24/05/2026",
+        value: "Ngày mai, 14/10/2026",
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
@@ -168,6 +169,10 @@ export default function Chat() {
         resetDemoChat();
     };
 
+    const handleUpdateBookingInfo = (newInfo) => {
+        updateDemoBookingInfo(newInfo);
+    };
+
     // Chuẩn bị dữ liệu hiển thị tóm tắt
     const bookingDetails = [
         {
@@ -177,12 +182,12 @@ export default function Chat() {
         },
         {
             label: "DỊCH VỤ",
-            value: demoState.bookingInfo?.serviceName || "Chăm sóc phục hồi chức năng",
+            value: demoState.bookingInfo?.serviceName || "Chăm sóc phục hồi sau phẫu thuật",
             icon: defaultBookingDetails[1].icon,
         },
         {
             label: "NGÀY DỰ KIẾN",
-            value: demoState.bookingInfo?.scheduledDate || "Ngày mai, 24/05/2026",
+            value: demoState.bookingInfo?.scheduledDate || "Ngày mai, 14/10/2026",
             icon: defaultBookingDetails[2].icon,
         },
         {
@@ -309,8 +314,10 @@ export default function Chat() {
                         {/* BANNER TRẠNG THÁI THỎA THUẬN TRỰC QUAN */}
                         {demoState.status === "family_confirmed" && (
                             <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
-                                <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 text-amber-700 font-bold">
-                                    ⏳
+                                <div className="w-9 h-9 rounded-xl bg-amber-100/80 flex items-center justify-center shrink-0 text-amber-700">
+                                    <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
                                 <div className="flex-1 text-sm">
                                     <p className="font-semibold text-amber-950">
@@ -325,8 +332,10 @@ export default function Chat() {
 
                         {demoState.status === "caregiver_accepted" && (
                             <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
-                                <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700 font-bold">
-                                    ✨
+                                <div className="w-9 h-9 rounded-xl bg-emerald-100/80 flex items-center justify-center shrink-0 text-emerald-700">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
                                 <div className="flex-1 text-sm">
                                     <p className="font-semibold text-emerald-950">
@@ -341,8 +350,10 @@ export default function Chat() {
 
                         {demoState.status === "caregiver_rejected" && (
                             <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50/90 border border-rose-200 text-rose-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
-                                <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-700 font-bold">
-                                    ✕
+                                <div className="w-9 h-9 rounded-xl bg-rose-100/80 flex items-center justify-center shrink-0 text-rose-700">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
                                 <div className="flex-1 text-sm">
                                     <p className="font-semibold text-rose-950">
@@ -356,25 +367,27 @@ export default function Chat() {
                         )}
 
                         {demoState.status === "closed" && (
-                            <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 shadow-2xs animate-[fadeIn_300ms_ease-out]">
-                                <div className="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center shrink-0 text-slate-600 font-bold">
-                                    🚪
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50/90 border border-rose-200 text-rose-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
+                                <div className="w-9 h-9 rounded-xl bg-rose-100/80 flex items-center justify-center shrink-0 text-rose-700">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
                                 </div>
                                 <div className="flex-1 text-sm">
-                                    <p className="font-semibold text-slate-900">
-                                        Cuộc trao đổi đã kết thúc
+                                    <p className="font-bold text-rose-950">
+                                        Đã dừng cuộc trao đổi
                                     </p>
-                                    <p className="text-xs text-slate-600 mt-0.5">
+                                    <p className="text-xs text-rose-800 mt-0.5">
                                         Bạn đã dừng trao đổi với điều dưỡng này. Bấm vào nút "Quay lại tìm điều dưỡng khác" để tiếp tục tìm kiếm.
                                     </p>
                                 </div>
                             </div>
                         )}
 
-                        {/* KHUNG CHAT CHÍNH */}
+                        {/* KHUNG CHAT CHÍNH (Kéo dài chiều dọc thoải mái, không bị co ngắn ở zoom 100%) */}
                         <section
                             aria-label="Trao đổi với điều dưỡng"
-                            className="flex flex-col h-[min(580px,calc(100vh-250px))] min-h-[380px] bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden"
+                            className="flex flex-col h-[680px] lg:h-[720px] min-h-[560px] bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden"
                         >
                             {/* Thanh header khung chat */}
                             <div className="shrink-0 px-4 sm:px-5 py-3 bg-white border-b border-slate-100 flex items-center justify-between gap-3">
@@ -406,73 +419,178 @@ export default function Chat() {
                             {/* Vùng hiển thị tin nhắn */}
                             <div
                                 ref={messagesContainerRef}
-                                className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4 bg-[#f8fafc] scroll-smooth"
+                                className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 flex flex-col bg-[#f8fafc] scroll-smooth"
                                 style={{
                                     scrollbarWidth: "thin",
                                     scrollbarColor: "#cbd5e1 transparent",
                                 }}
                             >
-                                {demoState.messages.map((chatMessage, index) => {
-                                    // Tin nhắn hệ thống (System banner in chat)
-                                    if (chatMessage.sender === "system") {
+                                {/* Thẻ chào y tế trang nhã đầu cuộc trao đổi */}
+                                <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/90 border border-slate-200/80 shadow-2xs text-center mb-2 mx-auto max-w-md w-full shrink-0">
+                                    <div className="relative mb-2">
+                                        <img
+                                            src={avatarUrl}
+                                            alt={displayName}
+                                            className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-400/40 shadow-sm"
+                                        />
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center">
+                                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <h3 className="text-sm font-bold text-[#102030]">
+                                        Tư vấn trực tiếp với {displayName}
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 mt-0.5 max-w-xs leading-relaxed">
+                                        Sinh viên Y4 - ĐH Y Dược TP.HCM • Đã xác thực chứng chỉ chuyên môn
+                                    </p>
+                                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f0f9fa] border border-[#d0eef3] text-[10px] font-semibold text-[#00677c]">
+                                        <svg className="w-3 h-3 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.48-5.732a9 9 0 014.28 0m-8.56 0a9 9 0 014.28 0M12 3v1.5m0 15v1.5m-7.5-9h1.5m12 0h1.5" />
+                                        </svg>
+                                        Kênh trò chuyện bảo mật 2 chiều • Thỏa thuận có cấu trúc
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-center my-2 shrink-0">
+                                    <span className="px-3 py-0.5 bg-slate-200/60 text-slate-500 rounded-full text-[10px] font-semibold">
+                                        Hôm nay, 13/10/2026
+                                    </span>
+                                </div>
+
+                                {/* Khối tin nhắn: dùng mt-auto để dồn tin nhắn xuống dưới sát input, không bị hổng khoảng trống thừa */}
+                                <div className="flex flex-col gap-3.5 mt-auto">
+                                    {demoState.messages.map((chatMessage, index) => {
+                                        // Tin nhắn hệ thống (System banner in chat)
+                                        if (chatMessage.sender === "system") {
+                                            const isClosedOrRejected =
+                                                chatMessage.systemType === "reject" ||
+                                                chatMessage.systemType === "close" ||
+                                                chatMessage.text.includes("dừng") ||
+                                                chatMessage.text.includes("từ chối");
+                                            const isAccepted = chatMessage.systemType === "accept" || chatMessage.text.includes("đồng ý");
+                                            const isConfirmed = chatMessage.systemType === "confirm" || chatMessage.text.includes("đã gửi yêu cầu");
+                                            const isRevoked = chatMessage.systemType === "revoke" || chatMessage.text.includes("rút lại");
+                                            const isUpdated = chatMessage.systemType === "update" || chatMessage.text.includes("cập nhật");
+
+                                            return (
+                                                <div
+                                                    key={chatMessage.id ?? index}
+                                                    className="flex flex-col items-center my-1.5 animate-[fadeIn_250ms_ease-out]"
+                                                >
+                                                    <div
+                                                        className={`max-w-[92%] sm:max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs sm:text-[13px] shadow-2xs font-medium leading-relaxed border flex items-center gap-2.5 ${
+                                                            isClosedOrRejected
+                                                                ? "bg-rose-50/95 border-rose-200 text-rose-800"
+                                                                : isAccepted
+                                                                ? "bg-emerald-50/95 border-emerald-200 text-emerald-900"
+                                                                : isConfirmed
+                                                                ? "bg-amber-50/95 border-amber-200 text-amber-900"
+                                                                : isUpdated
+                                                                ? "bg-sky-50/95 border-sky-200 text-sky-900"
+                                                                : isRevoked
+                                                                ? "bg-slate-100 border-slate-200 text-slate-700"
+                                                                : "bg-slate-50 border-slate-200 text-slate-700"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                                                                isClosedOrRejected
+                                                                    ? "bg-rose-100 text-rose-600"
+                                                                    : isAccepted
+                                                                    ? "bg-emerald-100 text-emerald-600"
+                                                                    : isConfirmed
+                                                                    ? "bg-amber-100 text-amber-600"
+                                                                    : isUpdated
+                                                                    ? "bg-sky-100 text-sky-700"
+                                                                    : "bg-slate-200 text-slate-600"
+                                                            }`}
+                                                        >
+                                                            {isClosedOrRejected && (
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                                </svg>
+                                                            )}
+                                                            {isAccepted && (
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                                </svg>
+                                                            )}
+                                                            {isConfirmed && (
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                            )}
+                                                            {isUpdated && (
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                                </svg>
+                                                            )}
+                                                            {isRevoked && (
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                                                                </svg>
+                                                            )}
+                                                            {!isClosedOrRejected && !isAccepted && !isConfirmed && !isUpdated && !isRevoked && (
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                                                </svg>
+                                                            )}
+                                                        </span>
+                                                        <span className="flex-1 text-left">{chatMessage.text}</span>
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400 mt-1">
+                                                        {chatMessage.time}
+                                                    </span>
+                                                </div>
+                                            );
+                                        }
+
+                                        const isOutgoing = chatMessage.sender === "family" || chatMessage.side === "outgoing";
+
                                         return (
                                             <div
                                                 key={chatMessage.id ?? index}
-                                                className="flex flex-col items-center my-2 animate-[fadeIn_250ms_ease-out]"
+                                                className={`flex flex-col w-full animate-[chatMessageIn_220ms_ease-out] ${
+                                                    isOutgoing ? "items-end" : "items-start"
+                                                }`}
                                             >
-                                                <div className="max-w-[90%] sm:max-w-[80%] px-4 py-2.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs sm:text-sm text-slate-700 text-center shadow-2xs font-medium leading-relaxed">
-                                                    {chatMessage.text}
+                                                <div
+                                                    className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-[14px] sm:text-[15px] shadow-2xs ${
+                                                        isOutgoing
+                                                            ? "bg-[#e7f7fc] text-[#102030] rounded-br-xs border border-[#cde8f1]"
+                                                            : "bg-white text-[#102030] rounded-bl-xs border border-slate-200/90"
+                                                    }`}
+                                                >
+                                                    <p className="whitespace-pre-line leading-[1.65] break-words">
+                                                        {chatMessage.text}
+                                                    </p>
                                                 </div>
-                                                <span className="text-[10px] text-slate-400 mt-1">
-                                                    {chatMessage.time}
+
+                                                <span className="text-[10px] text-slate-400 mt-1 px-1">
+                                                    {chatMessage.time} • {isOutgoing ? "Gia đình" : displayName}
                                                 </span>
                                             </div>
                                         );
-                                    }
+                                    })}
 
-                                    const isOutgoing = chatMessage.sender === "family" || chatMessage.side === "outgoing";
-
-                                    return (
-                                        <div
-                                            key={chatMessage.id ?? index}
-                                            className={`flex flex-col w-full animate-[chatMessageIn_220ms_ease-out] ${
-                                                isOutgoing ? "items-end" : "items-start"
-                                            }`}
-                                        >
-                                            <div
-                                                className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-[14px] sm:text-[15px] shadow-2xs ${
-                                                    isOutgoing
-                                                        ? "bg-[#e7f7fc] text-[#102030] rounded-br-xs border border-[#cde8f1]"
-                                                        : "bg-white text-[#102030] rounded-bl-xs border border-slate-200/90"
-                                                }`}
-                                            >
-                                                <p className="whitespace-pre-line leading-[1.65] break-words">
-                                                    {chatMessage.text}
-                                                </p>
+                                    {/* Hiệu ứng điều dưỡng đang gõ */}
+                                    {isTyping && (
+                                        <div className="flex flex-col items-start animate-[chatMessageIn_220ms_ease-out]">
+                                            <div className="px-4 py-3 bg-white border border-slate-200/80 rounded-2xl rounded-bl-xs shadow-2xs">
+                                                <div className="flex items-center gap-1.5" aria-label="Điều dưỡng đang soạn tin nhắn">
+                                                    <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_infinite]" />
+                                                    <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_150ms_infinite]" />
+                                                    <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_300ms_infinite]" />
+                                                </div>
                                             </div>
-
                                             <span className="text-[10px] text-slate-400 mt-1 px-1">
-                                                {chatMessage.time} • {isOutgoing ? "Gia đình" : displayName}
+                                                {displayName} đang nhập...
                                             </span>
                                         </div>
-                                    );
-                                })}
-
-                                {/* Hiệu ứng điều dưỡng đang gõ */}
-                                {isTyping && (
-                                    <div className="flex flex-col items-start animate-[chatMessageIn_220ms_ease-out]">
-                                        <div className="px-4 py-3 bg-white border border-slate-200/80 rounded-2xl rounded-bl-xs shadow-2xs">
-                                            <div className="flex items-center gap-1.5" aria-label="Điều dưỡng đang soạn tin nhắn">
-                                                <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_infinite]" />
-                                                <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_150ms_infinite]" />
-                                                <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_300ms_infinite]" />
-                                            </div>
-                                        </div>
-                                        <span className="text-[10px] text-slate-400 mt-1 px-1">
-                                            {displayName} đang nhập...
-                                        </span>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
 
                                 <div ref={messagesEndRef} className="h-px shrink-0" />
                             </div>
@@ -542,6 +660,8 @@ export default function Chat() {
                             safetyCommitments={safetyCommitments}
                             status={demoState.status}
                             rejectReason={demoState.rejectReason}
+                            bookingInfo={demoState.bookingInfo}
+                            onUpdateBookingInfo={handleUpdateBookingInfo}
                             onConfirmBooking={handleConfirmBooking}
                             onRevokeBooking={handleRevokeBooking}
                             onCloseChat={handleCloseChat}

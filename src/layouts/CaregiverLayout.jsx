@@ -35,7 +35,7 @@ const navItems = [
     },
     {
         path: "/caregiver/bookings",
-        label: "Booking Requests",
+        label: "Yêu cầu nhận ca",
         badge: 3,
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -370,7 +370,7 @@ export default function CaregiverLayout() {
                 )}
 
                 {/* ── Main Content ── */}
-                <main className="flex-1 w-full">
+                <main className="flex-1 min-w-0 w-full">
                     <Outlet />
                 </main>
             </div>
