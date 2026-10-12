@@ -1,5 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+    Play,
+    ClipboardCheck,
+    CheckCircle2,
+    XCircle,
+    Eye,
+    Star,
+    AlertTriangle,
+} from "lucide-react";
 import SubmitHealthRecordModal from "../components/SubmitHealthRecordModal";
 import ViewHealthRecordModal from "../../family/components/ViewHealthRecordModal";
 
@@ -235,7 +244,10 @@ function PatientCard({ patient }) {
                 {/* Notes */}
                 {patient.notes && (
                     <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5">
-                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide mb-1">⚠ Lưu ý quan trọng</p>
+                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            Lưu ý quan trọng
+                        </p>
                         <p className="text-xs text-amber-800 leading-relaxed">{patient.notes}</p>
                     </div>
                 )}
@@ -245,13 +257,26 @@ function PatientCard({ patient }) {
 }
 
 /* ─── Full Booking Card ─── */
-function BookingCard({ booking, onAccept, onReject }) {
+function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRecord }) {
     const { id, status, requestedAt, family, patient, service } = booking;
     const s = STATUS_MAP[status];
     const isPending = status === "pending";
+    const isInProgress = status === "in_progress";
+    const isCompleted = status === "completed";
+    const isAccepted = status === "accepted";
 
     return (
-        <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all duration-300 ${isPending ? "border-slate-200 hover:shadow-md" : "border-slate-100 opacity-80"}`}>
+        <div className={`bg-white rounded-2xl border shadow-xs overflow-hidden transition-all duration-300 ${
+            isPending
+                ? "border-amber-200/80 ring-1 ring-amber-400/20 hover:shadow-md"
+                : isInProgress
+                ? "border-teal-500/40 ring-2 ring-teal-500/20 shadow-md"
+                : isCompleted
+                ? "border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                : isAccepted
+                ? "border-sky-300 ring-1 ring-sky-400/20"
+                : "border-slate-100 opacity-75"
+        }`}>
             {/* Card Header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-50 bg-[#fafbfc]">
                 <div className="flex items-center gap-2">
@@ -386,7 +411,8 @@ function BookingCard({ booking, onAccept, onReject }) {
                                 onClick={() => onStart(id)}
                                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-[#00677c] hover:from-teal-700 hover:to-[#005263] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                             >
-                                ▶ Bắt đầu ca chăm sóc
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                Bắt đầu ca chăm sóc
                             </button>
                         </div>
                     )}
@@ -405,7 +431,8 @@ function BookingCard({ booking, onAccept, onReject }) {
                                 onClick={() => onReport(booking)}
                                 className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005263] hover:to-[#007489] text-white text-xs font-extrabold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                             >
-                                📋 Ghi nhận Bệnh án & Hoàn thành ca
+                                <ClipboardCheck className="w-4 h-4" />
+                                Ghi nhận Bệnh án & Hoàn thành ca
                             </button>
                         </div>
                     )}
@@ -414,7 +441,8 @@ function BookingCard({ booking, onAccept, onReject }) {
                         <div className="flex flex-col gap-2 mt-auto">
                             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
                                 <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                                    ✓ Ca đã hoàn thành
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                    Ca đã hoàn thành
                                 </span>
                                 <span className="text-[10px] text-emerald-700 font-semibold">Đã nộp bệnh án</span>
                             </div>
@@ -422,15 +450,17 @@ function BookingCard({ booking, onAccept, onReject }) {
                                 <button
                                     type="button"
                                     onClick={() => onViewRecord(booking)}
-                                    className="flex-1 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] font-bold text-xs border border-teal-200 transition-colors cursor-pointer text-center"
+                                    className="flex-1 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] font-bold text-xs border border-teal-200 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                                 >
+                                    <Eye className="w-3.5 h-3.5" />
                                     Xem bệnh án đã nộp
                                 </button>
                                 <Link
                                     to="/caregiver/review"
-                                    className="flex-1 py-2.5 rounded-xl bg-[#00677c] hover:bg-[#005263] text-white font-bold text-xs transition-colors shadow-2xs text-center flex items-center justify-center gap-1"
+                                    className="flex-1 py-2.5 rounded-xl bg-[#00677c] hover:bg-[#005263] text-white font-bold text-xs transition-colors shadow-2xs text-center flex items-center justify-center gap-1.5"
                                 >
-                                    ⭐ Đánh giá gia đình
+                                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                                    Đánh giá gia đình
                                 </Link>
                             </div>
                         </div>
@@ -438,9 +468,7 @@ function BookingCard({ booking, onAccept, onReject }) {
 
                     {status === "rejected" && (
                         <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-red-50 text-red-500 mt-auto">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <XCircle className="w-4 h-4" />
                             Đã từ chối nhận ca
                         </div>
                     )}

@@ -570,20 +570,19 @@ export default function AdminFinance() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                    <th className="py-3.5 px-4 sm:px-5 w-28 whitespace-nowrap">Mã yêu cầu</th>
-                                    <th className="py-3.5 px-4 min-w-[150px]">Điều dưỡng</th>
-                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Số tiền</th>
-                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Ngân hàng</th>
-                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Số tài khoản</th>
-                                    <th className="py-3.5 px-4 w-28 whitespace-nowrap">Ngày yêu cầu</th>
-                                    <th className="py-3.5 px-4 w-32 whitespace-nowrap">Trạng thái</th>
-                                    <th className="py-3.5 px-4 sm:px-5 w-48 text-center whitespace-nowrap">Thao tác</th>
+                                    <th className="py-3.5 px-4 sm:px-5 w-24 whitespace-nowrap">Mã yêu cầu</th>
+                                    <th className="py-3.5 px-4 min-w-[140px]">Điều dưỡng</th>
+                                    <th className="py-3.5 px-4 whitespace-nowrap">Số tiền</th>
+                                    <th className="py-3.5 px-4 min-w-[150px]">Ngân hàng & Số TK</th>
+                                    <th className="py-3.5 px-4 whitespace-nowrap">Ngày yêu cầu</th>
+                                    <th className="py-3.5 px-4 whitespace-nowrap">Trạng thái</th>
+                                    <th className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                                 {filteredWd.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="py-16 text-center text-slate-400">
+                                        <td colSpan={7} className="py-16 text-center text-slate-400">
                                             <Banknote className="w-10 h-10 mx-auto mb-3 opacity-30" />
                                             <p className="font-semibold">Không tìm thấy yêu cầu rút tiền nào</p>
                                         </td>
@@ -611,13 +610,13 @@ export default function AdminFinance() {
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <span className="font-black text-slate-900">{formatVND(w.amount)}</span>
                                                 </td>
-                                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    <span className="flex items-center gap-1 text-slate-600">
-                                                        <Landmark className="w-3.5 h-3.5 text-slate-400" />
-                                                        {w.bank}
-                                                    </span>
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                                                        <Landmark className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                        <span>{w.bank}</span>
+                                                    </div>
+                                                    <div className="text-[11px] font-mono text-slate-500 mt-0.5">{w.accountNumber}</div>
                                                 </td>
-                                                <td className="py-3.5 px-4 font-mono text-slate-600 whitespace-nowrap">{w.accountNumber}</td>
                                                 <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">{w.requestDate}</td>
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <div>
@@ -632,13 +631,13 @@ export default function AdminFinance() {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-3.5 px-4 sm:px-5 text-center whitespace-nowrap">
+                                                <td className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap">
                                                     {isPending ? (
-                                                        <div className="flex items-center gap-1.5 justify-center">
+                                                        <div className="flex items-center gap-2 justify-end">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleApprove(w.id)}
-                                                                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                                                className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                                                             >
                                                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                                                 Duyệt chi
@@ -646,14 +645,14 @@ export default function AdminFinance() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setRejectTarget(w)}
-                                                                className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                                                className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                                                             >
                                                                 <XCircle className="w-3.5 h-3.5" />
                                                                 Từ chối
                                                             </button>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-slate-400 text-center block">—</span>
+                                                        <span className="text-xs text-slate-400 text-right block pr-4">—</span>
                                                     )}
                                                 </td>
                                             </tr>
