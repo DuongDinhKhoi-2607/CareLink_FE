@@ -1,75 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import BookingSummary from "../components/BookingSummary";
+import {
+    getDemoChatState,
+    setDemoStatus,
+    addDemoMessage,
+    resetDemoChat,
+    subscribeDemoChat,
+} from "../../../data/chatDemoStore";
 
-// Tin nhắn trao đổi mẫu ban đầu.
-// Giữ nguyên dữ liệu gốc để tiện đối chiếu khi cần.
-// Chế độ hội thoại tự động bên dưới sẽ bắt đầu bằng khung chat trống.
-const initialMessages = [
-    {
-        id: 1,
-        side: "outgoing",
-        text: "Xin chào em, mẹ của anh năm nay 75 tuổi, vừa xuất viện sau phẫu thuật,\ncần hỗ trợ thay băng cũng như theo dõi huyết áp mỗi ngày.",
-        time: "10:05 AM",
-    },
-    {
-        id: 2,
-        side: "incoming",
-        text: "Dạ em có thể hỗ trợ. Cho em hỏi hiện tại bà có thể tự đi lại hay cần hỗ trợ hoàn toàn ạ?",
-        time: "10:08 AM",
-    },
-    {
-        id: 3,
-        side: "outgoing",
-        text: "Bà vẫn đi lại được nhưng khá yếu, cần người hỗ trợ khi di chuyển.",
-        time: "10:10 AM",
-    },
-    {
-        id: 4,
-        side: "incoming",
-        text: "Dạ em hiểu rồi. Em đề xuất chăm sóc khoảng 2 giờ mỗi ngày để theo dõi sức khỏe và hỗ trợ sinh hoạt.",
-        time: "10:12 AM",
-    },
-];
-
-// Kịch bản hội thoại tự động dành cho video giới thiệu CareLink.
-// Toàn bộ tin nhắn chỉ hiển thị ở frontend.
-// Không gửi tin nhắn lên backend và không tạo booking thật.
-const conversationScript = [
-    {
-        side: "outgoing",
-        text: "Chào em, mẹ anh vừa xuất viện sau phẫu thuật. Anh muốn tìm người hỗ trợ chăm sóc tại nhà cho mẹ.",
-        time: "10:05 AM",
-    },
-    {
-        side: "incoming",
-        text: "Dạ, em có thể hỗ trợ ạ. Anh muốn đặt lịch chăm sóc vào khung giờ nào ạ?",
-        time: "10:06 AM",
-    },
-    {
-        side: "outgoing",
-        text: "Anh muốn đặt lịch khoảng 2 tiếng mỗi sáng, bắt đầu từ ngày mai.",
-        time: "10:07 AM",
-    },
-    {
-        side: "incoming",
-        text: "Dạ được anh nhé. Ngày mai em có thể đến từ 08:00 đến 10:00 ạ.",
-        time: "10:08 AM",
-    },
-    {
-        side: "outgoing",
-        text: "Vậy anh xác nhận lịch 08:00–10:00 ngày mai nhé. Cảm ơn em!",
-        time: "10:09 AM",
-    },
-    {
-        side: "incoming",
-        text: "Dạ, em xác nhận lịch chăm sóc ngày mai từ 08:00 đến 10:00 ạ. Em sẽ đến đúng giờ và hỗ trợ bác theo nhu cầu của gia đình.",
-        time: "10:10 AM",
-    },
-];
-
-// Dữ liệu tóm tắt đặt lịch
-const bookingDetails = [
+// Dữ liệu chi tiết đặt lịch hiển thị ở cột tóm tắt
+const defaultBookingDetails = [
     {
         label: "NGƯỜI CẦN CHĂM SÓC",
         value: "Nguyễn Thị Lan (75 tuổi)",
@@ -81,7 +22,7 @@ const bookingDetails = [
     },
     {
         label: "DỊCH VỤ",
-        value: "Chăm sóc y tế tại nhà",
+        value: "Chăm sóc phục hồi sau phẫu thuật",
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
@@ -121,7 +62,7 @@ const bookingDetails = [
 // Cam kết an toàn
 const safetyCommitments = [
     {
-        text: "Điều dưỡng đã xác thực CCCD",
+        text: "Điều dưỡng đã xác thực CCCD & Thẻ SV",
         icon: (
             <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
@@ -129,18 +70,18 @@ const safetyCommitments = [
         ),
     },
     {
-        text: "Đã xác thực Thẻ sinh viên",
+        text: "Chỉ thanh toán khi 2 bên đã thỏa thuận",
         icon: (
             <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.48-5.72A11.956 11.956 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
         ),
     },
     {
-        text: "Hồ sơ được CareLink kiểm duyệt",
+        text: "Bảo hiểm trách nhiệm & Hỗ trợ CSKH 24/7",
         icon: (
             <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.48-5.72A11.956 11.956 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
             </svg>
         ),
     },
@@ -150,204 +91,124 @@ export default function Chat() {
     const location = useLocation();
     const caregiver = location?.state?.caregiver;
 
-    // Giữ nguyên ảnh và thông tin điều dưỡng ban đầu.
+    // Dữ liệu điều dưỡng
     const avatarUrl =
         caregiver?.image ||
         "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
-
     const displayName = caregiver?.name || "Nguyễn Thùy Linh";
     const displayRole =
         caregiver?.role || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
 
-    // Bắt đầu với hội thoại trống để tạo trải nghiệm tự nhiên khi quay video.
-    // initialMessages vẫn được giữ nguyên ở phía trên để không mất dữ liệu gốc.
-    const [messages, setMessages] = useState([]);
+    // Trạng thái demo lấy từ store tập trung
+    const [demoState, setDemoState] = useState(() => getDemoChatState());
     const [message, setMessage] = useState("");
-    const [bookingConfirmed, setBookingConfirmed] = useState(false);
-
-    // Trạng thái phục vụ hiệu ứng gõ chữ và dấu ba chấm.
     const [isTyping, setIsTyping] = useState(false);
-    const [isConversationRunning, setIsConversationRunning] = useState(false);
-    const [conversationFinished, setConversationFinished] = useState(false);
 
-    // Ref để tự cuộn và quản lý các timer.
+    // Refs
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const inputRef = useRef(null);
-    const timersRef = useRef([]);
-    const isMountedRef = useRef(true);
 
-    // Tạo timer có thể được dọn dẹp khi rời trang.
-    const wait = (duration) =>
-        new Promise((resolve) => {
-            const timer = window.setTimeout(resolve, duration);
-            timersRef.current.push(timer);
-        });
-
-    // Tự động cuộn đến tin nhắn cuối cùng.
+    // Đăng ký nhận thông báo thay đổi trạng thái từ store (khi Caregiver chấp nhận / từ chối ở tab khác)
     useEffect(() => {
-        const container = messagesContainerRef.current;
-
-        if (!container) return;
-
-        container.scrollTo({
-            top: container.scrollHeight,
-            behavior: isConversationRunning ? "auto" : "smooth",
+        const unsubscribe = subscribeDemoChat((updated) => {
+            setDemoState(updated);
         });
-    }, [messages, message, isTyping, isConversationRunning]);
-
-    // Tự động chạy kịch bản sau 3 giây.
-    // Không cần thêm chữ demo vào URL hoặc nút điều khiển trên giao diện.
-    useEffect(() => {
-        isMountedRef.current = true;
-
-        const sleep = (duration) =>
-            new Promise((resolve) => {
-                const timer = window.setTimeout(() => {
-                    resolve();
-                }, duration);
-
-                timersRef.current.push(timer);
-            });
-
-        const runConversation = async () => {
-            // Chờ 3 giây để bạn chuẩn bị quay màn hình.
-            await sleep(3000);
-
-            if (!isMountedRef.current) return;
-
-            setIsConversationRunning(true);
-
-            for (let index = 0; index < conversationScript.length; index += 1) {
-                if (!isMountedRef.current) return;
-
-                const currentMessage = conversationScript[index];
-
-                // Với tin nhắn từ khách hàng, mô phỏng gõ từng ký tự.
-                if (currentMessage.side === "outgoing") {
-                    setIsTyping(false);
-
-                    let typedText = "";
-
-                    for (
-                        let charIndex = 0;
-                        charIndex < currentMessage.text.length;
-                        charIndex += 1
-                    ) {
-                        if (!isMountedRef.current) return;
-
-                        typedText += currentMessage.text[charIndex];
-                        setMessage(typedText);
-
-                        // Tốc độ gõ tương đối nhanh để video không quá dài.
-                        await sleep(19);
-                    }
-
-                    // Tạm dừng nhẹ trước khi tự gửi.
-                    await sleep(220);
-
-                    if (!isMountedRef.current) return;
-
-                    setMessages((previousMessages) => [
-                        ...previousMessages,
-                        {
-                            id: `conversation-${index}-${Date.now()}`,
-                            side: "outgoing",
-                            text: currentMessage.text,
-                            time: currentMessage.time,
-                        },
-                    ]);
-
-                    setMessage("");
-
-                    // Cho người xem kịp nhận biết tin nhắn đã được gửi.
-                    await sleep(450);
-                } else {
-                    // Điều dưỡng bắt đầu nhập: hiện dấu ba chấm.
-                    setIsTyping(true);
-
-                    await sleep(1000);
-
-                    if (!isMountedRef.current) return;
-
-                    // Hiện tin nhắn trả lời của điều dưỡng.
-                    setIsTyping(false);
-
-                    setMessages((previousMessages) => [
-                        ...previousMessages,
-                        {
-                            id: `conversation-${index}-${Date.now()}`,
-                            side: "incoming",
-                            text: currentMessage.text,
-                            time: currentMessage.time,
-                        },
-                    ]);
-
-                    // Nghỉ ngắn để nội dung không xuất hiện dồn dập.
-                    await sleep(550);
-                }
-            }
-
-            if (!isMountedRef.current) return;
-
-            setMessage("");
-            setIsTyping(false);
-            setIsConversationRunning(false);
-            setConversationFinished(true);
-        };
-
-        runConversation();
-
-        return () => {
-            isMountedRef.current = false;
-
-            timersRef.current.forEach((timer) => {
-                window.clearTimeout(timer);
-            });
-
-            timersRef.current = [];
-        };
+        return unsubscribe;
     }, []);
 
-    // Cho phép gửi tin nhắn thủ công khi kịch bản tự động chưa chạy
-    // hoặc đã kết thúc.
+    // Tự động cuộn đến tin nhắn cuối cùng
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        container.scrollTo({
+            top: container.scrollHeight,
+            behavior: "smooth",
+        });
+    }, [demoState.messages, isTyping]);
+
+    // Gửi tin nhắn thủ công từ phía Family
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // Tránh người dùng gửi xen kẽ với kịch bản đang chạy.
-        if (isConversationRunning) return;
-
         const trimmed = message.trim();
-
         if (!trimmed) return;
+        if (demoState.status === "closed" || demoState.status === "caregiver_rejected") return;
 
-        const newMsg = {
-            id: Date.now(),
-            side: "outgoing",
-            text: trimmed,
-            time: new Date().toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-            }),
-        };
-
-        setMessages((previousMessages) => [...previousMessages, newMsg]);
+        // Thêm vào store demo
+        addDemoMessage("family", trimmed);
         setMessage("");
+
+        // Giả lập điều dưỡng trả lời nếu đang ở trạng thái idle
+        if (demoState.status === "idle") {
+            setIsTyping(true);
+            setTimeout(() => {
+                setIsTyping(false);
+                addDemoMessage(
+                    "caregiver",
+                    "Dạ em đã ghi nhận yêu cầu của gia đình. Anh có thể bấm 'Xác nhận muốn đặt lịch' ở bảng bên phải để em chính thức nhận ca nhé ạ!"
+                );
+            }, 1400);
+        }
     };
+
+    // Các hành động tương tác với trạng thái đặt lịch
+    const handleConfirmBooking = () => {
+        setDemoStatus("family_confirmed");
+    };
+
+    const handleRevokeBooking = () => {
+        setDemoStatus("idle");
+    };
+
+    const handleCloseChat = () => {
+        setDemoStatus("closed");
+    };
+
+    const handleResetDemo = () => {
+        resetDemoChat();
+    };
+
+    // Chuẩn bị dữ liệu hiển thị tóm tắt
+    const bookingDetails = [
+        {
+            label: "NGƯỜI CẦN CHĂM SÓC",
+            value: `${demoState.bookingInfo?.recipientName} (${demoState.bookingInfo?.recipientAge})`,
+            icon: defaultBookingDetails[0].icon,
+        },
+        {
+            label: "DỊCH VỤ",
+            value: demoState.bookingInfo?.serviceName || "Chăm sóc phục hồi chức năng",
+            icon: defaultBookingDetails[1].icon,
+        },
+        {
+            label: "NGÀY DỰ KIẾN",
+            value: demoState.bookingInfo?.scheduledDate || "Ngày mai, 24/05/2026",
+            icon: defaultBookingDetails[2].icon,
+        },
+        {
+            label: "THỜI GIAN",
+            value: demoState.bookingInfo?.scheduledTime || "08:00 - 10:00 (2 giờ)",
+            icon: defaultBookingDetails[3].icon,
+        },
+        {
+            label: "ĐỊA ĐIỂM",
+            value: demoState.bookingInfo?.address || "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP. HCM",
+            icon: defaultBookingDetails[4].icon,
+        },
+    ];
 
     return (
         <div className="bg-[#f8fafc] py-6 lg:py-8 font-sans antialiased text-[#102030] min-h-[calc(100vh-140px)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-5 lg:gap-6">
 
-                {/* Nút quay lại hồ sơ: giữ nguyên chức năng hiện tại */}
-                <div>
+                {/* Thanh điều hướng nhanh phía trên */}
+                <div className="flex items-center justify-between">
                     <Link
                         to="/caregivers/profile"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#00677c] transition-colors"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#00677c] transition-colors group"
                     >
                         <svg
-                            className="w-4 h-4"
+                            className="w-4 h-4 transition-transform group-hover:-translate-x-0.5"
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="2"
@@ -359,20 +220,29 @@ export default function Chat() {
                                 d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
                             />
                         </svg>
-
                         Quay lại hồ sơ điều dưỡng
                     </Link>
+
+                    {/* Badge kênh trao đổi bảo mật */}
+                    <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#e7f7fc] text-[#00677c] border border-[#c2eaf4]">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Kênh trao đổi bảo mật 2 chiều
+                    </div>
                 </div>
 
-                {/* Tiêu đề trang: giữ nguyên nội dung */}
-                <header className="flex flex-col gap-2">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-prussian-blue">
-                        Trao đổi trước khi đặt lịch
-                    </h1>
+                {/* Tiêu đề trang */}
+                <header className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-[26px] sm:text-[30px] font-bold tracking-tight text-[#102030]">
+                            Trao đổi trước khi đặt lịch
+                        </h1>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Phía Gia Đình
+                        </span>
+                    </div>
 
-                    <p className="text-base sm:text-lg text-[#43474e] leading-relaxed">
-                        Trao đổi với điều dưỡng để xác nhận tình trạng sức khỏe,
-                        thời gian chăm sóc và các yêu cầu trước khi đặt lịch.
+                    <p className="text-[14.5px] sm:text-[15.5px] text-slate-600 leading-relaxed max-w-3xl mt-0.5">
+                        Trao đổi tình trạng sức khỏe và khung giờ chăm sóc với điều dưỡng. Khi hai bên thống nhất, điều dưỡng xác nhận nhận ca thì mới tiến hành thanh toán.
                     </p>
                 </header>
 
@@ -382,31 +252,29 @@ export default function Chat() {
                     {/* CỘT CHÍNH: KHUNG CHAT */}
                     <section className="lg:col-span-8 flex flex-col gap-4 min-w-0">
 
-                        {/* Card thông tin điều dưỡng: giữ ảnh online và thông tin gốc */}
-                        <article className="flex items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+                        {/* Card thông tin điều dưỡng */}
+                        <article className="flex items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
                             <div className="relative shrink-0">
                                 <img
                                     src={avatarUrl}
                                     alt={displayName}
-                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border border-slate-200"
+                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#e7f7fc]"
                                     onError={(e) => {
                                         e.currentTarget.onerror = null;
                                         e.currentTarget.src =
                                             "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400";
                                     }}
                                 />
-
-                                {/* Chấm trạng thái trực tuyến */}
-                                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300" />
                             </div>
 
                             <div className="flex-1 min-w-0 flex flex-col gap-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-semibold text-xl sm:text-2xl text-[#181c1e]">
+                                    <span className="font-bold text-lg sm:text-xl text-[#102030]">
                                         {displayName}
                                     </span>
 
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-[#b2ebff] text-[#001f27]">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-[#e7f7fc] text-[#00677c] border border-[#cbeaf4]">
                                         <svg
                                             className="w-3.5 h-3.5"
                                             fill="none"
@@ -414,87 +282,128 @@ export default function Chat() {
                                             strokeWidth="2.2"
                                             viewBox="0 0 24 24"
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M9 12.75L11.25 15 15 9.75"
-                                            />
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"
-                                            />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
                                         </svg>
-
-                                        Đã xác thực bởi CareLink
+                                        Đã xác thực CareLink
                                     </span>
                                 </div>
 
-                                <p className="text-sm sm:text-base text-[#43474e]">
+                                <p className="text-sm text-slate-600 line-clamp-1">
                                     {displayRole}
                                 </p>
 
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[#43474e] pt-1">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500 pt-1">
                                     <span className="flex items-center gap-1 text-amber-500 font-bold">
                                         ★ 4.9
-                                        <span className="text-[#43474e] font-normal">
-                                            (128 đánh giá)
-                                        </span>
+                                        <span className="text-slate-500 font-normal">(128 đánh giá)</span>
                                     </span>
-
                                     <span className="hidden sm:inline">•</span>
-
-                                    <span>Phản hồi trung bình: 15 phút</span>
+                                    <span>Tỷ lệ nhận ca: 98%</span>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="text-emerald-700 font-semibold">Phản hồi: ~5 phút</span>
                                 </div>
                             </div>
                         </article>
 
-                        {/* Khung chat:
-                            - Chiều cao ổn định để bố cục không nhảy.
-                            - Chỉ vùng tin nhắn được cuộn.
-                            - Ô nhập luôn nằm ở dưới cùng.
-                        */}
+                        {/* BANNER TRẠNG THÁI THỎA THUẬN TRỰC QUAN */}
+                        {demoState.status === "family_confirmed" && (
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
+                                <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 text-amber-700 font-bold">
+                                    ⏳
+                                </div>
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold text-amber-950">
+                                        Đã gửi yêu cầu đặt lịch cho điều dưỡng
+                                    </p>
+                                    <p className="text-xs text-amber-800 mt-0.5">
+                                        Đang chờ {displayName} xem xét và bấm "Đồng ý nhận ca" bên giao diện Điều dưỡng.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {demoState.status === "caregiver_accepted" && (
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
+                                <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700 font-bold">
+                                    ✨
+                                </div>
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold text-emerald-950">
+                                        {displayName} đã đồng ý nhận ca chăm sóc!
+                                    </p>
+                                    <p className="text-xs text-emerald-800 mt-0.5">
+                                        Hai bên đã đạt thỏa thuận thành công. Bạn có thể bấm <strong className="underline">Tiến hành thanh toán</strong> ở khung bên phải để hoàn tất đặt ca.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {demoState.status === "caregiver_rejected" && (
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50/90 border border-rose-200 text-rose-900 shadow-2xs animate-[fadeIn_300ms_ease-out]">
+                                <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center shrink-0 text-rose-700 font-bold">
+                                    ✕
+                                </div>
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold text-rose-950">
+                                        Điều dưỡng không thể nhận ca này
+                                    </p>
+                                    <p className="text-xs text-rose-800 mt-0.5">
+                                        Lý do: "{demoState.rejectReason || "Bận lịch vào khung giờ này"}". Bạn có thể quay lại tìm điều dưỡng khác phù hợp.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {demoState.status === "closed" && (
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 shadow-2xs animate-[fadeIn_300ms_ease-out]">
+                                <div className="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center shrink-0 text-slate-600 font-bold">
+                                    🚪
+                                </div>
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold text-slate-900">
+                                        Cuộc trao đổi đã kết thúc
+                                    </p>
+                                    <p className="text-xs text-slate-600 mt-0.5">
+                                        Bạn đã dừng trao đổi với điều dưỡng này. Bấm vào nút "Quay lại tìm điều dưỡng khác" để tiếp tục tìm kiếm.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* KHUNG CHAT CHÍNH */}
                         <section
                             aria-label="Trao đổi với điều dưỡng"
-                            className="flex flex-col h-[min(560px,calc(100vh-250px))] min-h-[360px] bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden"
+                            className="flex flex-col h-[min(580px,calc(100vh-250px))] min-h-[380px] bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden"
                         >
-                            {/* Thanh tiêu đề nhỏ của cuộc trò chuyện */}
+                            {/* Thanh header khung chat */}
                             <div className="shrink-0 px-4 sm:px-5 py-3 bg-white border-b border-slate-100 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-9 h-9 rounded-xl bg-[#e8f8fc] text-[#00677c] flex items-center justify-center shrink-0">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="1.7"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M7.5 8.25h9m-9 3.75h5.25M21 12c0 4.142-4.03 7.5-9 7.5a10.1 10.1 0 01-4.17-.88L3 20l1.38-3.68A7.1 7.1 0 013 12c0-4.142 4.03-7.5 9-7.5s9 3.358 9 7.5z"
-                                            />
+                                    <div className="w-9 h-9 rounded-xl bg-[#e7f7fc] text-[#00677c] flex items-center justify-center shrink-0">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3.75h5.25M21 12c0 4.142-4.03 7.5-9 7.5a10.1 10.1 0 01-4.17-.88L3 20l1.38-3.68A7.1 7.1 0 013 12c0-4.142 4.03-7.5 9-7.5s9 3.358 9 7.5z" />
                                         </svg>
                                     </div>
 
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-[#183247]">
-                                            Cuộc trò chuyện
+                                        <p className="text-sm font-bold text-[#102030]">
+                                            Trao đổi trực tiếp
                                         </p>
-
                                         <p className="text-xs text-slate-500">
-                                            Trao đổi trực tiếp với điều dưỡng
+                                            với điều dưỡng {displayName}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-700 shrink-0">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                                    Sẵn sàng hỗ trợ
+                                <div className="flex items-center gap-2">
+                                    <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-medium border border-emerald-100">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        Trực tuyến
+                                    </span>
                                 </div>
                             </div>
 
-                            {/* Vùng tin nhắn có thể cuộn độc lập */}
+                            {/* Vùng hiển thị tin nhắn */}
                             <div
                                 ref={messagesContainerRef}
                                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4 bg-[#f8fafc] scroll-smooth"
@@ -503,169 +412,109 @@ export default function Chat() {
                                     scrollbarColor: "#cbd5e1 transparent",
                                 }}
                             >
-                                {/* Lời chào nhẹ khi hội thoại đang trống */}
-                                {messages.length === 0 && !isTyping && (
-                                    <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-                                        <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#00677c] mb-3">
-                                            <svg
-                                                className="w-7 h-7"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.5"
-                                                viewBox="0 0 24 24"
+                                {demoState.messages.map((chatMessage, index) => {
+                                    // Tin nhắn hệ thống (System banner in chat)
+                                    if (chatMessage.sender === "system") {
+                                        return (
+                                            <div
+                                                key={chatMessage.id ?? index}
+                                                className="flex flex-col items-center my-2 animate-[fadeIn_250ms_ease-out]"
                                             >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M7.5 8.25h9m-9 3.75h5.25M21 12c0 4.142-4.03 7.5-9 7.5a10.1 10.1 0 01-4.17-.88L3 20l1.38-3.68A7.1 7.1 0 013 12c0-4.142 4.03-7.5 9-7.5s9 3.358 9 7.5z"
-                                                />
-                                            </svg>
-                                        </div>
+                                                <div className="max-w-[90%] sm:max-w-[80%] px-4 py-2.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs sm:text-sm text-slate-700 text-center shadow-2xs font-medium leading-relaxed">
+                                                    {chatMessage.text}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 mt-1">
+                                                    {chatMessage.time}
+                                                </span>
+                                            </div>
+                                        );
+                                    }
 
-                                        <p className="text-sm font-semibold text-slate-700">
-                                            Bắt đầu cuộc trò chuyện
-                                        </p>
-
-                                        <p className="text-xs text-slate-500 mt-1 max-w-[250px] leading-relaxed">
-                                            Trao đổi nhu cầu chăm sóc để tìm ra lịch hẹn phù hợp với gia đình.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Danh sách tin nhắn */}
-                                {messages.map((chatMessage, index) => {
-                                    const isOutgoing =
-                                        chatMessage.side === "outgoing";
+                                    const isOutgoing = chatMessage.sender === "family" || chatMessage.side === "outgoing";
 
                                     return (
                                         <div
-                                            key={chatMessage.id ?? `${chatMessage.time}-${index}`}
-                                            className={`flex flex-col w-full animate-[chatMessageIn_220ms_ease-out] ${isOutgoing
-                                                ? "items-end"
-                                                : "items-start"
-                                                }`}
+                                            key={chatMessage.id ?? index}
+                                            className={`flex flex-col w-full animate-[chatMessageIn_220ms_ease-out] ${
+                                                isOutgoing ? "items-end" : "items-start"
+                                            }`}
                                         >
                                             <div
-                                                className={`max-w-[88%] sm:max-w-[82%] px-4 py-3 rounded-2xl text-[14px] sm:text-[15px] shadow-sm ${isOutgoing
-                                                    ? "bg-[#e7f7fc] text-[#183247] rounded-br-md border border-[#d6eff7]"
-                                                    : "bg-white text-[#243746] rounded-bl-md border border-slate-200/80"
-                                                    }`}
+                                                className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-[14px] sm:text-[15px] shadow-2xs ${
+                                                    isOutgoing
+                                                        ? "bg-[#e7f7fc] text-[#102030] rounded-br-xs border border-[#cde8f1]"
+                                                        : "bg-white text-[#102030] rounded-bl-xs border border-slate-200/90"
+                                                }`}
                                             >
-                                                <p className="whitespace-pre-line leading-[1.7] break-words">
+                                                <p className="whitespace-pre-line leading-[1.65] break-words">
                                                     {chatMessage.text}
                                                 </p>
                                             </div>
 
-                                            <span className="text-[10px] text-slate-400 mt-1.5 px-1">
-                                                {chatMessage.time}
+                                            <span className="text-[10px] text-slate-400 mt-1 px-1">
+                                                {chatMessage.time} • {isOutgoing ? "Gia đình" : displayName}
                                             </span>
                                         </div>
                                     );
                                 })}
 
-                                {/* Ba dấu chấm khi điều dưỡng đang nhập */}
+                                {/* Hiệu ứng điều dưỡng đang gõ */}
                                 {isTyping && (
                                     <div className="flex flex-col items-start animate-[chatMessageIn_220ms_ease-out]">
-                                        <div className="px-4 py-3.5 bg-white border border-slate-200/80 rounded-2xl rounded-bl-md shadow-sm">
-                                            <div
-                                                className="flex items-center gap-1.5"
-                                                aria-label="Điều dưỡng đang nhập tin nhắn"
-                                            >
+                                        <div className="px-4 py-3 bg-white border border-slate-200/80 rounded-2xl rounded-bl-xs shadow-2xs">
+                                            <div className="flex items-center gap-1.5" aria-label="Điều dưỡng đang soạn tin nhắn">
                                                 <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_infinite]" />
                                                 <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_150ms_infinite]" />
                                                 <span className="w-2 h-2 rounded-full bg-slate-400 animate-[typingDot_1s_300ms_infinite]" />
                                             </div>
                                         </div>
-
-                                        <span className="text-[10px] text-slate-400 mt-1.5 px-1">
-                                            Đang nhập...
+                                        <span className="text-[10px] text-slate-400 mt-1 px-1">
+                                            {displayName} đang nhập...
                                         </span>
                                     </div>
                                 )}
 
-                                {/* Phần tử neo để cuộn đến cuối */}
-                                <div
-                                    ref={messagesEndRef}
-                                    className="h-px shrink-0"
-                                />
+                                <div ref={messagesEndRef} className="h-px shrink-0" />
                             </div>
 
-                            {/* Form nhập tin nhắn cố định ở đáy */}
+                            {/* Khung nhập tin nhắn */}
                             <form
                                 onSubmit={handleSubmit}
                                 className="shrink-0 p-3 sm:p-4 bg-white border-t border-slate-200"
                             >
                                 <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="flex-1 min-w-0 flex items-center relative rounded-full bg-[#f4f6f8] border border-slate-200 px-3 sm:px-4 py-1.5 transition-colors focus-within:border-[#78cbdc] focus-within:ring-2 focus-within:ring-[#00677c]/10">
-                                        {/* Icon cảm xúc */}
-                                        <button
-                                            type="button"
-                                            aria-label="Thêm biểu tượng cảm xúc"
-                                            className="text-slate-500 hover:text-[#00677c] transition-colors p-1 shrink-0"
-                                        >
-                                            <svg
-                                                className="w-5 h-5"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.6"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="8.5"
-                                                />
-                                                <path
-                                                    strokeLinecap="round"
-                                                    d="M8.5 14.25c.83 1.08 2.02 1.62 3.5 1.62s2.66-.54 3.5-1.62M9 9.75h.01M15 9.75h.01"
-                                                />
-                                            </svg>
-                                        </button>
-
+                                    <div className="flex-1 min-w-0 flex items-center relative rounded-full bg-[#f4f6f8] border border-slate-200 px-3 sm:px-4 py-1.5 transition-colors focus-within:border-[#00677c] focus-within:ring-2 focus-within:ring-[#00677c]/10">
                                         <input
                                             ref={inputRef}
                                             type="text"
                                             value={message}
-                                            onChange={(e) =>
-                                                setMessage(e.target.value)
+                                            onChange={(e) => setMessage(e.target.value)}
+                                            placeholder={
+                                                demoState.status === "closed"
+                                                    ? "Cuộc trao đổi đã kết thúc..."
+                                                    : demoState.status === "caregiver_rejected"
+                                                    ? "Điều dưỡng đã từ chối nhận ca..."
+                                                    : "Nhập tin nhắn trao đổi với điều dưỡng..."
                                             }
-                                            placeholder="Nhập tin nhắn..."
                                             autoComplete="off"
-                                            disabled={isConversationRunning}
-                                            className="flex-1 min-w-0 bg-transparent border-0 outline-none px-2 sm:px-3 py-2 text-sm sm:text-base text-[#181c1e] placeholder:text-slate-400 disabled:opacity-100"
+                                            disabled={
+                                                demoState.status === "closed" ||
+                                                demoState.status === "caregiver_rejected"
+                                            }
+                                            className="flex-1 min-w-0 bg-transparent border-0 outline-none px-2 py-2 text-sm sm:text-base text-[#102030] placeholder:text-slate-400 disabled:opacity-60"
                                         />
-
-                                        {/* Icon đính kèm */}
-                                        <button
-                                            type="button"
-                                            aria-label="Đính kèm tệp"
-                                            className="text-slate-500 hover:text-[#00677c] transition-colors p-1 shrink-0"
-                                        >
-                                            <svg
-                                                className="w-5 h-5"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.65"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"
-                                                />
-                                            </svg>
-                                        </button>
                                     </div>
 
-                                    {/* Nút gửi tin nhắn */}
+                                    {/* Nút gửi */}
                                     <button
                                         type="submit"
                                         aria-label="Gửi tin nhắn"
                                         disabled={
                                             !message.trim() ||
-                                            isConversationRunning
+                                            demoState.status === "closed" ||
+                                            demoState.status === "caregiver_rejected"
                                         }
-                                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#00677c] text-white flex items-center justify-center hover:bg-[#005566] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm hover:shadow-md active:scale-95 shrink-0"
+                                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#00677c] text-white flex items-center justify-center hover:bg-[#005566] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs hover:shadow-sm active:scale-95 shrink-0"
                                     >
                                         <svg
                                             className="w-5 h-5"
@@ -686,32 +535,38 @@ export default function Chat() {
                         </section>
                     </section>
 
-                    {/* CỘT PHẢI: TÓM TẮT ĐẶT LỊCH */}
+                    {/* CỘT PHẢI: TÓM TẮT ĐẶT LỊCH & THỎA THUẬN 2 CHIỀU */}
                     <div className="lg:col-span-4 lg:sticky lg:top-6">
                         <BookingSummary
                             details={bookingDetails}
                             safetyCommitments={safetyCommitments}
-                            bookingConfirmed={bookingConfirmed}
-                            onConfirmBooking={() =>
-                                setBookingConfirmed(true)
-                            }
+                            status={demoState.status}
+                            rejectReason={demoState.rejectReason}
+                            onConfirmBooking={handleConfirmBooking}
+                            onRevokeBooking={handleRevokeBooking}
+                            onCloseChat={handleCloseChat}
+                            onResetDemo={handleResetDemo}
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Hiệu ứng chỉ áp dụng cho tin nhắn và dấu ba chấm.
-                Không cần cài thêm thư viện animation. */}
+            {/* Animation nhẹ nhàng */}
             <style>{`
                 @keyframes chatMessageIn {
                     from {
                         opacity: 0;
-                        transform: translateY(5px);
+                        transform: translateY(4px);
                     }
                     to {
                         opacity: 1;
                         transform: translateY(0);
                     }
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
 
                 @keyframes typingDot {
@@ -724,14 +579,7 @@ export default function Chat() {
                         transform: translateY(-3px);
                     }
                 }
-
-                @media (prefers-reduced-motion: reduce) {
-                    [class*="chatMessageIn"],
-                    [class*="typingDot"] {
-                        animation-duration: 0.01ms !important;
-                    }
-                }
             `}</style>
         </div>
     );
-}
+}
