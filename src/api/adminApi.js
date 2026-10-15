@@ -1,29 +1,62 @@
 import axiosClient from "./axiosClient";
 
-// Khung API Quản trị viên (Vy phụ trách - Khớp với các controller BE)
+// ══════════════════════════════════════════════════════════════════
+// Admin / Backoffice API (Dành riêng cho Quản trị viên)
+// ══════════════════════════════════════════════════════════════════
 export const adminApi = {
-    // 1. Thống kê & Báo cáo tổng quan (AdminDashboardController)
-    getDashboardMetrics: () => axiosClient.get("/api/admin/dashboard"),
-    getRevenueMetrics: (params) => axiosClient.get("/api/admin/dashboard/revenue", { params }),
+    // ── 1. Thống kê Dashboard & Doanh thu ──
+    getDashboardSummary: () =>
+        axiosClient.get("/api/v1/admin/dashboard/summary"),
+    getRevenueMetrics: (params) =>
+        axiosClient.get("/api/v1/admin/dashboard/revenue", { params }),
 
-    // 2. Quản lý gói dịch vụ chăm sóc (ServicesController)
-    getServices: () => axiosClient.get("/api/services"),
-    createService: (data) => axiosClient.post("/api/services", data),
-    updateService: (id, data) => axiosClient.put(`/api/services/${id}`, data),
-    deleteService: (id) => axiosClient.delete(`/api/services/${id}`),
+    // ── 2. Xét duyệt hồ sơ Điều dưỡng (Nurse Verifications) ──
+    getNurseVerifications: (params) =>
+        axiosClient.get("/api/v1/admin/nurse-verifications", { params }),
+    getExpiringLicenses: (params) =>
+        axiosClient.get("/api/v1/admin/nurse-verifications/expiring-licenses", { params }),
+    getNurseVerificationDetail: (id) =>
+        axiosClient.get(`/api/v1/admin/nurse-verifications/${id}`),
+    reviewNurseVerification: (id, data) =>
+        axiosClient.put(`/api/v1/admin/nurse-verifications/${id}`, data),
 
-    // 3. Phê duyệt hồ sơ điều dưỡng (CaregiverApprovals)
-    getPendingApprovals: (params) => axiosClient.get("/api/admin/approvals", { params }),
-    approveCaregiver: (id, data) => axiosClient.post(`/api/admin/approvals/${id}/approve`, data),
-    rejectCaregiver: (id, reason) => axiosClient.post(`/api/admin/approvals/${id}/reject`, { reason }),
+    // ── 3. Quản lý yêu cầu rút tiền (Payouts) ──
+    getPayouts: (params) =>
+        axiosClient.get("/api/v1/admin/payouts", { params }),
+    approvePayout: (id, data) =>
+        axiosClient.put(`/api/v1/admin/payouts/${id}/approve`, data),
+    rejectPayout: (id, data) =>
+        axiosClient.put(`/api/v1/admin/payouts/${id}/reject`, data),
 
-    // 4. Quản lý người dùng & phân quyền (UserManagement)
-    getUsers: (params) => axiosClient.get("/api/admin/users", { params }),
-    toggleUserStatus: (id, status) => axiosClient.patch(`/api/admin/users/${id}/status`, { status }),
+    // ── 4. Quản lý gói dịch vụ chăm sóc (Services) ──
+    getServices: (params) =>
+        axiosClient.get("/api/v1/services/admin", { params }),
+    createService: (data) =>
+        axiosClient.post("/api/v1/services", data),
+    getServiceDetail: (id) =>
+        axiosClient.get(`/api/v1/services/${id}`),
+    updateService: (id, data) =>
+        axiosClient.put(`/api/v1/services/${id}`, data),
+    deleteService: (id) =>
+        axiosClient.delete(`/api/v1/services/${id}`),
+    toggleServiceStatus: (id, data) =>
+        axiosClient.patch(`/api/v1/services/${id}/status`, data),
 
-    // 5. Quản lý khiếu nại & tranh chấp (DisputesController)
-    getDisputes: (params) => axiosClient.get("/api/disputes", { params }),
-    resolveDispute: (id, resolution) => axiosClient.post(`/api/disputes/${id}/resolve`, resolution),
+    // ── 5. Xử lý khiếu nại & Tranh chấp (Disputes) ──
+    getDisputes: (params) =>
+        axiosClient.get("/api/v1/admin/disputes", { params }),
+    getDisputeDetail: (id) =>
+        axiosClient.get(`/api/v1/disputes/${id}`),
+    resolveDispute: (id, data) =>
+        axiosClient.put(`/api/v1/admin/disputes/${id}`, data),
+
+    // ── 6. Hoàn tiền ca chăm sóc (Refunds) ──
+    refundBooking: (bookingId, data) =>
+        axiosClient.post(`/api/v1/admin/bookings/${bookingId}/refund`, data),
+
+    // ── 7. Giám sát toàn bộ ca chăm sóc trên hệ thống ──
+    getAllBookings: (params) =>
+        axiosClient.get("/api/v1/bookings", { params }),
 };
 
 export default adminApi;

@@ -1,5 +1,41 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+
+const getAddressLabelBadge = (label) => {
+    switch (label) {
+        case "Nhà riêng":
+            return {
+                badge: "bg-sky-50 text-sky-700 border-sky-200/90",
+                icon: "🏠",
+                dot: "bg-sky-500",
+            };
+        case "Nhà bố mẹ":
+            return {
+                badge: "bg-purple-50 text-purple-700 border-purple-200/90",
+                icon: "🏡",
+                dot: "bg-purple-500",
+            };
+        case "Cơ quan":
+            return {
+                badge: "bg-amber-50 text-amber-700 border-amber-200/90",
+                icon: "🏢",
+                dot: "bg-amber-500",
+            };
+        case "Nhà người thân":
+            return {
+                badge: "bg-teal-50 text-teal-700 border-teal-200/90",
+                icon: "📍",
+                dot: "bg-teal-500",
+            };
+        default:
+            return {
+                badge: "bg-slate-100 text-[#002045] border-slate-200",
+                icon: "📍",
+                dot: "bg-slate-500",
+            };
+    }
+};
 
 export default function FamilyProfile() {
     const navigate = useNavigate();
@@ -25,16 +61,40 @@ export default function FamilyProfile() {
     const [isEditingEmergency, setIsEditingEmergency] = useState(false);
     const [emergencyDraft, setEmergencyDraft] = useState({ ...emergencyContact });
 
-    // Section 3: Địa chỉ chăm sóc
-    const [addressInfo, setAddressInfo] = useState({
+    // Section 3: Sổ địa chỉ chăm sóc (Address Book)
+    const [addressList, setAddressList] = useState([
+        {
+            id: "addr-1",
+            label: "Nhà riêng",
+            isDefault: true,
+            city: "TP. Hồ Chí Minh",
+            district: "Quận Bình Thạnh",
+            ward: "Phường 25",
+            streetAddress: "123 Đường Nguyễn Gia Trí, Căn hộ A12-05",
+            noteForCaregiver: "Căn hộ ở tầng 12, bấm chuông 1205. Bảo vệ hướng dẫn gửi xe máy ở cổng hầm B1.",
+        },
+        {
+            id: "addr-2",
+            label: "Nhà bố mẹ",
+            isDefault: false,
+            city: "TP. Hồ Chí Minh",
+            district: "Quận 1",
+            ward: "Phường Bến Nghé",
+            streetAddress: "45/2 Nguyễn Thị Minh Khai",
+            noteForCaregiver: "Nhà trong hẻm lớn đối diện Thảo Cầm Viên, chuông cửa màu trắng bên tay phải.",
+        },
+    ]);
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [editingAddressId, setEditingAddressId] = useState(null); // null = thêm mới, id = chỉnh sửa
+    const [addressForm, setAddressForm] = useState({
+        label: "Nhà riêng",
         city: "TP. Hồ Chí Minh",
         district: "Quận Bình Thạnh",
-        ward: "Phường 25",
-        streetAddress: "123 Đường Nguyễn Gia Trí, Căn hộ A12-05",
-        noteForCaregiver: "Căn hộ ở tầng 12, bấm chuông 1205. Bảo vệ hướng dẫn gửi xe máy ở cổng hầm B1.",
+        ward: "",
+        streetAddress: "",
+        noteForCaregiver: "",
+        isDefault: false,
     });
-    const [isEditingAddress, setIsEditingAddress] = useState(false);
-    const [addressDraft, setAddressDraft] = useState({ ...addressInfo });
 
     // Section 4: Modal đổi mật khẩu
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -66,11 +126,87 @@ export default function FamilyProfile() {
         showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp mới!");
     };
 
-    const handleSaveAddress = (e) => {
+    const handleOpenAddAddress = () => {
+        setEditingAddressId(null);
+        setAddressForm({
+            label: "Nhà riêng",
+            city: "TP. Hồ Chí Minh",
+            district: "Quận Bình Thạnh",
+            ward: "",
+            streetAddress: "",
+            noteForCaregiver: "",
+            isDefault: addressList.length === 0,
+        });
+        setIsAddressModalOpen(true);
+    };
+
+    const handleOpenEditAddress = (addr) => {
+        setEditingAddressId(addr.id);
+        setAddressForm({
+            label: addr.label,
+            city: addr.city,
+            district: addr.district,
+            ward: addr.ward,
+            streetAddress: addr.streetAddress,
+            noteForCaregiver: addr.noteForCaregiver || "",
+            isDefault: addr.isDefault,
+        });
+        setIsAddressModalOpen(true);
+    };
+
+    const handleSaveAddressForm = (e) => {
         e.preventDefault();
-        setAddressInfo({ ...addressDraft });
-        setIsEditingAddress(false);
-        showSuccessToast("Đã cập nhật địa chỉ chăm sóc của gia đình!");
+        if (editingAddressId) {
+            setAddressList((prev) =>
+                prev.map((item) => {
+                    if (item.id === editingAddressId) {
+                        return { ...item, ...addressForm };
+                    }
+                    if (addressForm.isDefault) {
+                        return { ...item, isDefault: false };
+                    }
+                    return item;
+                })
+            );
+            showSuccessToast("Đã cập nhật địa chỉ chăm sóc thành công!");
+        } else {
+            const newAddr = {
+                id: `addr-${Date.now()}`,
+                ...addressForm,
+                isDefault: addressForm.isDefault || addressList.length === 0,
+            };
+            setAddressList((prev) => {
+                if (newAddr.isDefault) {
+                    return [...prev.map((a) => ({ ...a, isDefault: false })), newAddr];
+                }
+                return [...prev, newAddr];
+            });
+            showSuccessToast("Đã thêm địa chỉ mới vào sổ địa chỉ!");
+        }
+        setIsAddressModalOpen(false);
+    };
+
+    const handleDeleteAddress = (id) => {
+        const target = addressList.find((a) => a.id === id);
+        if (!target) return;
+        if (target.isDefault && addressList.length > 1) {
+            alert("Đây là địa chỉ mặc định. Vui lòng chọn một địa chỉ khác làm mặc định trước khi xóa!");
+            return;
+        }
+        if (window.confirm(`Bạn có chắc chắn muốn xóa địa chỉ "${target.label}"?`)) {
+            setAddressList((prev) => prev.filter((a) => a.id !== id));
+            showSuccessToast(`Đã xóa địa chỉ "${target.label}"!`);
+        }
+    };
+
+    const handleSetDefaultAddress = (id) => {
+        setAddressList((prev) =>
+            prev.map((item) => ({
+                ...item,
+                isDefault: item.id === id,
+            }))
+        );
+        showSuccessToast("Đã đặt làm địa chỉ chăm sóc mặc định!");
     };
 
     const handleSavePassword = (e) => {
@@ -332,128 +468,285 @@ export default function FamilyProfile() {
                 )}
             </div>
 
-            {/* SECTION 3: ĐỊA CHỈ CHĂM SÓC */}
+            {/* SECTION 3: SỔ ĐỊA CHỈ CHĂM SÓC (ADDRESS BOOK) */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                             </svg>
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-[#002045]">Địa chỉ chăm sóc</h3>
-                            <p className="text-xs text-slate-500">Địa chỉ nhà để điều dưỡng tới chăm sóc trực tiếp</p>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-base font-bold text-[#002045]">Sổ địa chỉ chăm sóc</h3>
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">
+                                    {addressList.length} địa chỉ
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500">Quản lý các địa điểm để điều dưỡng tới chăm sóc người thân</p>
                         </div>
                     </div>
 
-                    {!isEditingAddress && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setAddressDraft({ ...addressInfo });
-                                setIsEditingAddress(true);
-                            }}
-                            className="px-4 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
-                        >
-                            Chỉnh sửa
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        onClick={handleOpenAddAddress}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Thêm địa chỉ mới
+                    </button>
                 </div>
 
-                {isEditingAddress ? (
-                    <form onSubmit={handleSaveAddress} className="space-y-4 text-xs">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Tỉnh / Thành phố</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={addressDraft.city}
-                                    onChange={(e) => setAddressDraft({ ...addressDraft, city: e.target.value })}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Quận / Huyện</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={addressDraft.district}
-                                    onChange={(e) => setAddressDraft({ ...addressDraft, district: e.target.value })}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Phường / Xã</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={addressDraft.ward}
-                                    onChange={(e) => setAddressDraft({ ...addressDraft, ward: e.target.value })}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
-                                />
-                            </div>
-                            <div className="sm:col-span-3">
-                                <label className="block text-slate-700 font-semibold mb-1">Địa chỉ chi tiết (Số nhà, Tên đường, Tòa nhà)</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={addressDraft.streetAddress}
-                                    onChange={(e) => setAddressDraft({ ...addressDraft, streetAddress: e.target.value })}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
-                                />
-                            </div>
-                            <div className="sm:col-span-3">
-                                <label className="block text-slate-700 font-semibold mb-1">Ghi chú hướng dẫn cho điều dưỡng</label>
-                                <textarea
-                                    rows={2}
-                                    value={addressDraft.noteForCaregiver}
-                                    onChange={(e) => setAddressDraft({ ...addressDraft, noteForCaregiver: e.target.value })}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
-                                />
-                            </div>
+                {/* Danh sách thẻ địa chỉ */}
+                {addressList.length === 0 ? (
+                    <div className="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                            </svg>
                         </div>
-
-                        <div className="flex items-center justify-end gap-2.5 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsEditingAddress(false)}
-                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
-                            >
-                                Lưu thay đổi
-                            </button>
-                        </div>
-                    </form>
+                        <p className="text-sm font-semibold text-slate-700">Chưa có địa chỉ nào trong sổ</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Bấm nút "Thêm địa chỉ mới" để lưu địa chỉ đầu tiên của bạn</p>
+                    </div>
                 ) : (
-                    <div className="space-y-3 text-xs">
-                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-100">
-                            <span className="text-slate-400 block text-[11px]">Địa chỉ:</span>
-                            <strong className="text-sm text-[#002045]">{addressInfo.streetAddress}</strong>
-                            <p className="text-slate-600 mt-0.5">
-                                {addressInfo.ward}, {addressInfo.district}, {addressInfo.city}
-                            </p>
-                        </div>
-                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-100">
-                            <span className="text-slate-400 block text-[11px]">Ghi chú cho điều dưỡng:</span>
-                            <p className="text-slate-700 italic mt-0.5">"{addressInfo.noteForCaregiver}"</p>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {addressList.map((addr) => (
+                            <div
+                                key={addr.id}
+                                className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                                    addr.isDefault
+                                        ? "bg-teal-50/20 border-teal-200/80 shadow-2xs"
+                                        : "bg-white border-slate-200/80 hover:border-slate-300"
+                                }`}
+                            >
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            {(() => {
+                                                const badgeStyle = getAddressLabelBadge(addr.label);
+                                                return (
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold border shadow-2xs ${badgeStyle.badge}`}>
+                                                        <span>{badgeStyle.icon}</span>
+                                                        <span>{addr.label}</span>
+                                                    </span>
+                                                );
+                                            })()}
+                                            {addr.isDefault && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-100/70 text-teal-800 text-[10px] font-bold">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                                                    MẶC ĐỊNH
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenEditAddress(addr)}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition-colors"
+                                                title="Chỉnh sửa địa chỉ"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteAddress(addr.id)}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                                title="Xóa địa chỉ"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-sm font-semibold text-[#002045] leading-snug">
+                                            {addr.streetAddress}
+                                        </p>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            {addr.ward ? `${addr.ward}, ` : ""}{addr.district}, {addr.city}
+                                        </p>
+                                    </div>
+
+                                    {addr.noteForCaregiver && (
+                                        <div className="p-2 rounded-lg bg-slate-50 text-[11px] text-slate-600 border border-slate-100 flex items-start gap-1.5">
+                                            <span className="text-slate-400 font-semibold shrink-0">Lưu ý:</span>
+                                            <span className="italic">{addr.noteForCaregiver}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {!addr.isDefault && (
+                                    <div className="pt-2 border-t border-slate-100 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSetDefaultAddress(addr.id)}
+                                            className="text-xs font-semibold text-teal-700 hover:text-teal-800 transition-colors cursor-pointer"
+                                        >
+                                            Đặt làm mặc định
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
+
+            {/* MODAL THÊM / CHỈNH SỬA ĐỊA CHỈ */}
+            {isAddressModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-hidden">
+                    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-lg p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-base font-bold text-[#002045]">
+                                    {editingAddressId ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}
+                                </h3>
+                                <p className="text-xs text-slate-500">Lưu thông tin vị trí để gọi điều dưỡng tới chăm sóc</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddressModalOpen(false)}
+                                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveAddressForm} className="space-y-4 text-xs">
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Tên nhãn địa chỉ *</label>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {["Nhà riêng", "Nhà bố mẹ", "Nhà người thân", "Cơ quan"].map((preset) => {
+                                        const badgeStyle = getAddressLabelBadge(preset);
+                                        return (
+                                            <button
+                                                key={preset}
+                                                type="button"
+                                                onClick={() => setAddressForm({ ...addressForm, label: preset })}
+                                                className={`px-3 py-1 rounded-lg border text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                                                    addressForm.label === preset
+                                                        ? `${badgeStyle.badge} ring-2 ring-teal-500/20 shadow-2xs`
+                                                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                                                }`}
+                                            >
+                                                <span>{badgeStyle.icon}</span>
+                                                <span>{preset}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <input
+                                    type="text"
+                                    required
+                                    value={addressForm.label}
+                                    onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                                    placeholder="Hoặc tự đặt tên: Ví dụ: Căn hộ Landmark 81"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block text-slate-700 font-semibold mb-1">Tỉnh / Thành phố *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={addressForm.city}
+                                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-700 font-semibold mb-1">Quận / Huyện *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={addressForm.district}
+                                        onChange={(e) => setAddressForm({ ...addressForm, district: e.target.value })}
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-700 font-semibold mb-1">Phường / Xã</label>
+                                    <input
+                                        type="text"
+                                        value={addressForm.ward}
+                                        onChange={(e) => setAddressForm({ ...addressForm, ward: e.target.value })}
+                                        placeholder="Ví dụ: Phường 25"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Địa chỉ cụ thể (Số nhà, Tên đường, Căn hộ) *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={addressForm.streetAddress}
+                                    onChange={(e) => setAddressForm({ ...addressForm, streetAddress: e.target.value })}
+                                    placeholder="Ví dụ: 123 Đường Nguyễn Gia Trí, Căn hộ A12-05"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Ghi chú hướng dẫn cho điều dưỡng</label>
+                                <textarea
+                                    rows={2}
+                                    value={addressForm.noteForCaregiver}
+                                    onChange={(e) => setAddressForm({ ...addressForm, noteForCaregiver: e.target.value })}
+                                    placeholder="Ví dụ: Bấm chuông tầng 12, hầm gửi xe máy ở cổng B1..."
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                />
+                            </div>
+
+                            <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={addressForm.isDefault}
+                                    onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                                    className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+                                />
+                                <span className="text-slate-700 font-medium">Đặt làm địa chỉ chăm sóc mặc định</span>
+                            </label>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddressModalOpen(false)}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                                >
+                                    {editingAddressId ? "Lưu thay đổi" : "Lưu địa chỉ mới"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* SECTION 4: BẢO MẬT TÀI KHOẢN */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100/90 text-indigo-600 flex items-center justify-center shadow-xs shrink-0">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                             </svg>
@@ -517,9 +810,9 @@ export default function FamilyProfile() {
             </div>
 
             {/* Modal Đổi mật khẩu */}
-            {isPasswordModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-page-enter">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            {isPasswordModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-hidden">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <h3 className="text-base font-bold text-[#002045]">Đổi mật khẩu tài khoản</h3>
                             <button
@@ -583,7 +876,8 @@ export default function FamilyProfile() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -54,8 +54,8 @@ export default function ForgotPassword() {
                             <span>Về trang chủ</span>
                         </Link>
                         <span className="hidden sm:inline text-slate-300">|</span>
-                        <Link 
-                            to="/login" 
+                        <Link
+                            to="/login"
                             className="text-xs sm:text-sm font-medium text-slate-600 hover:text-[#002045] flex items-center gap-1.5 transition-colors"
                         >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -70,7 +70,7 @@ export default function ForgotPassword() {
             {/* Main Content */}
             <main className="flex-1 flex items-center justify-center p-4 md:p-8 my-6">
                 <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,32,69,0.05)] p-8 md:p-10 relative">
-                    
+
                     {/* Top Decorative Accent */}
                     <div className="w-16 h-1 bg-gradient-to-r from-teal-500 to-[#002045] rounded-full mx-auto mb-8"></div>
 
@@ -101,19 +101,19 @@ export default function ForgotPassword() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                                             </svg>
                                         </span>
-                                        <input 
-                                            type="text" 
-                                            required 
+                                        <input
+                                            type="text"
+                                            required
                                             value={emailOrPhone}
                                             onChange={(e) => setEmailOrPhone(e.target.value)}
-                                            placeholder="Nhập email hoặc số điện thoại của bạn" 
+                                            placeholder="Nhập email hoặc số điện thoại của bạn"
                                             className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all shadow-xs"
                                         />
                                     </div>
                                 </div>
 
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={isLoading}
                                     className="w-full py-3.5 px-4 bg-[#002045] hover:bg-[#002d60] text-white font-semibold rounded-xl text-sm shadow-md shadow-[#002045]/15 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-70"
                                 >
@@ -143,7 +143,7 @@ export default function ForgotPassword() {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            
+
                             <div>
                                 <h2 className="text-2xl font-bold text-[#002045] tracking-tight">Yêu cầu đã được gửi</h2>
                                 <p className="text-sm text-slate-500 mt-2 leading-relaxed">
@@ -165,7 +165,7 @@ export default function ForgotPassword() {
                             </div>
 
                             <div className="space-y-3 pt-2">
-                                <Link 
+                                <Link
                                     to="/login"
                                     className="w-full py-3.5 px-4 bg-[#002045] hover:bg-[#002d60] text-white font-semibold rounded-xl text-sm shadow-md shadow-[#002045]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
@@ -175,9 +175,9 @@ export default function ForgotPassword() {
                                     <span>Quay lại đăng nhập</span>
                                 </Link>
 
-                                <button 
-                                    type="button" 
-                                    onClick={toggleState} 
+                                <button
+                                    type="button"
+                                    onClick={toggleState}
                                     className="w-full py-2.5 px-4 bg-transparent text-slate-500 hover:text-slate-800 text-xs font-medium transition-colors cursor-pointer"
                                 >
                                     Gửi lại email khác
@@ -194,9 +194,9 @@ export default function ForgotPassword() {
                             </svg>
                             Xác thực bảo mật CareLink
                         </span>
-                        <button 
-                            type="button" 
-                            onClick={toggleState} 
+                        <button
+                            type="button"
+                            onClick={toggleState}
                             className="text-teal-600 hover:underline cursor-pointer font-medium"
                         >
                             ({isSubmitted ? "Quay lại nhập" : "Xem trạng thái đã gửi"})

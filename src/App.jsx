@@ -32,6 +32,8 @@ import CaregiverSchedule from "./features/caregiver/pages/CaregiverSchedule";
 import CaregiverBookingRequests from "./features/caregiver/pages/CaregiverBookingRequests";
 import CaregiverMessages from "./features/caregiver/pages/CaregiverMessages";
 import CaregiverReview from "./features/caregiver/pages/CaregiverReview";
+import CaregiverProfilePage from "./features/caregiver/pages/CaregiverProfilePage";
+import CaregiverWallet from "./features/caregiver/pages/CaregiverWallet";
 
 import PageTransition from "./components/PageTransition";
 
@@ -44,6 +46,7 @@ import AdminAppointments from "./features/admin/pages/AdminAppointments";
 import UserManagement from "./features/admin/pages/UserManagement";
 import AdminFinance from "./features/admin/pages/AdminFinance";
 import AdminHandbook from "./features/admin/pages/AdminHandbook";
+import AdminDisputes from "./features/admin/pages/AdminDisputes";
 
 export default function App() {
   return (
@@ -95,6 +98,8 @@ export default function App() {
           {/* Caregiver Dashboard — layout riêng với sidebar của Điều dưỡng */}
           <Route element={<CaregiverLayout />}>
             <Route path="/caregiver/dashboard" element={<CaregiverDashboard />} />
+            <Route path="/caregiver/profile" element={<CaregiverProfilePage />} />
+            <Route path="/caregiver/wallet" element={<CaregiverWallet />} />
             <Route path="/caregiver/messages" element={<CaregiverMessages />} />
             <Route path="/caregiver/schedule" element={<CaregiverSchedule />} />
             <Route path="/caregiver/bookings" element={<CaregiverBookingRequests />} />
@@ -108,6 +113,7 @@ export default function App() {
             <Route path="/admin/approvals" element={<CaregiverApprovals />} />
             <Route path="/admin/services" element={<ServiceManagement />} />
             <Route path="/admin/appointments" element={<AdminAppointments />} />
+            <Route path="/admin/disputes" element={<AdminDisputes />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/handbook" element={<AdminHandbook />} />

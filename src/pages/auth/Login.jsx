@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
     Mail,
     Lock,
@@ -10,8 +10,6 @@ import {
 } from "lucide-react";
 
 export default function Login() {
-    const navigate = useNavigate();
-
     const [emailOrPhone, setEmailOrPhone] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
@@ -20,10 +18,13 @@ export default function Login() {
 
     // =========================================================
     // LOGIN LOGIC
-    // Giữ nguyên logic hiện tại của CareLink
+    // Giữ nguyên logic đăng nhập mẫu hiện tại của CareLink
     // =========================================================
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        if (isLoading) return;
+
         setIsLoading(true);
 
         const input = (emailOrPhone || "").trim().toLowerCase();
@@ -46,13 +47,16 @@ export default function Login() {
             targetRoute = "/caregiver/dashboard";
         } else {
             targetRole = "family";
-            targetName = emailOrPhone && !emailOrPhone.includes("family")
-                ? (emailOrPhone.includes("@") ? emailOrPhone.split("@")[0] : emailOrPhone)
-                : "Nguyễn Văn An";
+            targetName =
+                emailOrPhone && !input.includes("family")
+                    ? emailOrPhone.includes("@")
+                        ? emailOrPhone.split("@")[0]
+                        : emailOrPhone
+                    : "Nguyễn Văn An";
+
             targetRoute = "/dashboard";
         }
 
-        // Lưu thông tin user vào localStorage
         localStorage.setItem(
             "carelink_user",
             JSON.stringify({
@@ -68,21 +72,55 @@ export default function Login() {
             })
         );
 
-        // Chuyển hướng sau khi đăng nhập (dùng window.location.href để reset sạch state giao diện)
+        // Ghi nhớ trạng thái lựa chọn trên giao diện.
+        // Logic xác thực thực tế vẫn cần được xử lý bởi Backend.
+        if (rememberMe) {
+            localStorage.setItem("carelink_remember_me", "true");
+        } else {
+            localStorage.removeItem("carelink_remember_me");
+        }
+
+        // Giữ nguyên cách điều hướng hiện tại.
         setTimeout(() => {
-            setIsLoading(false);
             window.location.href = targetRoute;
         }, 300);
+    };
+
+    // =========================================================
+    // GOOGLE LOGIN — MOCK UI
+    // Chưa tích hợp xác thực Google thật
+    // =========================================================
+    const handleGoogleLogin = () => {
+        if (isLoading) return;
+
+        setIsLoading(true);
+
+        const googleUser = {
+            name: "Nguyễn Văn An (Google)",
+            email: "an.nguyen.google@carelink.vn",
+            role: "family",
+            avatar:
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        };
+
+        localStorage.setItem(
+            "carelink_user",
+            JSON.stringify(googleUser)
+        );
+
+        setTimeout(() => {
+            window.location.href = "/dashboard";
+        }, 350);
     };
 
     return (
         <div className="min-h-screen flex flex-col bg-[#EEF1F0] text-[#102A2F] antialiased selection:bg-teal-100 selection:text-teal-900 font-sans">
 
-            {/* =========================================================
+            {/* =====================================================
                 HEADER
-            ========================================================= */}
-            <header className="w-full bg-white border-b border-slate-200/80 sticky top-0 z-50">
-                <div className="w-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 h-[76px] flex items-center justify-between">
+            ===================================================== */}
+            <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200/70 shrink-0 relative z-50">
+                <div className="w-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 h-[68px] sm:h-[72px] flex items-center justify-between">
 
                     {/* Logo */}
                     <Link
@@ -90,7 +128,7 @@ export default function Login() {
                         className="flex items-center gap-2.5 group shrink-0"
                         title="Về trang chủ CareLink"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#087287] to-[#123248] flex items-center justify-center text-white shadow-sm group-hover:scale-[1.02] transition-transform duration-200">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#087287] to-[#123248] flex items-center justify-center text-white shadow-sm group-hover:scale-[1.03] transition-transform duration-200">
                             <svg
                                 className="w-[18px] h-[18px]"
                                 fill="none"
@@ -117,11 +155,10 @@ export default function Login() {
                         </div>
                     </Link>
 
-                    {/* Chỉ giữ Về trang chủ
-                        Không lặp CTA Đăng ký ở header */}
+                    {/* Về trang chủ */}
                     <Link
                         to="/"
-                        className="inline-flex items-center gap-2 text-[13px] sm:text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors px-2 py-2 rounded-lg hover:bg-slate-50"
+                        className="inline-flex items-center gap-2 text-[13px] sm:text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors px-3 py-2 rounded-xl hover:bg-slate-50"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         <span>Về trang chủ</span>
@@ -129,109 +166,99 @@ export default function Login() {
                 </div>
             </header>
 
-            {/* =========================================================
+            {/* =====================================================
                 MAIN
-            ========================================================= */}
-            <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+                Tối ưu khoảng cách dọc để hạn chế phải cuộn trang
+            ===================================================== */}
+            <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
 
-                {/* =====================================================
-                    MAIN CONTAINER
-                    Desktop: 58% image / 42% form
-                ===================================================== */}
-                <div className="w-full max-w-[1240px] min-h-[580px] lg:min-h-[620px] bg-white rounded-[24px] overflow-hidden border border-slate-200/90 shadow-[0_22px_60px_-24px_rgba(15,23,42,0.18)] flex flex-col lg:flex-row">
+                {/* Main container */}
+                <div className="w-full max-w-[1200px] min-h-0 lg:min-h-[540px] xl:min-h-[550px] bg-white rounded-[22px] sm:rounded-[26px] overflow-hidden border border-white/80 shadow-[0_24px_70px_-30px_rgba(15,42,47,0.24)] flex flex-col lg:flex-row">
 
                     {/* =================================================
-                        LEFT — IMAGE 58%
+                        LEFT — IMAGE
                     ================================================= */}
-                    <section className="hidden lg:block relative lg:w-[58%] overflow-hidden bg-slate-900">
+                    <section className="hidden lg:block relative lg:w-[56%] overflow-hidden bg-[#18363B]">
 
                         {/* Main image */}
                         <img
                             src="/images/login_caregiver.jpg"
                             alt="Chăm sóc người cao tuổi tại nhà"
-                            className="absolute inset-0 w-full h-full object-cover object-center"
+                            className="absolute inset-0 w-full h-full object-cover object-[center_42%]"
                         />
 
-                        {/* Very subtle bottom gradient
-                            Chỉ để ảnh không bị cháy ở phần đáy */}
-                        <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/35 via-black/8 to-transparent pointer-events-none" />
+                        {/* Gradient nhẹ ở đáy */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#102A2F]/65 via-[#102A2F]/10 to-transparent pointer-events-none" />
 
-                        {/* Small brand statement
-                            Không dùng headline lớn nữa */}
-                        <div className="absolute left-8 xl:left-10 bottom-8 xl:bottom-9 z-10">
+                        {/* Ánh sáng nhẹ tạo chiều sâu */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#123248]/10 via-transparent to-[#0B2529]/15 pointer-events-none" />
+
+                        {/* Brand statement */}
+                        <div className="absolute left-8 xl:left-10 bottom-7 xl:bottom-8 z-10">
 
                             <div className="flex items-center gap-2.5">
-                                <span className="w-6 h-px bg-white/80" />
+                                <span className="w-7 h-px bg-white/80" />
 
                                 <span className="text-[10px] font-semibold tracking-[0.22em] uppercase text-white/90">
                                     CareLink
                                 </span>
                             </div>
 
-                            <p className="mt-2 text-[12px] text-white/75 tracking-wide">
+                            <p className="mt-2 text-[12px] xl:text-[13px] text-white/85 tracking-wide">
                                 Chăm sóc tận tâm · Kết nối chuyên môn
                             </p>
                         </div>
                     </section>
 
                     {/* =================================================
-                        RIGHT — FORM 42%
+                        RIGHT — LOGIN FORM
                     ================================================= */}
-                    <section className="w-full lg:w-[42%] bg-[#F6F4EF] flex items-center justify-center">
+                    <section className="w-full lg:w-[44%] bg-[#F8F7F3] flex items-center justify-center">
 
-                        <div className="w-full max-w-[400px] px-6 sm:px-10 lg:px-8 xl:px-10 py-10 sm:py-12 lg:py-14">
+                        <div className="w-full max-w-[410px] px-6 sm:px-10 lg:px-8 xl:px-10 py-7 sm:py-8 lg:py-7 xl:py-8">
 
-                            {/* =================================================
-                                EYEBROW
-                            ================================================= */}
-                            <div className="flex items-center gap-2.5 mb-4">
-                                <span className="w-6 h-px bg-teal-600" />
+                            {/* Eyebrow */}
+                            <div className="flex items-center gap-2.5 mb-3">
+                                <span className="w-6 h-px bg-[#187D74]" />
 
-                                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-teal-700">
+                                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#187D74]">
                                     Chào mừng trở lại
                                 </span>
                             </div>
 
-                            {/* =================================================
-                                TITLE
-                            ================================================= */}
-                            <div className="mb-8">
-                                <h1 className="text-[30px] sm:text-[32px] lg:text-[34px] font-semibold tracking-[-0.035em] text-[#102A2F] leading-[1.1]">
+                            {/* Title */}
+                            <div className="mb-5">
+                                <h1 className="text-[29px] sm:text-[31px] lg:text-[32px] font-semibold tracking-[-0.04em] text-[#102A2F] leading-tight">
                                     Đăng nhập
                                 </h1>
 
-                                <p className="mt-3 text-[14px] leading-6 text-[#667575]">
+                                <p className="mt-2 text-[13px] sm:text-[14px] leading-5 text-[#71807F]">
                                     Chào mừng bạn quay lại với CareLink.
                                 </p>
                             </div>
 
-                            {/* =================================================
-                                FORM
-                            ================================================= */}
+                            {/* Login form */}
                             <form
                                 onSubmit={handleSubmit}
-                                className="space-y-5"
+                                className="space-y-4"
                             >
 
-                                {/* ==============================
-                                    EMAIL / PHONE
-                                ============================== */}
+                                {/* Email / Phone */}
                                 <div>
                                     <label
                                         htmlFor="emailOrPhone"
-                                        className="block text-[13px] font-medium text-[#304348] mb-2"
+                                        className="block text-[12px] sm:text-[13px] font-medium text-[#304348] mb-1.5"
                                     >
                                         Email hoặc số điện thoại
                                     </label>
 
                                     <div className="relative">
-                                        <Mail
-                                            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-slate-400 pointer-events-none"
-                                        />
+                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-[#91A09E] pointer-events-none" />
 
                                         <input
                                             id="emailOrPhone"
                                             type="text"
+                                            autoComplete="username"
                                             required
                                             value={emailOrPhone}
                                             onChange={(e) =>
@@ -239,20 +266,17 @@ export default function Login() {
                                             }
                                             placeholder="Nhập email hoặc số điện thoại"
                                             className="
-                                                w-full
-                                                h-12
-                                                pl-11
-                                                pr-4
-                                                bg-[#FBFAF7]
-                                                border
-                                                border-[#D9DEDA]
+                                                w-full h-[46px]
+                                                pl-11 pr-4
+                                                bg-white
+                                                border border-[#DDE3DF]
                                                 rounded-xl
-                                                text-sm
+                                                text-[13px] sm:text-sm
                                                 text-[#203337]
-                                                placeholder:text-[#9AA5A4]
+                                                placeholder:text-[#A1AAA7]
                                                 outline-none
-                                                transition-all
-                                                duration-200
+                                                transition-all duration-200
+                                                hover:border-[#C3D2CC]
                                                 focus:bg-white
                                                 focus:border-[#187D74]
                                                 focus:ring-[3px]
@@ -262,29 +286,22 @@ export default function Login() {
                                     </div>
                                 </div>
 
-                                {/* ==============================
-                                    PASSWORD
-                                ============================== */}
+                                {/* Password */}
                                 <div>
                                     <label
                                         htmlFor="password"
-                                        className="block text-[13px] font-medium text-[#304348] mb-2"
+                                        className="block text-[12px] sm:text-[13px] font-medium text-[#304348] mb-1.5"
                                     >
                                         Mật khẩu
                                     </label>
 
                                     <div className="relative">
-                                        <Lock
-                                            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-slate-400 pointer-events-none"
-                                        />
+                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-[#91A09E] pointer-events-none" />
 
                                         <input
                                             id="password"
-                                            type={
-                                                showPassword
-                                                    ? "text"
-                                                    : "password"
-                                            }
+                                            type={showPassword ? "text" : "password"}
+                                            autoComplete="current-password"
                                             required
                                             value={password}
                                             onChange={(e) =>
@@ -292,20 +309,17 @@ export default function Login() {
                                             }
                                             placeholder="Nhập mật khẩu của bạn"
                                             className="
-                                                w-full
-                                                h-12
-                                                pl-11
-                                                pr-11
-                                                bg-[#FBFAF7]
-                                                border
-                                                border-[#D9DEDA]
+                                                w-full h-[46px]
+                                                pl-11 pr-11
+                                                bg-white
+                                                border border-[#DDE3DF]
                                                 rounded-xl
-                                                text-sm
+                                                text-[13px] sm:text-sm
                                                 text-[#203337]
-                                                placeholder:text-[#9AA5A4]
+                                                placeholder:text-[#A1AAA7]
                                                 outline-none
-                                                transition-all
-                                                duration-200
+                                                transition-all duration-200
+                                                hover:border-[#C3D2CC]
                                                 focus:bg-white
                                                 focus:border-[#187D74]
                                                 focus:ring-[3px]
@@ -316,11 +330,9 @@ export default function Login() {
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                setShowPassword(
-                                                    !showPassword
-                                                )
+                                                setShowPassword((prev) => !prev)
                                             }
-                                            className="absolute right-0 top-0 h-full px-3.5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                                            className="absolute right-0 top-0 h-full px-3.5 flex items-center justify-center text-[#91A09E] hover:text-[#187D74] transition-colors cursor-pointer"
                                             aria-label={
                                                 showPassword
                                                     ? "Ẩn mật khẩu"
@@ -336,90 +348,141 @@ export default function Login() {
                                     </div>
                                 </div>
 
-                                {/* ==============================
-                                    REMEMBER + FORGOT
-                                ============================== */}
-                                <div className="flex items-center justify-between pt-0.5">
+                                {/* Remember + Forgot password */}
+                                <div className="flex items-center justify-between gap-3 pt-0.5">
 
                                     <label
                                         htmlFor="rememberMe"
-                                        className="flex items-center gap-2 text-[12px] sm:text-[13px] text-[#667575] cursor-pointer select-none"
+                                        className="flex items-center gap-2 text-[11px] sm:text-[12px] text-[#71807F] cursor-pointer select-none"
                                     >
                                         <input
                                             id="rememberMe"
                                             type="checkbox"
                                             checked={rememberMe}
                                             onChange={(e) =>
-                                                setRememberMe(
-                                                    e.target.checked
-                                                )
+                                                setRememberMe(e.target.checked)
                                             }
-                                            className="w-4 h-4 rounded-[4px] border-[#C8D0CE] text-[#187D74] focus:ring-[#187D74]/20 cursor-pointer"
+                                            className="w-4 h-4 shrink-0 rounded-[4px] border-[#C8D0CE] accent-[#187D74] focus:ring-[#187D74]/20 cursor-pointer"
                                         />
 
-                                        <span>
-                                            Ghi nhớ đăng nhập
-                                        </span>
+                                        <span>Ghi nhớ đăng nhập</span>
                                     </label>
 
                                     <Link
                                         to="/forgot-password"
-                                        className="text-[12px] sm:text-[13px] font-medium text-[#187D74] hover:text-[#12655F] transition-colors"
+                                        className="text-[11px] sm:text-[12px] font-semibold text-[#187D74] hover:text-[#12655F] transition-colors whitespace-nowrap"
                                     >
                                         Quên mật khẩu?
                                     </Link>
                                 </div>
 
-                                {/* ==============================
-                                    LOGIN BUTTON
-                                ============================== */}
+                                {/* Login button */}
                                 <button
                                     type="submit"
                                     disabled={isLoading}
                                     className="
-                                        w-full
-                                        h-12
-                                        mt-2
-                                        px-5
+                                        group
+                                        w-full h-[46px]
+                                        mt-1 px-5
                                         rounded-xl
                                         bg-[#187D74]
                                         hover:bg-[#126A63]
                                         active:scale-[0.99]
                                         text-white
-                                        text-sm
+                                        text-[13px] sm:text-sm
                                         font-semibold
-                                        flex
-                                        items-center
-                                        justify-center
-                                        gap-2
-                                        transition-all
-                                        duration-200
-                                        shadow-[0_6px_16px_-7px_rgba(24,125,116,0.55)]
+                                        flex items-center justify-center gap-2
+                                        transition-all duration-200
+                                        shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)]
+                                        hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)]
                                         disabled:opacity-70
                                         disabled:cursor-not-allowed
                                         cursor-pointer
                                     "
                                 >
                                     <span>
-                                        {isLoading
-                                            ? "Đang xử lý..."
-                                            : "Đăng nhập"}
+                                        {isLoading ? "Đang xử lý..." : "Đăng nhập"}
                                     </span>
 
                                     {!isLoading && (
-                                        <ArrowRight className="w-4 h-4" />
+                                        <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                                     )}
                                 </button>
                             </form>
 
-                            {/* =================================================
-                                REGISTER
-                                Không divider — giữ thật nhẹ
-                            ================================================= */}
-                            <div className="mt-8 text-center text-[12px] sm:text-[13px] text-[#71807F]">
-                                <span>
-                                    Chưa có tài khoản?{" "}
+                            {/* Divider */}
+                            <div className="relative flex items-center my-[17px]">
+                                <div className="flex-1 border-t border-[#DDE2DE]" />
+
+                                <span className="px-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase text-[#84918F]">
+                                    Hoặc tiếp tục với
                                 </span>
+
+                                <div className="flex-1 border-t border-[#DDE2DE]" />
+                            </div>
+
+                            {/* Google login */}
+                            <button
+                                type="button"
+                                onClick={handleGoogleLogin}
+                                disabled={isLoading}
+                                className="
+                                    group
+                                    relative
+                                    w-full h-[46px]
+                                    px-4
+                                    rounded-xl
+                                    bg-white
+                                    hover:bg-[#FCFDFC]
+                                    active:scale-[0.99]
+                                    border border-[#D9DEDA]
+                                    hover:border-[#BBCAC3]
+                                    text-[#344044]
+                                    text-[13px] sm:text-sm
+                                    font-medium
+                                    flex items-center justify-center gap-3
+                                    transition-all duration-200
+                                    shadow-[0_1px_2px_rgba(16,42,47,0.025)]
+                                    hover:shadow-[0_4px_12px_rgba(16,42,47,0.06)]
+                                    disabled:opacity-70
+                                    disabled:cursor-not-allowed
+                                    cursor-pointer
+                                "
+                            >
+                                {/* Google logo */}
+                                <svg
+                                    className="w-[18px] h-[18px] shrink-0"
+                                    viewBox="0 0 48 48"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill="#EA4335"
+                                        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 3.05 13.22l7.98 6.19C12.93 13.72 18.02 9.5 24 9.5Z"
+                                    />
+                                    <path
+                                        fill="#4285F4"
+                                        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6C44.4 37.95 46.98 31.87 46.98 24.55Z"
+                                    />
+                                    <path
+                                        fill="#FBBC05"
+                                        d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.86 23.86 0 0 0 0 24c0 3.87.93 7.55 2.56 10.78l7.97-6.19Z"
+                                    />
+                                    <path
+                                        fill="#34A853"
+                                        d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.17 2.3-5.98 0-11.07-4.22-12.9-9.91l-7.98 6.19C6.51 41.62 14.62 48 24 48Z"
+                                    />
+                                </svg>
+
+                                <span>
+                                    {isLoading
+                                        ? "Đang xử lý..."
+                                        : "Tiếp tục với Google"}
+                                </span>
+                            </button>
+
+                            {/* Register */}
+                            <div className="mt-5 text-center text-[12px] sm:text-[13px] text-[#71807F]">
+                                <span>Chưa có tài khoản?</span>{" "}
 
                                 <Link
                                     to="/register"
@@ -428,39 +491,36 @@ export default function Login() {
                                     Đăng ký ngay
                                 </Link>
                             </div>
+
                         </div>
                     </section>
                 </div>
             </main>
 
-            {/* =========================================================
+            {/* =====================================================
                 FOOTER
-            ========================================================= */}
-            <footer className="w-full px-5 sm:px-8 lg:px-12 py-4 border-t border-slate-200/80 bg-white">
+            ===================================================== */}
+            <footer className="w-full px-5 sm:px-8 lg:px-12 py-3 sm:py-3.5 border-t border-slate-200/70 bg-white shrink-0">
 
-                <div className="max-w-[1240px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+                <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
 
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400">
                         © 2026 CareLink Medical Care.
                     </p>
 
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-3 text-[10px] sm:text-[11px] text-slate-400">
 
                         <span className="hover:text-slate-600 transition-colors cursor-pointer">
                             Điều khoản
                         </span>
 
-                        <span className="text-slate-300">
-                            ·
-                        </span>
+                        <span className="text-slate-300">·</span>
 
                         <span className="hover:text-slate-600 transition-colors cursor-pointer">
                             Bảo mật
                         </span>
 
-                        <span className="text-slate-300">
-                            ·
-                        </span>
+                        <span className="text-slate-300">·</span>
 
                         <span className="hover:text-slate-600 transition-colors cursor-pointer">
                             Hỗ trợ

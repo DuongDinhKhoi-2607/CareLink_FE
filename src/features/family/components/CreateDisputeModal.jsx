@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import {
     AlertTriangle,
     ShieldAlert,
@@ -77,14 +78,14 @@ export default function CreateDisputeModal({
         }, 500);
     };
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
-            style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(6px)" }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 overflow-hidden"
+            style={{ background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)" }}
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-lg my-auto overflow-hidden animate-page-enter flex flex-col"
+                className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ── HEADER ── */}
@@ -191,6 +192,7 @@ export default function CreateDisputeModal({
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
     Activity,
@@ -48,14 +49,14 @@ export default function ViewHealthRecordModal({
 
     const bpStatus = getBpStatus(healthRecord.bloodPressureSystolic, healthRecord.bloodPressureDiastolic);
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
-            style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(6px)" }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 overflow-hidden"
+            style={{ background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)" }}
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-2xl my-auto overflow-hidden animate-page-enter flex flex-col max-h-[92vh]"
+                className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ── HEADER ── */}
@@ -252,6 +253,7 @@ export default function ViewHealthRecordModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import {
     X,
     MapPin,
@@ -300,11 +302,11 @@ export default function AppointmentDetailModal({
         badge: "border-slate-200 bg-slate-100 text-slate-600",
     };
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-3 sm:p-5"
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden p-3 sm:p-5"
             style={{
-                backgroundColor: "rgba(15, 23, 42, 0.52)",
+                backgroundColor: "rgba(15, 23, 42, 0.55)",
                 backdropFilter: "blur(5px)",
                 WebkitBackdropFilter: "blur(5px)",
             }}
@@ -316,7 +318,7 @@ export default function AppointmentDetailModal({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="appointment-modal-title"
-                className="relative my-auto flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fcfdfd] shadow-[0_24px_80px_rgba(15,23,42,0.24)] sm:rounded-3xl"
+                className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fcfdfd] shadow-[0_24px_80px_rgba(15,23,42,0.24)] sm:rounded-3xl"
                 onClick={(event) => event.stopPropagation()}
             >
                 {/* ───────────────── HEADER ───────────────── */}
@@ -669,14 +671,24 @@ export default function AppointmentDetailModal({
                                         {appointment.dispute.status !== "Đã giải quyết" && appointment.dispute.status !== "Bác bỏ" && (
                                             <div className="mt-3 border-t border-rose-200/80 pt-3">
                                                 {!isResolving ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsResolving(true)}
-                                                        className="w-full flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-xs font-bold text-rose-700 shadow-sm transition hover:bg-rose-100"
-                                                    >
-                                                        <ShieldCheck className="h-4 w-4 text-rose-600" />
-                                                        Tiến hành xử lý & phán quyết khiếu nại này
-                                                    </button>
+                                                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsResolving(true)}
+                                                            className="flex-1 w-full flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-xs font-bold text-rose-700 shadow-sm transition hover:bg-rose-100"
+                                                        >
+                                                            <ShieldCheck className="h-4 w-4 text-rose-600" />
+                                                            Xử lý nhanh tại đây
+                                                        </button>
+                                                        <Link
+                                                            to="/admin/disputes"
+                                                            onClick={onClose}
+                                                            className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition"
+                                                        >
+                                                            <span>Mở Bàn phân xử khiếu nại</span>
+                                                            <ChevronRight className="h-3.5 w-3.5" />
+                                                        </Link>
+                                                    </div>
                                                 ) : (
                                                     <div className="rounded-xl border border-rose-200 bg-white p-4 space-y-3.5">
                                                         <div className="flex items-center justify-between">
@@ -852,6 +864,7 @@ export default function AppointmentDetailModal({
                     </div>
                 </footer>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

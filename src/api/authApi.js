@@ -1,22 +1,35 @@
 import axiosClient from "./axiosClient";
 
-// Khung API Xác thực & Người dùng (Dùng chung cho cả 3 Role)
+// ══════════════════════════════════════════════════════════════════
+// Auth & Users API (Xác thực tài khoản & Quản lý profile người dùng)
+// ══════════════════════════════════════════════════════════════════
 export const authApi = {
-    // Đăng nhập hệ thống
-    login: (credentials) => axiosClient.post("/api/auth/login", credentials),
+    // 1. Đăng ký tài khoản mới (Customer hoặc Nurse)
+    register: (payload) => axiosClient.post("/api/v1/auth/register", payload),
 
-    // Đăng ký tài khoản (Family / Caregiver)
-    register: (data) => axiosClient.post("/api/auth/register", data),
+    // 2. Đăng nhập bằng Email & Password
+    login: (credentials) => axiosClient.post("/api/v1/auth/login", credentials),
 
-    // Lấy thông tin cá nhân hiện tại theo Token
-    getMe: () => axiosClient.get("/api/auth/me"),
+    // 3. Đăng nhập bằng Google (Google Sign-In idToken)
+    googleLogin: (idToken) => axiosClient.post("/api/v1/auth/google-login", { idToken }),
 
-    // Đăng xuất
-    logout: () => axiosClient.post("/api/auth/logout"),
+    // 4. Làm mới Access Token bằng Refresh Token
+    refreshToken: (payload) => axiosClient.post("/api/v1/auth/refresh-token", payload),
 
-    // Quên mật khẩu & Đổi mật khẩu
-    forgotPassword: (email) => axiosClient.post("/api/auth/forgot-password", { email }),
-    resetPassword: (payload) => axiosClient.post("/api/auth/reset-password", payload),
+    // 5. Đăng xuất – Thu hồi Refresh Token
+    logout: () => axiosClient.post("/api/v1/auth/logout"),
+
+    // 6. Yêu cầu gửi mã OTP đặt lại mật khẩu về email
+    forgotPassword: (email) => axiosClient.post("/api/v1/auth/forgot-password", { email }),
+
+    // 7. Đặt lại mật khẩu mới bằng mã OTP
+    resetPassword: (payload) => axiosClient.post("/api/v1/auth/reset-password", payload),
+
+    // 8. Lấy thông tin cá nhân & profile của người dùng hiện tại (Customer hoặc Nurse)
+    getMe: () => axiosClient.get("/api/v1/users/me"),
+
+    // 9. Cập nhật thông tin cá nhân cơ bản (họ tên, SĐT, avatar)
+    updateMe: (data) => axiosClient.put("/api/v1/users/me", data),
 };
 
 export default authApi;

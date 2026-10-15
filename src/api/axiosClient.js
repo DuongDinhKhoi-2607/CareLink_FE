@@ -1,13 +1,13 @@
 import axios from "axios";
 
 // Cấu hình hạ tầng HTTP Axios dùng chung cho toàn bộ dự án CareLink
-// Đọc URL từ biến môi trường VITE_API_URL hoặc fallback về localhost:5000 khi chạy local
+// Đọc URL từ biến môi trường VITE_API_URL hoặc fallback về https://localhost:7183 khi chạy local
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+    baseURL: import.meta.env.VITE_API_URL || "https://localhost:7183",
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: 10000,
+    timeout: 15000,
 });
 
 // 1. Request Interceptor: Tự động gắn Bearer Token từ localStorage vào header

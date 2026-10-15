@@ -1,9 +1,204 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+const inputClass =
+    "block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:border-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-600/10";
+
+function Icon({ name, className = "h-5 w-5" }) {
+    const common = {
+        className,
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: 1.8,
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        viewBox: "0 0 24 24",
+        "aria-hidden": true,
+    };
+
+    const paths = {
+        user: (
+            <>
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21a8 8 0 0 1 16 0" />
+            </>
+        ),
+        mail: (
+            <>
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path d="m3 7 9 6 9-6" />
+            </>
+        ),
+        phone: (
+            <path d="M7 3h3l2 5-2 2a14 14 0 0 0 4 4l2-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 5 5a2 2 0 0 1 2-2Z" />
+        ),
+        lock: (
+            <>
+                <rect x="4" y="10" width="16" height="11" rx="2" />
+                <path d="M8 10V7a4 4 0 1 1 8 0v3" />
+            </>
+        ),
+        eye: (
+            <>
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+            </>
+        ),
+        eyeOff: (
+            <>
+                <path d="m3 3 18 18" />
+                <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a15 15 0 0 1-3 3.8" />
+                <path d="M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a10 10 0 0 0 4-.8" />
+            </>
+        ),
+        check: <path d="m5 12 4 4L19 6" />,
+        arrow: <path d="M5 12h14m-7-7 7 7-7 7" />,
+        shield: (
+            <>
+                <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" />
+                <path d="m9 12 2 2 4-4" />
+            </>
+        ),
+        heart: (
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />
+        ),
+    };
+
+    return <svg {...common}>{paths[name]}</svg>;
+}
+
+function GoogleIcon() {
+    return (
+        <svg className="h-5 w-5 shrink-0" viewBox="0 0 48 48" aria-hidden="true">
+            <path
+                fill="#4285F4"
+                d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"
+            />
+            <path
+                fill="#34A853"
+                d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3C9.2 39.4 16.1 44 24 44Z"
+            />
+            <path
+                fill="#FBBC05"
+                d="M12.6 27.5a12 12 0 0 1 0-7.1v-5.3H5.8a20 20 0 0 0 0 17.7l6.8-5.3Z"
+            />
+            <path
+                fill="#EA4335"
+                d="M24 12.1c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6.1 29.5 4 24 4 16.1 4 9.2 8.6 5.8 15.1l6.8 5.3c1.6-4.7 6.1-8.3 11.4-8.3Z"
+            />
+        </svg>
+    );
+}
+
+function RoleCard({ role, selectedRole, onSelect, icon, title, description, details }) {
+    const selected = selectedRole === role;
+
+    return (
+        <button
+            type="button"
+            onClick={() => onSelect(role)}
+            aria-pressed={selected}
+            className={`group flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 sm:p-4 ${selected
+                    ? "border-teal-600 bg-teal-50/70 ring-2 ring-teal-600/10"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                }`}
+        >
+            <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${selected
+                        ? "bg-teal-700 text-white"
+                        : "bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700"
+                    }`}
+            >
+                {icon}
+            </div>
+
+            <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-[#002045]">
+                        {title}
+                    </span>
+
+                    <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${selected
+                                ? "border-teal-700 bg-teal-700 text-white"
+                                : "border-slate-300 bg-white text-transparent"
+                            }`}
+                    >
+                        <Icon name="check" className="h-3 w-3" />
+                    </span>
+                </div>
+
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {description}
+                </p>
+
+                <div
+                    className={`mt-2 text-[11px] font-semibold ${selected ? "text-teal-800" : "text-slate-400"
+                        }`}
+                >
+                    {details}
+                </div>
+            </div>
+        </button>
+    );
+}
+
+function PasswordField({
+    id,
+    label,
+    value,
+    onChange,
+    showPassword,
+    onToggle,
+    autoComplete,
+}) {
+    return (
+        <div className="min-w-0">
+            <label
+                htmlFor={id}
+                className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+                {label} <span className="text-rose-500">*</span>
+            </label>
+
+            <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Icon name="lock" className="h-[18px] w-[18px]" />
+                </span>
+
+                <input
+                    id={id}
+                    type={showPassword ? "text" : "password"}
+                    value={value}
+                    onChange={onChange}
+                    placeholder="Tối thiểu 8 ký tự"
+                    autoComplete={autoComplete}
+                    minLength={8}
+                    required
+                    className={`${inputClass} pl-10 pr-11`}
+                />
+
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-600"
+                >
+                    <Icon
+                        name={showPassword ? "eyeOff" : "eye"}
+                        className="h-[18px] w-[18px]"
+                    />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function Register() {
     const navigate = useNavigate();
-    const [role, setRole] = useState("family"); // 'family' | 'caregiver'
+
+    const [role, setRole] = useState("family");
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -11,81 +206,172 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [agreeTerms, setAgreeTerms] = useState(true);
+    const [agreeTerms, setAgreeTerms] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    const navigateAfterRegister = (selectedRole) => {
+        if (selectedRole === "family") {
+            navigate("/dashboard");
+        } else {
+            navigate("/caregiver/profile");
+        }
+    };
+
+    const saveUserAndNavigate = (user, selectedRole) => {
+        localStorage.setItem("carelink_user", JSON.stringify(user));
+        navigateAfterRegister(selectedRole);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setErrorMessage("");
+
+        if (password.length < 8) {
+            setErrorMessage("Mật khẩu cần có ít nhất 8 ký tự.");
+            return;
+        }
+
         if (password !== confirmPassword) {
-            alert("Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại!");
+            setErrorMessage("Mật khẩu xác nhận chưa khớp. Bạn hãy kiểm tra lại nhé.");
+            return;
+        }
+
+        if (!agreeTerms) {
+            setErrorMessage("Vui lòng đồng ý với điều khoản trước khi đăng ký.");
             return;
         }
 
         setIsLoading(true);
-        // Lưu phiên đăng ký người dùng vào localStorage
-        localStorage.setItem("carelink_user", JSON.stringify({
-            name: name || (role === "family" ? "Gia đình Bác An" : "Điều dưỡng Minh Tâm"),
-            email: email || (role === "family" ? "giadinh@carelink.vn" : "dieuduong@carelink.vn"),
-            role: role,
-            avatar: role === "family"
-                ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                : "/images/caregiver_avatar.svg"
-        }));
-        // Giả lập tiến trình đăng ký tài khoản
-        setTimeout(() => {
-            setIsLoading(false);
-            if (role === "family") {
-                navigate("/dashboard");
-            } else {
-                // Đối với điều dưỡng, điều hướng tới trang hồ sơ điều dưỡng
-                navigate("/caregivers/profile");
-            }
-        }, 800);
+
+        const user = {
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            role,
+            avatar:
+                role === "family"
+                    ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                    : "/images/caregiver_avatar.svg",
+        };
+
+        // Mô phỏng đăng ký cho giao diện hiện tại.
+        // Chưa gọi API hoặc tạo tài khoản trên máy chủ.
+        window.setTimeout(() => {
+            saveUserAndNavigate(user, role);
+        }, 600);
+    };
+
+    const handleGoogleRegister = () => {
+        setErrorMessage("");
+        setIsLoading(true);
+
+        // Đây là dữ liệu mô phỏng, không phải đăng nhập Google thật.
+        const googleUser = {
+            name:
+                role === "family"
+                    ? "Gia đình Minh An (Google)"
+                    : "Điều dưỡng Thùy Linh (Google)",
+            email:
+                role === "family"
+                    ? "an.family.google@carelink.vn"
+                    : "linh.nurse.google@carelink.vn",
+            role,
+            avatar:
+                role === "family"
+                    ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                    : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+        };
+
+        window.setTimeout(() => {
+            saveUserAndNavigate(googleUser, role);
+        }, 500);
     };
 
     return (
-        <div className="bg-[#F8FAFC] text-slate-800 font-sans min-h-screen flex flex-col justify-between antialiased selection:bg-teal-100 selection:text-teal-900">
-            {/* Header đồng bộ logo và kích thước với Header ngoài trang Home */}
-            <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] sticky top-0 z-50 transition-all">
-                <div className="w-full max-w-[1536px] mx-auto px-4 sm:px-8 lg:px-12 h-18 flex items-center justify-between">
-                    {/* Logo CareLink */}
-                    <Link to="/" className="flex items-center gap-2.5 group shrink-0 cursor-pointer" title="Về trang chủ CareLink">
-                        <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                            <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        <div className="flex min-h-screen flex-col bg-[#F7F9FC] font-sans text-slate-800 antialiased selection:bg-teal-100 selection:text-teal-900">
+            {/* HEADER: Giữ nguyên logo, màu sắc và nội dung của bạn */}
+            <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] backdrop-blur-md transition-all">
+                <div className="mx-auto flex h-16 w-full max-w-[1536px] items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
+                    <Link
+                        to="/"
+                        className="group flex shrink-0 items-center gap-2.5"
+                        title="Về trang chủ CareLink"
+                    >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] text-white shadow-sm transition-transform group-hover:scale-105">
+                            <svg
+                                className="h-[18px] w-[18px]"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.2"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 4.5v15m7.5-7.5h-15"
+                                />
                             </svg>
                         </div>
+
                         <div className="flex flex-col">
-                            <span className="text-xl font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none">
+                            <span className="text-xl font-bold leading-none tracking-tight text-[#002045] transition-colors group-hover:text-teal-600">
                                 Care<span className="text-teal-600">Link</span>
                             </span>
-                            <span className="text-[10px] tracking-widest text-teal-600 uppercase font-semibold mt-0.5">
+                            <span className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-teal-600">
                                 Medical Care
                             </span>
                         </div>
                     </Link>
 
-                    {/* Right Link */}
-                    <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-[13px] font-medium">
+                    <div className="flex items-center gap-2 text-xs font-medium sm:gap-4 sm:text-[13px]">
                         <Link
                             to="/"
-                            className="flex items-center gap-1.5 text-slate-600 hover:text-[#002045] px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#002045] sm:px-3"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            <svg
+                                className="h-4 w-4 shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                                />
                             </svg>
-                            <span>Về trang chủ</span>
+                            <span className="hidden sm:inline">Về trang chủ</span>
+                            <span className="sm:hidden">Trang chủ</span>
                         </Link>
-                        <span className="text-slate-300">|</span>
+
+                        <span className="hidden text-slate-300 sm:inline">|</span>
+
                         <div className="flex items-center gap-2">
-                            <span className="text-slate-500 hidden sm:inline">Đã có tài khoản?</span>
+                            <span className="hidden text-slate-500 lg:inline">
+                                Đã có tài khoản?
+                            </span>
                             <Link
                                 to="/login"
-                                className="font-semibold text-teal-600 hover:text-[#002045] hover:underline transition-colors flex items-center gap-1"
+                                className="flex items-center gap-1 font-semibold text-teal-600 transition-colors hover:text-[#002045]"
                             >
-                                <span>Đăng nhập ngay</span>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                <span>Đăng nhập</span>
+                                <svg
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                                    />
                                 </svg>
                             </Link>
                         </div>
@@ -93,372 +379,369 @@ export default function Register() {
                 </div>
             </header>
 
-            {/* Main Container: Centered Card Form - ĐÃ NỚI RỘNG RÃI SANG max-w-3xl (768px) */}
-            <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10 my-4 sm:my-6">
-                <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200 p-6 sm:p-10 lg:p-12">
-                    
-                    {/* Top Title & Badge */}
-                    <div className="text-center max-w-lg mx-auto mb-8">
-                        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-semibold uppercase tracking-wider mb-3">
-                            <svg className="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2l2.4 7.2h7.6l-6.1 4.5 2.3 7.1-6.2-4.6-6.2 4.6 2.3-7.1-6.1-4.5h7.6z" />
-                            </svg>
-                            Khởi đầu cùng CareLink
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#002045] tracking-tight">Tạo tài khoản CareLink</h1>
-                        <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                            Chọn vai trò phù hợp để bắt đầu sử dụng hệ thống y tế và chăm sóc sức khỏe.
-                        </p>
-                    </div>
+            {/* MAIN */}
+            <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
+                <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_80px_-32px_rgba(0,32,69,0.20)]">
+                    <div className="grid grid-cols-1 lg:grid-cols-[0.88fr_1.12fr]">
+                        {/* LEFT PANEL: Chọn vai trò */}
+                        <section className="relative overflow-hidden bg-[#F2F7F7] p-5 sm:p-8 lg:p-10 xl:p-12">
+                            <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-100/60 blur-3xl" />
+                            <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-sky-100/60 blur-3xl" />
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        
-                        {/* PHẦN CHỌN VAI TRÒ (ROLE SELECTOR) */}
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-3">
-                                1. Chọn vai trò của bạn <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                
-                                {/* Option 1: Gia đình */}
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("family")}
-                                    className={`relative text-left flex flex-col p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 group ${
-                                        role === "family"
-                                            ? "border-teal-600 bg-teal-50/20 shadow-sm"
-                                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
-                                    }`}
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        {/* Icon Gia đình: Biểu tượng gia đình gắn kết sạch đẹp, sắc nét chuẩn quốc tế */}
-                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
-                                            role === "family" 
-                                                ? "bg-teal-600 text-white shadow-sm shadow-teal-600/30" 
-                                                : "bg-teal-50 text-teal-700"
-                                        }`}>
-                                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                                                {/* Thành viên lớn */}
-                                                <path d="M9 11c1.66 0 3-1.34 3-3S10.66 5 9 5 6 6.34 6 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                                                {/* Thành viên gia đình thân yêu */}
-                                                <path d="M16.5 11c1.38 0 2.5-1.12 2.5-2.5S17.88 6 16.5 6s-2.5 1.12-2.5 2.5 1.12 2.5 2.5 2.5zm0 2c-.67 0-1.32.1-1.92.27 1.48.97 2.42 2.27 2.42 3.73V19h5v-2c0-2.21-3.58-4-5.5-4z" />
-                                            </svg>
-                                        </div>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                            role === "family"
-                                                ? "border-teal-600 bg-teal-600 text-white"
-                                                : "border-slate-300 bg-white"
-                                        }`}>
-                                            {role === "family" && (
-                                                <svg className="w-3 h-3 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="font-bold text-base text-[#002045] tracking-tight mb-1">Gia đình</span>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-3">
-                                        Tìm kiếm và kết nối với người chăm sóc phù hợp cho người thân lớn tuổi.
-                                    </p>
-                                    <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-medium text-teal-700">
-                                        {/* Icon chiếc khiên nửa đậm nửa nhạt chuẩn hình thiết kế */}
-                                        <svg className="w-3.5 h-3.5 text-teal-600 shrink-0" viewBox="0 0 24 24" fill="none">
-                                            <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                                            <path d="M12 3.5L5.5 5.9v5.3c0 4.2 2.8 8.1 6.5 9.1V3.5z" fill="currentColor" />
-                                            <path d="M12 3.5v16.8c3.7-1 6.5-4.9 6.5-9.1V5.9L12 3.5z" fill="currentColor" fillOpacity="0.25" />
-                                        </svg>
-                                        <span>Được bảo vệ bởi bảo hiểm & chuẩn HIPAA</span>
-                                    </div>
-                                </button>
+                            <div className="relative">
+                                <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-teal-100 bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.13em] text-teal-800 shadow-sm sm:mb-10">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-teal-600" />
+                                    Chào mừng đến với CareLink
+                                </div>
 
-                                {/* Option 2: Điều dưỡng / Sinh viên Y */}
-                                <button
-                                    type="button"
-                                    onClick={() => setRole("caregiver")}
-                                    className={`relative text-left flex flex-col p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 group ${
-                                        role === "caregiver"
-                                            ? "border-teal-600 bg-teal-50/20 shadow-sm"
-                                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
-                                    }`}
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        {/* Icon người Điều dưỡng / Y sinh chuyên môn */}
-                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
-                                            role === "caregiver" 
-                                                ? "bg-[#002045] text-teal-300 shadow-sm shadow-[#002045]/30" 
-                                                : "bg-blue-50 text-[#002045]"
-                                        }`}>
-                                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                                                {/* Đầu người điều dưỡng */}
-                                                <circle cx="12" cy="6.5" r="3.2" />
-                                                {/* Thân áo y tế blouse */}
-                                                <path d="M5.5 16.5c0-2.2 2.2-4 4.8-4h3.4c2.6 0 4.8 1.8 4.8 4V20h-13v-3.5z" />
-                                                {/* Dấu thập y tế trên ngực áo blouse */}
-                                                <path d="M12 14v3.5m-1.75-1.75h3.5" stroke={role === "caregiver" ? "#002045" : "#fff"} strokeWidth="1.8" strokeLinecap="round" />
-                                            </svg>
-                                        </div>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                            role === "caregiver"
-                                                ? "border-teal-600 bg-teal-600 text-white"
-                                                : "border-slate-300 bg-white"
-                                        }`}>
-                                            {role === "caregiver" && (
-                                                <svg className="w-3 h-3 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                                </svg>
-                                            )}
-                                        </div>
+                                <h1 className="max-w-lg text-3xl font-extrabold leading-tight tracking-tight text-[#002045] sm:text-4xl xl:text-[42px]">
+                                    Chăm sóc tận tâm,
+                                    <span className="mt-1 block text-teal-700">
+                                        kết nối yêu thương.
+                                    </span>
+                                </h1>
+
+                                <p className="mt-4 max-w-md text-sm leading-6 text-slate-600 sm:text-[15px] sm:leading-7">
+                                    Một kết nối phù hợp có thể giúp hành trình chăm sóc
+                                    người thân trở nên an tâm và thuận tiện hơn.
+                                </p>
+
+                                <div className="mt-8 sm:mt-10">
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                        <h2 className="text-sm font-bold text-[#002045]">
+                                            Bạn tham gia CareLink với vai trò nào?
+                                        </h2>
+                                        <span className="shrink-0 text-[11px] font-medium text-slate-400">
+                                            Bước 1/2
+                                        </span>
                                     </div>
-                                    <span className="font-bold text-base text-[#002045] tracking-tight mb-1">Điều dưỡng / Sinh viên Y</span>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-3">
-                                        Tham gia mạng lưới chăm sóc và tìm kiếm cơ hội làm việc, thực hành lâm sàng.
-                                    </p>
-                                    <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                                        <svg className="w-3.5 h-3.5 text-teal-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                                        </svg>
-                                        <span>Xác minh chứng chỉ chuyên môn</span>
+
+                                    <div className="space-y-3">
+                                        <RoleCard
+                                            role="family"
+                                            selectedRole={role}
+                                            onSelect={setRole}
+                                            icon={<Icon name="heart" className="h-5 w-5" />}
+                                            title="Gia đình"
+                                            description="Tìm người chăm sóc phù hợp cho cha mẹ và người thân."
+                                            details="Tìm kiếm · Kết nối · Đặt lịch"
+                                        />
+
+                                        <RoleCard
+                                            role="caregiver"
+                                            selectedRole={role}
+                                            onSelect={setRole}
+                                            icon={<Icon name="user" className="h-5 w-5" />}
+                                            title="Điều dưỡng / Sinh viên Y"
+                                            description="Tham gia mạng lưới chăm sóc và xây dựng hồ sơ chuyên môn."
+                                            details="Tạo hồ sơ · Xác minh thông tin"
+                                        />
                                     </div>
-                                </button>
+                                </div>
+
+                                <div className="mt-6 flex items-start gap-3 rounded-2xl border border-white/90 bg-white/75 p-4 sm:mt-8">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                                        <Icon name="shield" className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-[#002045]">
+                                            Thông tin minh bạch, kết nối phù hợp
+                                        </p>
+                                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                                            Điều dưỡng và người chăm sóc có thể cần hoàn tất
+                                            bước xác minh hồ sơ theo quy trình của nền tảng.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 hidden items-center gap-2 text-xs text-slate-400 sm:flex lg:mt-10">
+                                    <Icon name="heart" className="h-4 w-4 text-teal-700" />
+                                    <span>Đồng hành trong từng khoảnh khắc chăm sóc.</span>
+                                </div>
                             </div>
-                        </div>
+                        </section>
 
-                        {/* FORM THÔNG TIN CÁ NHÂN */}
-                        <div className="space-y-4 pt-1">
-                            {/* Họ và tên */}
-                            <div>
-                                <label htmlFor="reg-name" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                    Họ và tên <span className="text-rose-500">*</span>
-                                </label>
-                                <div className="relative rounded-xl">
-                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                        </svg>
+                        {/* RIGHT PANEL: Thông tin cá nhân */}
+                        <section className="min-w-0 p-5 sm:p-8 lg:p-10 xl:p-12">
+                            <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
+                                <div>
+                                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-teal-700">
+                                        Bước 2 · Thông tin cá nhân
                                     </div>
-                                    <input 
-                                        type="text" 
-                                        id="reg-name" 
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="Nhập họ và tên"
-                                        className="block w-full pl-11 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all shadow-xs"
-                                        required
+                                    <h2 className="text-2xl font-extrabold tracking-tight text-[#002045] sm:text-3xl">
+                                        Tạo tài khoản
+                                    </h2>
+                                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                                        Điền thông tin để bắt đầu hành trình cùng CareLink.
+                                    </p>
+                                </div>
+
+                                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F0F7F7] text-teal-700 sm:flex">
+                                    <Icon name="user" className="h-6 w-6" />
+                                </div>
+                            </div>
+
+                            <div className="mb-6 flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/70 px-3.5 py-3">
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-teal-700 shadow-sm">
+                                    <Icon
+                                        name={role === "family" ? "heart" : "user"}
+                                        className="h-4 w-4"
+                                    />
+                                </span>
+                                <p className="text-xs leading-5 text-slate-600">
+                                    Bạn đang đăng ký với vai trò{" "}
+                                    <strong className="font-bold text-[#002045]">
+                                        {role === "family"
+                                            ? "Gia đình"
+                                            : "Điều dưỡng / Sinh viên Y"}
+                                    </strong>
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {/* Họ tên */}
+                                <div>
+                                    <label
+                                        htmlFor="reg-name"
+                                        className="mb-2 block text-xs font-semibold text-slate-700"
+                                    >
+                                        Họ và tên <span className="text-rose-500">*</span>
+                                    </label>
+
+                                    <div className="relative">
+                                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                                            <Icon name="user" className="h-[18px] w-[18px]" />
+                                        </span>
+                                        <input
+                                            id="reg-name"
+                                            name="name"
+                                            type="text"
+                                            autoComplete="name"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            placeholder="Nguyễn Văn A"
+                                            required
+                                            className={`${inputClass} pl-10`}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Email + phone */}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="min-w-0">
+                                        <label
+                                            htmlFor="reg-email"
+                                            className="mb-2 block text-xs font-semibold text-slate-700"
+                                        >
+                                            Email <span className="text-rose-500">*</span>
+                                        </label>
+
+                                        <div className="relative">
+                                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                                                <Icon name="mail" className="h-[18px] w-[18px]" />
+                                            </span>
+                                            <input
+                                                id="reg-email"
+                                                name="email"
+                                                type="email"
+                                                autoComplete="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                placeholder="ban@email.com"
+                                                required
+                                                className={`${inputClass} pl-10`}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <label
+                                            htmlFor="reg-phone"
+                                            className="mb-2 block text-xs font-semibold text-slate-700"
+                                        >
+                                            Số điện thoại{" "}
+                                            <span className="text-rose-500">*</span>
+                                        </label>
+
+                                        <div className="relative">
+                                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                                                <Icon name="phone" className="h-[18px] w-[18px]" />
+                                            </span>
+                                            <input
+                                                id="reg-phone"
+                                                name="phone"
+                                                type="tel"
+                                                autoComplete="tel"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
+                                                placeholder="09xx xxx xxx"
+                                                required
+                                                className={`${inputClass} pl-10`}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Passwords */}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <PasswordField
+                                        id="reg-password"
+                                        label="Mật khẩu"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        showPassword={showPassword}
+                                        onToggle={() => setShowPassword((prev) => !prev)}
+                                        autoComplete="new-password"
+                                    />
+
+                                    <PasswordField
+                                        id="reg-confirm-password"
+                                        label="Xác nhận mật khẩu"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        showPassword={showConfirmPassword}
+                                        onToggle={() =>
+                                            setShowConfirmPassword((prev) => !prev)
+                                        }
+                                        autoComplete="new-password"
                                     />
                                 </div>
-                            </div>
 
-                            {/* Email & Số điện thoại (2 cột trên desktop) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="reg-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Email <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="relative rounded-xl">
-                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                                            </svg>
-                                        </div>
-                                        <input 
-                                            type="email" 
-                                            id="reg-email" 
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="Nhập email của bạn"
-                                            className="block w-full pl-11 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all shadow-xs"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                                <p className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                                    <Icon name="lock" className="h-3.5 w-3.5 shrink-0" />
+                                    Mật khẩu cần có ít nhất 8 ký tự.
+                                </p>
 
-                                <div>
-                                    <label htmlFor="reg-phone" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Số điện thoại <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="relative rounded-xl">
-                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H3.75A2.25 2.25 0 001.5 4.5v2.25z" />
-                                            </svg>
-                                        </div>
-                                        <input 
-                                            type="tel" 
-                                            id="reg-phone" 
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            placeholder="Nhập số điện thoại"
-                                            className="block w-full pl-11 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all shadow-xs"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                                {/* Terms */}
+                                <label className="flex cursor-pointer items-start gap-2.5 pt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={agreeTerms}
+                                        onChange={(e) => {
+                                            setAgreeTerms(e.target.checked);
+                                            setErrorMessage("");
+                                        }}
+                                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-teal-700 focus:ring-teal-600"
+                                        required
+                                    />
 
-                            {/* Mật khẩu & Xác nhận mật khẩu (2 cột) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="reg-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Mật khẩu <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="relative rounded-xl">
-                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                                            </svg>
-                                        </div>
-                                        <input 
-                                            type={showPassword ? "text" : "password"} 
-                                            id="reg-password" 
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="Nhập mật khẩu"
-                                            className="block w-full pl-11 pr-10 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all shadow-xs"
-                                            required
-                                        />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-hidden cursor-pointer"
-                                            aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                    <span className="text-xs leading-5 text-slate-500">
+                                        Tôi đồng ý với{" "}
+                                        <a
+                                            href="/terms"
+                                            className="font-semibold text-teal-700 underline-offset-2 hover:underline"
                                         >
-                                            {showPassword ? (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label htmlFor="reg-confirm-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Xác nhận mật khẩu <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="relative rounded-xl">
-                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                                            </svg>
-                                        </div>
-                                        <input 
-                                            type={showConfirmPassword ? "text" : "password"} 
-                                            id="reg-confirm-password" 
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            placeholder="Nhập lại mật khẩu"
-                                            className="block w-full pl-11 pr-10 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all shadow-xs"
-                                            required
-                                        />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-hidden cursor-pointer"
-                                            aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                            Điều khoản sử dụng
+                                        </a>{" "}
+                                        và{" "}
+                                        <a
+                                            href="/privacy"
+                                            className="font-semibold text-teal-700 underline-offset-2 hover:underline"
                                         >
-                                            {showConfirmPassword ? (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                            )}
-                                        </button>
+                                            Chính sách bảo mật
+                                        </a>{" "}
+                                        của CareLink.
+                                    </span>
+                                </label>
+
+                                {/* Error message */}
+                                {errorMessage && (
+                                    <div
+                                        role="alert"
+                                        className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-xs leading-5 text-rose-700"
+                                    >
+                                        {errorMessage}
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Checkbox Terms */}
-                        <div>
-                            <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                                <input 
-                                    type="checkbox" 
-                                    checked={agreeTerms}
-                                    onChange={(e) => setAgreeTerms(e.target.checked)}
-                                    className="w-4 h-4 mt-0.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300 cursor-pointer"
-                                    required
-                                />
-                                <span className="text-xs text-slate-600 leading-normal">
-                                    Tôi đồng ý với{" "}
-                                    <a href="#" className="font-semibold text-teal-600 hover:underline">
-                                        Điều khoản sử dụng
-                                    </a>{" "}
-                                    và{" "}
-                                    <a href="#" className="font-semibold text-teal-600 hover:underline">
-                                        Chính sách bảo mật
-                                    </a>{" "}
-                                    của CareLink.
-                                </span>
-                            </label>
-                        </div>
-
-                        {/* Banner thông báo động theo vai trò (Đặt ngay trên nút submit) */}
-                        <div className="p-3 sm:p-3.5 rounded-xl bg-[#ecfdf5] border border-[#a7f3d0] flex items-start gap-2.5 text-xs text-[#065f46] animate-fadeIn">
-                            <svg className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-                            </svg>
-                            <p className="leading-relaxed">
-                                {role === "family" ? (
-                                    <>
-                                        Bạn đang đăng ký với vai trò <strong className="font-bold text-[#064e3b]">Gia đình</strong>. Bạn có thể tìm kiếm và đặt lịch ngay sau khi kích hoạt.
-                                    </>
-                                ) : (
-                                    <>
-                                        Bạn đang đăng ký vai trò <strong className="font-bold text-[#064e3b]">Điều dưỡng / Y sinh</strong>. Sau bước này, bạn sẽ được chuyển sang quy trình Xác minh chứng chỉ & thẻ ngành.
-                                    </>
                                 )}
-                            </p>
-                        </div>
 
-                        {/* Button Submit với icon mũi tên sang phải chuẩn thiết kế */}
-                        <button 
-                            type="submit" 
-                            disabled={isLoading || !agreeTerms}
-                            className="w-full py-3.5 px-6 rounded-xl bg-[#002045] hover:bg-[#002d60] text-white font-semibold text-sm tracking-wide shadow-md shadow-[#002045]/20 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer disabled:opacity-60"
-                        >
-                            <span>{isLoading ? "Đang tạo tài khoản..." : "Đăng ký tài khoản"}</span>
-                            {!isLoading && (
-                                <svg className="w-4 h-4 text-teal-300 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
-                            )}
-                        </button>
+                                {/* Submit */}
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#002045] px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#002045]/10 transition-all duration-200 hover:bg-[#063363] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <span>
+                                        {isLoading
+                                            ? "Đang xử lý..."
+                                            : "Tạo tài khoản CareLink"}
+                                    </span>
 
-                        {/* Login Prompt */}
-                        <div className="text-center pt-1">
-                            <p className="text-sm text-slate-600">
-                                Đã có tài khoản?{" "}
-                                <Link to="/login" className="font-bold text-teal-600 hover:text-[#002045] transition-colors ml-1">
-                                    Đăng nhập ngay
-                                </Link>
-                            </p>
-                        </div>
+                                    {!isLoading && (
+                                        <Icon
+                                            name="arrow"
+                                            className="h-4 w-4 text-teal-300 transition-transform group-hover:translate-x-1"
+                                        />
+                                    )}
+                                </button>
 
-                    </form>
+                                {/* Divider */}
+                                <div className="relative py-1">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-slate-200" />
+                                    </div>
+                                    <div className="relative flex justify-center">
+                                        <span className="bg-white px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                            Hoặc đăng ký nhanh với
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Google mock */}
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleRegister}
+                                    disabled={isLoading}
+                                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <GoogleIcon />
+                                    <span>
+                                        Đăng ký với Google
+                                    </span>
+                                </button>
+
+                                <p className="pt-1 text-center text-sm text-slate-500">
+                                    Đã có tài khoản?{" "}
+                                    <Link
+                                        to="/login"
+                                        className="font-bold text-teal-700 transition-colors hover:text-[#002045]"
+                                    >
+                                        Đăng nhập ngay
+                                    </Link>
+                                </p>
+                            </form>
+                        </section>
+                    </div>
                 </div>
             </main>
 
-            {/* Footer */}
-            <footer className="w-full bg-white border-t border-slate-200/80 py-6 px-6 md:px-12 text-xs text-slate-500">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
+            {/* FOOTER */}
+            <footer className="w-full border-t border-slate-200/80 bg-white px-4 py-5 text-xs text-slate-500 sm:px-6 sm:py-6 lg:px-12">
+                <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:gap-4 sm:text-left">
+                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:justify-start">
                         <span className="font-bold text-[#002045]">CareLink</span>
-                        <span>© 2026 CareLink. Bản quyền được bảo hộ. Nền tảng kết nối y tế trung gian.</span>
+                        <span className="hidden text-slate-300 sm:inline">·</span>
+                        <span>© 2026 CareLink. Bản quyền được bảo hộ.</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-6 font-medium">
-                        <a href="#" className="hover:text-[#002045] hover:underline transition-colors">Điều khoản sử dụng</a>
-                        <a href="#" className="hover:text-[#002045] hover:underline transition-colors">Chính sách bảo mật</a>
-                        <a href="#" className="hover:text-[#002045] hover:underline transition-colors">Trung tâm hỗ trợ</a>
-                        <a href="#" className="hover:text-[#002045] hover:underline transition-colors">Tiêu chuẩn an toàn HIPAA</a>
+
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-medium">
+                        <Link
+                            to="/terms"
+                            className="transition-colors hover:text-[#002045] hover:underline"
+                        >
+                            Điều khoản sử dụng
+                        </Link>
+                        <Link
+                            to="/privacy"
+                            className="transition-colors hover:text-[#002045] hover:underline"
+                        >
+                            Chính sách bảo mật
+                        </Link>
+                        <Link
+                            to="/"
+                            className="transition-colors hover:text-[#002045] hover:underline"
+                        >
+                            Trung tâm hỗ trợ
+                        </Link>
                     </div>
                 </div>
             </footer>
