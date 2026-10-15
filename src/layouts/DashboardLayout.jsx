@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
+import { NotificationDropdown } from "../features/shared/notifications";
 
 // 6 tính năng cốt lõi của Bảng điều khiển Gia đình (Đã tách nút Về trang chủ ra khu vực riêng để tránh bấm nhầm)
 const navigationItems = [
@@ -121,6 +122,9 @@ export default function DashboardLayout() {
                             </div>
                         </Link>
 
+                        {/* Notification Bell khi thu gọn */}
+                        <NotificationDropdown userRole="family" align="left" />
+
                         {/* Nút Mở rộng Sidebar */}
                         <button
                             type="button"
@@ -152,7 +156,10 @@ export default function DashboardLayout() {
                             </div>
                         </Link>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
+                            {/* Notification Bell khi mở rộng */}
+                            <NotificationDropdown userRole="family" align="left" />
+
                             {/* Nút Thu gọn Sidebar trên Desktop */}
                             <button
                                 type="button"

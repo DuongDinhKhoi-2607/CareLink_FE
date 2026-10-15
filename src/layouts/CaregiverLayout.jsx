@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
+import { NotificationDropdown } from "../features/shared/notifications";
 
 const navItems = [
     {
@@ -14,12 +15,22 @@ const navItems = [
         ),
     },
     {
-        path: "/caregiver/messages",
-        label: "Tin nhắn & Trao đổi",
+        path: "/caregiver/profile",
+        label: "Hồ sơ năng lực",
         badge: null,
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.874-.985c.34-.798.536-1.636.57-2.484C3.805 16.035 3 14.123 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+        ),
+    },
+    {
+        path: "/caregiver/wallet",
+        label: "Ví & Rút tiền",
+        badge: null,
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
             </svg>
         ),
     },
@@ -40,6 +51,16 @@ const navItems = [
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+        ),
+    },
+    {
+        path: "/caregiver/messages",
+        label: "Tin nhắn & Trao đổi",
+        badge: null,
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.874-.985c.34-.798.536-1.636.57-2.484C3.805 16.035 3 14.123 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
             </svg>
         ),
     },
@@ -127,6 +148,9 @@ export default function CaregiverLayout() {
                     <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                     <span className="text-xs font-semibold text-amber-700 hidden sm:block">Đang xác minh</span>
                 </div>
+
+                {/* Notification Bell */}
+                <NotificationDropdown userRole="caregiver" align="right" />
 
                 {/* Avatar & User Dropdown with Logout */}
                 <div className="relative flex items-center gap-2 pl-2">

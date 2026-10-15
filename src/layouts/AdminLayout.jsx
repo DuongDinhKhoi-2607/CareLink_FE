@@ -10,7 +10,6 @@ import {
     Settings,
     Home,
     Search,
-    Bell,
     PanelLeftClose,
     PanelLeftOpen,
     Menu,
@@ -19,8 +18,10 @@ import {
     Plus,
     LogOut,
     BookOpen,
+    ShieldAlert,
 } from "lucide-react";
 import LogoutModal from "../components/LogoutModal";
+import { NotificationDropdown } from "../features/shared/notifications";
 
 const adminNavItems = [
     {
@@ -47,6 +48,13 @@ const adminNavItems = [
         aliases: ["/admin/appointments"],
         label: "Lịch hẹn",
         icon: <Calendar className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
+    },
+    {
+        path: "/admin/disputes",
+        aliases: ["/admin/disputes"],
+        label: "Khiếu nại",
+        badge: 3,
+        icon: <ShieldAlert className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
     },
     {
         path: "/admin/users",
@@ -140,14 +148,7 @@ export default function AdminLayout() {
                     </div>
 
                     {/* Notification Bell */}
-                    <button
-                        type="button"
-                        className="relative p-2 rounded-xl text-slate-500 hover:text-[#00677c] hover:bg-teal-50 transition-colors cursor-pointer"
-                        title="12 thông báo mới"
-                    >
-                        <Bell className="w-5 h-5" strokeWidth={1.9} />
-                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
-                    </button>
+                    <NotificationDropdown userRole="admin" align="right" />
 
                     {/* Admin Profile Chip with Logout Dropdown & Quick Logout Button */}
                     <div className="relative flex items-center gap-2 pl-2 border-l border-slate-200">
