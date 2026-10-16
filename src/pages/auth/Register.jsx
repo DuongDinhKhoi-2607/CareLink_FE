@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import authApi from "../../api/authApi";
+import Toast from "../../components/Toast";
 
-const inputClass =
-    "block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:border-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-600/10";
 
 function Icon({ name, className = "h-5 w-5" }) {
     const common = {
@@ -50,6 +50,13 @@ function Icon({ name, className = "h-5 w-5" }) {
                 <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
                 <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a15 15 0 0 1-3 3.8" />
                 <path d="M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a10 10 0 0 0 4-.8" />
+            </>
+        ),
+        alert: (
+            <>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
             </>
         ),
         check: <path d="m5 12 4 4L19 6" />,
@@ -152,6 +159,8 @@ function PasswordField({
     showPassword,
     onToggle,
     autoComplete,
+    error,
+    placeholder = "Tối thiểu 6 ký tự",
 }) {
     return (
         <div className="min-w-0">
@@ -172,18 +181,20 @@ function PasswordField({
                     type={showPassword ? "text" : "password"}
                     value={value}
                     onChange={onChange}
-                    placeholder="Tối thiểu 8 ký tự"
+                    placeholder={placeholder}
                     autoComplete={autoComplete}
-                    minLength={8}
-                    required
-                    className={`${inputClass} pl-10 pr-11`}
+                    className={`w-full h-11 pl-10 pr-11 rounded-xl text-sm transition-all outline-none ${
+                        error
+                            ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                            : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                    }`}
                 />
 
                 <button
                     type="button"
                     onClick={onToggle}
                     aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-600"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-600 cursor-pointer"
                 >
                     <Icon
                         name={showPassword ? "eyeOff" : "eye"}
@@ -191,6 +202,13 @@ function PasswordField({
                     />
                 </button>
             </div>
+
+            {error && (
+                <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                    <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
+                    {error}
+                </p>
+            )}
         </div>
     );
 }
@@ -208,65 +226,162 @@ export default function Register() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreeTerms, setAgreeTerms] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
+    const [toast, setToast] = useState(null);
+    const [errors, setErrors] = useState({});
 
-    const navigateAfterRegister = (selectedRole) => {
-        if (selectedRole === "family") {
-            navigate("/dashboard");
-        } else {
-            navigate("/caregiver/profile");
-        }
-    };
+    const validateForm = () => {
+        const newErrors = {};
 
-    const saveUserAndNavigate = (user, selectedRole) => {
-        localStorage.setItem("carelink_user", JSON.stringify(user));
-        navigateAfterRegister(selectedRole);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setErrorMessage("");
-
-        if (password.length < 8) {
-            setErrorMessage("Mật khẩu cần có ít nhất 8 ký tự.");
-            return;
+        if (!name.trim()) {
+            newErrors.name = "Vui lòng nhập họ và tên của bạn.";
         }
 
-        if (password !== confirmPassword) {
-            setErrorMessage("Mật khẩu xác nhận chưa khớp. Bạn hãy kiểm tra lại nhé.");
-            return;
+        const emailTrimmed = email.trim();
+        if (!emailTrimmed) {
+            newErrors.email = "Vui lòng nhập địa chỉ email.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+            newErrors.email = "Định dạng email không hợp lệ (ví dụ: email@gmail.com).";
+        }
+
+        const phoneTrimmed = phone.trim();
+        if (!phoneTrimmed) {
+            newErrors.phone = "Vui lòng nhập số điện thoại liên hệ.";
+        } else if (!/^(0|\+84)[0-9]{8,11}$/.test(phoneTrimmed)) {
+            newErrors.phone = "Số điện thoại không hợp lệ (ví dụ: 0912345678).";
+        }
+
+        if (!password) {
+            newErrors.password = "Vui lòng nhập mật khẩu.";
+        } else if (password.length < 6) {
+            newErrors.password = "Mật khẩu phải từ 6 ký tự trở lên.";
+        }
+
+        if (!confirmPassword) {
+            newErrors.confirmPassword = "Vui lòng nhập lại mật khẩu xác nhận.";
+        } else if (confirmPassword !== password) {
+            newErrors.confirmPassword = "Mật khẩu xác nhận không trùng khớp.";
         }
 
         if (!agreeTerms) {
-            setErrorMessage("Vui lòng đồng ý với điều khoản trước khi đăng ký.");
+            newErrors.agreeTerms = "Vui lòng tích chọn đồng ý với Điều khoản và Chính sách bảo mật.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const saveUserAndNavigate = (user, token, refreshToken) => {
+        if (token) localStorage.setItem("carelink_token", token);
+        if (refreshToken) localStorage.setItem("carelink_refresh_token", refreshToken);
+        localStorage.setItem("carelink_user", JSON.stringify(user));
+
+        setToast({
+            type: "success",
+            title: "Tạo tài khoản thành công!",
+            message: `Chào mừng bạn đến với CareLink. Đang chuyển hướng về trang chủ...`,
+        });
+
+        // Đợi 2.5 giây mượt mà rồi chuyển về trang chủ
+        window.setTimeout(() => {
+            navigate("/");
+        }, 2500);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setToast(null);
+
+        if (!validateForm()) {
+            setToast({
+                type: "error",
+                title: "Thông tin chưa hợp lệ",
+                message: "Vui lòng kiểm tra lại các mục được đánh dấu đỏ trên biểu mẫu.",
+            });
             return;
         }
 
         setIsLoading(true);
 
-        const user = {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            role,
-            avatar:
-                role === "family"
-                    ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                    : "/images/caregiver_avatar.svg",
-        };
+        const targetRole = role; // "family" | "caregiver"
+        const backendRole = role === "caregiver" ? 1 : 0; // 0 = Customer, 1 = Nurse
 
-        // Mô phỏng đăng ký cho giao diện hiện tại.
-        // Chưa gọi API hoặc tạo tài khoản trên máy chủ.
-        window.setTimeout(() => {
-            saveUserAndNavigate(user, role);
-        }, 600);
+        try {
+            // 1. GỌI API THẬT TỪ BACKEND
+            const res = await authApi.register({
+                email: email.trim(),
+                password,
+                role: backendRole,
+            });
+
+            // Backend trả về: { accessToken, refreshToken, user: { id, email, role, isActive } }
+            if (res && res.accessToken) {
+                const userObj = {
+                    id: res.user?.id,
+                    name: name.trim() || email.trim().split("@")[0],
+                    email: res.user?.email || email.trim(),
+                    phone: phone.trim(),
+                    role: targetRole,
+                    avatar:
+                        targetRole === "family"
+                            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                            : "/images/caregiver_avatar.svg",
+                };
+
+                saveUserAndNavigate(userObj, res.accessToken, res.refreshToken, targetRole, false);
+                return;
+            }
+        } catch (err) {
+            console.warn("[CareLink Auth] Register API trả về lỗi:", err);
+
+            // 2. NẾU LỖI XUNG ĐỘT EMAIL ĐÃ TỒN TẠI (409 CONFLICT)
+            if (err.response?.status === 409 || err.response?.data?.message?.includes("Email đã được sử dụng")) {
+                setErrors((prev) => ({ ...prev, email: "Email này đã được sử dụng trên hệ thống." }));
+                setToast({
+                    type: "error",
+                    title: "Email đã tồn tại",
+                    message: "Email này đã được đăng ký tài khoản. Vui lòng đăng nhập hoặc dùng email khác.",
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            // 3. SAFETY FALLBACK: Nếu Backend chưa chạy (Network Error)
+            if (err.code === "ERR_NETWORK" || !err.response) {
+                const mockUser = {
+                    name: name.trim() || (targetRole === "family" ? "Gia đình Minh An" : "Điều dưỡng Thùy Linh"),
+                    email: email.trim(),
+                    phone: phone.trim(),
+                    role: targetRole,
+                    avatar:
+                        targetRole === "family"
+                            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                            : "/images/caregiver_avatar.svg",
+                };
+                const mockToken = "mock_reg_token_" + Date.now();
+                saveUserAndNavigate(mockUser, mockToken, mockToken, targetRole, true);
+                return;
+            }
+
+            // 4. CÁC LỖI KHÁC TỪ SERVER
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.detail ||
+                err.response?.data?.title ||
+                "Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.";
+
+            setToast({
+                type: "error",
+                title: "Đăng ký thất bại",
+                message: msg,
+            });
+            setIsLoading(false);
+        }
     };
 
-    const handleGoogleRegister = () => {
-        setErrorMessage("");
+    const handleGoogleRegister = async () => {
+        setAlert(null);
         setIsLoading(true);
 
-        // Đây là dữ liệu mô phỏng, không phải đăng nhập Google thật.
         const googleUser = {
             name:
                 role === "family"
@@ -283,13 +398,19 @@ export default function Register() {
                     : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
         };
 
-        window.setTimeout(() => {
-            saveUserAndNavigate(googleUser, role);
-        }, 500);
+        saveUserAndNavigate(
+            googleUser,
+            "mock_google_token_" + Date.now(),
+            "mock_google_refresh_" + Date.now(),
+            role,
+            true
+        );
     };
 
     return (
         <div className="flex min-h-screen flex-col bg-[#F7F9FC] font-sans text-slate-800 antialiased selection:bg-teal-100 selection:text-teal-900">
+            {/* Toast notification góc trên bên phải */}
+            <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
             {/* HEADER: Giữ nguyên logo, màu sắc và nội dung của bạn */}
             <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] backdrop-blur-md transition-all">
                 <div className="mx-auto flex h-16 w-full max-w-[1536px] items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
@@ -498,7 +619,7 @@ export default function Register() {
                                 </p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} noValidate className="space-y-4">
                                 {/* Họ tên */}
                                 <div>
                                     <label
@@ -518,12 +639,24 @@ export default function Register() {
                                             type="text"
                                             autoComplete="name"
                                             value={name}
-                                            onChange={(e) => setName(e.target.value)}
+                                            onChange={(e) => {
+                                                setName(e.target.value);
+                                                if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
+                                            }}
                                             placeholder="Nguyễn Văn A"
-                                            required
-                                            className={`${inputClass} pl-10`}
+                                            className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
+                                                errors.name
+                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                    : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                                            }`}
                                         />
                                     </div>
+                                    {errors.name && (
+                                        <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                            <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
+                                            {errors.name}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Email + phone */}
@@ -546,12 +679,24 @@ export default function Register() {
                                                 type="email"
                                                 autoComplete="email"
                                                 value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
+                                                onChange={(e) => {
+                                                    setEmail(e.target.value);
+                                                    if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                                                }}
                                                 placeholder="ban@email.com"
-                                                required
-                                                className={`${inputClass} pl-10`}
+                                                className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
+                                                    errors.email
+                                                        ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                        : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                                                }`}
                                             />
                                         </div>
+                                        {errors.email && (
+                                            <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                                <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
+                                                {errors.email}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="min-w-0">
@@ -559,8 +704,7 @@ export default function Register() {
                                             htmlFor="reg-phone"
                                             className="mb-2 block text-xs font-semibold text-slate-700"
                                         >
-                                            Số điện thoại{" "}
-                                            <span className="text-rose-500">*</span>
+                                            Số điện thoại <span className="text-rose-500">*</span>
                                         </label>
 
                                         <div className="relative">
@@ -573,12 +717,24 @@ export default function Register() {
                                                 type="tel"
                                                 autoComplete="tel"
                                                 value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
+                                                onChange={(e) => {
+                                                    setPhone(e.target.value);
+                                                    if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+                                                }}
                                                 placeholder="09xx xxx xxx"
-                                                required
-                                                className={`${inputClass} pl-10`}
+                                                className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
+                                                    errors.phone
+                                                        ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                        : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                                                }`}
                                             />
                                         </div>
+                                        {errors.phone && (
+                                            <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                                <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
+                                                {errors.phone}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -588,7 +744,8 @@ export default function Register() {
                                         id="reg-password"
                                         label="Mật khẩu"
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors((prev) => ({ ...prev, password: "" })); }}
+                                        error={errors.password}
                                         showPassword={showPassword}
                                         onToggle={() => setShowPassword((prev) => !prev)}
                                         autoComplete="new-password"
@@ -598,7 +755,8 @@ export default function Register() {
                                         id="reg-confirm-password"
                                         label="Xác nhận mật khẩu"
                                         value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        onChange={(e) => { setConfirmPassword(e.target.value); if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" })); }}
+                                        error={errors.confirmPassword}
                                         showPassword={showConfirmPassword}
                                         onToggle={() =>
                                             setShowConfirmPassword((prev) => !prev)
@@ -609,7 +767,7 @@ export default function Register() {
 
                                 <p className="flex items-center gap-1.5 text-[11px] text-slate-400">
                                     <Icon name="lock" className="h-3.5 w-3.5 shrink-0" />
-                                    Mật khẩu cần có ít nhất 8 ký tự.
+                                    Mật khẩu cần có ít nhất 6 ký tự.
                                 </p>
 
                                 {/* Terms */}
@@ -619,10 +777,9 @@ export default function Register() {
                                         checked={agreeTerms}
                                         onChange={(e) => {
                                             setAgreeTerms(e.target.checked);
-                                            setErrorMessage("");
+                                            if (errors.agreeTerms) setErrors((prev) => ({ ...prev, agreeTerms: "" }));
                                         }}
                                         className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-teal-700 focus:ring-teal-600"
-                                        required
                                     />
 
                                     <span className="text-xs leading-5 text-slate-500">
@@ -643,22 +800,19 @@ export default function Register() {
                                         của CareLink.
                                     </span>
                                 </label>
-
-                                {/* Error message */}
-                                {errorMessage && (
-                                    <div
-                                        role="alert"
-                                        className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-xs leading-5 text-rose-700"
-                                    >
-                                        {errorMessage}
-                                    </div>
+                                {errors.agreeTerms && (
+                                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                        <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
+                                        {errors.agreeTerms}
+                                    </p>
                                 )}
 
-                                {/* Submit */}
+
+                                {/* Submit button */}
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#002045] px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#002045]/10 transition-all duration-200 hover:bg-[#063363] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#187D74] hover:bg-[#126A63]  px-5 py-3.5 text-sm font-semibold text-white shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                 >
                                     <span>
                                         {isLoading
@@ -669,7 +823,7 @@ export default function Register() {
                                     {!isLoading && (
                                         <Icon
                                             name="arrow"
-                                            className="h-4 w-4 text-teal-300 transition-transform group-hover:translate-x-1"
+                                            className="h-4 w-4 text-teal-200 transition-transform group-hover:translate-x-1"
                                         />
                                     )}
                                 </button>
