@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { NotificationDropdown } from "../features/shared/notifications";
+import authApi from "../api/authApi";
 
 export default function Header() {
     const location = useLocation();
@@ -31,8 +32,15 @@ export default function Header() {
         setMobileMenuOpen(false);
     }, [pathname]);
 
-    // Xử lý đăng xuất (Tải lại toàn bộ trang để reset từ đầu)
-    const handleLogout = () => {
+    // Xử lý đăng xuất (Thu hồi token trên Backend và xóa phiên cục bộ)
+    const handleLogout = async () => {
+        try {
+            await authApi.logout();
+        } catch {
+            // bỏ qua lỗi nếu token đã hết hạn
+        }
+        localStorage.removeItem("carelink_token");
+        localStorage.removeItem("carelink_refresh_token");
         localStorage.removeItem("carelink_user");
         setUser(null);
         setShowUserDropdown(false);

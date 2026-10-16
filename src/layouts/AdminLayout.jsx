@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
+import authApi from "../api/authApi";
 
 const adminNavItems = [
     {
@@ -100,7 +101,14 @@ export default function AdminLayout() {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await authApi.logout();
+        } catch {
+            // ignore
+        }
+        localStorage.removeItem("carelink_token");
+        localStorage.removeItem("carelink_refresh_token");
         localStorage.removeItem("carelink_user");
         setShowLogoutModal(false);
         setUserMenuOpen(false);

@@ -4,26 +4,62 @@ import axiosClient from "./axiosClient";
 // Auth & Users API (Xác thực tài khoản & Quản lý profile người dùng)
 // ══════════════════════════════════════════════════════════════════
 export const authApi = {
-    // 1. Đăng ký tài khoản mới (Customer hoặc Nurse)
-    register: (payload) => axiosClient.post("/api/v1/auth/register", payload),
+    // 1. Đăng ký tài khoản mới (Customer = 0 hoặc Nurse = 1)
+    register: ({ email, password, role = 0 }) => {
+        const normalizedRole =
+            role === 1 || role === "caregiver" || role === "nurse" || role === "Nurse"
+                ? 1
+                : 0;
+        return axiosClient.post("/api/v1/auth/register", {
+            email: email?.trim(),
+            password,
+            role: normalizedRole,
+        });
+    },
 
     // 2. Đăng nhập bằng Email & Password
-    login: (credentials) => axiosClient.post("/api/v1/auth/login", credentials),
+    login: ({ email, password }) =>
+        axiosClient.post("/api/v1/auth/login", {
+            email: email?.trim(),
+            password,
+        }),
 
     // 3. Đăng nhập bằng Google (Google Sign-In idToken)
-    googleLogin: (idToken) => axiosClient.post("/api/v1/auth/google-login", { idToken }),
+    googleLogin: (idTokenOrPayload, role = 0) => {
+        if (typeof idTokenOrPayload === "object" && idTokenOrPayload !== null) {
+            return axiosClient.post("/api/v1/auth/google-login", idTokenOrPayload);
+        }
+        return axiosClient.post("/api/v1/auth/google-login", {
+            idToken: idTokenOrPayload,
+            role: role === 1 || role === "caregiver" || role === "nurse" ? 1 : 0,
+        });
+    },
 
     // 4. Làm mới Access Token bằng Refresh Token
-    refreshToken: (payload) => axiosClient.post("/api/v1/auth/refresh-token", payload),
+    refreshToken: (tokenOrPayload) => {
+        const refreshToken =
+            typeof tokenOrPayload === "string"
+                ? tokenOrPayload
+                : tokenOrPayload?.refreshToken;
+        return axiosClient.post("/api/v1/auth/refresh-token", { refreshToken });
+    },
 
     // 5. Đăng xuất – Thu hồi Refresh Token
     logout: () => axiosClient.post("/api/v1/auth/logout"),
 
     // 6. Yêu cầu gửi mã OTP đặt lại mật khẩu về email
-    forgotPassword: (email) => axiosClient.post("/api/v1/auth/forgot-password", { email }),
+    forgotPassword: (email) =>
+        axiosClient.post("/api/v1/auth/forgot-password", {
+            email: typeof email === "string" ? email.trim() : email?.email?.trim(),
+        }),
 
     // 7. Đặt lại mật khẩu mới bằng mã OTP
-    resetPassword: (payload) => axiosClient.post("/api/v1/auth/reset-password", payload),
+    resetPassword: ({ email, otp, newPassword }) =>
+        axiosClient.post("/api/v1/auth/reset-password", {
+            email: email?.trim(),
+            otp: String(otp || "").trim(),
+            newPassword,
+        }),
 
     // 8. Lấy thông tin cá nhân & profile của người dùng hiện tại (Customer hoặc Nurse)
     getMe: () => axiosClient.get("/api/v1/users/me"),

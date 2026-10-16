@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
+import authApi from "../api/authApi";
 
 const navItems = [
     {
@@ -102,7 +103,14 @@ export default function CaregiverLayout() {
         });
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await authApi.logout();
+        } catch {
+            // ignore
+        }
+        localStorage.removeItem("carelink_token");
+        localStorage.removeItem("carelink_refresh_token");
         localStorage.removeItem("carelink_user");
         setShowLogoutModal(false);
         setUserMenuOpen(false);
