@@ -11,7 +11,7 @@ import {
 import notificationApi from "../../../api/notificationApi";
 import NotificationItem from "./NotificationItem";
 import { resolveNotificationRoute } from "./notificationUtils";
-import { mockNotifications, mockUnreadCount } from "./notificationMockData";
+import { getMockNotificationsByRole, getMockUnreadCountByRole } from "./notificationMockData";
 
 export default function NotificationDropdown({ userRole = "", align = "right" }) {
     const navigate = useNavigate();
@@ -30,7 +30,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
     // ── 1. Lấy số lượng thông báo chưa đọc (Polling nhẹ mỗi 45s) ──
     const fetchUnreadCount = useCallback(async () => {
         if (isDemoMode) {
-            setUnreadCount(mockUnreadCount);
+            setUnreadCount(getMockUnreadCountByRole(userRole));
             return;
         }
 
@@ -43,13 +43,14 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             // Không set error ở polling nền để tránh làm phiền giao diện
             console.warn("[CareLink Notifications] Không thể lấy unread count:", err?.message);
         }
-    }, [isDemoMode]);
+    }, [isDemoMode, userRole]);
 
-    // ── 2. Lấy danh sách 5 thông báo gần nhất khi mở dropdown ──
+    // ── 2. Lấy danh sách thông báo khi mở dropdown ──
     const fetchNotifications = useCallback(async () => {
         if (isDemoMode) {
-            setNotifications(mockNotifications);
-            setUnreadCount(mockNotifications.filter((n) => !n.isRead).length);
+            const roleItems = getMockNotificationsByRole(userRole);
+            setNotifications(roleItems);
+            setUnreadCount(roleItems.filter((n) => !n.isRead).length);
             setLoading(false);
             setError(null);
             return;
@@ -59,11 +60,11 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         setError(null);
 
         try {
-            const res = await notificationApi.getNotifications({ pageNumber: 1, pageSize: 6 });
+            const res = await notificationApi.getNotifications({ pageNumber: 1, pageSize: 8 });
             const items = Array.isArray(res?.items) ? res.items : [];
             setNotifications(items);
 
-            // Cập nhật lại unread count từ danh sách hoặc từ endpoint
+            // Cập nhật lại unread count từ danh sách
             const unreadInList = items.filter((n) => !n.isRead).length;
             setUnreadCount(unreadInList);
         } catch (err) {
@@ -72,7 +73,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         } finally {
             setLoading(false);
         }
-    }, [isDemoMode]);
+    }, [isDemoMode, userRole]);
 
     // ── 3. Polling chu kỳ 45s & Cập nhật khi tab hoạt động trở lại ──
     useEffect(() => {
@@ -141,7 +142,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             );
             setUnreadCount((prev) => Math.max(0, prev - 1));
 
-            if (!isDemoMode && !item.id.startsWith("demo-")) {
+            if (!isDemoMode && !String(item.id).startsWith("demo-")) {
                 try {
                     await notificationApi.markAsRead(item.id);
                 } catch (err) {
@@ -153,7 +154,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         // Tự động đóng dropdown
         setIsOpen(false);
 
-        // Điều hướng đến đúng phân hệ
+        // Điều hướng đến đúng phân hệ theo vai trò
         const route = resolveNotificationRoute(item.type, item.referenceId, userRole);
         if (route) {
             navigate(route);
@@ -185,16 +186,24 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         setError(null);
     };
 
+    const getRoleDisplayName = () => {
+        const norm = (userRole || "").toLowerCase();
+        if (norm === "admin") return "Quản trị viên";
+        if (norm === "caregiver" || norm === "nurse") return "Điều dưỡng";
+        return "Gia đình";
+    };
+
     return (
         <div className="relative inline-block text-left" ref={dropdownRef}>
             {/* Nút Chuông Thông Báo (Trigger) */}
             <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${isOpen
+                className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+                    isOpen
                         ? "bg-teal-50 text-[#00677c] ring-2 ring-[#00677c]/20"
                         : "text-slate-600 hover:text-[#00677c] hover:bg-slate-100/80 active:scale-95"
-                    }`}
+                }`}
                 title={unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Thông báo"}
                 aria-label="Xem thông báo"
                 aria-expanded={isOpen}
@@ -209,20 +218,26 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                 )}
             </button>
 
-            {/* Dropdown Popover */}
+            {/* Dropdown Popover — Đã tăng độ sâu shadow và bo viền đen mờ cao cấp để tách bạch với Dashboard trắng */}
             {isOpen && (
                 <div
-                    className={`absolute ${align === "left" ? "left-0" : "right-0"
-                        } mt-2 w-[340px] sm:w-[380px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right`}
+                    className={`absolute ${
+                        align === "left" ? "left-0" : "right-0"
+                    } mt-2.5 w-[350px] sm:w-[390px] bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,32,69,0.22),0_10px_20px_-5px_rgba(0,0,0,0.08)] border border-slate-200/90 ring-1 ring-slate-900/10 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right`}
                 >
+                    {/* Đường viền dải màu Gradient thương hiệu CareLink ở đỉnh Popover */}
+                    <div className="h-[2.5px] w-full bg-gradient-to-r from-teal-500 via-[#00677c] to-emerald-400" />
+
                     {/* Header của Dropdown */}
-                    <div className="p-3.5 px-4 bg-slate-50/90 border-b border-slate-200/70 flex items-center justify-between">
+                    <div className="p-3.5 px-4 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200/80 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <h3 className="text-sm font-bold text-slate-800">Thông báo</h3>
-                            {unreadCount > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#00677c]/10 text-[#00677c]">
+                            {unreadCount > 0 ? (
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#00677c]/10 text-[#00677c] border border-teal-600/15">
                                     {unreadCount} mới
                                 </span>
+                            ) : (
+                                <span className="text-[11px] text-slate-400 font-medium">Hệ thống</span>
                             )}
                         </div>
 
@@ -239,17 +254,17 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                         )}
                     </div>
 
-                    {/* Banner hiển thị Chế độ Demo / Dữ liệu mẫu (Nếu đang bật) */}
+                    {/* Banner hiển thị Chế độ Demo theo Role (Nếu đang bật) */}
                     {isDemoMode && (
                         <div className="bg-amber-50/90 border-b border-amber-200/70 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-amber-800">
-                            <div className="flex items-center gap-1.5 font-medium">
+                            <div className="flex items-center gap-1.5 font-medium truncate">
                                 <Info className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                <span>Dữ liệu mẫu — API chưa kết nối</span>
+                                <span className="truncate">Dữ liệu mẫu ({getRoleDisplayName()})</span>
                             </div>
                             <button
                                 type="button"
                                 onClick={handleToggleDemoMode}
-                                className="text-amber-900 font-bold hover:underline cursor-pointer text-[10.5px]"
+                                className="text-amber-900 font-bold hover:underline cursor-pointer text-[10.5px] shrink-0 ml-2"
                                 title="Chuyển sang gọi API thật"
                             >
                                 Tắt demo
@@ -258,7 +273,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                     )}
 
                     {/* Danh sách thông báo */}
-                    <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+                    <div className="max-h-[390px] overflow-y-auto divide-y divide-slate-100">
                         {loading ? (
                             /* Skeleton Loading */
                             <div className="p-4 flex flex-col gap-3">
@@ -307,7 +322,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                                     <BellOff className="w-6 h-6 stroke-[1.5]" />
                                 </div>
                                 <p className="text-xs font-semibold text-slate-600">Bạn chưa có thông báo nào</p>
-                                <p className="text-[11px] text-slate-400 max-w-[200px] leading-relaxed">
+                                <p className="text-[11px] text-slate-400 max-w-[220px] leading-relaxed">
                                     Các thông báo mới về ca chăm sóc và lịch hẹn sẽ xuất hiện tại đây.
                                 </p>
                             </div>
@@ -325,12 +340,12 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                     </div>
 
                     {/* Footer của Dropdown */}
-                    <div className="p-2.5 px-4 bg-slate-50 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+                    <div className="p-2.5 px-4 bg-slate-50 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
                         <span className="text-[11px] text-slate-400">CareLink Realtime System</span>
                         <button
                             type="button"
                             onClick={() => setIsOpen(false)}
-                            className="text-[11.5px] font-medium text-slate-600 hover:text-[#00677c] transition-colors cursor-pointer"
+                            className="text-[11.5px] font-semibold text-slate-600 hover:text-[#00677c] transition-colors cursor-pointer"
                         >
                             Đóng
                         </button>

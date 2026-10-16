@@ -79,7 +79,23 @@ const adminNavItems = [
 export default function AdminLayout() {
     const location = useLocation();
     const navigate = useNavigate();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem("carelink_admin_sidebar_collapsed") === "true";
+        } catch {
+            return false;
+        }
+    });
+
+    const handleToggleCollapse = (collapsedState) => {
+        setIsCollapsed(collapsedState);
+        try {
+            localStorage.setItem("carelink_admin_sidebar_collapsed", String(collapsedState));
+        } catch {
+            // Safe fallback
+        }
+    };
+
     const [mobileOpen, setMobileOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -255,7 +271,7 @@ export default function AdminLayout() {
                                 </Link>
                                 <button
                                     type="button"
-                                    onClick={() => setIsCollapsed(true)}
+                                    onClick={() => handleToggleCollapse(true)}
                                     className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 border border-white/10 transition-colors cursor-pointer shrink-0"
                                     title="Thu gọn thanh menu"
                                 >
@@ -265,7 +281,7 @@ export default function AdminLayout() {
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => setIsCollapsed(false)}
+                                onClick={() => handleToggleCollapse(false)}
                                 className="w-10 h-10 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 flex items-center justify-center transition-colors cursor-pointer border border-teal-500/30 shadow-2xs"
                                 title="Mở rộng thanh menu"
                             >
