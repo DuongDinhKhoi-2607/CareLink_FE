@@ -1,5 +1,10 @@
 import axiosClient from "./axiosClient";
 
+// Google OAuth 2.0 Client ID của CareLink
+export const GOOGLE_CLIENT_ID =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    "617746468209-jupm19jbfemqgdfv2gsbetlu4imretnk.apps.googleusercontent.com";
+
 // ══════════════════════════════════════════════════════════════════
 // Auth & Users API (Xác thực tài khoản & Quản lý profile người dùng)
 // ══════════════════════════════════════════════════════════════════

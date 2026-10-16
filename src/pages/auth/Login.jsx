@@ -9,7 +9,7 @@ import {
     ArrowRight,
     ArrowLeft,
 } from "lucide-react";
-import authApi from "../../api/authApi";
+import authApi, { GOOGLE_CLIENT_ID } from "../../api/authApi";
 import Toast from "../../components/Toast";
 
 export default function Login() {
@@ -290,14 +290,10 @@ export default function Login() {
     });
 
     useEffect(() => {
-        const clientId =
-            import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-            "617746468209-jupm19jbfemqgdfv2gsbetlu4imretnk.apps.googleusercontent.com";
-
         const initGoogle = () => {
             if (window.google?.accounts?.id) {
                 window.google.accounts.id.initialize({
-                    client_id: clientId,
+                    client_id: GOOGLE_CLIENT_ID,
                     callback: (res) => googleCallbackRef.current?.(res),
                 });
 

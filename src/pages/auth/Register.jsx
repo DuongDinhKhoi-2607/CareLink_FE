@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import authApi from "../../api/authApi";
+import authApi, { GOOGLE_CLIENT_ID } from "../../api/authApi";
 import Toast from "../../components/Toast";
 
 
@@ -186,7 +186,7 @@ function PasswordField({
                     className={`w-full h-11 pl-10 pr-11 rounded-xl text-sm transition-all outline-none ${
                         error
                             ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                            : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                            : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
                     }`}
                 />
 
@@ -505,14 +505,10 @@ export default function Register() {
     });
 
     useEffect(() => {
-        const clientId =
-            import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-            "617746468209-jupm19jbfemqgdfv2gsbetlu4imretnk.apps.googleusercontent.com";
-
         const initGoogle = () => {
             if (window.google?.accounts?.id) {
                 window.google.accounts.id.initialize({
-                    client_id: clientId,
+                    client_id: GOOGLE_CLIENT_ID,
                     callback: (res) => googleCallbackRef.current?.(res),
                 });
 
@@ -546,7 +542,7 @@ export default function Register() {
             <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
             {/* HEADER: Giữ nguyên logo, màu sắc và nội dung của bạn */}
             <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] backdrop-blur-md transition-all">
-                <div className="mx-auto flex h-16 w-full max-w-[1536px] items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
+                <div className="mx-auto flex h-14 w-full max-w-[1536px] items-center justify-between px-4 sm:h-16 sm:px-8 lg:px-12">
                     <Link
                         to="/"
                         className="group flex shrink-0 items-center gap-2.5"
@@ -634,34 +630,34 @@ export default function Register() {
             </header>
 
             {/* MAIN */}
-            <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
-                <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_24px_80px_-32px_rgba(0,32,69,0.20)]">
+            <main className="flex flex-1 items-center justify-center px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5">
+                <div className="w-full max-w-[1140px] overflow-hidden rounded-[26px] border border-slate-200/80 bg-white shadow-[0_24px_80px_-32px_rgba(0,32,69,0.18)]">
                     <div className="grid grid-cols-1 lg:grid-cols-[0.88fr_1.12fr]">
                         {/* LEFT PANEL: Chọn vai trò */}
-                        <section className="relative overflow-hidden bg-[#F2F7F7] p-5 sm:p-8 lg:p-10 xl:p-12">
+                        <section className="relative overflow-hidden bg-[#F2F7F7] p-5 sm:p-7 lg:p-8 xl:p-9 flex flex-col justify-between">
                             <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-100/60 blur-3xl" />
                             <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-sky-100/60 blur-3xl" />
 
                             <div className="relative">
-                                <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-teal-100 bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.13em] text-teal-800 shadow-sm sm:mb-10">
+                                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-100 bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.13em] text-teal-800 shadow-sm sm:mb-8">
                                     <span className="h-1.5 w-1.5 rounded-full bg-teal-600" />
                                     Chào mừng đến với CareLink
                                 </div>
 
-                                <h1 className="max-w-lg text-3xl font-extrabold leading-tight tracking-tight text-[#002045] sm:text-4xl xl:text-[42px]">
+                                <h1 className="max-w-lg text-2xl font-extrabold leading-tight tracking-tight text-[#002045] sm:text-3xl xl:text-[38px]">
                                     Chăm sóc tận tâm,
                                     <span className="mt-1 block text-teal-700">
                                         kết nối yêu thương.
                                     </span>
                                 </h1>
 
-                                <p className="mt-4 max-w-md text-sm leading-6 text-slate-600 sm:text-[15px] sm:leading-7">
+                                <p className="mt-3 max-w-md text-xs leading-5 text-slate-600 sm:text-sm sm:leading-6">
                                     Một kết nối phù hợp có thể giúp hành trình chăm sóc
                                     người thân trở nên an tâm và thuận tiện hơn.
                                 </p>
 
-                                <div className="mt-8 sm:mt-10">
-                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                <div className="mt-6 sm:mt-7">
+                                    <div className="mb-2.5 flex items-center justify-between gap-3">
                                         <h2 className="text-sm font-bold text-[#002045]">
                                             Bạn tham gia CareLink với vai trò nào?
                                         </h2>
@@ -670,7 +666,7 @@ export default function Register() {
                                         </span>
                                     </div>
 
-                                    <div className="space-y-3">
+                                    <div className="space-y-2.5">
                                         <RoleCard
                                             role="family"
                                             selectedRole={role}
@@ -693,49 +689,49 @@ export default function Register() {
                                     </div>
                                 </div>
 
-                                <div className="mt-6 flex items-start gap-3 rounded-2xl border border-white/90 bg-white/75 p-4 sm:mt-8">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-                                        <Icon name="shield" className="h-5 w-5" />
+                                <div className="mt-5 flex items-start gap-3 rounded-2xl border border-white/90 bg-white/75 p-3.5 sm:mt-6">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                                        <Icon name="shield" className="h-4.5 w-4.5" />
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-[#002045]">
                                             Thông tin minh bạch, kết nối phù hợp
                                         </p>
-                                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                                        <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
                                             Điều dưỡng và người chăm sóc có thể cần hoàn tất
                                             bước xác minh hồ sơ theo quy trình của nền tảng.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 hidden items-center gap-2 text-xs text-slate-400 sm:flex lg:mt-10">
+                                <div className="mt-4 hidden items-center gap-2 text-xs text-slate-400 sm:flex lg:mt-6">
                                     <Icon name="heart" className="h-4 w-4 text-teal-700" />
                                     <span>Đồng hành trong từng khoảnh khắc chăm sóc.</span>
                                 </div>
                             </div>
                         </section>
 
-                        {/* RIGHT PANEL: Thông tin cá nhân */}
-                        <section className="min-w-0 p-5 sm:p-8 lg:p-10 xl:p-12">
-                            <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
+                        {/* RIGHT PANEL: Thông tin cá nhân - Màu nền kem #F8F7F3 đồng bộ với Login */}
+                        <section className="min-w-0 bg-[#F8F7F3] p-5 sm:p-7 lg:p-8 xl:p-9 flex flex-col justify-center">
+                            <div className="mb-5 flex items-start justify-between gap-4 sm:mb-6">
                                 <div>
-                                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-teal-700">
+                                    <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-teal-700">
                                         Bước 2 · Thông tin cá nhân
                                     </div>
-                                    <h2 className="text-2xl font-extrabold tracking-tight text-[#002045] sm:text-3xl">
+                                    <h2 className="text-2xl font-extrabold tracking-tight text-[#002045] sm:text-[28px]">
                                         Tạo tài khoản
                                     </h2>
-                                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                                    <p className="mt-1 text-xs sm:text-sm leading-5 text-slate-500">
                                         Điền thông tin để bắt đầu hành trình cùng CareLink.
                                     </p>
                                 </div>
 
-                                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F0F7F7] text-teal-700 sm:flex">
-                                    <Icon name="user" className="h-6 w-6" />
+                                <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white border border-slate-200/70 text-teal-700 shadow-2xs sm:flex">
+                                    <Icon name="user" className="h-5 w-5" />
                                 </div>
                             </div>
 
-                            <div className="mb-6 flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/70 px-3.5 py-3">
+                            <div className="mb-5 flex items-center gap-2 rounded-xl border border-teal-100 bg-white/80 px-3.5 py-2.5 shadow-2xs">
                                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-teal-700 shadow-sm">
                                     <Icon
                                         name={role === "family" ? "heart" : "user"}
@@ -780,7 +776,7 @@ export default function Register() {
                                             className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
                                                 errors.name
                                                     ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                                                    : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                                                    : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
                                             }`}
                                         />
                                     </div>
@@ -820,7 +816,7 @@ export default function Register() {
                                                 className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
                                                     errors.email
                                                         ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                                                        : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                                                        : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
                                                 }`}
                                             />
                                         </div>
@@ -858,7 +854,7 @@ export default function Register() {
                                                 className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
                                                     errors.phone
                                                         ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                                                        : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 hover:border-slate-300 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10"
+                                                        : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
                                                 }`}
                                             />
                                         </div>
@@ -962,13 +958,13 @@ export default function Register() {
                                 </button>
 
                                 {/* Divider */}
-                                <div className="relative py-1">
+                                <div className="relative my-2 py-1">
                                     <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-slate-200" />
+                                        <div className="w-full border-t border-[#DDE2DE]" />
                                     </div>
                                     <div className="relative flex justify-center">
-                                        <span className="bg-white px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                            Hoặc đăng ký nhanh với
+                                        <span className="bg-[#F8F7F3] px-3.5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-700">
+                                            Hoặc
                                         </span>
                                     </div>
                                 </div>
@@ -981,7 +977,7 @@ export default function Register() {
                                     type="button"
                                     onClick={handleGoogleRegister}
                                     disabled={isLoading}
-                                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#D9DEDA] bg-white px-5 py-3 text-sm font-medium text-[#344044] transition-all hover:border-[#BBCAC3] hover:bg-[#FCFDFC] hover:shadow-[0_4px_12px_rgba(16,42,47,0.06)] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                 >
                                     <GoogleIcon />
                                     <span>
@@ -1005,7 +1001,7 @@ export default function Register() {
             </main>
 
             {/* FOOTER */}
-            <footer className="w-full border-t border-slate-200/80 bg-white px-4 py-5 text-xs text-slate-500 sm:px-6 sm:py-6 lg:px-12">
+            <footer className="w-full border-t border-slate-200/80 bg-white px-5 sm:px-8 lg:px-12 py-3 sm:py-3.5 text-xs text-slate-500 shrink-0">
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:gap-4 sm:text-left">
                     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:justify-start">
                         <span className="font-bold text-[#002045]">CareLink</span>
