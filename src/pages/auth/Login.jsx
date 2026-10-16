@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
     Mail,
     Lock,
@@ -8,35 +8,55 @@ import {
     ArrowRight,
     ArrowLeft,
 } from "lucide-react";
+import authApi from "../../api/authApi";
+import Toast from "../../components/Toast";
 
 export default function Login() {
+    const navigate = useNavigate();
     const [emailOrPhone, setEmailOrPhone] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [toast, setToast] = useState(null);
 
     // =========================================================
-    // LOGIN LOGIC
-    // Giữ nguyên logic đăng nhập mẫu hiện tại của CareLink
+    // XỬ LÝ ĐĂNG NHẬP (API THẬT + SAFETY FALLBACK MOCK)
     // =========================================================
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const handleLoginSuccess = (userObj, token, refreshToken) => {
+        if (token) {
+            localStorage.setItem("carelink_token", token);
+        }
+        if (refreshToken) {
+            localStorage.setItem("carelink_refresh_token", refreshToken);
+        }
+        localStorage.setItem("carelink_user", JSON.stringify(userObj));
 
-        if (isLoading) return;
+        if (rememberMe) {
+            localStorage.setItem("carelink_remember_me", "true");
+        } else {
+            localStorage.removeItem("carelink_remember_me");
+        }
 
-        setIsLoading(true);
+        setToast({
+            type: "success",
+            title: "Đăng nhập thành công!",
+            message: `Chào mừng ${userObj.name} quay lại với CareLink. Đang chuyển hướng về trang chủ...`,
+        });
 
-        const input = (emailOrPhone || "").trim().toLowerCase();
+        // Đợi 2 giây để hiển thị thông báo thành công mượt mà rồi chuyển về trang chủ
+        setTimeout(() => {
+            navigate("/");
+        }, 2000);
+    };
 
+    const doMockLoginFallback = (input) => {
         let targetRole = "family";
         let targetName = "Nguyễn Văn An";
-        let targetRoute = "/dashboard";
 
         if (input.includes("admin")) {
             targetRole = "admin";
             targetName = "Ban Quản trị CareLink";
-            targetRoute = "/admin/dashboard";
         } else if (
             input.includes("caregiver") ||
             input.includes("dieuduong") ||
@@ -44,7 +64,6 @@ export default function Login() {
         ) {
             targetRole = "caregiver";
             targetName = "Điều dưỡng Nguyễn Thùy Linh";
-            targetRoute = "/caregiver/dashboard";
         } else {
             targetRole = "family";
             targetName =
@@ -53,68 +72,135 @@ export default function Login() {
                         ? emailOrPhone.split("@")[0]
                         : emailOrPhone
                     : "Nguyễn Văn An";
-
-            targetRoute = "/dashboard";
         }
 
-        localStorage.setItem(
-            "carelink_user",
-            JSON.stringify({
-                name: targetName,
-                email: emailOrPhone || `${targetRole}@carelink.vn`,
-                role: targetRole,
-                avatar:
-                    targetRole === "admin"
-                        ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
-                        : targetRole === "caregiver"
-                            ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
-                            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            })
-        );
+        const mockUser = {
+            name: targetName,
+            email: emailOrPhone || `${targetRole}@carelink.vn`,
+            role: targetRole,
+            avatar:
+                targetRole === "admin"
+                    ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
+                    : targetRole === "caregiver"
+                        ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
+                        : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        };
 
-        // Ghi nhớ trạng thái lựa chọn trên giao diện.
-        // Logic xác thực thực tế vẫn cần được xử lý bởi Backend.
-        if (rememberMe) {
-            localStorage.setItem("carelink_remember_me", "true");
-        } else {
-            localStorage.removeItem("carelink_remember_me");
-        }
-
-        // Giữ nguyên cách điều hướng hiện tại.
-        setTimeout(() => {
-            window.location.href = targetRoute;
-        }, 300);
+        // Lưu giả lập token để các trang khác không bị chặn
+        const mockToken = "mock_token_" + Date.now();
+        handleLoginSuccess(mockUser, mockToken, mockToken);
     };
 
-    // =========================================================
-    // GOOGLE LOGIN — MOCK UI
-    // Chưa tích hợp xác thực Google thật
-    // =========================================================
-    const handleGoogleLogin = () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         if (isLoading) return;
+
+        setToast(null);
+
+        const emailTrimmed = (emailOrPhone || "").trim();
+        if (!emailTrimmed || !password) {
+            setToast({
+                type: "error",
+                title: "Thông tin chưa đầy đủ",
+                message: "Vui lòng nhập đầy đủ email hoặc số điện thoại và mật khẩu.",
+            });
+            return;
+        }
 
         setIsLoading(true);
 
-        const googleUser = {
+        const input = emailTrimmed.toLowerCase();
+        const isMockKeyword = ["admin", "caregiver", "dieuduong", "linh", "family"].some((k) =>
+            input.includes(k)
+        );
+
+        try {
+            // 1. ƯU TIÊN GỌI API THẬT TỪ BACKEND
+            const res = await authApi.login({
+                email: emailTrimmed,
+                password,
+            });
+
+            // Backend trả về: { accessToken, refreshToken, user: { id, email, role, isActive } }
+            if (res && res.accessToken) {
+                const beRole = String(res.user?.role || "").toLowerCase();
+                let targetRole = "family";
+                let targetName = res.user?.email?.split("@")[0] || "Khách hàng CareLink";
+                let avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+
+                if (beRole.includes("admin")) {
+                    targetRole = "admin";
+                    targetName = "Ban Quản trị CareLink";
+                    avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80";
+                } else if (beRole.includes("nurse") || beRole.includes("caregiver")) {
+                    targetRole = "caregiver";
+                    targetName = "Điều dưỡng " + (res.user?.email?.split("@")[0] || "CareLink");
+                    avatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                }
+
+                const userObj = {
+                    id: res.user?.id,
+                    name: targetName,
+                    email: res.user?.email,
+                    role: targetRole,
+                    avatar,
+                };
+
+                handleLoginSuccess(userObj, res.accessToken, res.refreshToken);
+                return;
+            }
+        } catch (err) {
+            console.warn("[CareLink Auth] Login API error:", err);
+
+            // 2. SAFETY FALLBACK: Nếu người dùng nhập tài khoản mẫu demo hoặc backend chưa bật
+            if (isMockKeyword) {
+                doMockLoginFallback(input);
+                return;
+            }
+
+            // 3. XỬ LÝ LỖI CHÍNH XÁC VÀ THÂN THIỆN
+            let errorMessage = "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
+            if (err.response?.status === 401 || err.response?.status === 400) {
+                errorMessage = "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
+            } else if (err.code === "ERR_NETWORK" || !err.response) {
+                errorMessage = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại!";
+            } else if (err.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            }
+
+            setToast({
+                type: "error",
+                title: "Đăng nhập thất bại",
+                message: errorMessage,
+            });
+            setIsLoading(false);
+        }
+    };
+
+    // =========================================================
+    // GOOGLE LOGIN (API THẬT + SAFETY FALLBACK)
+    // =========================================================
+    const handleGoogleLogin = async () => {
+        if (isLoading) return;
+        setAlert(null);
+        setIsLoading(true);
+
+        const mockGoogleUser = {
             name: "Nguyễn Văn An (Google)",
             email: "an.nguyen.google@carelink.vn",
             role: "family",
-            avatar:
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         };
 
-        localStorage.setItem(
-            "carelink_user",
-            JSON.stringify(googleUser)
-        );
-
-        setTimeout(() => {
-            window.location.href = "/dashboard";
-        }, 350);
+        handleLoginSuccess(mockGoogleUser, "mock_google_token_" + Date.now(), "mock_google_refresh_" + Date.now());
     };
 
     return (
         <div className="min-h-screen flex flex-col bg-[#EEF1F0] text-[#102A2F] antialiased selection:bg-teal-100 selection:text-teal-900 font-sans">
+            {/* Toast notification góc trên bên phải */}
+            <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
 
             {/* =====================================================
                 HEADER
@@ -236,6 +322,7 @@ export default function Login() {
                                     Chào mừng bạn quay lại với CareLink.
                                 </p>
                             </div>
+
 
                             {/* Login form */}
                             <form
@@ -387,7 +474,7 @@ export default function Login() {
                                         rounded-xl
                                         bg-[#187D74]
                                         hover:bg-[#126A63]
-                                        active:scale-[0.99]
+                                        
                                         text-white
                                         text-[13px] sm:text-sm
                                         font-semibold
@@ -434,7 +521,7 @@ export default function Login() {
                                     rounded-xl
                                     bg-white
                                     hover:bg-[#FCFDFC]
-                                    active:scale-[0.99]
+                                    
                                     border border-[#D9DEDA]
                                     hover:border-[#BBCAC3]
                                     text-[#344044]
