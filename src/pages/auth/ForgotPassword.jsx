@@ -43,46 +43,81 @@ export default function ForgotPassword() {
     // =========================================================
     // XỬ LÝ 6 Ô INPUT OTP (Nhập mượt, tự nhảy, xóa lùi thông minh)
     // =========================================================
-    const handleOtpChange = (index, value) => {
-        // Chỉ chấp nhận ký tự số (0-9)
-        const digit = value.replace(/\D/g, "");
-        if (!digit && value !== "") return;
-
-        const newDigits = [...otpDigits];
-        // Lấy ký tự số cuối cùng người dùng gõ
-        const char = digit.slice(-1);
-        newDigits[index] = char;
-        setOtpDigits(newDigits);
-
-        if (errors.otp) {
-            setErrors((prev) => ({ ...prev, otp: "" }));
+    const handleOtpKeyDown = (index, e) => {
+        // Cho phép các phím điều hướng hệ thống
+        if (e.key === "Tab" || e.key === "Enter" || e.key === "Escape") {
+            return;
         }
 
-        // Tự động nhảy sang ô tiếp theo nếu đã nhập số
-        if (char && index < 5) {
+        // 1. Phím Backspace: Xóa số tại ô hiện tại (ở nguyên vị trí), hoặc lùi về ô trước nếu ô hiện tại rỗng
+        if (e.key === "Backspace") {
+            e.preventDefault();
+            setOtpDigits((prev) => {
+                const next = [...prev];
+                if (next[index]) {
+                    // Nếu ô đang có số: xóa số đó và giữ nguyên con trỏ ở ô hiện tại
+                    next[index] = "";
+                    return next;
+                } else if (index > 0) {
+                    // Nếu ô hiện tại đã trống: lùi sang ô trước và xóa số ở ô đó
+                    next[index - 1] = "";
+                    otpInputRefs.current[index - 1]?.focus();
+                    return next;
+                }
+                return next;
+            });
+            if (errors.otp) setErrors((prev) => ({ ...prev, otp: "" }));
+            return;
+        }
+
+        // 2. Phím mũi tên trái / phải
+        if (e.key === "ArrowLeft" && index > 0) {
+            e.preventDefault();
+            otpInputRefs.current[index - 1]?.focus();
+            return;
+        }
+        if (e.key === "ArrowRight" && index < 5) {
+            e.preventDefault();
             otpInputRefs.current[index + 1]?.focus();
+            return;
+        }
+
+        // 3. Nhập số (0-9): Ghi nhận ngay lập tức và tự động nhảy ô kế tiếp
+        if (/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+            const char = e.key;
+            setOtpDigits((prev) => {
+                const next = [...prev];
+                next[index] = char;
+                return next;
+            });
+            if (errors.otp) setErrors((prev) => ({ ...prev, otp: "" }));
+            if (index < 5) {
+                otpInputRefs.current[index + 1]?.focus();
+            }
+            return;
+        }
+
+        // 4. Chặn toàn bộ ký tự lạ, chữ cái, khoảng trắng, ký hiệu đặc biệt
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
         }
     };
 
-    const handleOtpKeyDown = (index, e) => {
-        if (e.key === "Backspace") {
-            if (otpDigits[index]) {
-                // Nếu ô hiện tại đang có số: xóa số đó và giữ nguyên con trỏ ở ô hiện tại
-                const newDigits = [...otpDigits];
-                newDigits[index] = "";
-                setOtpDigits(newDigits);
-                e.preventDefault();
-            } else if (index > 0) {
-                // Nếu ô hiện tại đã trống: lùi về ô trước đó và xóa số ở ô trước đó
-                const newDigits = [...otpDigits];
-                newDigits[index - 1] = "";
-                setOtpDigits(newDigits);
-                otpInputRefs.current[index - 1]?.focus();
-                e.preventDefault();
-            }
-        } else if (e.key === "ArrowLeft" && index > 0) {
-            otpInputRefs.current[index - 1]?.focus();
-        } else if (e.key === "ArrowRight" && index < 5) {
+    const handleOtpChange = (index, value) => {
+        // Dự phòng cho bàn phím ảo di động (nếu onKeyDown không bắt được)
+        const digitsOnly = value.replace(/\D/g, "");
+        if (!digitsOnly) return;
+        const char = digitsOnly.slice(-1);
+
+        setOtpDigits((prev) => {
+            const next = [...prev];
+            next[index] = char;
+            return next;
+        });
+
+        if (errors.otp) setErrors((prev) => ({ ...prev, otp: "" }));
+        if (char && index < 5) {
             otpInputRefs.current[index + 1]?.focus();
         }
     };
@@ -92,11 +127,13 @@ export default function ForgotPassword() {
         const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
         if (!pastedData) return;
 
-        const newDigits = [...otpDigits];
-        for (let i = 0; i < 6; i++) {
-            newDigits[i] = pastedData[i] || "";
-        }
-        setOtpDigits(newDigits);
+        setOtpDigits((prev) => {
+            const next = [...prev];
+            for (let i = 0; i < 6; i++) {
+                next[i] = pastedData[i] || "";
+            }
+            return next;
+        });
 
         if (errors.otp) {
             setErrors((prev) => ({ ...prev, otp: "" }));
@@ -291,7 +328,7 @@ export default function ForgotPassword() {
 
             {/* Main Content - Bo gọn khung và căn chỉnh đẹp mắt */}
             <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10">
-                <div className="w-full max-w-[425px] bg-white rounded-3xl border border-slate-200/90 shadow-[0_12px_40px_rgba(0,32,69,0.08)] p-6 sm:p-8 relative transition-all duration-300">
+                <div className="w-full max-w-[415px] bg-white rounded-3xl border border-slate-200/90 shadow-[0_12px_40px_rgba(0,32,69,0.08)] p-6 sm:p-7 relative transition-all duration-300">
                     {/* Top Decorative Accent */}
                     <div className="w-14 h-1 bg-gradient-to-r from-[#187D74] to-[#00677c] rounded-full mx-auto mb-6"></div>
 
@@ -355,8 +392,8 @@ export default function ForgotPassword() {
                                 </button>
                             </form>
 
-                            {/* Gạch ngang đậm nét hơn cho dễ nhìn */}
-                            <div className="pt-4 border-t border-slate-200 text-center">
+                            {/* Gạch ngang đậm nét hơn cho người dùng dễ thấy */}
+                            <div className="pt-4 border-t border-slate-300/80 text-center">
                                 <p className="text-xs text-slate-500 font-medium">
                                     Nhớ lại mật khẩu rồi?{" "}
                                     <Link
@@ -406,20 +443,21 @@ export default function ForgotPassword() {
                                         Mã xác thực OTP (6 số) <span className="text-rose-500">*</span>
                                     </label>
 
-                                    <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-1">
+                                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 my-1">
                                         {otpDigits.map((digit, idx) => (
                                             <input
                                                 key={idx}
                                                 ref={(el) => (otpInputRefs.current[idx] = el)}
                                                 type="text"
                                                 inputMode="numeric"
-                                                autoComplete="one-time-code"
-                                                maxLength={1}
+                                                pattern="[0-9]*"
+                                                autoComplete="off"
                                                 value={digit}
+                                                onFocus={(e) => e.target.select()}
                                                 onChange={(e) => handleOtpChange(idx, e.target.value)}
                                                 onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                                                onPaste={idx === 0 ? handleOtpPaste : undefined}
-                                                className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl outline-none transition-all ${
+                                                onPaste={handleOtpPaste}
+                                                className={`w-10 h-12 sm:w-11 sm:h-13.5 text-center text-xl sm:text-2xl font-bold rounded-xl outline-none transition-all ${
                                                     errors.otp
                                                         ? "bg-red-50/20 border-2 border-red-400 text-slate-800 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
                                                         : digit
@@ -522,19 +560,19 @@ export default function ForgotPassword() {
                                     )}
                                 </div>
 
-                                {/* Nút xác nhận đặt lại mật khẩu */}
+                                {/* Nút xác nhận đặt lại mật khẩu - Đẩy xích lên một chút cho đẹp */}
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full h-[46px] mt-3 px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63] text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="w-full h-[46px] mt-2.5 px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63] text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     <span>{isLoading ? "Đang cập nhật..." : "Xác nhận đặt lại mật khẩu"}</span>
                                     {!isLoading && <ShieldCheck className="w-4 h-4" />}
                                 </button>
                             </form>
 
-                            {/* Gạch ngang đậm nét */}
-                            <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                            {/* Gạch ngang đậm nét hơn cho dễ nhìn */}
+                            <div className="pt-3.5 border-t border-slate-300/80 flex items-center justify-between text-xs text-slate-500">
                                 <button
                                     type="button"
                                     onClick={() => handleRequestOtp()}
@@ -588,12 +626,15 @@ export default function ForgotPassword() {
                         </div>
                     )}
 
-                    {/* Footer bảo mật chân thẻ - Nâng cấp thiết kế pill badge tinh tế, đậm nét, đẩy xích lên */}
-                    <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-center">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-500">
+                    {/* Footer bảo mật chân thẻ - Thiết kế badge chuẩn y tế CareLink tinh tế, đậm nét, đẩy xích lên */}
+                    <div className="mt-5 pt-3.5 border-t border-slate-300/80 flex flex-col items-center justify-center gap-1.5 text-center">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50/80 border border-teal-200/70 text-[11px] font-semibold text-[#126A63] shadow-2xs">
                             <ShieldCheck className="w-3.5 h-3.5 text-[#187D74]" />
-                            <span>Xác thực & bảo mật thông tin CareLink</span>
+                            <span>Bảo mật & Xác thực tài khoản y tế CareLink</span>
                         </div>
+                        <p className="text-[10px] text-slate-400 font-medium">
+                            Dữ liệu xác thực được mã hóa an toàn 2 lớp theo tiêu chuẩn bảo vệ bệnh nhân
+                        </p>
                     </div>
                 </div>
             </main>

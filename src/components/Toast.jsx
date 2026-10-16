@@ -62,7 +62,7 @@ export default function Toast({ toast, onClose, duration = 3500 }) {
 
     return (
         <div
-            className="fixed top-5 right-5 z-[9999] pointer-events-auto max-w-[calc(100vw-2.5rem)] sm:w-[380px] animate-in fade-in slide-in-from-top-3 sm:slide-in-from-right-5 duration-300 transition-all select-none"
+            className="fixed top-5 right-5 z-[9999] pointer-events-auto max-w-[calc(100vw-2.5rem)] sm:w-[380px] animate-toast-in select-none"
             role="status"
             aria-live="polite"
         >
