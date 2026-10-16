@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+    AlertCircle,
     Mail,
     Lock,
     Eye,
@@ -19,6 +20,7 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState(null);
+    const [errors, setErrors] = useState({});
 
     // =========================================================
     // XỬ LÝ ĐĂNG NHẬP (API THẬT + SAFETY FALLBACK MOCK)
@@ -98,14 +100,21 @@ export default function Login() {
         setToast(null);
 
         const emailTrimmed = (emailOrPhone || "").trim();
-        if (!emailTrimmed || !password) {
-            setToast({
-                type: "error",
-                title: "Thông tin chưa đầy đủ",
-                message: "Vui lòng nhập đầy đủ email hoặc số điện thoại và mật khẩu.",
-            });
+        const newErrors = {};
+
+        if (!emailTrimmed) {
+            newErrors.emailOrPhone = "Vui lòng nhập email hoặc số điện thoại.";
+        }
+        if (!password) {
+            newErrors.password = "Vui lòng nhập mật khẩu của bạn.";
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
+
+        setErrors({});
 
         setIsLoading(true);
 
@@ -325,10 +334,7 @@ export default function Login() {
 
 
                             {/* Login form */}
-                            <form
-                                onSubmit={handleSubmit}
-                                className="space-y-4"
-                            >
+                            <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
                                 {/* Email / Phone */}
                                 <div>
@@ -346,31 +352,25 @@ export default function Login() {
                                             id="emailOrPhone"
                                             type="text"
                                             autoComplete="username"
-                                            required
                                             value={emailOrPhone}
-                                            onChange={(e) =>
-                                                setEmailOrPhone(e.target.value)
-                                            }
+                                            onChange={(e) => {
+                                                setEmailOrPhone(e.target.value);
+                                                if (errors.emailOrPhone) setErrors((prev) => ({ ...prev, emailOrPhone: "" }));
+                                            }}
                                             placeholder="Nhập email hoặc số điện thoại"
-                                            className="
-                                                w-full h-[46px]
-                                                pl-11 pr-4
-                                                bg-white
-                                                border border-[#DDE3DF]
-                                                rounded-xl
-                                                text-[13px] sm:text-sm
-                                                text-[#203337]
-                                                placeholder:text-[#A1AAA7]
-                                                outline-none
-                                                transition-all duration-200
-                                                hover:border-[#C3D2CC]
-                                                focus:bg-white
-                                                focus:border-[#187D74]
-                                                focus:ring-[3px]
-                                                focus:ring-[#187D74]/10
-                                            "
+                                            className={`w-full h-[46px] pl-11 pr-4 rounded-xl text-[13px] sm:text-sm outline-none transition-all duration-200 ${
+                                                errors.emailOrPhone
+                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                    : "bg-white border border-[#DDE3DF] text-[#203337] placeholder:text-[#A1AAA7] hover:border-[#C3D2CC] focus:border-[#187D74] focus:ring-[3px] focus:ring-[#187D74]/10"
+                                            }`}
                                         />
                                     </div>
+                                    {errors.emailOrPhone && (
+                                        <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {errors.emailOrPhone}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Password */}
@@ -389,29 +389,17 @@ export default function Login() {
                                             id="password"
                                             type={showPassword ? "text" : "password"}
                                             autoComplete="current-password"
-                                            required
                                             value={password}
-                                            onChange={(e) =>
-                                                setPassword(e.target.value)
-                                            }
+                                            onChange={(e) => {
+                                                setPassword(e.target.value);
+                                                if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+                                            }}
                                             placeholder="Nhập mật khẩu của bạn"
-                                            className="
-                                                w-full h-[46px]
-                                                pl-11 pr-11
-                                                bg-white
-                                                border border-[#DDE3DF]
-                                                rounded-xl
-                                                text-[13px] sm:text-sm
-                                                text-[#203337]
-                                                placeholder:text-[#A1AAA7]
-                                                outline-none
-                                                transition-all duration-200
-                                                hover:border-[#C3D2CC]
-                                                focus:bg-white
-                                                focus:border-[#187D74]
-                                                focus:ring-[3px]
-                                                focus:ring-[#187D74]/10
-                                            "
+                                            className={`w-full h-[46px] pl-11 pr-11 rounded-xl text-[13px] sm:text-sm outline-none transition-all duration-200 ${
+                                                errors.password
+                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                    : "bg-white border border-[#DDE3DF] text-[#203337] placeholder:text-[#A1AAA7] hover:border-[#C3D2CC] focus:border-[#187D74] focus:ring-[3px] focus:ring-[#187D74]/10"
+                                            }`}
                                         />
 
                                         <button

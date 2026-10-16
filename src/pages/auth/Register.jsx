@@ -292,11 +292,6 @@ export default function Register() {
         setToast(null);
 
         if (!validateForm()) {
-            setToast({
-                type: "error",
-                title: "Thông tin chưa hợp lệ",
-                message: "Vui lòng kiểm tra lại các mục được đánh dấu đỏ trên biểu mẫu.",
-            });
             return;
         }
 

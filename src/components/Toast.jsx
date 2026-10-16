@@ -1,55 +1,26 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 
 /**
- * Toast Notification Component
- * Displays an animated notification toast in the top-right corner.
- * Default auto-close duration: 4000ms (4 seconds - UX optimal for reading).
- * Includes progress bar, close button, and hover-to-pause.
+ * Modern Full-Colored Toast Notification Component
+ * Features vibrant gradient backgrounds, glassmorphism shadows, and clean auto-dismiss.
+ * Default auto-close duration: 3500ms.
  */
-export default function Toast({ toast, onClose, duration = 4000 }) {
-    const [progress, setProgress] = useState(100);
-    const isHoveredRef = useRef(false);
+export default function Toast({ toast, onClose, duration = 3500 }) {
     const timerRef = useRef(null);
-    const startTimeRef = useRef(0);
-    const remainingTimeRef = useRef(duration);
 
     useEffect(() => {
         if (!toast) return;
 
-        remainingTimeRef.current = duration;
-        startTimeRef.current = Date.now();
-
-        const stepInterval = 25;
-        timerRef.current = setInterval(() => {
-            if (isHoveredRef.current) return;
-
-            const elapsed = Date.now() - startTimeRef.current;
-            const remaining = Math.max(0, remainingTimeRef.current - elapsed);
-            const percentage = (remaining / duration) * 100;
-
-            setProgress(percentage);
-
-            if (remaining <= 0) {
-                clearInterval(timerRef.current);
-                if (onClose) onClose();
-            }
-        }, stepInterval);
+        // Tự động đóng toast sau khoảng thời gian duration
+        timerRef.current = setTimeout(() => {
+            if (onClose) onClose();
+        }, duration);
 
         return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
+            if (timerRef.current) clearTimeout(timerRef.current);
         };
     }, [toast, duration, onClose]);
-
-    const handleMouseEnter = () => {
-        isHoveredRef.current = true;
-    };
-
-    const handleMouseLeave = () => {
-        isHoveredRef.current = false;
-        startTimeRef.current = Date.now();
-        remainingTimeRef.current = (progress / 100) * duration;
-    };
 
     if (!toast) return null;
 
@@ -57,42 +28,30 @@ export default function Toast({ toast, onClose, duration = 4000 }) {
 
     const typeConfig = {
         success: {
-            bg: "bg-white",
-            border: "border-emerald-200",
-            iconBg: "bg-emerald-50 text-emerald-600",
-            titleColor: "text-emerald-950",
-            messageColor: "text-slate-600",
-            barColor: "bg-emerald-500",
+            gradient: "from-[#107569] to-[#0A4D45]",
+            border: "border-teal-400/30",
+            shadow: "shadow-[0_14px_35px_-8px_rgba(16,117,105,0.45)]",
             icon: CheckCircle2,
             defaultTitle: "Thành công",
         },
         error: {
-            bg: "bg-white",
-            border: "border-rose-200",
-            iconBg: "bg-rose-50 text-rose-600",
-            titleColor: "text-rose-950",
-            messageColor: "text-slate-600",
-            barColor: "bg-rose-500",
+            gradient: "from-[#DC2626] to-[#991B1B]",
+            border: "border-rose-400/30",
+            shadow: "shadow-[0_14px_35px_-8px_rgba(220,38,38,0.4)]",
             icon: AlertCircle,
             defaultTitle: "Có lỗi xảy ra",
         },
         warning: {
-            bg: "bg-white",
-            border: "border-amber-200",
-            iconBg: "bg-amber-50 text-amber-600",
-            titleColor: "text-amber-950",
-            messageColor: "text-slate-600",
-            barColor: "bg-amber-500",
+            gradient: "from-[#D97706] to-[#B45309]",
+            border: "border-amber-400/30",
+            shadow: "shadow-[0_14px_35px_-8px_rgba(217,119,6,0.4)]",
             icon: AlertTriangle,
             defaultTitle: "Cần lưu ý",
         },
         info: {
-            bg: "bg-white",
-            border: "border-teal-200",
-            iconBg: "bg-teal-50 text-teal-700",
-            titleColor: "text-teal-950",
-            messageColor: "text-slate-600",
-            barColor: "bg-teal-600",
+            gradient: "from-[#0F766E] to-[#1E3A5F]",
+            border: "border-teal-400/30",
+            shadow: "shadow-[0_14px_35px_-8px_rgba(15,118,110,0.35)]",
             icon: Info,
             defaultTitle: "Thông báo",
         },
@@ -104,28 +63,24 @@ export default function Toast({ toast, onClose, duration = 4000 }) {
     return (
         <div
             className="fixed top-5 right-5 z-[9999] pointer-events-auto max-w-[calc(100vw-2.5rem)] sm:w-[380px] animate-in fade-in slide-in-from-top-3 sm:slide-in-from-right-5 duration-300 transition-all select-none"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
             role="status"
             aria-live="polite"
         >
             <div
-                className={`relative overflow-hidden rounded-2xl ${config.bg} border ${config.border} shadow-[0_12px_36px_-6px_rgba(0,32,69,0.18)] backdrop-blur-md p-4 transition-all`}
+                className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${config.gradient} border ${config.border} ${config.shadow} text-white p-4 backdrop-blur-md`}
             >
                 <div className="flex items-start gap-3">
-                    {/* Icon */}
-                    <div
-                        className={`w-9 h-9 shrink-0 rounded-xl ${config.iconBg} flex items-center justify-center mt-0.5`}
-                    >
-                        <IconComponent className="w-5 h-5" />
+                    {/* Icon container */}
+                    <div className="w-9 h-9 shrink-0 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white mt-0.5 shadow-inner">
+                        <IconComponent className="w-5 h-5 text-white" strokeWidth={2.3} />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0 pr-1">
-                        <h4 className={`text-sm font-bold ${config.titleColor} leading-snug`}>
+                        <h4 className="text-sm font-bold text-white leading-snug tracking-tight">
                             {title || config.defaultTitle}
                         </h4>
-                        <p className={`mt-0.5 text-xs ${config.messageColor} leading-relaxed break-words`}>
+                        <p className="mt-1 text-xs text-white/90 leading-relaxed break-words font-medium">
                             {message}
                         </p>
                     </div>
@@ -134,20 +89,12 @@ export default function Toast({ toast, onClose, duration = 4000 }) {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-7 h-7 shrink-0 -mr-1 -mt-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 transition-colors flex items-center justify-center cursor-pointer"
+                        className="w-7 h-7 shrink-0 -mr-1 -mt-1 rounded-lg text-white/70 hover:text-white hover:bg-white/20 transition-colors flex items-center justify-center cursor-pointer"
                         title="Đóng thông báo"
                         aria-label="Đóng"
                     >
                         <X className="w-4 h-4" />
                     </button>
-                </div>
-
-                {/* Animated countdown progress bar */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100">
-                    <div
-                        className={`h-full ${config.barColor} transition-all duration-75 ease-linear`}
-                        style={{ width: `${progress}%` }}
-                    />
                 </div>
             </div>
         </div>

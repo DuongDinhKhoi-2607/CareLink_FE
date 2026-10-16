@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
     KeyRound,
@@ -11,6 +11,7 @@ import {
     CheckCircle2,
     ShieldCheck,
     RotateCcw,
+    AlertCircle,
 } from "lucide-react";
 import authApi from "../../api/authApi";
 import Toast from "../../components/Toast";
@@ -19,30 +20,114 @@ export default function ForgotPassword() {
     // Step: 1 = Yêu cầu gửi OTP, 2 = Nhập OTP và đặt mật khẩu mới, 3 = Hoàn tất thành công
     const [step, setStep] = useState(1);
     const [email, setEmail] = useState("");
-    const [otp, setOtp] = useState("");
+    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState(null);
+    const [errors, setErrors] = useState({});
+
+    const otpInputRefs = useRef([]);
+
+    // Tự động focus vào ô đầu tiên khi chuyển sang Bước 2
+    useEffect(() => {
+        if (step === 2) {
+            setTimeout(() => {
+                otpInputRefs.current[0]?.focus();
+            }, 150);
+        }
+    }, [step]);
+
+    // =========================================================
+    // XỬ LÝ 6 Ô INPUT OTP (Nhập mượt, tự nhảy, xóa lùi thông minh)
+    // =========================================================
+    const handleOtpChange = (index, value) => {
+        // Chỉ chấp nhận ký tự số (0-9)
+        const digit = value.replace(/\D/g, "");
+        if (!digit && value !== "") return;
+
+        const newDigits = [...otpDigits];
+        // Lấy ký tự số cuối cùng người dùng gõ
+        const char = digit.slice(-1);
+        newDigits[index] = char;
+        setOtpDigits(newDigits);
+
+        if (errors.otp) {
+            setErrors((prev) => ({ ...prev, otp: "" }));
+        }
+
+        // Tự động nhảy sang ô tiếp theo nếu đã nhập số
+        if (char && index < 5) {
+            otpInputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === "Backspace") {
+            if (otpDigits[index]) {
+                // Nếu ô hiện tại đang có số: xóa số đó và giữ nguyên con trỏ ở ô hiện tại
+                const newDigits = [...otpDigits];
+                newDigits[index] = "";
+                setOtpDigits(newDigits);
+                e.preventDefault();
+            } else if (index > 0) {
+                // Nếu ô hiện tại đã trống: lùi về ô trước đó và xóa số ở ô trước đó
+                const newDigits = [...otpDigits];
+                newDigits[index - 1] = "";
+                setOtpDigits(newDigits);
+                otpInputRefs.current[index - 1]?.focus();
+                e.preventDefault();
+            }
+        } else if (e.key === "ArrowLeft" && index > 0) {
+            otpInputRefs.current[index - 1]?.focus();
+        } else if (e.key === "ArrowRight" && index < 5) {
+            otpInputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+        if (!pastedData) return;
+
+        const newDigits = [...otpDigits];
+        for (let i = 0; i < 6; i++) {
+            newDigits[i] = pastedData[i] || "";
+        }
+        setOtpDigits(newDigits);
+
+        if (errors.otp) {
+            setErrors((prev) => ({ ...prev, otp: "" }));
+        }
+
+        const nextIndex = Math.min(pastedData.length, 5);
+        otpInputRefs.current[nextIndex]?.focus();
+    };
 
     // =========================================================
     // 1. GỬI YÊU CẦU OTP (POST /api/v1/auth/forgot-password)
     // =========================================================
     const handleRequestOtp = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        setToast(null);
+
         const trimmedEmail = email.trim();
+        const newErrors = {};
+
         if (!trimmedEmail) {
-            setToast({
-                type: "error",
-                title: "Thiếu thông tin",
-                message: "Vui lòng nhập địa chỉ email tài khoản của bạn.",
-            });
+            newErrors.email = "Vui lòng nhập địa chỉ email tài khoản của bạn.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+            newErrors.email = "Định dạng email không hợp lệ (ví dụ: email@gmail.com).";
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        setToast(null);
+        setErrors({});
         setIsLoading(true);
 
         try {
@@ -53,6 +138,7 @@ export default function ForgotPassword() {
                 title: "Mã OTP đã được gửi!",
                 message: `Hệ thống đã gửi mã xác thực 6 số đến email ${trimmedEmail}. Vui lòng kiểm tra hộp thư của bạn.`,
             });
+            setOtpDigits(["", "", "", "", "", ""]);
             setStep(2);
         } catch (err) {
             console.warn("[CareLink Auth] Forgot password API error:", err);
@@ -61,18 +147,20 @@ export default function ForgotPassword() {
                 // Safety fallback khi backend offline
                 setToast({
                     type: "info",
-                    title: "Mã OTP thử nghiệm",
-                    message: "Đang chuyển sang bước nhập mã xác nhận (bạn có thể nhập mã OTP mẫu ví dụ: 123456)...",
+                    title: "Chế độ trải nghiệm",
+                    message: "Không kết nối được Backend. Đang chuyển sang bước nhập mã xác thực OTP mẫu...",
                 });
+                setOtpDigits(["1", "2", "3", "4", "5", "6"]);
                 setTimeout(() => setStep(2), 600);
             } else {
+                const msg =
+                    err.response?.data?.message ||
+                    err.response?.data?.detail ||
+                    "Email này không tồn tại trong hệ thống hoặc không thể gửi mã. Vui lòng thử lại.";
                 setToast({
                     type: "error",
                     title: "Không thể gửi OTP",
-                    message:
-                        err.response?.data?.message ||
-                        err.response?.data?.detail ||
-                        "Không thể gửi yêu cầu đặt lại mật khẩu. Vui lòng kiểm tra lại email.",
+                    message: msg,
                 });
             }
         } finally {
@@ -80,50 +168,51 @@ export default function ForgotPassword() {
         }
     };
 
+    // =========================================================
+    // 2. XÁC NHẬN OTP & ĐẶT MẬT KHẨU MỚI (POST /api/v1/auth/reset-password)
+    // =========================================================
     const handleResetPassword = async (e) => {
         e.preventDefault();
         setToast(null);
 
-        if (!otp.trim()) {
-            setToast({
-                type: "error",
-                title: "Thiếu mã OTP",
-                message: "Vui lòng nhập mã OTP xác thực được gửi về email của bạn.",
-            });
+        const currentOtp = otpDigits.join("").trim();
+        const newErrors = {};
+
+        if (currentOtp.length < 6) {
+            newErrors.otp = "Vui lòng nhập đầy đủ mã OTP gồm 6 chữ số.";
+        }
+
+        if (!newPassword) {
+            newErrors.newPassword = "Vui lòng nhập mật khẩu mới.";
+        } else if (newPassword.length < 6) {
+            newErrors.newPassword = "Mật khẩu mới phải có tối thiểu 6 ký tự.";
+        }
+
+        if (!confirmPassword) {
+            newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu mới.";
+        } else if (newPassword !== confirmPassword) {
+            newErrors.confirmPassword = "Mật khẩu xác nhận không trùng khớp.";
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        if (newPassword.length < 6) {
-            setToast({
-                type: "error",
-                title: "Mật khẩu quá ngắn",
-                message: "Mật khẩu mới cần có tối thiểu 6 ký tự.",
-            });
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            setToast({
-                type: "error",
-                title: "Mật khẩu không khớp",
-                message: "Mật khẩu xác nhận chưa trùng khớp. Vui lòng nhập lại.",
-            });
-            return;
-        }
-
+        setErrors({});
         setIsLoading(true);
 
         try {
             await authApi.resetPassword({
                 email: email.trim(),
-                otp: otp.trim(),
+                otp: currentOtp,
                 newPassword,
             });
 
             setToast({
                 type: "success",
                 title: "Đặt lại mật khẩu thành công!",
-                message: "Mật khẩu của bạn đã được cập nhật an toàn. Bạn có thể đăng nhập ngay bây giờ.",
+                message: "Mật khẩu mới của bạn đã được cập nhật thành công.",
             });
             setStep(3);
         } catch (err) {
@@ -133,18 +222,20 @@ export default function ForgotPassword() {
                 // Safety fallback khi backend offline
                 setToast({
                     type: "success",
-                    title: "Thành công (Chế độ mô phỏng)",
-                    message: "Mật khẩu đã được cập nhật thành công trong phiên làm việc mẫu.",
+                    title: "Đặt lại mật khẩu thành công (Mô phỏng)",
+                    message: "Mật khẩu mới đã được ghi nhận trong phiên làm việc mẫu.",
                 });
                 setStep(3);
             } else {
+                const msg =
+                    err.response?.data?.message ||
+                    err.response?.data?.detail ||
+                    "Mã OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại!";
+                setErrors({ otp: msg });
                 setToast({
                     type: "error",
                     title: "Đặt lại mật khẩu thất bại",
-                    message:
-                        err.response?.data?.message ||
-                        err.response?.data?.detail ||
-                        "Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.",
+                    message: msg,
                 });
             }
         } finally {
@@ -154,14 +245,15 @@ export default function ForgotPassword() {
 
     return (
         <div className="min-h-screen flex flex-col justify-between bg-[#F8FAFC] text-slate-800 antialiased selection:bg-teal-100 selection:text-teal-900 font-sans">
-            {/* Toast notification góc trên bên phải */}
-            <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
+            {/* Toast notification góc trên bên phải dạng full màu nổi bật */}
+            <Toast toast={toast} onClose={() => setToast(null)} duration={3500} />
+
             {/* Header đồng bộ logo và kích thước với Header ngoài trang Home */}
             <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] sticky top-0 z-50 transition-all">
-                <div className="w-full max-w-[1536px] mx-auto px-4 sm:px-8 lg:px-12 h-18 flex items-center justify-between">
+                <div className="w-full max-w-[1536px] mx-auto px-4 sm:px-8 lg:px-12 h-16 sm:h-[72px] flex items-center justify-between">
                     {/* Logo CareLink */}
                     <Link to="/" className="flex items-center gap-2.5 group shrink-0 cursor-pointer" title="Về trang chủ CareLink">
-                        <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                        <div className="w-9 h-9 sm:w-9.5 sm:h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
                             <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>
@@ -177,7 +269,7 @@ export default function ForgotPassword() {
                     </Link>
 
                     {/* Right links */}
-                    <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-[13px] font-medium">
+                    <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-[13px] font-medium">
                         <Link
                             to="/"
                             className="hidden sm:flex items-center gap-1.5 text-slate-600 hover:text-[#002045] px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
@@ -197,12 +289,11 @@ export default function ForgotPassword() {
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-1 flex items-center justify-center p-4 md:p-8 my-6">
-                <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_35px_rgba(0,32,69,0.06)] p-7 sm:p-9 relative transition-all duration-300">
-                    {/* Top Decorative Accent - Đồng bộ màu xanh y tế #187D74 */}
-                    <div className="w-16 h-1 bg-gradient-to-r from-[#187D74] to-[#00677c] rounded-full mx-auto mb-6"></div>
-
+            {/* Main Content - Bo gọn khung và căn chỉnh đẹp mắt */}
+            <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-6 sm:py-10">
+                <div className="w-full max-w-[425px] bg-white rounded-3xl border border-slate-200/90 shadow-[0_12px_40px_rgba(0,32,69,0.08)] p-6 sm:p-8 relative transition-all duration-300">
+                    {/* Top Decorative Accent */}
+                    <div className="w-14 h-1 bg-gradient-to-r from-[#187D74] to-[#00677c] rounded-full mx-auto mb-6"></div>
 
                     {/* ========================================================= */}
                     {/* BƯỚC 1: YÊU CẦU GỬI OTP QUA EMAIL                        */}
@@ -210,18 +301,18 @@ export default function ForgotPassword() {
                     {step === 1 && (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#187D74] border border-teal-100 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                                <div className="w-13 h-13 rounded-2xl bg-teal-50 text-[#187D74] border border-teal-100 flex items-center justify-center mx-auto mb-3 shadow-inner">
                                     <KeyRound className="w-6 h-6" strokeWidth={2.2} />
                                 </div>
                                 <h1 className="text-2xl font-bold text-[#102A2F] tracking-tight">
                                     Quên mật khẩu?
                                 </h1>
                                 <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
-                                    Nhập địa chỉ email đăng ký tài khoản CareLink để nhận mã xác nhận OTP khôi phục.
+                                    Nhập địa chỉ email đăng ký tài khoản CareLink để nhận mã xác thực OTP khôi phục.
                                 </p>
                             </div>
 
-                            <form onSubmit={handleRequestOtp} className="space-y-4">
+                            <form onSubmit={handleRequestOtp} noValidate className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                                         Email tài khoản <span className="text-rose-500">*</span>
@@ -232,32 +323,45 @@ export default function ForgotPassword() {
                                         </span>
                                         <input
                                             type="email"
-                                            required
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            onChange={(e) => {
+                                                setEmail(e.target.value);
+                                                if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                                            }}
                                             placeholder="nhap.email@cuaban.com"
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#187D74]/20 focus:border-[#187D74] focus:bg-white transition-all shadow-xs"
+                                            className={`w-full pl-10 pr-4 h-[46px] rounded-xl text-sm transition-all outline-none ${
+                                                errors.email
+                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                    : "bg-slate-50/70 border border-slate-200 text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#187D74] focus:ring-2 focus:ring-[#187D74]/20"
+                                            }`}
                                         />
                                     </div>
+                                    {errors.email && (
+                                        <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {errors.email}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Nút gửi OTP đồng bộ màu xanh #187D74 */}
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full h-[46px] mt-2 px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63]  text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="w-full h-[46px] mt-2 px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63] text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     <span>{isLoading ? "Đang gửi OTP..." : "Gửi yêu cầu khôi phục"}</span>
                                     {!isLoading && <ArrowRight className="w-4 h-4" />}
                                 </button>
                             </form>
 
-                            <div className="pt-4 border-t border-slate-100 text-center">
-                                <p className="text-xs text-slate-500">
+                            {/* Gạch ngang đậm nét hơn cho dễ nhìn */}
+                            <div className="pt-4 border-t border-slate-200 text-center">
+                                <p className="text-xs text-slate-500 font-medium">
                                     Nhớ lại mật khẩu rồi?{" "}
                                     <Link
                                         to="/login"
-                                        className="font-semibold text-[#187D74] hover:text-[#126A63] ml-1 transition-colors underline-offset-2 hover:underline"
+                                        className="font-bold text-[#187D74] hover:text-[#126A63] ml-1 transition-colors underline-offset-2 hover:underline"
                                     >
                                         Đăng nhập
                                     </Link>
@@ -267,25 +371,26 @@ export default function ForgotPassword() {
                     )}
 
                     {/* ========================================================= */}
-                    {/* BƯỚC 2: NHẬP MÃ OTP VÀ ĐẶT MẬT KHẨU MỚI                  */}
+                    {/* BƯỚC 2: 6 Ô NHẬP OTP & ĐẶT MẬT KHẨU MỚI                   */}
                     {/* ========================================================= */}
                     {step === 2 && (
                         <div className="space-y-5 animate-in fade-in duration-300">
                             <div className="text-center">
-                                <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#187D74] border border-teal-100 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                                <div className="w-13 h-13 rounded-2xl bg-teal-50 text-[#187D74] border border-teal-100 flex items-center justify-center mx-auto mb-3 shadow-inner">
                                     <Lock className="w-6 h-6" strokeWidth={2.2} />
                                 </div>
                                 <h2 className="text-2xl font-bold text-[#102A2F] tracking-tight">
                                     Đặt lại mật khẩu
                                 </h2>
                                 <p className="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                                    Mã xác nhận đã gửi tới{" "}
-                                    <span className="font-semibold text-slate-800">{email}</span>.
+                                    Mã xác thực đã được gửi tới{" "}
+                                    <span className="font-semibold text-slate-800">{email}</span>
                                 </p>
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setToast(null);
+                                        setErrors({});
                                         setStep(1);
                                     }}
                                     className="text-xs font-semibold text-[#187D74] hover:underline mt-1 cursor-pointer"
@@ -294,24 +399,47 @@ export default function ForgotPassword() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleResetPassword} className="space-y-3.5">
-                                {/* Mã OTP */}
+                            <form onSubmit={handleResetPassword} noValidate className="space-y-4">
+                                {/* Khung 6 ô nhập mã OTP */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Mã xác thực OTP <span className="text-rose-500">*</span>
+                                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 text-center">
+                                        Mã xác thực OTP (6 số) <span className="text-rose-500">*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        maxLength={6}
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value)}
-                                        placeholder="Nhập mã 6 chữ số"
-                                        className="w-full px-4 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-center text-lg tracking-[0.3em] font-bold text-[#102A2F] focus:outline-none focus:ring-2 focus:ring-[#187D74]/20 focus:border-[#187D74] focus:bg-white transition-all shadow-xs"
-                                    />
-                                    <p className="text-[11px] text-slate-400 mt-1">
-                                        Kiểm tra hòm thư Email (hoặc Console Backend khi chạy local).
-                                    </p>
+
+                                    <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-1">
+                                        {otpDigits.map((digit, idx) => (
+                                            <input
+                                                key={idx}
+                                                ref={(el) => (otpInputRefs.current[idx] = el)}
+                                                type="text"
+                                                inputMode="numeric"
+                                                autoComplete="one-time-code"
+                                                maxLength={1}
+                                                value={digit}
+                                                onChange={(e) => handleOtpChange(idx, e.target.value)}
+                                                onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                                                onPaste={idx === 0 ? handleOtpPaste : undefined}
+                                                className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl outline-none transition-all ${
+                                                    errors.otp
+                                                        ? "bg-red-50/20 border-2 border-red-400 text-slate-800 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                        : digit
+                                                            ? "bg-white border-2 border-[#187D74] text-[#102A2F] shadow-xs"
+                                                            : "bg-slate-50 border border-slate-200 text-[#102A2F] hover:border-slate-300 focus:bg-white focus:border-[#187D74] focus:ring-3 focus:ring-[#187D74]/15"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {errors.otp ? (
+                                        <p className="mt-2 text-center text-xs text-red-500 flex items-center justify-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {errors.otp}
+                                        </p>
+                                    ) : (
+                                        <p className="text-[11px] text-slate-400 mt-2 text-center">
+                                            Kiểm tra hộp thư email của bạn để lấy mã OTP gồm 6 chữ số.
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Mật khẩu mới */}
@@ -325,12 +453,17 @@ export default function ForgotPassword() {
                                         </span>
                                         <input
                                             type={showPassword ? "text" : "password"}
-                                            required
-                                            minLength={6}
                                             value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            onChange={(e) => {
+                                                setNewPassword(e.target.value);
+                                                if (errors.newPassword) setErrors((prev) => ({ ...prev, newPassword: "" }));
+                                            }}
                                             placeholder="Tối thiểu 6 ký tự"
-                                            className="w-full pl-10 pr-11 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#187D74]/20 focus:border-[#187D74] focus:bg-white transition-all shadow-xs"
+                                            className={`w-full pl-10 pr-11 h-[44px] rounded-xl text-sm transition-all outline-none ${
+                                                errors.newPassword
+                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                    : "bg-slate-50/70 border border-slate-200 text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#187D74] focus:ring-2 focus:ring-[#187D74]/20"
+                                            }`}
                                         />
                                         <button
                                             type="button"
@@ -341,6 +474,12 @@ export default function ForgotPassword() {
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
+                                    {errors.newPassword && (
+                                        <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {errors.newPassword}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Xác nhận mật khẩu mới */}
@@ -354,12 +493,17 @@ export default function ForgotPassword() {
                                         </span>
                                         <input
                                             type={showConfirmPassword ? "text" : "password"}
-                                            required
-                                            minLength={6}
                                             value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            onChange={(e) => {
+                                                setConfirmPassword(e.target.value);
+                                                if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                                            }}
                                             placeholder="Nhập lại mật khẩu mới"
-                                            className="w-full pl-10 pr-11 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#187D74]/20 focus:border-[#187D74] focus:bg-white transition-all shadow-xs"
+                                            className={`w-full pl-10 pr-11 h-[44px] rounded-xl text-sm transition-all outline-none ${
+                                                errors.confirmPassword
+                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
+                                                    : "bg-slate-50/70 border border-slate-200 text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#187D74] focus:ring-2 focus:ring-[#187D74]/20"
+                                            }`}
                                         />
                                         <button
                                             type="button"
@@ -370,30 +514,37 @@ export default function ForgotPassword() {
                                             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
+                                    {errors.confirmPassword && (
+                                        <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {errors.confirmPassword}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Nút xác nhận đặt lại mật khẩu */}
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full h-[46px] mt-3 px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63]  text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="w-full h-[46px] mt-3 px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63] text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     <span>{isLoading ? "Đang cập nhật..." : "Xác nhận đặt lại mật khẩu"}</span>
                                     {!isLoading && <ShieldCheck className="w-4 h-4" />}
                                 </button>
                             </form>
 
-                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            {/* Gạch ngang đậm nét */}
+                            <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
                                 <button
                                     type="button"
-                                    onClick={handleRequestOtp}
+                                    onClick={() => handleRequestOtp()}
                                     disabled={isLoading}
-                                    className="flex items-center gap-1 text-[#187D74] hover:underline font-semibold cursor-pointer"
+                                    className="flex items-center gap-1.5 text-[#187D74] hover:underline font-semibold cursor-pointer"
                                 >
                                     <RotateCcw className="w-3.5 h-3.5" />
                                     Gửi lại mã OTP
                                 </button>
-                                <Link to="/login" className="hover:underline">
+                                <Link to="/login" className="hover:underline font-medium text-slate-600">
                                     Về đăng nhập
                                 </Link>
                             </div>
@@ -428,7 +579,7 @@ export default function ForgotPassword() {
                             <div className="pt-2">
                                 <Link
                                     to="/login"
-                                    className="w-full h-[46px] px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63]  text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                    className="w-full h-[46px] px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63] text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     <span>Đăng nhập ngay</span>
                                     <ArrowRight className="w-4 h-4" />
@@ -437,18 +588,18 @@ export default function ForgotPassword() {
                         </div>
                     )}
 
-                    {/* Footer bảo mật chân thẻ (Đã gỡ bỏ nút xem trạng thái giả lập) */}
-                    <div className="mt-8 pt-4 border-t border-dashed border-slate-200 flex items-center justify-center text-[11px] text-slate-400">
-                        <span className="flex items-center gap-1.5 font-medium text-slate-500">
+                    {/* Footer bảo mật chân thẻ - Nâng cấp thiết kế pill badge tinh tế, đậm nét, đẩy xích lên */}
+                    <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-center">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-500">
                             <ShieldCheck className="w-3.5 h-3.5 text-[#187D74]" />
-                            Xác thực bảo mật CareLink
-                        </span>
+                            <span>Xác thực & bảo mật thông tin CareLink</span>
+                        </div>
                     </div>
                 </div>
             </main>
 
             {/* Footer */}
-            <footer className="w-full py-6 px-6 border-t border-slate-200/80 bg-white/70 backdrop-blur-xs text-center text-xs text-slate-400">
+            <footer className="w-full py-5 px-6 border-t border-slate-200/80 bg-white/70 backdrop-blur-xs text-center text-xs text-slate-400">
                 <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
                     <p>© 2026 CareLink Medical Care. Nền tảng y tế kết nối an toàn và tin cậy.</p>
                     <div className="flex gap-4 text-slate-500">
