@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authApi from "../../api/authApi";
 import Toast from "../../components/Toast";
@@ -439,10 +439,10 @@ export default function Register() {
                 const msg =
                     apiErr.response?.data?.message ||
                     apiErr.response?.data?.detail ||
-                    "Đăng ký bằng Google không thành công. Vui lòng thử lại.";
+                    "Đăng ký bằng tài khoản Google đang gặp gián đoạn. Vui lòng thử lại lần nữa hoặc thử lại sau ít phút.";
                 setToast({
                     type: "error",
-                    title: "Đăng ký Google thất bại",
+                    title: "Đăng ký Google chưa thành công",
                     message: msg,
                 });
             }
@@ -459,7 +459,15 @@ export default function Register() {
         if (hiddenBtn) {
             hiddenBtn.click();
         } else if (window.google?.accounts?.id) {
-            window.google.accounts.id.prompt();
+            window.google.accounts.id.prompt((notification) => {
+                if (notification.isDismissedMoment()) {
+                    setToast({
+                        type: "warning",
+                        title: "Đã hủy đăng ký Google",
+                        message: "Bạn vừa đóng cửa sổ Google. Vui lòng bấm lại nút nếu muốn tiếp tục đăng ký.",
+                    });
+                }
+            });
         } else {
             setToast({
                 type: "info",
