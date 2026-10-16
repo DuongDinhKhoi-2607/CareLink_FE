@@ -373,34 +373,164 @@ export default function Register() {
         }
     };
 
-    const handleGoogleRegister = async () => {
-        setAlert(null);
-        setIsLoading(true);
+    // =========================================================
+    // GOOGLE REGISTER / LOGIN (TÍCH HỢP GOOGLE SIGN-IN SDK + BE API)
+    // =========================================================
+    const handleGoogleCredentialResponse = async (response) => {
+        if (!response?.credential) {
+            setToast({
+                type: "error",
+                title: "Đăng ký Google thất bại",
+                message: "Không nhận được mã xác thực idToken từ Google.",
+            });
+            return;
+        }
 
-        const googleUser = {
-            name:
-                role === "family"
-                    ? "Gia đình Minh An (Google)"
-                    : "Điều dưỡng Thùy Linh (Google)",
-            email:
-                role === "family"
-                    ? "an.family.google@carelink.vn"
-                    : "linh.nurse.google@carelink.vn",
-            role,
-            avatar:
-                role === "family"
-                    ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                    : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+        setIsLoading(true);
+        try {
+            // role = 0 cho Customer (Gia đình), 1 cho Nurse (Điều dưỡng)
+            const roleNumber = role === "caregiver" || role === "nurse" ? 1 : 0;
+            const res = await authApi.googleLogin({
+                idToken: response.credential,
+                role: roleNumber,
+            });
+
+            const data = res?.data || res;
+            const userObj = {
+                id: data.user?.id,
+                name: data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google",
+                email: data.user?.email || "google.user@carelink.vn",
+                role: data.user?.role || role,
+                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            };
+
+            saveUserAndNavigate(userObj, data.accessToken, data.refreshToken, role, true);
+        } catch (apiErr) {
+            console.warn("[CareLink Auth] Google Register API error:", apiErr);
+            if (apiErr.code === "ERR_NETWORK" || !apiErr.response) {
+                setToast({
+                    type: "info",
+                    title: "Chế độ trải nghiệm",
+                    message: "Không kết nối được Backend. Đang kích hoạt tài khoản Google mẫu...",
+                });
+                const googleUser = {
+                    name:
+                        role === "family"
+                            ? "Gia đình Minh An (Google)"
+                            : "Điều dưỡng Thùy Linh (Google)",
+                    email:
+                        role === "family"
+                            ? "an.family.google@carelink.vn"
+                            : "linh.nurse.google@carelink.vn",
+                    role,
+                    avatar:
+                        role === "family"
+                            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                            : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+                };
+                saveUserAndNavigate(
+                    googleUser,
+                    "mock_google_token_" + Date.now(),
+                    "mock_google_refresh_" + Date.now(),
+                    role,
+                    true
+                );
+            } else {
+                const msg =
+                    apiErr.response?.data?.message ||
+                    apiErr.response?.data?.detail ||
+                    "Đăng ký bằng Google không thành công. Vui lòng thử lại.";
+                setToast({
+                    type: "error",
+                    title: "Đăng ký Google thất bại",
+                    message: msg,
+                });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleRegister = () => {
+        if (isLoading) return;
+        setToast(null);
+
+        const hiddenBtn = document.querySelector("#google-register-hidden-wrapper div[role=button]");
+        if (hiddenBtn) {
+            hiddenBtn.click();
+        } else if (window.google?.accounts?.id) {
+            window.google.accounts.id.prompt();
+        } else {
+            setToast({
+                type: "info",
+                title: "Chế độ trải nghiệm",
+                message: "Không tải được Google Sign-In SDK. Đang đăng ký với tài khoản Google mẫu...",
+            });
+            const googleUser = {
+                name:
+                    role === "family"
+                        ? "Gia đình Minh An (Google)"
+                        : "Điều dưỡng Thùy Linh (Google)",
+                email:
+                    role === "family"
+                        ? "an.family.google@carelink.vn"
+                        : "linh.nurse.google@carelink.vn",
+                role,
+                avatar:
+                    role === "family"
+                        ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                        : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+            };
+            saveUserAndNavigate(
+                googleUser,
+                "mock_google_token_" + Date.now(),
+                "mock_google_refresh_" + Date.now(),
+                role,
+                true
+            );
+        }
+    };
+
+    const googleCallbackRef = useRef(handleGoogleCredentialResponse);
+    useEffect(() => {
+        googleCallbackRef.current = handleGoogleCredentialResponse;
+    });
+
+    useEffect(() => {
+        const clientId =
+            import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+            "617746468209-jupm19jbfemqgdfv2gsbetlu4imretnk.apps.googleusercontent.com";
+
+        const initGoogle = () => {
+            if (window.google?.accounts?.id) {
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: (res) => googleCallbackRef.current?.(res),
+                });
+
+                const wrapper = document.getElementById("google-register-hidden-wrapper");
+                if (wrapper) {
+                    window.google.accounts.id.renderButton(wrapper, {
+                        type: "standard",
+                        theme: "outline",
+                        size: "large",
+                    });
+                }
+            }
         };
 
-        saveUserAndNavigate(
-            googleUser,
-            "mock_google_token_" + Date.now(),
-            "mock_google_refresh_" + Date.now(),
-            role,
-            true
-        );
-    };
+        if (window.google?.accounts?.id) {
+            initGoogle();
+        } else {
+            const timer = setInterval(() => {
+                if (window.google?.accounts?.id) {
+                    initGoogle();
+                    clearInterval(timer);
+                }
+            }, 300);
+            return () => clearInterval(timer);
+        }
+    }, [role]);
 
     return (
         <div className="flex min-h-screen flex-col bg-[#F7F9FC] font-sans text-slate-800 antialiased selection:bg-teal-100 selection:text-teal-900">
@@ -835,7 +965,10 @@ export default function Register() {
                                     </div>
                                 </div>
 
-                                {/* Google mock */}
+                                {/* Hidden Google Sign-In SDK button container */}
+                                <div id="google-register-hidden-wrapper" className="hidden" aria-hidden="true" />
+
+                                {/* Google OAuth */}
                                 <button
                                     type="button"
                                     onClick={handleGoogleRegister}

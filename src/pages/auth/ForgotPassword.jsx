@@ -34,9 +34,10 @@ export default function ForgotPassword() {
     // Tự động focus vào ô đầu tiên khi chuyển sang Bước 2
     useEffect(() => {
         if (step === 2) {
-            setTimeout(() => {
+            const timer = setTimeout(() => {
                 otpInputRefs.current[0]?.focus();
-            }, 150);
+            }, 120);
+            return () => clearTimeout(timer);
         }
     }, [step]);
 
@@ -185,9 +186,9 @@ export default function ForgotPassword() {
                 setToast({
                     type: "info",
                     title: "Chế độ trải nghiệm",
-                    message: "Không kết nối được Backend. Đang chuyển sang bước nhập mã xác thực OTP mẫu...",
+                    message: "Không kết nối được Backend. Vui lòng nhập mã OTP để tiếp tục.",
                 });
-                setOtpDigits(["1", "2", "3", "4", "5", "6"]);
+                setOtpDigits(["", "", "", "", "", ""]);
                 setTimeout(() => setStep(2), 600);
             } else {
                 const msg =
@@ -437,6 +438,18 @@ export default function ForgotPassword() {
                             </div>
 
                             <form onSubmit={handleResetPassword} noValidate className="space-y-4">
+                                {/* Trường ẩn ngăn chặn trình duyệt autofill email/username vào ô OTP số 6 */}
+                                <input
+                                    type="text"
+                                    name="username"
+                                    autoComplete="username"
+                                    value={email}
+                                    readOnly
+                                    tabIndex={-1}
+                                    style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+                                    aria-hidden="true"
+                                />
+
                                 {/* Khung 6 ô nhập mã OTP */}
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 text-center">
@@ -451,7 +464,12 @@ export default function ForgotPassword() {
                                                 type="text"
                                                 inputMode="numeric"
                                                 pattern="[0-9]*"
+                                                name={`carelink-otp-box-${idx}`}
+                                                id={`carelink-otp-box-${idx}`}
                                                 autoComplete="off"
+                                                data-1p-ignore="true"
+                                                data-lpignore="true"
+                                                data-form-type="other"
                                                 value={digit}
                                                 onFocus={(e) => e.target.select()}
                                                 onChange={(e) => handleOtpChange(idx, e.target.value)}
@@ -632,8 +650,10 @@ export default function ForgotPassword() {
                             <ShieldCheck className="w-3.5 h-3.5 text-[#187D74]" />
                             <span>Bảo mật & Xác thực tài khoản y tế CareLink</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                            Dữ liệu xác thực được mã hóa an toàn 2 lớp theo tiêu chuẩn bảo vệ bệnh nhân
+                        <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium leading-relaxed text-center">
+                            Dữ liệu xác thực được mã hóa an toàn 2 lớp
+                            <br />
+                            theo tiêu chuẩn bảo vệ y tế CareLink
                         </p>
                     </div>
                 </div>

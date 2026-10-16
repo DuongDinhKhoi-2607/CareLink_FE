@@ -189,22 +189,133 @@ export default function Login() {
     };
 
     // =========================================================
-    // GOOGLE LOGIN (API THẬT + SAFETY FALLBACK)
+    // GOOGLE LOGIN (TÍCH HỢP GOOGLE SIGN-IN SDK + BE API THẬT)
     // =========================================================
-    const handleGoogleLogin = async () => {
-        if (isLoading) return;
-        setAlert(null);
-        setIsLoading(true);
+    const handleGoogleCredentialResponse = async (response) => {
+        if (!response?.credential) {
+            setToast({
+                type: "error",
+                title: "Đăng nhập Google thất bại",
+                message: "Không nhận được mã xác thực idToken từ Google.",
+            });
+            return;
+        }
 
-        const mockGoogleUser = {
-            name: "Nguyễn Văn An (Google)",
-            email: "an.nguyen.google@carelink.vn",
-            role: "family",
-            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        setIsLoading(true);
+        try {
+            const res = await authApi.googleLogin({
+                idToken: response.credential,
+                role: 0,
+            });
+
+            const data = res?.data || res;
+            const userObj = {
+                id: data.user?.id,
+                name: data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google",
+                email: data.user?.email || "google.user@carelink.vn",
+                role: data.user?.role || "family",
+                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            };
+
+            handleLoginSuccess(userObj, data.accessToken, data.refreshToken);
+        } catch (apiErr) {
+            console.warn("[CareLink Auth] Google login API error:", apiErr);
+            if (apiErr.code === "ERR_NETWORK" || !apiErr.response) {
+                setToast({
+                    type: "info",
+                    title: "Chế độ trải nghiệm",
+                    message: "Không kết nối được Backend. Đang kích hoạt phiên làm việc Google mẫu...",
+                });
+                const mockGoogleUser = {
+                    name: "Nguyễn Văn An (Google)",
+                    email: "an.nguyen.google@carelink.vn",
+                    role: "family",
+                    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                };
+                handleLoginSuccess(mockGoogleUser, "mock_google_token_" + Date.now(), "mock_google_refresh_" + Date.now());
+            } else {
+                const msg =
+                    apiErr.response?.data?.message ||
+                    apiErr.response?.data?.detail ||
+                    "Đăng nhập bằng tài khoản Google không thành công. Vui lòng thử lại.";
+                setToast({
+                    type: "error",
+                    title: "Đăng nhập Google thất bại",
+                    message: msg,
+                });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = () => {
+        if (isLoading) return;
+        setToast(null);
+
+        // Kích hoạt nút Google Sign-In chính thức để mở cửa sổ chọn tài khoản Google
+        const hiddenBtn = document.querySelector("#google-login-hidden-wrapper div[role=button]");
+        if (hiddenBtn) {
+            hiddenBtn.click();
+        } else if (window.google?.accounts?.id) {
+            window.google.accounts.id.prompt();
+        } else {
+            // Khi không có mạng hoặc Google SDK bị chặn: fallback sang tài khoản mẫu
+            setToast({
+                type: "info",
+                title: "Chế độ trải nghiệm",
+                message: "Không tải được Google Sign-In SDK. Đang đăng nhập bằng tài khoản Google mẫu...",
+            });
+            const mockGoogleUser = {
+                name: "Nguyễn Văn An (Google)",
+                email: "an.nguyen.google@carelink.vn",
+                role: "family",
+                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            };
+            handleLoginSuccess(mockGoogleUser, "mock_google_token_" + Date.now(), "mock_google_refresh_" + Date.now());
+        }
+    };
+
+    const googleCallbackRef = useRef(handleGoogleCredentialResponse);
+    useEffect(() => {
+        googleCallbackRef.current = handleGoogleCredentialResponse;
+    });
+
+    useEffect(() => {
+        const clientId =
+            import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+            "617746468209-jupm19jbfemqgdfv2gsbetlu4imretnk.apps.googleusercontent.com";
+
+        const initGoogle = () => {
+            if (window.google?.accounts?.id) {
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: (res) => googleCallbackRef.current?.(res),
+                });
+
+                const wrapper = document.getElementById("google-login-hidden-wrapper");
+                if (wrapper) {
+                    window.google.accounts.id.renderButton(wrapper, {
+                        type: "standard",
+                        theme: "outline",
+                        size: "large",
+                    });
+                }
+            }
         };
 
-        handleLoginSuccess(mockGoogleUser, "mock_google_token_" + Date.now(), "mock_google_refresh_" + Date.now());
-    };
+        if (window.google?.accounts?.id) {
+            initGoogle();
+        } else {
+            const timer = setInterval(() => {
+                if (window.google?.accounts?.id) {
+                    initGoogle();
+                    clearInterval(timer);
+                }
+            }, 300);
+            return () => clearInterval(timer);
+        }
+    }, []);
 
     return (
         <div className="min-h-screen flex flex-col bg-[#EEF1F0] text-[#102A2F] antialiased selection:bg-teal-100 selection:text-teal-900 font-sans">
@@ -495,6 +606,9 @@ export default function Login() {
 
                                 <div className="flex-1 border-t border-[#DDE2DE]" />
                             </div>
+
+                            {/* Hidden Google Sign-In SDK button container */}
+                            <div id="google-login-hidden-wrapper" className="hidden" aria-hidden="true" />
 
                             {/* Google login */}
                             <button
