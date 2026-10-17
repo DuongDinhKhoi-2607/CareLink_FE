@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
     Play,
@@ -11,6 +11,62 @@ import {
 } from "lucide-react";
 import SubmitHealthRecordModal from "../components/SubmitHealthRecordModal";
 import ViewHealthRecordModal from "../../family/components/ViewHealthRecordModal";
+import caregiverApi from "../../../api/caregiverApi";
+
+// Adapter chuyển đổi dữ liệu BookingResponse từ Backend sang DTO hiển thị của Điều dưỡng
+const mapBackendToCaregiverBooking = (b) => {
+    const rawStatus = typeof b.status === "number" ? b.status : 2;
+    let status = "pending";
+    if (rawStatus === 2) status = "pending"; // PendingAcceptance
+    else if (rawStatus === 3) status = "accepted"; // Accepted
+    else if (rawStatus === 4) status = "in_progress"; // InProgress
+    else if (rawStatus === 5) status = "completed"; // Completed
+    else if (rawStatus === 6) status = "rejected"; // Canceled
+
+    const startDate = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
+    const endDate = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
+    const formattedDate = startDate.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+    const startTime = startDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const endTime = endDate ? endDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
+    const timeStr = endTime ? `${startTime} – ${endTime}` : startTime;
+
+    return {
+        id: b.id,
+        rawId: b.id,
+        status,
+        requestedAt: new Date(b.createdAt || Date.now()).toLocaleString("vi-VN"),
+        source: "direct",
+        family: {
+            name: b.customerName || "Khách hàng CareLink",
+            phone: "0901 234 567",
+            address: b.addressSnapshot || "Địa chỉ khách hàng",
+            rating: 5.0,
+            totalSessions: 1,
+        },
+        patient: {
+            name: b.recipientName || "Người nhận chăm sóc",
+            age: 70,
+            gender: "Chưa rõ",
+            condition: "Theo yêu cầu ca chăm sóc",
+            mobility: "Bình thường",
+            allergies: "Không có",
+            notes: "Ca chăm sóc đặt qua hệ thống CareLink.",
+        },
+        service: {
+            type: b.serviceName || "Chăm sóc theo yêu cầu",
+            date: formattedDate,
+            time: timeStr,
+            duration: "Theo ca",
+            fee: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + " VNĐ" : "350.000 VNĐ",
+            tasks: ["Theo dõi sinh hiệu", "Chăm sóc theo chỉ định", "Ghi nhật ký ca trực"],
+        },
+        rawBackendData: b
+    };
+};
 
 /* ─── Mock booking data — sẽ thay bằng API ─── */
 const MOCK_BOOKINGS = [
@@ -505,7 +561,10 @@ function FilterTab({ label, count, active, onClick }) {
    CaregiverBookingRequests
 ═══════════════════════════════════════════ */
 export default function CaregiverBookingRequests() {
-    const [bookings, setBookings] = useState(MOCK_BOOKINGS);
+    const [bookings, setBookings] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [apiError, setApiError] = useState(null);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
     const [filter, setFilter] = useState("all"); // "all" | "pending" | "accepted" | "in_progress" | "completed" | "rejected"
     const [reportingBooking, setReportingBooking] = useState(null);
     const [viewingRecordBooking, setViewingRecordBooking] = useState(null);
@@ -516,25 +575,85 @@ export default function CaregiverBookingRequests() {
         setTimeout(() => setToastMessage(null), 4000);
     };
 
-    const handleAccept = (id) => {
-        setBookings((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, status: "accepted" } : b))
-        );
-        showToast("Đã chấp nhận ca thành công! Ca chuyển sang trạng thái sẵn sàng thực hiện.");
+    // 1. Tải danh sách ca chăm sóc của điều dưỡng từ Backend API (GET /api/v1/bookings)
+    const fetchBookings = useCallback(async () => {
+        setIsLoading(true);
+        setApiError(null);
+        try {
+            const res = await caregiverApi.getBookings({ PageNumber: 1, PageSize: 50 });
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            setBookings(items.map(mapBackendToCaregiverBooking));
+            setIsUsingFallback(false);
+        } catch (err) {
+            console.warn("[CareLink] Tải danh sách ca chăm sóc thất bại:", err);
+            const status = err.response?.status;
+            if (status === 401 || status === 403) {
+                setApiError("Phiên đăng nhập đã hết hạn hoặc bạn không có quyền xem danh sách nhận ca.");
+                setBookings([]);
+                setIsUsingFallback(false);
+            } else if (!err.response || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK") {
+                // Tự động hiển thị dữ liệu mẫu chuẩn hóa khi mất mạng / offline
+                setIsUsingFallback(true);
+                setBookings(MOCK_BOOKINGS);
+            } else {
+                setApiError(err.response?.data?.detail || err.response?.data?.message || "Không thể tải danh sách ca chăm sóc.");
+                setBookings([]);
+                setIsUsingFallback(false);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBookings();
+    }, [fetchBookings]);
+
+    // 2. Điều dưỡng chấp nhận ca (PUT /api/v1/bookings/{id}/accept)
+    const handleAccept = async (id) => {
+        try {
+            await caregiverApi.acceptBooking(id);
+            showToast("Đã chấp nhận ca thành công! Ca chuyển sang trạng thái sẵn sàng thực hiện.");
+            fetchBookings();
+        } catch (err) {
+            const errorMsg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Lỗi khi chấp nhận ca hẹn.";
+            showToast(errorMsg);
+        }
     };
 
-    const handleReject = (id) => {
-        setBookings((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, status: "rejected" } : b))
-        );
-        showToast("Đã từ chối nhận ca hẹn.");
+    // 3. Điều dưỡng từ chối ca (PUT /api/v1/bookings/{id}/reject)
+    const handleReject = async (id) => {
+        const reason = window.prompt("Vui lòng nhập lý do từ chối nhận ca:", "Bận lịch trùng ca khác");
+        if (reason === null) return;
+        try {
+            await caregiverApi.rejectBooking(id, { reason: reason.trim() || "Điều dưỡng bận lịch" });
+            showToast("Đã từ chối nhận ca hẹn.");
+            fetchBookings();
+        } catch (err) {
+            const errorMsg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Lỗi khi từ chối ca hẹn.";
+            showToast(errorMsg);
+        }
     };
 
-    const handleStart = (id) => {
-        setBookings((prev) =>
-            prev.map((b) => (b.id === id ? { ...b, status: "in_progress" } : b))
-        );
-        showToast("Ca chăm sóc đã bắt đầu! Bạn có thể ghi nhận sinh hiệu khi kết thúc ca.");
+    // 4. Bắt đầu ca chăm sóc (PUT /api/v1/bookings/{id}/start)
+    const handleStart = async (id) => {
+        try {
+            await caregiverApi.startBooking(id);
+            showToast("Ca chăm sóc đã bắt đầu! Bạn có thể ghi nhận sinh hiệu khi kết thúc ca.");
+            fetchBookings();
+        } catch (err) {
+            const errorMsg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Lỗi khi bắt đầu ca chăm sóc.";
+            showToast(errorMsg);
+        }
     };
 
     const handleSaveHealthRecordSuccess = (healthRecordDto) => {
@@ -550,6 +669,7 @@ export default function CaregiverBookingRequests() {
             )
         );
         showToast("Bệnh án đã được lưu thành công vào hồ sơ! Ca chăm sóc đã hoàn tất.");
+        fetchBookings();
     };
 
     const counts = {
@@ -594,6 +714,25 @@ export default function CaregiverBookingRequests() {
                 )}
             </div>
 
+            {/* Error Banner with Retry */}
+            {apiError && (
+                <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <svg className="w-5 h-5 text-rose-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                        <p className="text-sm font-medium text-rose-800">{apiError}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={fetchBookings}
+                        className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-colors shrink-0 cursor-pointer"
+                    >
+                        Thử lại
+                    </button>
+                </div>
+            )}
+
             {/* Filter tabs */}
             <div className="flex items-center gap-2 mb-6 flex-wrap">
                 {TABS.map((t) => (
@@ -608,7 +747,24 @@ export default function CaregiverBookingRequests() {
             </div>
 
             {/* Booking list */}
-            {filtered.length === 0 ? (
+            {isLoading ? (
+                <div className="flex flex-col gap-4">
+                    {[1, 2, 3].map((n) => (
+                        <div key={n} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm animate-pulse space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                                <div className="h-6 bg-slate-200 rounded-full w-24"></div>
+                            </div>
+                            <div className="h-5 bg-slate-200 rounded w-1/2"></div>
+                            <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                                <div className="h-9 bg-slate-200 rounded-xl w-24"></div>
+                                <div className="h-9 bg-slate-200 rounded-xl w-32"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : filtered.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-100 p-16 flex flex-col items-center gap-4 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
                         <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">

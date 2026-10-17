@@ -10,6 +10,7 @@ import CaregiverProfile from "./features/family/pages/CaregiverProfile";
 import Chat from "./features/family/pages/Chat";
 import DashboardMessages from "./features/family/pages/DashboardMessages";
 import Checkout from "./features/family/pages/Checkout";
+import PaymentResult from "./features/family/pages/PaymentResult";
 import Dashboard from "./features/family/pages/Dashboard";
 import Appointments from "./features/family/pages/Appointments";
 import Relatives from "./features/family/pages/Relatives";
@@ -58,9 +59,12 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/family" element={<ForFamily />} />
             <Route path="/caregivers" element={<CaregiverList />} />
+            <Route path="/search-caregivers" element={<CaregiverList />} />
             <Route path="/caregivers/profile" element={<CaregiverProfile />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment/success" element={<PaymentResult />} />
+            <Route path="/payment/cancel" element={<PaymentResult />} />
             <Route path="/review" element={<Review />} />
             {/* Luồng người chăm sóc công khai */}
             <Route path="/caregiver" element={<ForCaregiver />} />

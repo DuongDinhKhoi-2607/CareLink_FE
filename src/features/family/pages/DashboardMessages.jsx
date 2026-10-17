@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import conversationApi from "../../../api/conversationApi";
 
 // Dữ liệu danh sách các cuộc trò chuyện trong Dashboard
 const initialConversations = [
@@ -165,19 +166,112 @@ const quickReplies = [
 ];
 
 export default function DashboardMessages() {
-    const [conversations] = useState(initialConversations);
+    const [conversations, setConversations] = useState(initialConversations);
     const [activeChatId, setActiveChatId] = useState("caregiver-1");
     const [messagesMap, setMessagesMap] = useState(initialMessagesMap);
     const [inputText, setInputText] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState("all");
     const [isTyping, setIsTyping] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const [showRightDrawer, setShowRightDrawer] = useState(false);
     const [mobileView, setMobileView] = useState("chat"); // 'list' | 'chat'
+    const [toastMessage, setToastMessage] = useState(null);
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+    };
+
+    // 1. Tải danh sách hội thoại thực từ Backend API (GET /api/v1/conversations)
+    useEffect(() => {
+        let isMounted = true;
+        conversationApi
+            .getConversations({ PageNumber: 1, PageSize: 50 })
+            .then((res) => {
+                if (!isMounted) return;
+                const items = res?.items || (Array.isArray(res) ? res : []);
+                if (items.length > 0) {
+                    const mapped = items.map((c) => ({
+                        id: c.id,
+                        name: c.otherPartyName || c.nurseName,
+                        role: c.otherPartyRole === "Nurse" ? "Điều dưỡng chuyên nghiệp" : "Thành viên gia đình",
+                        avatar: c.otherPartyAvatar || c.nurseAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+                        online: true,
+                        type: "active",
+                        careTarget: "Trao đổi kế hoạch chăm sóc",
+                        shiftInfo: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleDateString("vi-VN") : "Hội thoại mới",
+                        serviceName: "Dịch vụ điều dưỡng CareLink",
+                        address: "TP. Hồ Chí Minh",
+                        unreadCount: 0,
+                        lastMessage: c.lastMessageContent || "Chưa có tin nhắn mới",
+                        lastTime: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "",
+                        vitals: null,
+                        isRealApi: true,
+                    }));
+                    setConversations(mapped);
+                    setActiveChatId(mapped[0].id);
+                } else {
+                    // API thành công nhưng danh sách rỗng -> hiển thị empty state, không thay bằng mock
+                    setConversations([]);
+                    setActiveChatId(null);
+                }
+            })
+            .catch((err) => {
+                const status = err.response?.status;
+                if (status === 401 || status === 403) {
+                    // Lỗi phân quyền hoặc hết phiên -> không dùng mock che giấu
+                    setConversations([]);
+                    setActiveChatId(null);
+                } else if (!err.response || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK") {
+                    // Chỉ dùng mock fallback khi mất kết nối mạng / server offline
+                    setConversations(initialConversations);
+                    setActiveChatId(initialConversations[0]?.id || null);
+                } else {
+                    // Lỗi 400/404/500 từ máy chủ
+                    setConversations([]);
+                    setActiveChatId(null);
+                }
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const messagesContainerRef = useRef(null);
     const activeConv = conversations.find((c) => c.id === activeChatId) || conversations[0];
     const currentMessages = messagesMap[activeChatId] || [];
+
+    // 2. Tải tin nhắn của hội thoại đang chọn nếu là Real API
+    useEffect(() => {
+        if (!activeConv?.isRealApi || !activeChatId) return;
+        let isMounted = true;
+        conversationApi
+            .getMessages(activeChatId, { PageNumber: 1, PageSize: 50 })
+            .then((res) => {
+                if (!isMounted) return;
+                const items = res?.items || (Array.isArray(res) ? res : []);
+                const mappedMsgs = items.map((m) => ({
+                    id: m.id,
+                    sender: m.isMine ? "family" : "caregiver",
+                    text: m.content,
+                    time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                    type: m.type === 2 ? "proposal_card" : "text",
+                    proposalId: m.proposalId,
+                    bookingId: m.bookingId,
+                }));
+                setMessagesMap((prev) => ({
+                    ...prev,
+                    [activeChatId]: mappedMsgs,
+                }));
+            })
+            .catch((err) => {
+                console.warn("[CareLink] Tải tin nhắn thất bại:", err);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [activeChatId, activeConv?.isRealApi]);
 
     // Luôn giữ ở đầu trang khi mới vào trang chat hoặc khi chuyển đổi hội thoại
     useEffect(() => {
@@ -200,9 +294,9 @@ export default function DashboardMessages() {
     // Lọc danh sách hội thoại
     const filteredConversations = conversations.filter((c) => {
         const matchesSearch =
-            c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.careTarget.toLowerCase().includes(searchQuery.toLowerCase());
+            c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.careTarget?.toLowerCase().includes(searchQuery.toLowerCase());
 
         if (!matchesSearch) return false;
         if (activeFilter === "active") return c.type === "active";
@@ -211,10 +305,41 @@ export default function DashboardMessages() {
     });
 
     // Xử lý gửi tin nhắn
-    const handleSendMessage = (textToSend) => {
+    const handleSendMessage = async (textToSend) => {
         const text = (textToSend || inputText).trim();
-        if (!text) return;
+        if (!text || isSending) return;
 
+        if (activeConv?.isRealApi) {
+            setIsSending(true);
+            try {
+                const res = await conversationApi.sendMessage(activeChatId, { content: text });
+                const newMsg = {
+                    id: res.id || Date.now(),
+                    sender: "family",
+                    text: res.content || text,
+                    time: new Date(res.createdAt || Date.now()).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    }),
+                    type: "text",
+                };
+                setMessagesMap((prev) => ({
+                    ...prev,
+                    [activeChatId]: [...(prev[activeChatId] || []), newMsg],
+                }));
+                setInputText("");
+                setTimeout(() => scrollToBottom("smooth"), 50);
+            } catch (err) {
+                console.error("[CareLink] Gửi tin nhắn thất bại:", err);
+                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi tin nhắn. Vui lòng thử lại.";
+                showToast(msg);
+            } finally {
+                setIsSending(false);
+            }
+            return;
+        }
+
+        // Chế độ dự phòng demo
         const newMsgId = Date.now();
         const nowTime = new Date().toLocaleTimeString("vi-VN", {
             hour: "2-digit",
@@ -640,6 +765,42 @@ export default function DashboardMessages() {
                                                     <strong>Ghi chú:</strong> {msg.vitals.note}
                                                 </p>
                                             </div>
+                                        ) : msg.type === "proposal_card" ? (
+                                            /* Thẻ đề xuất ca chăm sóc (Proposal Card) */
+                                            <div className="p-4 rounded-2xl bg-white border border-teal-200 shadow-sm text-slate-800 space-y-2.5 max-w-sm">
+                                                <div className="flex items-center justify-between border-b border-teal-100 pb-2">
+                                                    <span className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                                                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.09 1.976 1.053 1.976 2.188V8.25" />
+                                                        </svg>
+                                                        Đề xuất lịch chăm sóc
+                                                    </span>
+                                                    <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">
+                                                        Thỏa thuận 2 chiều
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-700 leading-relaxed">{msg.text}</p>
+                                                {msg.bookingId && (
+                                                    <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+                                                        <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                                                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                            </svg>
+                                                            Đã tạo ca thành công (Chờ thanh toán)
+                                                        </span>
+                                                        <Link
+                                                            to="/checkout"
+                                                            state={{ bookingId: msg.bookingId }}
+                                                            className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold shadow-xs hover:from-emerald-700 hover:to-teal-800 transition-all cursor-pointer"
+                                                        >
+                                                            Tiến hành thanh toán
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                            </svg>
+                                                        </Link>
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
                                             /* Bong bóng tin nhắn text thông thường */
                                             <div
@@ -653,14 +814,9 @@ export default function DashboardMessages() {
                                             </div>
                                         )}
 
-                                        {/* Timestamp + Read Status */}
+                                        {/* Timestamp */}
                                         <div className={`flex items-center gap-1 text-[10px] text-slate-400 px-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
                                             <span>{msg.time}</span>
-                                            {isOutgoing && (
-                                                <span className="text-teal-600 font-bold" title="Đã xem">
-                                                    ✓✓
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -874,6 +1030,14 @@ export default function DashboardMessages() {
                     )}
                 </div>
             </div>
+
+            {/* Toast feedback */}
+            {toastMessage && (
+                <div className="fixed bottom-6 right-6 z-50 animate-bounce bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-medium border border-slate-700">
+                    <span className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+                    <span>{toastMessage}</span>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,7 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import CaregiverCard from "../components/CaregiverCard";
 import CaregiverFilterSidebar from "../components/CaregiverFilterSidebar";
+import familyApi from "../../../api/familyApi";
+
+// Helper chuyển đổi dữ liệu từ Backend API (GET /api/v1/nurses/search) sang cấu trúc Card
+const normalizeNurse = (item) => ({
+    id: item.nurseId || item.id,
+    nurseId: item.nurseId || item.id,
+    name: item.fullName || item.name || "Điều dưỡng CareLink",
+    fullName: item.fullName || item.name || "Điều dưỡng CareLink",
+    role: item.educationLevel || item.role || "Điều dưỡng chuyên nghiệp",
+    educationLevel: item.educationLevel || item.role || "Điều dưỡng chuyên nghiệp",
+    rate: item.rate || "Từ 200.000đ/ca",
+    rateNumber: item.rateNumber || 200000,
+    experience: item.experienceYears ? `${item.experienceYears} năm KN` : (item.experience || "Nhiều năm KN"),
+    experienceYears: item.experienceYears || 1,
+    specialty: item.specialty || (item.educationLevel || "Chăm sóc toàn diện"),
+    qualifications: item.educationLevel || item.qualifications || "Điều dưỡng",
+    availability: item.availability || ["Ngày thường", "Ca ngày"],
+    location: item.workDistrict || item.location || "TP. Hồ Chí Minh",
+    city: item.city || "Thành phố Hồ Chí Minh",
+    quote: item.bio || item.quote || "Điều dưỡng được xác thực chuyên môn, tận tâm hỗ trợ gia đình.",
+    bio: item.bio || item.quote || "Điều dưỡng được xác thực chuyên môn, tận tâm hỗ trợ gia đình.",
+    rating: item.averageRating != null ? Number(item.averageRating).toFixed(1) : (item.rating || 5.0),
+    averageRating: item.averageRating != null ? Number(item.averageRating) : (item.rating || 5.0),
+    totalReviews: item.totalReviews || 0,
+    distanceKm: item.distanceKm,
+    serviceRadiusKm: item.serviceRadiusKm,
+    image: item.avatarUrl || item.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
+    avatarUrl: item.avatarUrl || item.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
+    rawBackendData: item,
+});
 
 // ============================================================
 // DỮ LIỆU BỘ LỌC
@@ -234,25 +264,24 @@ export default function CaregiverList() {
     const serviceFromState = locationState.state?.selectedService;
 
     // ========================================================
-    // STATE
+    // STATE: Bộ lọc UI & API Parameters
     // ========================================================
-
     const [location, setLocation] = useState("");
     const [keyword, setKeyword] = useState("");
+    const [minRating, setMinRating] = useState(null);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [pageSize] = useState(10);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
 
-    const [selectedQualifications, setSelectedQualifications] =
-        useState([]);
-
+    const [selectedQualifications, setSelectedQualifications] = useState([]);
     const [selectedSpecialties, setSelectedSpecialties] = useState(
         serviceFromState?.specialtyMatch
             ? [serviceFromState.specialtyMatch]
             : []
     );
-
     const [selectedAvailability, setSelectedAvailability] = useState([]);
-
     const [priceRange, setPriceRange] = useState(275000);
-
     const [sort, setSort] = useState("Đánh giá cao nhất");
 
     const [activeService, setActiveService] = useState(
@@ -260,9 +289,98 @@ export default function CaregiverList() {
     );
 
     // ========================================================
+    // STATE: Dữ liệu thực từ Backend API
+    // ========================================================
+    const [nurses, setNurses] = useState([]);
+    const [servicesList, setServicesList] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [apiError, setApiError] = useState(null);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
+    const [searchTrigger, setSearchTrigger] = useState(0);
+
+    // 1. Tải danh mục dịch vụ thực từ Backend (GET /api/v1/services)
+    useEffect(() => {
+        let isMounted = true;
+        familyApi
+            .getServices()
+            .then((data) => {
+                if (isMounted && Array.isArray(data)) {
+                    setServicesList(data);
+                }
+            })
+            .catch((err) => {
+                console.warn("[CareLink] Tải danh mục dịch vụ thất bại:", err);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    // 2. Gọi API tìm kiếm điều dưỡng từ Backend (GET /api/v1/nurses/search)
+    const fetchNurses = useCallback(async () => {
+        setIsLoading(true);
+        setApiError(null);
+
+        const params = {
+            PageNumber: pageNumber,
+            PageSize: pageSize,
+        };
+
+        const trimmedLocation = location.trim();
+        if (trimmedLocation) {
+            params.District = trimmedLocation;
+        }
+
+        if (activeService?.id) {
+            params.ServiceId = activeService.id;
+        }
+
+        if (minRating != null) {
+            params.MinRating = minRating;
+        }
+
+        try {
+            const res = await familyApi.searchNurses(params);
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            const normalized = items.map(normalizeNurse);
+            setNurses(normalized);
+            setTotalCount(res?.totalCount ?? items.length);
+            setTotalPages(
+                res?.totalPages ??
+                    (items.length > 0 ? Math.ceil((res?.totalCount || items.length) / pageSize) : 0)
+            );
+            setIsUsingFallback(false);
+        } catch (err) {
+            console.warn("[CareLink] Nurse search API error:", err);
+            const msg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Không thể kết nối đến máy chủ để tải danh sách điều dưỡng.";
+            setApiError(msg);
+
+            // Safety fallback: Khi mất kết nối mạng để không làm sập giao diện demo
+            if (err.code === "ERR_NETWORK" || !err.response) {
+                setIsUsingFallback(true);
+                setNurses(caregiversData.map(normalizeNurse));
+                setTotalCount(caregiversData.length);
+                setTotalPages(1);
+            } else {
+                setNurses([]);
+                setTotalCount(0);
+                setTotalPages(0);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [pageNumber, pageSize, location, activeService, minRating]);
+
+    useEffect(() => {
+        fetchNurses();
+    }, [fetchNurses, searchTrigger]);
+
+    // ========================================================
     // FILTER HELPERS
     // ========================================================
-
     const toggleItem = (item, list, setList) => {
         if (list.includes(item)) {
             setList(list.filter((i) => i !== item));
@@ -271,10 +389,17 @@ export default function CaregiverList() {
         }
     };
 
-    // Reset bộ lọc nhưng vẫn giữ dịch vụ đang chọn
+    const handleSearchSubmit = (e) => {
+        if (e) e.preventDefault();
+        setPageNumber(1);
+        setSearchTrigger((prev) => prev + 1);
+    };
+
+    // Reset bộ lọc
     const resetFilters = () => {
         setLocation("");
         setKeyword("");
+        setMinRating(null);
         setSelectedQualifications([]);
         setSelectedSpecialties(
             activeService?.specialtyMatch
@@ -283,17 +408,20 @@ export default function CaregiverList() {
         );
         setSelectedAvailability([]);
         setPriceRange(275000);
+        setPageNumber(1);
+        setSearchTrigger((prev) => prev + 1);
     };
 
     // Xem toàn bộ điều dưỡng
     const showAllCaregivers = () => {
         setActiveService(null);
         setSelectedSpecialties([]);
-
+        setPageNumber(1);
         navigate("/caregivers", {
             replace: true,
             state: {},
         });
+        setSearchTrigger((prev) => prev + 1);
     };
 
     const handleProfile = (caregiver) => {
@@ -306,10 +434,9 @@ export default function CaregiverList() {
     };
 
     // ========================================================
-    // FILTER LOGIC
+    // FILTER & SORT DỮ LIỆU
     // ========================================================
-
-    const filteredCaregivers = caregiversData
+    const filteredCaregivers = nurses
         .filter((caregiver) => {
             if (
                 selectedSpecialties.length > 0 &&
@@ -344,35 +471,13 @@ export default function CaregiverList() {
             if (keyword.trim() !== "") {
                 const kw = keyword.toLowerCase();
 
-                const matchName = caregiver.name
-                    .toLowerCase()
-                    .includes(kw);
+                const matchName = (caregiver.name || "").toLowerCase().includes(kw);
+                const matchSpecialty = (caregiver.specialty || "").toLowerCase().includes(kw);
+                const matchRole = (caregiver.role || "").toLowerCase().includes(kw);
+                const matchBio = (caregiver.bio || "").toLowerCase().includes(kw);
+                const matchDistrict = (caregiver.workDistrict || "").toLowerCase().includes(kw);
 
-                const matchSpecialty = caregiver.specialty
-                    .toLowerCase()
-                    .includes(kw);
-
-                const matchRole = caregiver.role
-                    .toLowerCase()
-                    .includes(kw);
-
-                if (!matchName && !matchSpecialty && !matchRole) {
-                    return false;
-                }
-            }
-
-            if (location.trim() !== "") {
-                const loc = location.toLowerCase();
-
-                const matchLocation = caregiver.location
-                    ?.toLowerCase()
-                    .includes(loc);
-
-                const matchCity = caregiver.city
-                    ?.toLowerCase()
-                    .includes(loc);
-
-                if (!matchLocation && !matchCity) {
+                if (!matchName && !matchSpecialty && !matchRole && !matchBio && !matchDistrict) {
                     return false;
                 }
             }
@@ -381,19 +486,19 @@ export default function CaregiverList() {
         })
         .sort((a, b) => {
             if (sort === "Đánh giá cao nhất") {
-                return b.rating - a.rating;
+                return Number(b.rating || 0) - Number(a.rating || 0);
             }
 
             if (sort === "Kinh nghiệm nhiều nhất") {
-                return b.experienceYears - a.experienceYears;
+                return (b.experienceYears || 0) - (a.experienceYears || 0);
             }
 
             if (sort === "Giá thấp nhất") {
-                return a.rateNumber - b.rateNumber;
+                return (a.rateNumber || 0) - (b.rateNumber || 0);
             }
 
             if (sort === "Giá cao nhất") {
-                return b.rateNumber - a.rateNumber;
+                return (b.rateNumber || 0) - (a.rateNumber || 0);
             }
 
             return 0;
@@ -579,7 +684,7 @@ export default function CaregiverList() {
                     </div>
 
                     <form
-                        onSubmit={(e) => e.preventDefault()}
+                        onSubmit={handleSearchSubmit}
                         className="bg-white border border-[#dfe8e5] rounded-2xl p-3 sm:p-4 shadow-[0_10px_35px_-25px_rgba(16,32,48,0.22)]"
                     >
 
@@ -597,7 +702,7 @@ export default function CaregiverList() {
                                     onChange={(e) =>
                                         setLocation(e.target.value)
                                     }
-                                    placeholder="Khu vực hoặc thành phố"
+                                    placeholder="Khu vực hoặc thành phố (VD: Quận 1, Bình Thạnh)"
                                     className="w-full h-12 pl-11 pr-4 rounded-xl bg-[#f7faf9] border border-transparent text-sm text-[#102030] placeholder:text-slate-400 outline-none transition-all focus:bg-white focus:border-[#a8d4ca] focus:ring-4 focus:ring-[#00677c]/5"
                                 />
 
@@ -663,6 +768,17 @@ export default function CaregiverList() {
                         setPriceRange={setPriceRange}
                         selectedAvailability={selectedAvailability}
                         setSelectedAvailability={setSelectedAvailability}
+                        minRating={minRating}
+                        setMinRating={(r) => {
+                            setMinRating(r);
+                            setPageNumber(1);
+                        }}
+                        servicesList={servicesList}
+                        activeService={activeService}
+                        setActiveService={(s) => {
+                            setActiveService(s);
+                            setPageNumber(1);
+                        }}
                         resetFilters={resetFilters}
                         toggleItem={toggleItem}
                     />
@@ -691,7 +807,7 @@ export default function CaregiverList() {
                                     </h2>
 
                                     <span className="text-sm font-semibold text-[#00677c]">
-                                        {filteredCaregivers.length} hồ sơ
+                                        {isLoading ? "Đang tải..." : `${filteredCaregivers.length} hồ sơ`}
                                     </span>
 
                                 </div>
@@ -752,12 +868,46 @@ export default function CaregiverList() {
                         {(selectedQualifications.length > 0 ||
                             selectedSpecialties.length > 0 ||
                             selectedAvailability.length > 0 ||
+                            minRating != null ||
+                            activeService ||
                             priceRange < 275000) && (
                                 <div className="flex flex-wrap items-center gap-2 mb-5">
 
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
                                         Đang lọc:
                                     </span>
+
+                                    {activeService && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00677c]/10 text-[#00677c] text-[10px] font-bold">
+                                            Dịch vụ: {activeService.name || activeService.title}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setActiveService(null);
+                                                    setPageNumber(1);
+                                                }}
+                                                className="ml-1 text-slate-400 hover:text-[#00677c]"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {minRating && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">
+                                            {minRating}★ trở lên
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setMinRating(null);
+                                                    setPageNumber(1);
+                                                }}
+                                                className="ml-1 text-slate-400 hover:text-amber-700"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
 
                                     {selectedQualifications.map((item) => (
                                         <span
@@ -790,22 +940,90 @@ export default function CaregiverList() {
                             )}
 
                         {/* ==================================================
-                            CAREGIVER GRID
+                            CAREGIVER GRID / LOADING / ERROR / EMPTY STATES
                         ================================================== */}
 
-                        {filteredCaregivers.length > 0 ? (
+                        {isLoading ? (
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-
-                                {filteredCaregivers.map((caregiver) => (
-                                    <CaregiverCard
-                                        key={caregiver.id}
-                                        caregiver={caregiver}
-                                        onProfile={handleProfile}
-                                        onBook={handleProfile}
-                                    />
+                                {[1, 2, 3, 4].map((n) => (
+                                    <div
+                                        key={n}
+                                        className="bg-white rounded-2xl border border-[#dfe8e5] p-5 animate-pulse flex flex-col gap-4"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 rounded-2xl bg-slate-200 shrink-0" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-4 bg-slate-200 rounded w-2/3" />
+                                                <div className="h-3 bg-slate-100 rounded w-1/3" />
+                                            </div>
+                                        </div>
+                                        <div className="h-10 bg-slate-100 rounded-xl" />
+                                        <div className="flex gap-2 pt-2 border-t border-slate-100">
+                                            <div className="h-9 bg-slate-200 rounded-xl flex-1" />
+                                            <div className="h-9 bg-slate-200 rounded-xl flex-1" />
+                                        </div>
+                                    </div>
                                 ))}
-
                             </div>
+                        ) : apiError && !isUsingFallback ? (
+                            <div className="bg-white border border-rose-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                                <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-sm font-bold text-rose-800">Không thể kết nối đến máy chủ tìm kiếm</h3>
+                                <p className="text-xs text-rose-600 max-w-sm mt-1">{apiError}</p>
+                                <button
+                                    type="button"
+                                    onClick={fetchNurses}
+                                    className="mt-4 px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-xl hover:bg-rose-700 transition-colors cursor-pointer"
+                                >
+                                    Thử tải lại
+                                </button>
+                            </div>
+                        ) : filteredCaregivers.length > 0 ? (
+                            <>
+                                {isUsingFallback && (
+                                    <div className="mb-4 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between">
+                                        <span>Đang kết nối chế độ dự phòng do máy chủ tạm thời không khả dụng.</span>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                                    {filteredCaregivers.map((caregiver) => (
+                                        <CaregiverCard
+                                            key={caregiver.id}
+                                            caregiver={caregiver}
+                                            onProfile={handleProfile}
+                                            onBook={handleProfile}
+                                        />
+                                    ))}
+                                </div>
+
+                                {totalPages > 1 && (
+                                    <div className="mt-8 flex items-center justify-center gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={pageNumber <= 1}
+                                            onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                                            className="px-3.5 py-2 rounded-xl border border-[#dfe8e5] bg-white text-xs font-semibold text-[#102030] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#f6f9f8] transition-colors cursor-pointer"
+                                        >
+                                            Trang trước
+                                        </button>
+                                        <span className="text-xs text-slate-500 font-medium px-2">
+                                            Trang {pageNumber} / {totalPages} ({totalCount} kết quả)
+                                        </span>
+                                        <button
+                                            type="button"
+                                            disabled={pageNumber >= totalPages}
+                                            onClick={() => setPageNumber((p) => Math.min(totalPages, p + 1))}
+                                            className="px-3.5 py-2 rounded-xl border border-[#dfe8e5] bg-white text-xs font-semibold text-[#102030] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#f6f9f8] transition-colors cursor-pointer"
+                                        >
+                                            Trang sau
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <div className="bg-white border border-[#dfe8e5] rounded-2xl p-12 flex flex-col items-center justify-center text-center">
 
@@ -814,12 +1032,11 @@ export default function CaregiverList() {
                                 </div>
 
                                 <h3 className="text-base font-bold text-[#102030]">
-                                    Chưa tìm thấy hồ sơ phù hợp
+                                    Chưa tìm thấy điều dưỡng phù hợp
                                 </h3>
 
                                 <p className="text-xs text-slate-500 max-w-sm leading-relaxed mt-2">
-                                    Thử mở rộng khu vực tìm kiếm, tăng ngân
-                                    sách hoặc bỏ bớt một vài tiêu chí lọc.
+                                    Không có điều dưỡng nào khớp với tiêu chí tìm kiếm hiện tại. Thử đổi khu vực hoặc chọn bộ lọc khác.
                                 </p>
 
                                 <button

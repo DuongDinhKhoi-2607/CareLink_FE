@@ -274,6 +274,7 @@ export default function BookingSummary({
                         {status === "caregiver_accepted" && (
                             <Link
                                 to="/checkout"
+                                state={{ bookingId: bookingInfo?.bookingId || bookingInfo?.id, booking: bookingInfo }}
                                 className="group flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-3.5 text-white shadow-md shadow-emerald-700/20 transition-all hover:from-emerald-700 hover:to-teal-800 hover:shadow-lg active:scale-[0.99] cursor-pointer"
                             >
                                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-100">

@@ -1,10 +1,144 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import ViewHealthRecordModal from "../components/ViewHealthRecordModal";
 import CreateDisputeModal from "../components/CreateDisputeModal";
+import familyApi from "../../../api/familyApi";
+
+// Adapter chuyển đổi BookingResponse từ Backend sang cấu trúc hiển thị của giao diện Family
+const mapBookingToAppointment = (b) => {
+    const rawStatus = typeof b.status === "number" ? b.status : 1;
+    let tab = "upcoming";
+    let statusLabel = "ĐÃ TIẾP NHẬN";
+    let statusBadge = "bg-[#e2f4f2] text-[#007469]";
+    let dotColor = "bg-[#00a896]";
+    let canCancel = true;
+    let statusStr = "confirmed";
+
+    if (rawStatus === 1) { // PendingPayment
+        tab = "upcoming";
+        statusLabel = "CHỜ THANH TOÁN";
+        statusBadge = "bg-amber-50 text-amber-700 border border-amber-200";
+        dotColor = "bg-amber-500";
+        canCancel = true;
+        statusStr = "pending_payment";
+    } else if (rawStatus === 2) { // PendingAcceptance
+        tab = "upcoming";
+        statusLabel = "CHỜ ĐIỀU DƯỠNG NHẬN";
+        statusBadge = "bg-blue-50 text-blue-700 border border-blue-200";
+        dotColor = "bg-blue-500";
+        canCancel = true;
+        statusStr = "pending";
+    } else if (rawStatus === 3) { // Accepted
+        tab = "upcoming";
+        statusLabel = "ĐÃ TIẾP NHẬN";
+        statusBadge = "bg-[#e2f4f2] text-[#007469]";
+        dotColor = "bg-[#00a896]";
+        canCancel = true;
+        statusStr = "confirmed";
+    } else if (rawStatus === 4) { // InProgress
+        tab = "ongoing";
+        statusLabel = "ĐANG DIỄN RA";
+        statusBadge = "bg-teal-50 text-teal-700 ring-1 ring-teal-500/20";
+        dotColor = "bg-teal-500 animate-ping";
+        canCancel = false;
+        statusStr = "in_progress";
+    } else if (rawStatus === 5) { // Completed
+        tab = "completed";
+        statusLabel = "ĐÃ HOÀN THÀNH";
+        statusBadge = "bg-slate-100 text-slate-700";
+        dotColor = "bg-slate-400";
+        canCancel = false;
+        statusStr = "completed";
+    } else if (rawStatus === 6) { // Canceled
+        tab = "cancelled";
+        statusLabel = "ĐÃ HỦY";
+        statusBadge = "bg-rose-50 text-rose-700 border border-rose-200";
+        dotColor = "bg-rose-500";
+        canCancel = false;
+        statusStr = "cancelled";
+    } else if (rawStatus === 7) { // Disputed
+        tab = "completed";
+        statusLabel = "ĐANG KHIẾU NẠI";
+        statusBadge = "bg-purple-50 text-purple-700 border border-purple-200";
+        dotColor = "bg-purple-500";
+        canCancel = false;
+        statusStr = "disputed";
+    }
+
+    const startDate = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
+    const endDate = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
+    const formattedDate = startDate.toLocaleDateString("vi-VN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+    const startTimeStr = startDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const endTimeStr = endDate ? endDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
+    const timeDisplay = endTimeStr ? `${startTimeStr} – ${endTimeStr}` : startTimeStr;
+
+    return {
+        id: b.id,
+        rawId: b.id,
+        tab,
+        caregiver: {
+            name: b.nurseName || "Điều dưỡng CareLink",
+            role: "Điều dưỡng chuyên môn CareLink",
+            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+            verified: true,
+            phone: "0903 888 999",
+        },
+        service: b.serviceName || "Chăm sóc theo yêu cầu",
+        serviceCategory: "health_care",
+        recipient: b.recipientName || "Người thân",
+        recipientRelation: "Người nhận chăm sóc",
+        date: formattedDate,
+        time: timeDisplay,
+        duration: "Theo ca",
+        location: b.addressSnapshot || "Địa chỉ gia đình",
+        status: statusStr,
+        statusLabel,
+        statusBadge,
+        dotColor,
+        canCancel,
+        canPay: rawStatus === 1,
+        price: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + "đ" : "0đ",
+        tasks: ["Đo huyết áp & sinh hiệu", "Theo dõi sức khỏe theo đơn", "Ghi nhật ký thể trạng"],
+        rawBackendData: b
+    };
+};
+
+const INITIAL_FALLBACK_APPOINTMENTS = [
+    {
+        id: "CK-28491",
+        tab: "upcoming",
+        caregiver: {
+            name: "Điều dưỡng Nguyễn Thùy Linh",
+            role: "Chăm sóc phục hồi chức năng & Vận động y tế",
+            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+            verified: true,
+            phone: "0912 888 999",
+        },
+        service: "Chăm sóc phục hồi chức năng & Vận động y tế",
+        serviceCategory: "health_care",
+        recipient: "Bà Nguyễn Thị Lan",
+        recipientRelation: "Mẹ, 75 tuổi",
+        date: "Thứ Bảy, 20/09/2026",
+        time: "08:00 – 12:00 (4 giờ)",
+        duration: "4 giờ",
+        location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
+        status: "confirmed",
+        statusLabel: "ĐÃ XÁC NHẬN",
+        statusBadge: "bg-[#e2f4f2] text-[#007469]",
+        dotColor: "bg-[#00a896]",
+        canCancel: false,
+        tasks: ["Đo huyết áp & đường huyết", "Hỗ trợ co duỗi khớp gối 20 phút", "Nhắc uống thuốc theo đơn"],
+        price: "420.000đ",
+    },
+];
 
 export default function Appointments() {
-    const [activeTab, setActiveTab] = useState("upcoming"); // 'upcoming' | 'ongoing' | 'completed'
+    const [activeTab, setActiveTab] = useState("upcoming"); // 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
     const [searchQuery, setSearchQuery] = useState("");
     const [serviceFilter, setServiceFilter] = useState("all");
     const [monthFilter, setMonthFilter] = useState("09/2026");
@@ -14,200 +148,71 @@ export default function Appointments() {
     const [disputingAppointment, setDisputingAppointment] = useState(null); // Cho modal khiếu nại
     const [toastMessage, setToastMessage] = useState(null);
 
-    // Mock data chuẩn theo đúng giao diện thực tế và ảnh mẫu của user
-    const [appointments, setAppointments] = useState([
-        {
-            id: "CK-28491",
-            tab: "upcoming",
-            caregiver: {
-                name: "Điều dưỡng Nguyễn Thùy Linh",
-                role: "Chăm sóc phục hồi chức năng & Vận động y tế",
-                avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-                verified: true,
-                phone: "0912 888 999",
-            },
-            service: "Chăm sóc phục hồi chức năng & Vận động y tế",
-            serviceCategory: "health_care",
-            recipient: "Bà Nguyễn Thị Lan",
-            recipientRelation: "Mẹ, 75 tuổi",
-            date: "Thứ Bảy, 20/09/2026",
-            time: "08:00 – 12:00 (4 giờ)",
-            duration: "4 giờ",
-            location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
-            status: "confirmed",
-            statusLabel: "ĐÃ XÁC NHẬN",
-            statusBadge: "bg-[#e2f4f2] text-[#007469]",
-            dotColor: "bg-[#00a896]",
-            canCancel: false,
-            tasks: ["Đo huyết áp & đường huyết", "Hỗ trợ co duỗi khớp gối 20 phút", "Nhắc uống thuốc theo đơn"],
-            price: "420.000đ",
-        },
-        {
-            id: "CK-28503",
-            tab: "upcoming",
-            caregiver: {
-                name: "Điều dưỡng Trần Văn An",
-                role: "Kiểm tra huyết áp định kỳ & Theo dõi dùng thuốc",
-                avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300",
-                verified: true,
-                phone: "0903 111 222",
-            },
-            service: "Kiểm tra huyết áp định kỳ & Theo dõi dùng thuốc",
-            serviceCategory: "health_care",
-            recipient: "Ông Nguyễn Văn Bình",
-            recipientRelation: "Bố, 82 tuổi",
-            date: "Chủ Nhật, 21/09/2026",
-            time: "14:30 – 16:30 (2 giờ)",
-            duration: "2 giờ",
-            location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
-            status: "pending",
-            statusLabel: "CHỜ XÁC NHẬN",
-            statusBadge: "bg-[#e0f2f4] text-[#007d8a]",
-            dotColor: "bg-[#009bb9]",
-            canCancel: true,
-            tasks: ["Đo huyết áp sau giấc ngủ trưa", "Hỗ trợ tập đi với khung tập", "Theo dõi uống đủ 500ml nước"],
-            price: "350.000đ",
-        },
-        {
-            id: "CK-28540",
-            tab: "upcoming",
-            caregiver: {
-                name: "Điều dưỡng Nguyễn Thùy Linh",
-                role: "Vận động trị liệu khớp gối & Hỗ trợ sinh hoạt",
-                avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-                verified: true,
-                phone: "0912 888 999",
-            },
-            service: "Vận động trị liệu khớp gối & Hỗ trợ sinh hoạt",
-            serviceCategory: "living_support",
-            recipient: "Bà Nguyễn Thị Lan",
-            recipientRelation: "Mẹ, 75 tuổi",
-            date: "Thứ Tư, 24/09/2026",
-            time: "09:00 – 11:00 (2 giờ)",
-            duration: "2 giờ",
-            location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
-            status: "confirmed",
-            statusLabel: "ĐÃ XÁC NHẬN",
-            statusBadge: "bg-[#e2f4f2] text-[#007469]",
-            dotColor: "bg-[#00a896]",
-            canCancel: false,
-            tasks: ["Vận động khớp gối phục hồi", "Bầu bạn đi dạo nhẹ trong nhà", "Ghi nhật ký thể trạng"],
-            price: "320.000đ",
-        },
-        {
-            id: "CK-28410",
-            tab: "ongoing",
-            caregiver: {
-                name: "Điều dưỡng Nguyễn Thùy Linh",
-                role: "Chăm sóc phục hồi chức năng & Vận động y tế",
-                avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-                verified: true,
-                phone: "0912 888 999",
-            },
-            service: "Chăm sóc toàn diện & Theo dõi huyết áp",
-            serviceCategory: "health_care",
-            recipient: "Bà Nguyễn Thị Lan",
-            recipientRelation: "Mẹ, 75 tuổi",
-            date: "Hôm nay, 19/09/2026",
-            time: "09:00 – 13:00 (4 giờ)",
-            duration: "4 giờ (Đang diễn ra 2h 15m)",
-            progressPercent: 56,
-            location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
-            status: "in_progress",
-            statusLabel: "ĐANG DIỄN RA",
-            statusBadge: "bg-teal-50 text-teal-700 ring-1 ring-teal-500/20",
-            dotColor: "bg-teal-500 animate-ping",
-            canCancel: false,
-            currentNote: "Điều dưỡng đang hướng dẫn bài tập phục hồi chức năng khớp gối và kiểm tra chỉ số huyết áp sau uống thuốc.",
-            tasks: ["Đo huyết áp & đường huyết", "Uống thuốc đúng giờ", "Bài tập phục hồi khớp gối"],
-            price: "420.000đ",
-        },
-        {
-            id: "CK-28312",
-            tab: "completed",
-            caregiver: {
-                name: "Điều dưỡng Trần Văn An",
-                role: "Cử nhân Điều dưỡng chuyên khoa",
-                avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300",
-                verified: true,
-                phone: "0903 111 222",
-            },
-            service: "Bầu bạn & Trò chuyện tinh thần",
-            serviceCategory: "companionship",
-            recipient: "Ông Nguyễn Văn Bình",
-            recipientRelation: "Bố, 82 tuổi",
-            date: "16/09/2026",
-            time: "08:30 – 11:30 (3 giờ)",
-            duration: "3 giờ",
-            location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
-            status: "completed",
-            statusLabel: "ĐÃ HOÀN THÀNH",
-            statusBadge: "bg-slate-100 text-slate-700",
-            dotColor: "bg-slate-400",
-            canCancel: false,
-            reviewed: true,
-            rating: 5,
-            reviewComment: "Điều dưỡng An rất đúng giờ, trò chuyện chu đáo giúp bố tôi vui vẻ và tích cực tập đi hơn.",
-            healthRecord: {
-                bloodPressureSystolic: 124,
-                bloodPressureDiastolic: 80,
-                heartRate: 72,
-                temperature: 36.8,
-                bloodGlucose: null,
-                woundStatus: "Khô ráo, liền tốt, không phù nề",
-                mobilityStatus: "Đi dạo công viên nhẹ nhàng 25 phút",
-                mentalStatus: "Tinh thần vui vẻ, giao tiếp hoạt bát",
-                nurseNotes: "Bác Bình đáp ứng tốt bài tập vận động đi dạo. Đã uống thuốc huyết áp theo đơn đúng 09:00. Dặn người nhà tiếp tục duy trì uống đủ 1.5L nước/ngày.",
-                createdAt: "16/09/2026 · 11:30",
-            },
-            tasks: ["Trò chuyện, đọc sách báo", "Đi dạo công viên nhẹ nhàng"],
-            price: "350.000đ",
-        },
-        {
-            id: "CK-28305",
-            tab: "completed",
-            caregiver: {
-                name: "Điều dưỡng Nguyễn Thùy Linh",
-                role: "Chăm sóc phục hồi chức năng & Vận động y tế",
-                avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-                verified: true,
-                phone: "0912 888 999",
-            },
-            service: "Chăm sóc phục hồi chức năng & Vận động y tế",
-            serviceCategory: "health_care",
-            recipient: "Bà Nguyễn Thị Lan",
-            recipientRelation: "Mẹ, 75 tuổi",
-            date: "14/09/2026",
-            time: "08:00 – 12:00 (4 giờ)",
-            duration: "4 giờ",
-            location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
-            status: "completed",
-            statusLabel: "ĐÃ HOÀN THÀNH",
-            statusBadge: "bg-slate-100 text-slate-700",
-            dotColor: "bg-slate-400",
-            canCancel: false,
-            reviewed: false,
-            healthRecord: {
-                bloodPressureSystolic: 120,
-                bloodPressureDiastolic: 80,
-                heartRate: 75,
-                temperature: 36.8,
-                bloodGlucose: 108,
-                woundStatus: "Vết mổ khô, mép mổ liền tốt, không phù nề hay rỉ dịch",
-                mobilityStatus: "Tập co duỗi khớp gối 30 phút, đi lại nhẹ trong phòng",
-                mentalStatus: "Tỉnh táo, tiếp xúc tốt, hợp tác vui vẻ",
-                nurseNotes: "Đã thay băng vết mổ vô khuẩn lúc 09:00. Hướng dẫn cụ bài tập co duỗi khớp gối. Cụ đáp ứng rất tốt, tinh thần thoải mái.",
-                createdAt: "14/09/2026 · 12:15",
-            },
-            tasks: ["Đo huyết áp & đường huyết", "Tập phục hồi chức năng khớp", "Thay băng vết mổ"],
-            price: "420.000đ",
-        },
-    ]);
+    // Trạng thái dữ liệu thực từ Backend API
+    const [appointments, setAppointments] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [apiError, setApiError] = useState(null);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
 
-    // Xử lý Hủy ca hẹn
-    const handleCancelAppointment = (id) => {
-        if (window.confirm("Bạn có chắc chắn muốn yêu cầu hủy ca chăm sóc này không?")) {
-            setAppointments((prev) => prev.filter((apt) => apt.id !== id));
+    // 1. Tải danh sách ca chăm sóc từ Backend (GET /api/v1/bookings)
+    const fetchAppointments = useCallback(async () => {
+        setIsLoading(true);
+        setApiError(null);
+        try {
+            const res = await familyApi.getBookings({ PageNumber: 1, PageSize: 50 });
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            const mapped = items.map(mapBookingToAppointment);
+            setAppointments(mapped);
+            setIsUsingFallback(false);
+        } catch (err) {
+            console.warn("[CareLink] Tải danh sách booking thất bại:", err);
+            const msg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Không thể kết nối đến máy chủ để tải lịch hẹn.";
+            setApiError(msg);
+
+            const status = err.response?.status;
+            if (status === 401 || status === 403) {
+                setApiError("Phiên làm việc đã hết hạn hoặc bạn chưa đăng nhập tài khoản gia đình.");
+                setAppointments([]);
+                setIsUsingFallback(false);
+            } else if (!err.response || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK") {
+                setIsUsingFallback(true);
+                setAppointments(INITIAL_FALLBACK_APPOINTMENTS);
+            } else {
+                setAppointments([]);
+                setIsUsingFallback(false);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchAppointments();
+    }, [fetchAppointments]);
+
+    // Xử lý Hủy ca hẹn qua Backend API (PUT /api/v1/bookings/{id}/cancel)
+    const handleCancelAppointment = async (id) => {
+        const reason = window.prompt(
+            "Vui lòng nhập lý do bạn muốn hủy ca chăm sóc này:",
+            "Gia đình có việc bận đột xuất"
+        );
+        if (reason === null) return; // Người dùng ấn Hủy prompt
+
+        const trimmedReason = reason.trim() || "Gia đình yêu cầu hủy ca chăm sóc";
+        try {
+            await familyApi.cancelBooking(id, { reason: trimmedReason });
+            setToastMessage("Đã hủy ca chăm sóc thành công!");
+            setTimeout(() => setToastMessage(null), 4000);
+            fetchAppointments();
+        } catch (err) {
+            const errorMsg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Không thể hủy ca chăm sóc lúc này. Vui lòng thử lại sau.";
+            alert("Lỗi khi hủy ca: " + errorMsg);
         }
     };
 
@@ -259,7 +264,8 @@ export default function Appointments() {
 
     const countUpcoming = appointments.filter((a) => a.tab === "upcoming").length;
     const countOngoing = appointments.filter((a) => a.tab === "ongoing").length;
-    const countCompleted = 12; // Chuẩn theo số liệu trên mockup của user: "Đã hoàn thành (12)"
+    const countCompleted = appointments.filter((a) => a.tab === "completed").length;
+    const countCancelled = appointments.filter((a) => a.tab === "cancelled").length;
 
     return (
         <div className="p-4 sm:p-8 flex flex-col gap-6 max-w-6xl mx-auto font-sans antialiased text-[#102030]">
@@ -332,6 +338,22 @@ export default function Appointments() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>Đã hoàn thành ({countCompleted})</span>
+                    </button>
+
+                    {/* Tab: Đã hủy */}
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("cancelled")}
+                        className={`pb-3.5 flex items-center gap-2 text-sm sm:text-base font-semibold transition-all cursor-pointer relative shrink-0 ${
+                            activeTab === "cancelled"
+                                ? "text-slate-900 font-bold border-b-2 border-slate-900"
+                                : "text-slate-500 hover:text-slate-900 border-b-2 border-transparent"
+                        }`}
+                    >
+                        <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Đã hủy ({countCancelled})</span>
                     </button>
                 </div>
             </div>
@@ -428,31 +450,88 @@ export default function Appointments() {
             </div>
 
             {/* Danh sách các thẻ ca hẹn (Appointments Cards) */}
-            {filteredAppointments.length === 0 ? (
+            {isLoading ? (
+                <div className="flex flex-col gap-4">
+                    {[1, 2, 3].map((n) => (
+                        <div
+                            key={n}
+                            className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs animate-pulse flex flex-col gap-4"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-full bg-slate-200 shrink-0" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-slate-200 rounded w-1/3" />
+                                    <div className="h-3 bg-slate-100 rounded w-1/2" />
+                                </div>
+                                <div className="h-6 w-24 bg-slate-100 rounded-full" />
+                            </div>
+                            <div className="h-px bg-slate-100" />
+                            <div className="flex justify-between items-center">
+                                <div className="h-4 bg-slate-100 rounded w-1/4" />
+                                <div className="h-8 bg-slate-200 rounded-xl w-24" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : apiError && !isUsingFallback ? (
+                <div className="bg-white rounded-2xl border border-rose-200 p-8 text-center flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-base font-bold text-rose-800">Không thể tải lịch hẹn</h3>
+                    <p className="text-xs sm:text-sm text-rose-600 max-w-sm mt-1 mb-4">{apiError}</p>
+                    <button
+                        type="button"
+                        onClick={fetchAppointments}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                    >
+                        Thử tải lại
+                    </button>
+                </div>
+            ) : filteredAppointments.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 text-center flex flex-col items-center justify-center">
                     <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 mb-3 shadow-xs">
                         <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                         </svg>
                     </div>
-                    <h3 className="text-base font-bold text-slate-800">Không tìm thấy ca hẹn</h3>
+                    <h3 className="text-base font-bold text-slate-800">Chưa có lịch hẹn nào</h3>
                     <p className="text-xs sm:text-sm text-slate-500 max-w-sm mt-1 mb-4">
-                        Không có lịch chăm sóc nào phù hợp với bộ lọc tìm kiếm hiện tại.
+                        {activeTab === "upcoming"
+                            ? "Bạn hiện không có ca chăm sóc nào sắp tới. Hãy tìm điều dưỡng phù hợp để đặt lịch ngay!"
+                            : "Không có ca chăm sóc nào trong mục này."}
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSearchQuery("");
-                            setServiceFilter("all");
-                            setStatusFilter("all");
-                        }}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-all cursor-pointer"
-                    >
-                        Đặt lại bộ lọc
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <Link
+                            to="/caregivers"
+                            className="px-4 py-2 bg-[#00677c] hover:bg-[#005566] text-white font-semibold rounded-xl text-xs transition-all shadow-xs"
+                        >
+                            Tìm điều dưỡng ngay
+                        </Link>
+                        {(searchQuery || serviceFilter !== "all" || statusFilter !== "all") && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSearchQuery("");
+                                    setServiceFilter("all");
+                                    setStatusFilter("all");
+                                }}
+                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-all cursor-pointer"
+                            >
+                                Đặt lại bộ lọc
+                            </button>
+                        )}
+                    </div>
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">
+                    {isUsingFallback && (
+                        <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between">
+                            <span>Đang hiển thị dữ liệu mẫu do mất kết nối máy chủ.</span>
+                        </div>
+                    )}
                     {filteredAppointments.map((apt) => {
                         return (
                             <div
@@ -567,6 +646,20 @@ export default function Appointments() {
 
                                     {/* Bên phải: Nằm chung hàng ngang dưới gạch phân cách */}
                                     <div className="flex items-center gap-2.5 sm:self-center shrink-0">
+                                        {/* Nút Thanh toán ngay nếu ca đang chờ thanh toán */}
+                                        {apt.canPay && (
+                                            <Link
+                                                to="/checkout"
+                                                state={{ bookingId: apt.id, booking: apt }}
+                                                className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-6 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
+                                                </svg>
+                                                <span>Thanh toán ngay</span>
+                                            </Link>
+                                        )}
+
                                         {/* Nút Hủy ca (nếu được phép) */}
                                         {apt.canCancel && (
                                             <button

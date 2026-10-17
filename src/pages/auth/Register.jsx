@@ -1,9 +1,13 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import authApi, { GOOGLE_CLIENT_ID } from "../../api/authApi";
 import Toast from "../../components/Toast";
 
-
+/* =========================================================
+   ICONS
+========================================================= */
 function Icon({ name, className = "h-5 w-5" }) {
     const common = {
         className,
@@ -21,6 +25,13 @@ function Icon({ name, className = "h-5 w-5" }) {
             <>
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 21a8 8 0 0 1 16 0" />
+            </>
+        ),
+        stethoscope: (
+            <>
+                <path d="M4 3H3a1 1 0 0 0-1 1v5a6 6 0 0 0 12 0V4a1 1 0 0 0-1-1h-1" />
+                <path d="M8 15v1a6 6 0 0 0 12 0v-4" />
+                <circle cx="20" cy="10" r="2" />
             </>
         ),
         mail: (
@@ -72,12 +83,16 @@ function Icon({ name, className = "h-5 w-5" }) {
         ),
     };
 
-    return <svg {...common}>{paths[name]}</svg>;
+    return <svg {...common}>{paths[name] || paths.user}</svg>;
 }
 
 function GoogleIcon() {
     return (
-        <svg className="h-5 w-5 shrink-0" viewBox="0 0 48 48" aria-hidden="true">
+        <svg
+            className="h-5 w-5 shrink-0"
+            viewBox="0 0 48 48"
+            aria-hidden="true"
+        >
             <path
                 fill="#4285F4"
                 d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"
@@ -98,59 +113,136 @@ function GoogleIcon() {
     );
 }
 
-function RoleCard({ role, selectedRole, onSelect, icon, title, description, details }) {
+/* =========================================================
+   SHARED FORM STYLES
+========================================================= */
+const inputBase =
+    "h-11 w-full rounded-xl border pl-10 pr-4 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400";
+
+const inputNormal =
+    "border-slate-200 bg-white hover:border-slate-300 focus:border-[#087F8C] focus:ring-4 focus:ring-[#087F8C]/10";
+
+const inputError =
+    "border-rose-400 bg-rose-50/50 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10";
+
+function FieldError({ children }) {
+    if (!children) return null;
+
+    return (
+        <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium leading-relaxed text-rose-600">
+            <Icon name="alert" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{children}</span>
+        </p>
+    );
+}
+
+/* =========================================================
+   ROLE CARD
+========================================================= */
+function RoleCard({
+    role,
+    selectedRole,
+    onSelect,
+    icon,
+    title,
+    badge,
+    description,
+    tags,
+}) {
     const selected = selectedRole === role;
+    const isFamily = role === "family";
 
     return (
         <button
             type="button"
             onClick={() => onSelect(role)}
             aria-pressed={selected}
-            className={`group flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 sm:p-4 ${selected
-                    ? "border-teal-600 bg-teal-50/70 ring-2 ring-teal-600/10"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+            className={`group relative w-full rounded-2xl border p-3.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 ${selected
+                ? isFamily
+                    ? "border-emerald-300 bg-white shadow-[0_8px_24px_-12px_rgba(16,185,129,0.45)] ring-2 ring-emerald-400/25"
+                    : "border-sky-300 bg-white shadow-[0_8px_24px_-12px_rgba(14,165,233,0.4)] ring-2 ring-sky-400/25"
+                : "border-white/15 bg-white/[0.045] hover:border-white/30 hover:bg-white/[0.085] focus-visible:ring-white/20"
                 }`}
         >
-            <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${selected
-                        ? "bg-teal-700 text-white"
-                        : "bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700"
-                    }`}
-            >
-                {icon}
-            </div>
-
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-[#002045]">
-                        {title}
-                    </span>
-
-                    <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${selected
-                                ? "border-teal-700 bg-teal-700 text-white"
-                                : "border-slate-300 bg-white text-transparent"
-                            }`}
-                    >
-                        <Icon name="check" className="h-3 w-3" />
-                    </span>
-                </div>
-
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {description}
-                </p>
-
+            <div className="flex items-start gap-3">
                 <div
-                    className={`mt-2 text-[11px] font-semibold ${selected ? "text-teal-800" : "text-slate-400"
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${selected
+                        ? isFamily
+                            ? "bg-emerald-600 text-white"
+                            : "bg-sky-600 text-white"
+                        : "bg-white/10 text-slate-200 group-hover:bg-white/15"
                         }`}
                 >
-                    {details}
+                    {icon}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                            <p
+                                className={`text-sm font-bold leading-5 ${selected
+                                    ? "text-[#17313A]"
+                                    : "text-white"
+                                    }`}
+                            >
+                                {title}
+                            </p>
+
+                            <span
+                                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${selected
+                                    ? isFamily
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-sky-50 text-sky-700"
+                                    : "bg-white/10 text-slate-300"
+                                    }`}
+                            >
+                                {badge}
+                            </span>
+                        </div>
+
+                        <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${selected
+                                ? isFamily
+                                    ? "border-emerald-600 bg-emerald-600 text-white"
+                                    : "border-sky-600 bg-sky-600 text-white"
+                                : "border-white/35 text-transparent"
+                                }`}
+                        >
+                            <Icon name="check" className="h-3 w-3" />
+                        </span>
+                    </div>
+
+                    <p
+                        className={`mt-2 text-xs leading-relaxed ${selected ? "text-slate-600" : "text-slate-300"
+                            }`}
+                    >
+                        {description}
+                    </p>
+
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        {tags.map((tag) => (
+                            <span
+                                key={tag}
+                                className={`rounded-md px-2 py-1 text-[10px] font-semibold ${selected
+                                    ? isFamily
+                                        ? "bg-emerald-50 text-emerald-800"
+                                        : "bg-sky-50 text-sky-800"
+                                    : "bg-white/[0.09] text-slate-300"
+                                    }`}
+                            >
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             </div>
         </button>
     );
 }
 
+/* =========================================================
+   PASSWORD FIELD
+========================================================= */
 function PasswordField({
     id,
     label,
@@ -166,7 +258,7 @@ function PasswordField({
         <div className="min-w-0">
             <label
                 htmlFor={id}
-                className="mb-2 block text-xs font-semibold text-slate-700"
+                className="mb-2 block text-xs font-bold text-slate-700"
             >
                 {label} <span className="text-rose-500">*</span>
             </label>
@@ -178,23 +270,23 @@ function PasswordField({
 
                 <input
                     id={id}
+                    name={id}
                     type={showPassword ? "text" : "password"}
                     value={value}
                     onChange={onChange}
                     placeholder={placeholder}
                     autoComplete={autoComplete}
-                    className={`w-full h-11 pl-10 pr-11 rounded-xl text-sm transition-all outline-none ${
-                        error
-                            ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                            : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
-                    }`}
+                    className={`${inputBase} ${error ? inputError : inputNormal
+                        } pr-10`}
                 />
 
                 <button
                     type="button"
                     onClick={onToggle}
-                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-600 cursor-pointer"
+                    aria-label={
+                        showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                    }
+                    className="absolute inset-y-0 right-0 flex items-center rounded-r-xl px-3 text-slate-400 transition-colors hover:text-[#087F8C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#087F8C]"
                 >
                     <Icon
                         name={showPassword ? "eyeOff" : "eye"}
@@ -203,16 +295,14 @@ function PasswordField({
                 </button>
             </div>
 
-            {error && (
-                <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
-                    <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
-                    {error}
-                </p>
-            )}
+            <FieldError>{error}</FieldError>
         </div>
     );
 }
 
+/* =========================================================
+   REGISTER PAGE
+========================================================= */
 export default function Register() {
     const navigate = useNavigate();
 
@@ -229,6 +319,12 @@ export default function Register() {
     const [toast, setToast] = useState(null);
     const [errors, setErrors] = useState({});
 
+    const isFamilyRole = role === "family";
+    const selectedRoleLabel = isFamilyRole
+        ? "Gia đình"
+        : "Điều dưỡng/Sinh viên Y";
+
+    /* VALIDATION */
     const validateForm = () => {
         const newErrors = {};
 
@@ -237,17 +333,23 @@ export default function Register() {
         }
 
         const emailTrimmed = email.trim();
+
         if (!emailTrimmed) {
             newErrors.email = "Vui lòng nhập địa chỉ email.";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-            newErrors.email = "Định dạng email không hợp lệ (ví dụ: email@gmail.com).";
+        } else if (
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)
+        ) {
+            newErrors.email =
+                "Định dạng email không hợp lệ (ví dụ: email@gmail.com).";
         }
 
         const phoneTrimmed = phone.trim();
+
         if (!phoneTrimmed) {
             newErrors.phone = "Vui lòng nhập số điện thoại liên hệ.";
         } else if (!/^(0|\+84)[0-9]{8,11}$/.test(phoneTrimmed)) {
-            newErrors.phone = "Số điện thoại không hợp lệ (ví dụ: 0912345678).";
+            newErrors.phone =
+                "Số điện thoại không hợp lệ (ví dụ: 0912345678).";
         }
 
         if (!password) {
@@ -257,58 +359,65 @@ export default function Register() {
         }
 
         if (!confirmPassword) {
-            newErrors.confirmPassword = "Vui lòng nhập lại mật khẩu xác nhận.";
+            newErrors.confirmPassword =
+                "Vui lòng nhập lại mật khẩu xác nhận.";
         } else if (confirmPassword !== password) {
-            newErrors.confirmPassword = "Mật khẩu xác nhận không trùng khớp.";
+            newErrors.confirmPassword =
+                "Mật khẩu xác nhận không trùng khớp.";
         }
 
         if (!agreeTerms) {
-            newErrors.agreeTerms = "Vui lòng tích chọn đồng ý với Điều khoản và Chính sách bảo mật.";
+            newErrors.agreeTerms =
+                "Vui lòng tích chọn đồng ý với Điều khoản và Chính sách bảo mật.";
         }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
+    /* SAVE USER + REDIRECT */
     const saveUserAndNavigate = (user, token, refreshToken) => {
-        if (token) localStorage.setItem("carelink_token", token);
-        if (refreshToken) localStorage.setItem("carelink_refresh_token", refreshToken);
+        if (token) {
+            localStorage.setItem("carelink_token", token);
+        }
+
+        if (refreshToken) {
+            localStorage.setItem("carelink_refresh_token", refreshToken);
+        }
+
         localStorage.setItem("carelink_user", JSON.stringify(user));
 
         setToast({
             type: "success",
             title: "Tạo tài khoản thành công!",
-            message: `Chào mừng bạn đến với CareLink. Đang chuyển hướng về trang chủ...`,
+            message:
+                "Chào mừng bạn đến với CareLink. Đang chuyển hướng về trang chủ...",
         });
 
-        // Đợi 2.5 giây mượt mà rồi chuyển về trang chủ
         window.setTimeout(() => {
             navigate("/");
         }, 2500);
     };
 
+    /* REGISTER WITH EMAIL + PASSWORD */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setToast(null);
 
-        if (!validateForm()) {
-            return;
-        }
+        if (!validateForm()) return;
 
         setIsLoading(true);
 
-        const targetRole = role; // "family" | "caregiver"
-        const backendRole = role === "caregiver" ? 1 : 0; // 0 = Customer, 1 = Nurse
+        const targetRole = role;
+        const backendRole = role === "caregiver" ? 1 : 0;
 
         try {
-            // 1. GỌI API THẬT TỪ BACKEND
             const res = await authApi.register({
                 email: email.trim(),
                 password,
                 role: backendRole,
             });
 
-            // Backend trả về: { accessToken, refreshToken, user: { id, email, role, isActive } }
             if (res && res.accessToken) {
                 const userObj = {
                     id: res.user?.id,
@@ -322,28 +431,47 @@ export default function Register() {
                             : "/images/caregiver_avatar.svg",
                 };
 
-                saveUserAndNavigate(userObj, res.accessToken, res.refreshToken, targetRole, false);
+                saveUserAndNavigate(
+                    userObj,
+                    res.accessToken,
+                    res.refreshToken
+                );
                 return;
             }
+
+            setIsLoading(false);
         } catch (err) {
             console.warn("[CareLink Auth] Register API trả về lỗi:", err);
 
-            // 2. NẾU LỖI XUNG ĐỘT EMAIL ĐÃ TỒN TẠI (409 CONFLICT)
-            if (err.response?.status === 409 || err.response?.data?.message?.includes("Email đã được sử dụng")) {
-                setErrors((prev) => ({ ...prev, email: "Email này đã được sử dụng trên hệ thống." }));
+            if (
+                err.response?.status === 409 ||
+                err.response?.data?.message?.includes(
+                    "Email đã được sử dụng"
+                )
+            ) {
+                setErrors((prev) => ({
+                    ...prev,
+                    email: "Email này đã được sử dụng trên hệ thống.",
+                }));
+
                 setToast({
                     type: "error",
                     title: "Email đã tồn tại",
-                    message: "Email này đã được đăng ký tài khoản. Vui lòng đăng nhập hoặc dùng email khác.",
+                    message:
+                        "Email này đã được đăng ký tài khoản. Vui lòng đăng nhập hoặc dùng email khác.",
                 });
+
                 setIsLoading(false);
                 return;
             }
 
-            // 3. SAFETY FALLBACK: Nếu Backend chưa chạy (Network Error)
             if (err.code === "ERR_NETWORK" || !err.response) {
                 const mockUser = {
-                    name: name.trim() || (targetRole === "family" ? "Gia đình Minh An" : "Điều dưỡng Thùy Linh"),
+                    name:
+                        name.trim() ||
+                        (targetRole === "family"
+                            ? "Gia đình Minh An"
+                            : "Điều dưỡng Thùy Linh"),
                     email: email.trim(),
                     phone: phone.trim(),
                     role: targetRole,
@@ -352,12 +480,13 @@ export default function Register() {
                             ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
                             : "/images/caregiver_avatar.svg",
                 };
+
                 const mockToken = "mock_reg_token_" + Date.now();
-                saveUserAndNavigate(mockUser, mockToken, mockToken, targetRole, true);
+
+                saveUserAndNavigate(mockUser, mockToken, mockToken);
                 return;
             }
 
-            // 4. CÁC LỖI KHÁC TỪ SERVER
             const msg =
                 err.response?.data?.message ||
                 err.response?.data?.detail ||
@@ -369,13 +498,12 @@ export default function Register() {
                 title: "Đăng ký thất bại",
                 message: msg,
             });
+
             setIsLoading(false);
         }
     };
 
-    // =========================================================
-    // GOOGLE REGISTER / LOGIN (TÍCH HỢP GOOGLE SIGN-IN SDK + BE API)
-    // =========================================================
+    /* GOOGLE REGISTER / LOGIN */
     const handleGoogleCredentialResponse = async (response) => {
         if (!response?.credential) {
             setToast({
@@ -387,32 +515,48 @@ export default function Register() {
         }
 
         setIsLoading(true);
+
         try {
-            // role = 0 cho Customer (Gia đình), 1 cho Nurse (Điều dưỡng)
-            const roleNumber = role === "caregiver" || role === "nurse" ? 1 : 0;
+            const roleNumber =
+                role === "caregiver" || role === "nurse" ? 1 : 0;
+
             const res = await authApi.googleLogin({
                 idToken: response.credential,
                 role: roleNumber,
             });
 
             const data = res?.data || res;
+
             const userObj = {
                 id: data.user?.id,
-                name: data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google",
+                name: data.user?.email
+                    ? data.user.email.split("@")[0]
+                    : "Người dùng Google",
                 email: data.user?.email || "google.user@carelink.vn",
                 role: data.user?.role || role,
-                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                avatar:
+                    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             };
 
-            saveUserAndNavigate(userObj, data.accessToken, data.refreshToken, role, true);
+            saveUserAndNavigate(
+                userObj,
+                data.accessToken,
+                data.refreshToken
+            );
         } catch (apiErr) {
-            console.warn("[CareLink Auth] Google Register API error:", apiErr);
+            console.warn(
+                "[CareLink Auth] Google Register API error:",
+                apiErr
+            );
+
             if (apiErr.code === "ERR_NETWORK" || !apiErr.response) {
                 setToast({
                     type: "info",
                     title: "Chế độ trải nghiệm",
-                    message: "Không kết nối được Backend. Đang kích hoạt tài khoản Google mẫu...",
+                    message:
+                        "Không kết nối được Backend. Đang kích hoạt tài khoản Google mẫu...",
                 });
+
                 const googleUser = {
                     name:
                         role === "family"
@@ -428,18 +572,18 @@ export default function Register() {
                             ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
                             : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
                 };
+
                 saveUserAndNavigate(
                     googleUser,
                     "mock_google_token_" + Date.now(),
-                    "mock_google_refresh_" + Date.now(),
-                    role,
-                    true
+                    "mock_google_refresh_" + Date.now()
                 );
             } else {
                 const msg =
                     apiErr.response?.data?.message ||
                     apiErr.response?.data?.detail ||
                     "Đăng ký bằng tài khoản Google đang gặp gián đoạn. Vui lòng thử lại lần nữa hoặc thử lại sau ít phút.";
+
                 setToast({
                     type: "error",
                     title: "Đăng ký Google chưa thành công",
@@ -453,9 +597,13 @@ export default function Register() {
 
     const handleGoogleRegister = () => {
         if (isLoading) return;
+
         setToast(null);
 
-        const hiddenBtn = document.querySelector("#google-register-hidden-wrapper div[role=button]");
+        const hiddenBtn = document.querySelector(
+            "#google-register-hidden-wrapper div[role=button]"
+        );
+
         if (hiddenBtn) {
             hiddenBtn.click();
         } else if (window.google?.accounts?.id) {
@@ -464,7 +612,8 @@ export default function Register() {
                     setToast({
                         type: "warning",
                         title: "Đã hủy đăng ký Google",
-                        message: "Bạn vừa đóng cửa sổ Google. Vui lòng bấm lại nút nếu muốn tiếp tục đăng ký.",
+                        message:
+                            "Bạn vừa đóng cửa sổ Google. Vui lòng bấm lại nút nếu muốn tiếp tục đăng ký.",
                     });
                 }
             });
@@ -472,8 +621,10 @@ export default function Register() {
             setToast({
                 type: "info",
                 title: "Chế độ trải nghiệm",
-                message: "Không tải được Google Sign-In SDK. Đang đăng ký với tài khoản Google mẫu...",
+                message:
+                    "Không tải được Google Sign-In SDK. Đang đăng ký với tài khoản Google mẫu...",
             });
+
             const googleUser = {
                 name:
                     role === "family"
@@ -489,73 +640,90 @@ export default function Register() {
                         ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
                         : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
             };
+
             saveUserAndNavigate(
                 googleUser,
                 "mock_google_token_" + Date.now(),
-                "mock_google_refresh_" + Date.now(),
-                role,
-                true
+                "mock_google_refresh_" + Date.now()
             );
         }
     };
 
+    /* GOOGLE SDK INITIALIZATION */
     const googleCallbackRef = useRef(handleGoogleCredentialResponse);
+
     useEffect(() => {
         googleCallbackRef.current = handleGoogleCredentialResponse;
     });
 
     useEffect(() => {
-        const initGoogle = () => {
-            if (window.google?.accounts?.id) {
-                window.google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: (res) => googleCallbackRef.current?.(res),
-                });
+        let timer;
 
-                const wrapper = document.getElementById("google-register-hidden-wrapper");
-                if (wrapper) {
-                    window.google.accounts.id.renderButton(wrapper, {
-                        type: "standard",
-                        theme: "outline",
-                        size: "large",
-                    });
-                }
+        const initGoogle = () => {
+            if (!window.google?.accounts?.id) return false;
+
+            window.google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: (res) => googleCallbackRef.current?.(res),
+            });
+
+            const wrapper = document.getElementById(
+                "google-register-hidden-wrapper"
+            );
+
+            if (wrapper) {
+                wrapper.innerHTML = "";
+
+                window.google.accounts.id.renderButton(wrapper, {
+                    type: "standard",
+                    theme: "outline",
+                    size: "large",
+                });
             }
+
+            return true;
         };
 
-        if (window.google?.accounts?.id) {
-            initGoogle();
-        } else {
-            const timer = setInterval(() => {
-                if (window.google?.accounts?.id) {
-                    initGoogle();
-                    clearInterval(timer);
+        if (!initGoogle()) {
+            timer = window.setInterval(() => {
+                if (initGoogle()) {
+                    window.clearInterval(timer);
                 }
             }, 300);
-            return () => clearInterval(timer);
         }
+
+        return () => {
+            if (timer) window.clearInterval(timer);
+        };
     }, [role]);
 
+    const getInputClass = (error) =>
+        `${inputBase} ${error ? inputError : inputNormal}`;
+
     return (
-        <div className="flex min-h-screen flex-col bg-[#F7F9FC] font-sans text-slate-800 antialiased selection:bg-teal-100 selection:text-teal-900">
-            {/* Toast notification góc trên bên phải */}
-            <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
-            {/* HEADER: Giữ nguyên logo, màu sắc và nội dung của bạn */}
-            <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_4px_25px_-5px_rgba(16,32,48,0.05)] backdrop-blur-md transition-all">
-                <div className="mx-auto flex h-14 w-full max-w-[1536px] items-center justify-between px-4 sm:h-16 sm:px-8 lg:px-12">
+        <div className="flex min-h-screen flex-col bg-[#F1F4F2] font-sans text-slate-800 antialiased selection:bg-teal-100 selection:text-teal-950">
+            <Toast
+                toast={toast}
+                onClose={() => setToast(null)}
+                duration={4000}
+            />
+
+            {/* HEADER — Đồng bộ hoàn toàn kích thước, màu sắc & bố cục với trang Login */}
+            <header className="sticky top-0 z-40 w-full shrink-0 border-b border-slate-200/70 bg-white/95 backdrop-blur-md">
+                <div className="mx-auto flex h-[68px] sm:h-[72px] w-full max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+                    {/* Logo CareLink y chang Login.jsx */}
                     <Link
                         to="/"
                         className="group flex shrink-0 items-center gap-2.5"
                         title="Về trang chủ CareLink"
                     >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] text-white shadow-sm transition-transform group-hover:scale-105">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#087287] to-[#123248] text-white shadow-sm transition-transform duration-200 group-hover:scale-[1.03]">
                             <svg
                                 className="h-[18px] w-[18px]"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2.2"
                                 viewBox="0 0 24 24"
-                                aria-hidden="true"
                             >
                                 <path
                                     strokeLinecap="round"
@@ -566,201 +734,247 @@ export default function Register() {
                         </div>
 
                         <div className="flex flex-col">
-                            <span className="text-xl font-bold leading-none tracking-tight text-[#002045] transition-colors group-hover:text-teal-600">
+                            <span className="text-xl font-bold leading-none tracking-tight text-[#002045]">
                                 Care<span className="text-teal-600">Link</span>
                             </span>
-                            <span className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-teal-600">
+                            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-600">
                                 Medical Care
                             </span>
                         </div>
                     </Link>
 
-                    <div className="flex items-center gap-2 text-xs font-medium sm:gap-4 sm:text-[13px]">
+                    {/* Về trang chủ | Đã có tài khoản? Đăng nhập → */}
+                    <div className="flex items-center gap-2.5 sm:gap-4">
                         <Link
                             to="/"
-                            className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#002045] sm:px-3"
+                            className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[13px] sm:text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-teal-700 sm:px-3"
                         >
-                            <svg
-                                className="h-4 w-4 shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-                                />
-                            </svg>
-                            <span className="hidden sm:inline">Về trang chủ</span>
-                            <span className="sm:hidden">Trang chủ</span>
+                            <ArrowLeft className="h-4 w-4" />
+                            <span>Về trang chủ</span>
                         </Link>
 
-                        <span className="hidden text-slate-300 sm:inline">|</span>
+                        <span className="hidden sm:block h-5 w-px bg-slate-200" />
 
                         <div className="flex items-center gap-2">
-                            <span className="hidden text-slate-500 lg:inline">
+                            <span className="hidden text-[13px] sm:text-sm text-slate-500 sm:inline">
                                 Đã có tài khoản?
                             </span>
                             <Link
                                 to="/login"
-                                className="flex items-center gap-1 font-semibold text-teal-600 transition-colors hover:text-[#002045]"
+                                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] sm:text-sm font-bold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-800"
                             >
                                 <span>Đăng nhập</span>
-                                <svg
-                                    className="h-3.5 w-3.5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                                    />
-                                </svg>
+                                <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* MAIN */}
-            <main className="flex flex-1 items-center justify-center px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5">
-                <div className="w-full max-w-[1140px] overflow-hidden rounded-[26px] border border-slate-200/80 bg-white shadow-[0_24px_80px_-32px_rgba(0,32,69,0.18)]">
-                    <div className="grid grid-cols-1 lg:grid-cols-[0.88fr_1.12fr]">
-                        {/* LEFT PANEL: Chọn vai trò */}
-                        <section className="relative overflow-hidden bg-[#F2F7F7] p-5 sm:p-7 lg:p-8 xl:p-9 flex flex-col justify-between">
-                            <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-100/60 blur-3xl" />
-                            <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-sky-100/60 blur-3xl" />
+            {/* MAIN REGISTER CARD */}
+            <main className="flex flex-1 items-center justify-center px-3 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-6">
+                <div className="w-full max-w-[1240px] overflow-hidden rounded-[24px] border border-white/80 bg-white shadow-[0_24px_70px_-34px_rgba(23,49,58,0.24)] lg:rounded-[28px]">
+                    <div className="grid grid-cols-1 lg:grid-cols-[0.96fr_1.04fr]">
+                        {/* LEFT PANEL */}
+                        <section className="relative isolate overflow-hidden bg-gradient-to-br from-[#315B60] via-[#285057] to-[#21434A] px-5 py-6 text-white sm:px-7 sm:py-8 lg:px-7 lg:py-7 xl:px-9">
+                            {/* Background decoration */}
+                            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+                                <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-300/15 blur-3xl" />
+                                <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-cyan-300/[0.10] blur-3xl" />
+                                <div
+                                    className="absolute inset-0 opacity-[0.045]"
+                                    style={{
+                                        backgroundImage:
+                                            "radial-gradient(#ffffff 0.7px, transparent 0.7px)",
+                                        backgroundSize: "18px 18px",
+                                    }}
+                                />
+                            </div>
 
-                            <div className="relative">
-                                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-100 bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.13em] text-teal-800 shadow-sm sm:mb-8">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-teal-600" />
-                                    Chào mừng đến với CareLink
-                                </div>
-
-                                <h1 className="max-w-lg text-2xl font-extrabold leading-tight tracking-tight text-[#002045] sm:text-3xl xl:text-[38px]">
-                                    Chăm sóc tận tâm,
-                                    <span className="mt-1 block text-teal-700">
-                                        kết nối yêu thương.
-                                    </span>
-                                </h1>
-
-                                <p className="mt-3 max-w-md text-xs leading-5 text-slate-600 sm:text-sm sm:leading-6">
-                                    Một kết nối phù hợp có thể giúp hành trình chăm sóc
-                                    người thân trở nên an tâm và thuận tiện hơn.
-                                </p>
-
-                                <div className="mt-6 sm:mt-7">
-                                    <div className="mb-2.5 flex items-center justify-between gap-3">
-                                        <h2 className="text-sm font-bold text-[#002045]">
-                                            Bạn tham gia CareLink với vai trò nào?
-                                        </h2>
-                                        <span className="shrink-0 text-[11px] font-medium text-slate-400">
-                                            Bước 1/2
+                            <div className="relative z-10">
+                                {/* INTRO — no duplicate heart icon */}
+                                <div className="mb-6 sm:mb-7 lg:mb-6">
+                                    <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-100/20 bg-white/[0.07] px-3 py-1.5">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.7)]" />
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.17em] text-emerald-100 sm:text-[11px]">
+                                            Nền tảng chăm sóc sức khỏe
                                         </span>
                                     </div>
 
-                                    <div className="space-y-2.5">
+                                    {/* Minimal accent instead of an icon tile */}
+                                    <div className="mb-4 h-1 w-12 rounded-full bg-gradient-to-r from-emerald-200 to-teal-400" />
+
+                                    <h1 className="max-w-lg text-[27px] font-extrabold leading-[1.2] tracking-tight sm:text-[31px] xl:text-[34px]">
+                                        Chăm sóc tận tâm,
+                                        <span className="mt-1.5 block text-emerald-200">
+                                            kết nối yêu thương.
+                                        </span>
+                                    </h1>
+
+                                    <p className="mt-4 max-w-md text-[12px] leading-[1.85] text-slate-200/90 sm:text-[13px]">
+                                        Kết nối gia đình với người chăm sóc phù
+                                        hợp, để mỗi hành trình chăm sóc đều bắt
+                                        đầu bằng sự an tâm và tin tưởng.
+                                    </p>
+
+                                    <div className="mt-5 flex items-center gap-3">
+                                        <span className="h-px w-10 bg-emerald-300/70" />
+                                        <span className="text-[10px] font-semibold tracking-wide text-emerald-100/90">
+                                            Thấu hiểu · Đồng hành · An tâm
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* ROLE SELECTION */}
+                                <div className="mt-6 border-t border-white/15 pt-5 sm:mt-7 sm:pt-6 lg:mt-6 lg:pt-5">
+                                    <div className="mb-3.5 flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-[13px] font-bold text-white">
+                                                Bạn tham gia CareLink với vai trò nào?
+                                            </p>
+                                            <p className="mt-1 text-[11px] leading-relaxed text-slate-200/75">
+                                                Chọn vai trò phù hợp với bạn.
+                                            </p>
+                                        </div>
+
+                                        <span className="shrink-0 rounded-lg border border-white/25 bg-white/15 px-2.5 py-1 text-[10.5px] font-bold tracking-wider text-white shadow-2xs backdrop-blur-sm">
+                                            BƯỚC 1/2
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3">
                                         <RoleCard
                                             role="family"
                                             selectedRole={role}
                                             onSelect={setRole}
-                                            icon={<Icon name="heart" className="h-5 w-5" />}
+                                            icon={
+                                                <Icon
+                                                    name="heart"
+                                                    className="h-5 w-5"
+                                                />
+                                            }
                                             title="Gia đình"
-                                            description="Tìm người chăm sóc phù hợp cho cha mẹ và người thân."
-                                            details="Tìm kiếm · Kết nối · Đặt lịch"
+                                            badge="Khách hàng"
+                                            description="Tìm người chăm sóc tận tâm, phù hợp với nhu cầu của cha mẹ và người thân."
+                                            tags={[
+                                                "Tìm người chăm sóc",
+                                                "Đặt lịch hẹn",
+                                            ]}
                                         />
 
                                         <RoleCard
                                             role="caregiver"
                                             selectedRole={role}
                                             onSelect={setRole}
-                                            icon={<Icon name="user" className="h-5 w-5" />}
+                                            icon={
+                                                <Icon
+                                                    name="stethoscope"
+                                                    className="h-5 w-5"
+                                                />
+                                            }
                                             title="Điều dưỡng / Sinh viên Y"
-                                            description="Tham gia mạng lưới chăm sóc và xây dựng hồ sơ chuyên môn."
-                                            details="Tạo hồ sơ · Xác minh thông tin"
+                                            badge="Người chăm sóc"
+                                            description="Xây dựng hồ sơ chuyên môn và tiếp nhận lịch chăm sóc phù hợp."
+                                            tags={[
+                                                "Hồ sơ chuyên môn",
+                                                "Nhận lịch chăm sóc",
+                                            ]}
                                         />
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="mt-5 flex items-start gap-3 rounded-2xl border border-white/90 bg-white/75 p-3.5 sm:mt-6">
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-                                        <Icon name="shield" className="h-4.5 w-4.5" />
+                            {/* SECURITY NOTE */}
+                            <div className="relative z-10 mt-5 border-t border-white/15 pt-4 sm:mt-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-200/10 text-teal-100">
+                                        <Icon name="shield" className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-[#002045]">
-                                            Thông tin minh bạch, kết nối phù hợp
+                                        <p className="text-xs font-bold text-white">
+                                            An tâm trong từng kết nối
                                         </p>
-                                        <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
-                                            Điều dưỡng và người chăm sóc có thể cần hoàn tất
-                                            bước xác minh hồ sơ theo quy trình của nền tảng.
+                                        <p className="mt-1 text-[11px] leading-relaxed text-slate-200/75">
+                                            Trải nghiệm chăm sóc minh bạch, an
+                                            toàn và đáng tin cậy.
                                         </p>
                                     </div>
-                                </div>
-
-                                <div className="mt-4 hidden items-center gap-2 text-xs text-slate-400 sm:flex lg:mt-6">
-                                    <Icon name="heart" className="h-4 w-4 text-teal-700" />
-                                    <span>Đồng hành trong từng khoảnh khắc chăm sóc.</span>
                                 </div>
                             </div>
                         </section>
 
-                        {/* RIGHT PANEL: Thông tin cá nhân - Màu nền kem #F8F7F3 đồng bộ với Login */}
-                        <section className="min-w-0 bg-[#F8F7F3] p-5 sm:p-7 lg:p-8 xl:p-9 flex flex-col justify-center">
-                            <div className="mb-5 flex items-start justify-between gap-4 sm:mb-6">
-                                <div>
-                                    <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-teal-700">
-                                        Bước 2 · Thông tin cá nhân
-                                    </div>
-                                    <h2 className="text-2xl font-extrabold tracking-tight text-[#002045] sm:text-[28px]">
-                                        Tạo tài khoản
-                                    </h2>
-                                    <p className="mt-1 text-xs sm:text-sm leading-5 text-slate-500">
-                                        Điền thông tin để bắt đầu hành trình cùng CareLink.
-                                    </p>
-                                </div>
-
-                                <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white border border-slate-200/70 text-teal-700 shadow-2xs sm:flex">
-                                    <Icon name="user" className="h-5 w-5" />
-                                </div>
-                            </div>
-
-                            <div className="mb-5 flex items-center gap-2 rounded-xl border border-teal-100 bg-white/80 px-3.5 py-2.5 shadow-2xs">
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-teal-700 shadow-sm">
-                                    <Icon
-                                        name={role === "family" ? "heart" : "user"}
-                                        className="h-4 w-4"
-                                    />
-                                </span>
-                                <p className="text-xs leading-5 text-slate-600">
-                                    Bạn đang đăng ký với vai trò{" "}
-                                    <strong className="font-bold text-[#002045]">
-                                        {role === "family"
-                                            ? "Gia đình"
-                                            : "Điều dưỡng / Sinh viên Y"}
-                                    </strong>
+                        {/* RIGHT PANEL */}
+                        <section className="min-w-0 bg-[#FCFDFB] px-5 py-7 sm:px-7 sm:py-8 lg:px-8 lg:py-8 xl:px-9">
+                            {/* FORM HEADING */}
+                            <div className="mb-5 border-b border-slate-200/80 pb-5 sm:mb-6 sm:pb-5">
+                                <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#087F8C] sm:text-[11px]">
+                                    BƯỚC 2 · THÔNG TIN TÀI KHOẢN
                                 </p>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h2 className="text-[25px] font-extrabold leading-tight tracking-tight text-[#17313A] sm:text-[28px]">
+                                            Tạo tài khoản
+                                        </h2>
+                                        <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-[13px]">
+                                            Hoàn tất thông tin để bắt đầu cùng CareLink.
+                                        </p>
+                                    </div>
+
+                                    {/* SELECTED ROLE BADGE — Đã tăng kích thước nhẹ & đặt ngang hàng chuẩn với Tạo tài khoản */}
+                                    <div
+                                        className={`flex shrink-0 items-center gap-2.5 rounded-2xl border px-3 py-2 sm:px-3.5 sm:py-2.5 shadow-2xs transition-all ${isFamilyRole
+                                            ? "border-emerald-200/90 bg-emerald-50/90 text-emerald-900"
+                                            : "border-sky-200/90 bg-sky-50/90 text-sky-900"
+                                            }`}
+                                    >
+                                        <span
+                                            className={`flex h-8.5 w-8.5 items-center justify-center rounded-xl text-white shadow-xs ${isFamilyRole
+                                                ? "bg-emerald-600"
+                                                : "bg-sky-700"
+                                                }`}
+                                        >
+                                            <Icon
+                                                name={
+                                                    isFamilyRole
+                                                        ? "heart"
+                                                        : "stethoscope"
+                                                }
+                                                className="h-4.5 w-4.5"
+                                            />
+                                        </span>
+                                        <div className="hidden min-w-0 sm:block">
+                                            <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Vai trò
+                                            </p>
+                                            <p className="mt-0.5 max-w-[150px] text-xs sm:text-[12.5px] font-extrabold leading-snug text-[#17313A]">
+                                                {selectedRoleLabel}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                                {/* Họ tên */}
+                            {/* REGISTRATION FORM */}
+                            <form
+                                onSubmit={handleSubmit}
+                                noValidate
+                                className="space-y-4 sm:space-y-[18px]"
+                            >
+                                {/* FULL NAME */}
                                 <div>
                                     <label
                                         htmlFor="reg-name"
-                                        className="mb-2 block text-xs font-semibold text-slate-700"
+                                        className="mb-2 block text-xs font-bold text-slate-700"
                                     >
-                                        Họ và tên <span className="text-rose-500">*</span>
+                                        Họ và tên{" "}
+                                        <span className="text-rose-500">*</span>
                                     </label>
-
                                     <div className="relative">
                                         <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                                            <Icon name="user" className="h-[18px] w-[18px]" />
+                                            <Icon
+                                                name="user"
+                                                className="h-[18px] w-[18px]"
+                                            />
                                         </span>
                                         <input
                                             id="reg-name"
@@ -770,37 +984,40 @@ export default function Register() {
                                             value={name}
                                             onChange={(e) => {
                                                 setName(e.target.value);
-                                                if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
+                                                if (errors.name) {
+                                                    setErrors((prev) => ({
+                                                        ...prev,
+                                                        name: "",
+                                                    }));
+                                                }
                                             }}
-                                            placeholder="Nguyễn Văn A"
-                                            className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
-                                                errors.name
-                                                    ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                                                    : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
-                                            }`}
+                                            placeholder={
+                                                isFamilyRole
+                                                    ? "Ví dụ: Nguyễn Văn An"
+                                                    : "Ví dụ: Trần Thùy Linh"
+                                            }
+                                            className={getInputClass(errors.name)}
                                         />
                                     </div>
-                                    {errors.name && (
-                                        <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
-                                            <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
-                                            {errors.name}
-                                        </p>
-                                    )}
+                                    <FieldError>{errors.name}</FieldError>
                                 </div>
 
-                                {/* Email + phone */}
+                                {/* EMAIL + PHONE */}
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="min-w-0">
                                         <label
                                             htmlFor="reg-email"
-                                            className="mb-2 block text-xs font-semibold text-slate-700"
+                                            className="mb-2 block text-xs font-bold text-slate-700"
                                         >
-                                            Email <span className="text-rose-500">*</span>
+                                            Địa chỉ Email{" "}
+                                            <span className="text-rose-500">*</span>
                                         </label>
-
                                         <div className="relative">
                                             <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                                                <Icon name="mail" className="h-[18px] w-[18px]" />
+                                                <Icon
+                                                    name="mail"
+                                                    className="h-[18px] w-[18px]"
+                                                />
                                             </span>
                                             <input
                                                 id="reg-email"
@@ -810,35 +1027,34 @@ export default function Register() {
                                                 value={email}
                                                 onChange={(e) => {
                                                     setEmail(e.target.value);
-                                                    if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                                                    if (errors.email) {
+                                                        setErrors((prev) => ({
+                                                            ...prev,
+                                                            email: "",
+                                                        }));
+                                                    }
                                                 }}
                                                 placeholder="ban@email.com"
-                                                className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
-                                                    errors.email
-                                                        ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                                                        : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
-                                                }`}
+                                                className={getInputClass(errors.email)}
                                             />
                                         </div>
-                                        {errors.email && (
-                                            <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
-                                                <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
-                                                {errors.email}
-                                            </p>
-                                        )}
+                                        <FieldError>{errors.email}</FieldError>
                                     </div>
 
                                     <div className="min-w-0">
                                         <label
                                             htmlFor="reg-phone"
-                                            className="mb-2 block text-xs font-semibold text-slate-700"
+                                            className="mb-2 block text-xs font-bold text-slate-700"
                                         >
-                                            Số điện thoại <span className="text-rose-500">*</span>
+                                            Số điện thoại{" "}
+                                            <span className="text-rose-500">*</span>
                                         </label>
-
                                         <div className="relative">
                                             <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                                                <Icon name="phone" className="h-[18px] w-[18px]" />
+                                                <Icon
+                                                    name="phone"
+                                                    className="h-[18px] w-[18px]"
+                                                />
                                             </span>
                                             <input
                                                 id="reg-phone"
@@ -848,35 +1064,41 @@ export default function Register() {
                                                 value={phone}
                                                 onChange={(e) => {
                                                     setPhone(e.target.value);
-                                                    if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+                                                    if (errors.phone) {
+                                                        setErrors((prev) => ({
+                                                            ...prev,
+                                                            phone: "",
+                                                        }));
+                                                    }
                                                 }}
-                                                placeholder="09xx xxx xxx"
-                                                className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all outline-none ${
-                                                    errors.phone
-                                                        ? "bg-red-50/20 border border-red-400 text-slate-800 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/20"
-                                                        : "bg-white border border-[#D9DEDA] text-slate-800 placeholder-slate-400 hover:border-slate-400 focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-600/10 shadow-2xs"
-                                                }`}
+                                                placeholder="0912 xxx xxx"
+                                                className={getInputClass(errors.phone)}
                                             />
                                         </div>
-                                        {errors.phone && (
-                                            <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1 font-medium">
-                                                <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
-                                                {errors.phone}
-                                            </p>
-                                        )}
+                                        <FieldError>{errors.phone}</FieldError>
                                     </div>
                                 </div>
 
-                                {/* Passwords */}
+                                {/* PASSWORDS */}
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <PasswordField
                                         id="reg-password"
                                         label="Mật khẩu"
                                         value={password}
-                                        onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors((prev) => ({ ...prev, password: "" })); }}
+                                        onChange={(e) => {
+                                            setPassword(e.target.value);
+                                            if (errors.password) {
+                                                setErrors((prev) => ({
+                                                    ...prev,
+                                                    password: "",
+                                                }));
+                                            }
+                                        }}
                                         error={errors.password}
                                         showPassword={showPassword}
-                                        onToggle={() => setShowPassword((prev) => !prev)}
+                                        onToggle={() =>
+                                            setShowPassword((prev) => !prev)
+                                        }
                                         autoComplete="new-password"
                                     />
 
@@ -884,147 +1106,177 @@ export default function Register() {
                                         id="reg-confirm-password"
                                         label="Xác nhận mật khẩu"
                                         value={confirmPassword}
-                                        onChange={(e) => { setConfirmPassword(e.target.value); if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" })); }}
+                                        onChange={(e) => {
+                                            setConfirmPassword(e.target.value);
+                                            if (errors.confirmPassword) {
+                                                setErrors((prev) => ({
+                                                    ...prev,
+                                                    confirmPassword: "",
+                                                }));
+                                            }
+                                        }}
                                         error={errors.confirmPassword}
                                         showPassword={showConfirmPassword}
                                         onToggle={() =>
                                             setShowConfirmPassword((prev) => !prev)
                                         }
                                         autoComplete="new-password"
+                                        placeholder="Nhập lại mật khẩu"
                                     />
                                 </div>
 
-                                <p className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                                    <Icon name="lock" className="h-3.5 w-3.5 shrink-0" />
-                                    Mật khẩu cần có ít nhất 6 ký tự.
-                                </p>
+                                {/* TERMS */}
+                                <div className="pt-0.5">
+                                    <label className="flex cursor-pointer select-none items-start gap-2.5">
+                                        <input
+                                            type="checkbox"
+                                            checked={agreeTerms}
+                                            onChange={(e) => {
+                                                setAgreeTerms(e.target.checked);
+                                                if (errors.agreeTerms) {
+                                                    setErrors((prev) => ({
+                                                        ...prev,
+                                                        agreeTerms: "",
+                                                    }));
+                                                }
+                                            }}
+                                            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-[#087F8C] focus:ring-[#087F8C]"
+                                        />
+                                        <span className="text-xs leading-5 text-slate-600">
+                                            Tôi đồng ý với{" "}
+                                            <Link
+                                                to="/terms"
+                                                className="font-bold text-[#087F8C] underline-offset-2 hover:underline"
+                                            >
+                                                Điều khoản sử dụng
+                                            </Link>{" "}
+                                            và{" "}
+                                            <Link
+                                                to="/privacy"
+                                                className="font-bold text-[#087F8C] underline-offset-2 hover:underline"
+                                            >
+                                                Chính sách bảo mật
+                                            </Link>{" "}
+                                            của CareLink.
+                                        </span>
+                                    </label>
+                                    <FieldError>{errors.agreeTerms}</FieldError>
+                                </div>
 
-                                {/* Terms */}
-                                <label className="flex cursor-pointer items-start gap-2.5 pt-1">
-                                    <input
-                                        type="checkbox"
-                                        checked={agreeTerms}
-                                        onChange={(e) => {
-                                            setAgreeTerms(e.target.checked);
-                                            if (errors.agreeTerms) setErrors((prev) => ({ ...prev, agreeTerms: "" }));
-                                        }}
-                                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-teal-700 focus:ring-teal-600"
-                                    />
-
-                                    <span className="text-xs leading-5 text-slate-500">
-                                        Tôi đồng ý với{" "}
-                                        <a
-                                            href="/terms"
-                                            className="font-semibold text-teal-700 underline-offset-2 hover:underline"
-                                        >
-                                            Điều khoản sử dụng
-                                        </a>{" "}
-                                        và{" "}
-                                        <a
-                                            href="/privacy"
-                                            className="font-semibold text-teal-700 underline-offset-2 hover:underline"
-                                        >
-                                            Chính sách bảo mật
-                                        </a>{" "}
-                                        của CareLink.
-                                    </span>
-                                </label>
-                                {errors.agreeTerms && (
-                                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1 font-medium">
-                                        <Icon name="alert" className="h-3.5 w-3.5 shrink-0" />
-                                        {errors.agreeTerms}
-                                    </p>
-                                )}
-
-
-                                {/* Submit button */}
+                                {/* SUBMIT */}
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#187D74] hover:bg-[#126A63]  px-5 py-3.5 text-sm font-semibold text-white shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                                    className={`group flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60 ${isFamilyRole
+                                        ? "bg-[#087F8C] shadow-[0_7px_18px_-7px_rgba(8,127,140,0.6)] hover:bg-[#076D77] hover:shadow-[0_9px_22px_-7px_rgba(8,127,140,0.55)] focus-visible:ring-emerald-500/25"
+                                        : "bg-[#244F70] shadow-[0_7px_18px_-7px_rgba(36,79,112,0.55)] hover:bg-[#1C405D] hover:shadow-[0_9px_22px_-7px_rgba(36,79,112,0.5)] focus-visible:ring-sky-500/25"
+                                        }`}
                                 >
-                                    <span>
-                                        {isLoading
-                                            ? "Đang xử lý..."
-                                            : "Tạo tài khoản CareLink"}
-                                    </span>
-
-                                    {!isLoading && (
-                                        <Icon
-                                            name="arrow"
-                                            className="h-4 w-4 text-teal-200 transition-transform group-hover:translate-x-1"
-                                        />
+                                    {isLoading ? (
+                                        <>
+                                            <svg
+                                                className="h-4 w-4 animate-spin"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                aria-hidden="true"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                />
+                                                <path
+                                                    className="opacity-80"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"
+                                                />
+                                            </svg>
+                                            <span>Đang khởi tạo tài khoản...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>
+                                                Tạo tài khoản {selectedRoleLabel}
+                                            </span>
+                                            <Icon
+                                                name="arrow"
+                                                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+                                            />
+                                        </>
                                     )}
                                 </button>
+                            </form>
 
-                                {/* Divider */}
-                                <div className="relative my-2 py-1">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-[#DDE2DE]" />
-                                    </div>
-                                    <div className="relative flex justify-center">
-                                        <span className="bg-[#F8F7F3] px-3.5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-700">
-                                            Hoặc
-                                        </span>
-                                    </div>
+                            {/* GOOGLE REGISTRATION */}
+                            <div className="mt-5 sm:mt-6">
+                                <div className="relative flex items-center justify-center">
+                                    <div className="absolute inset-x-0 top-1/2 border-t border-slate-200" />
+                                    <span className="relative bg-[#FCFDFB] px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                        HOẶC
+                                    </span>
                                 </div>
 
-                                {/* Hidden Google Sign-In SDK button container */}
-                                <div id="google-register-hidden-wrapper" className="hidden" aria-hidden="true" />
+                                <div
+                                    id="google-register-hidden-wrapper"
+                                    className="hidden"
+                                    aria-hidden="true"
+                                />
 
-                                {/* Google OAuth */}
                                 <button
                                     type="button"
                                     onClick={handleGoogleRegister}
                                     disabled={isLoading}
-                                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#D9DEDA] bg-white px-5 py-3 text-sm font-medium text-[#344044] transition-all hover:border-[#BBCAC3] hover:bg-[#FCFDFC] hover:shadow-[0_4px_12px_rgba(16,42,47,0.06)] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                                    className="mt-3.5 flex min-h-11 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_8px_22px_-14px_rgba(15,23,42,0.4)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <GoogleIcon />
-                                    <span>
-                                        Đăng ký với Google
-                                    </span>
+                                    <span>Đăng ký nhanh bằng Google</span>
                                 </button>
 
-                                <p className="pt-1 text-center text-sm text-slate-500">
-                                    Đã có tài khoản?{" "}
+                                <p className="mt-4 text-center text-xs leading-relaxed text-slate-500 sm:text-[13px]">
+                                    Bạn đã có tài khoản CareLink?{" "}
                                     <Link
                                         to="/login"
-                                        className="font-bold text-teal-700 transition-colors hover:text-[#002045]"
+                                        className="font-extrabold text-[#087F8C] underline-offset-4 hover:text-[#17313A] hover:underline"
                                     >
                                         Đăng nhập ngay
                                     </Link>
                                 </p>
-                            </form>
+                            </div>
                         </section>
                     </div>
                 </div>
             </main>
 
             {/* FOOTER */}
-            <footer className="w-full border-t border-slate-200/80 bg-white px-5 sm:px-8 lg:px-12 py-3 sm:py-3.5 text-xs text-slate-500 shrink-0">
-                <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:gap-4 sm:text-left">
-                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:justify-start">
-                        <span className="font-bold text-[#002045]">CareLink</span>
+            <footer className="shrink-0 border-t border-slate-200/80 bg-white/90 px-4 py-3.5 sm:px-8">
+                <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
+                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-slate-500 sm:justify-start sm:text-xs">
+                        <span className="font-extrabold text-[#17313A]">
+                            CareLink
+                        </span>
                         <span className="hidden text-slate-300 sm:inline">·</span>
                         <span>© 2026 CareLink. Bản quyền được bảo hộ.</span>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-medium">
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-medium text-slate-500 sm:text-xs">
                         <Link
                             to="/terms"
-                            className="transition-colors hover:text-[#002045] hover:underline"
+                            className="transition-colors hover:text-[#17313A] hover:underline"
                         >
                             Điều khoản sử dụng
                         </Link>
                         <Link
                             to="/privacy"
-                            className="transition-colors hover:text-[#002045] hover:underline"
+                            className="transition-colors hover:text-[#17313A] hover:underline"
                         >
                             Chính sách bảo mật
                         </Link>
                         <Link
                             to="/"
-                            className="transition-colors hover:text-[#002045] hover:underline"
+                            className="transition-colors hover:text-[#17313A] hover:underline"
                         >
                             Trung tâm hỗ trợ
                         </Link>

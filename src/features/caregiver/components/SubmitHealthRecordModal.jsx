@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
+import caregiverApi from "../../../api/caregiverApi";
 import {
     Activity,
     Heart,
@@ -52,6 +53,7 @@ export default function SubmitHealthRecordModal({
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [apiError, setApiError] = useState(null);
 
     // Danh sách gợi ý nhanh
     const woundOptions = [
@@ -115,34 +117,46 @@ export default function SubmitHealthRecordModal({
         return Object.keys(errs).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
         setIsSubmitting(true);
+        setApiError(null);
 
-        // Giả lập DTO chuẩn gửi lên API /api/v1/bookings/{id}/health-record
-        const healthRecordDto = {
-            bookingId: booking.id,
+        const healthRecordPayload = {
             bloodPressureSystolic: systolic ? parseInt(systolic, 10) : null,
             bloodPressureDiastolic: diastolic ? parseInt(diastolic, 10) : null,
             heartRate: heartRate ? parseInt(heartRate, 10) : null,
             temperature: temperature ? parseFloat(temperature) : null,
             bloodGlucose: bloodGlucose ? parseFloat(bloodGlucose) : null,
-            woundStatus,
-            mobilityStatus,
-            mentalStatus,
+            woundStatus: woundStatus || null,
+            mobilityStatus: mobilityStatus || null,
+            mentalStatus: mentalStatus || null,
             nurseNotes: nurseNotes.trim(),
-            createdAt: new Date().toISOString(),
         };
 
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            // 1. Gửi bệnh án lên Backend (POST /api/v1/bookings/{id}/health-record)
+            const createdRecord = await caregiverApi.submitHealthRecord(booking.id, healthRecordPayload);
+
+            // 2. Gọi hoàn thành ca chính thức (PUT /api/v1/bookings/{id}/finish)
+            await caregiverApi.finishBooking(booking.id);
+
             if (onSaveSuccess) {
-                onSaveSuccess(healthRecordDto);
+                onSaveSuccess(createdRecord || healthRecordPayload);
             }
             onClose();
-        }, 500);
+        } catch (err) {
+            console.error("[CareLink] Lưu bệnh án hoặc kết thúc ca thất bại:", err);
+            const msg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Không thể lưu bệnh án hoặc hoàn thành ca chăm sóc. Vui lòng kiểm tra lại.";
+            setApiError(msg);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return createPortal(
@@ -185,6 +199,16 @@ export default function SubmitHealthRecordModal({
 
                 {/* ── MODAL BODY (SCROLLABLE) ── */}
                 <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6">
+                    {/* Error Banner */}
+                    {apiError && (
+                        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                            <div className="text-xs font-semibold text-rose-800 leading-relaxed">
+                                {apiError}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Notice */}
                     <div className="p-3.5 rounded-2xl bg-teal-50/80 border border-teal-200/80 flex items-start gap-3">
                         <CheckCircle2 className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />

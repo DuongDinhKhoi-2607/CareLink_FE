@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import CaregiverChatThread from "../components/CaregiverChatThread";
 import CaregiverBookingDetailPanel from "../components/CaregiverBookingDetailPanel";
+import conversationApi from "../../../api/conversationApi";
 
 // ============================================================
 // DỮ LIỆU MOCK CHO DANH SÁCH HỘI THOẠI PHỤ
@@ -386,6 +387,53 @@ export default function CaregiverMessages() {
         return unsubscribe;
     }, []);
 
+    // Tải danh sách hội thoại từ Backend nếu người dùng đã đăng nhập tài khoản Điều dưỡng
+    useEffect(() => {
+        let isMounted = true;
+        conversationApi
+            .getConversations({ PageNumber: 1, PageSize: 50 })
+            .then(async (res) => {
+                if (!isMounted) return;
+                const items = res?.items || (Array.isArray(res) ? res : []);
+                if (items.length > 0) {
+                    const firstConv = items[0];
+                    try {
+                        const proposals = await conversationApi.getProposals(firstConv.id);
+                        const proposalList = Array.isArray(proposals) ? proposals : (proposals?.data || []);
+                        const pendingProposal = proposalList.find((p) => p.status === 1 || p.status === "Pending");
+                        if (pendingProposal && isMounted) {
+                            setDemoState((prev) => ({
+                                ...prev,
+                                status: "family_confirmed",
+                                activeProposalId: pendingProposal.id,
+                                activeConversationId: firstConv.id,
+                                bookingInfo: {
+                                    ...prev.bookingInfo,
+                                    serviceName: pendingProposal.serviceName || prev.bookingInfo.serviceName,
+                                    recipientName: pendingProposal.recipientName || prev.bookingInfo.recipientName,
+                                    address: pendingProposal.addressSnapshot || prev.bookingInfo.address,
+                                    fee: pendingProposal.totalPrice ? Number(pendingProposal.totalPrice).toLocaleString("vi-VN") + " VNĐ" : prev.bookingInfo.fee,
+                                }
+                            }));
+                        } else if (isMounted) {
+                            setDemoState((prev) => ({
+                                ...prev,
+                                activeConversationId: firstConv.id,
+                            }));
+                        }
+                    } catch {
+                        // ignore proposal loading errors silently
+                    }
+                }
+            })
+            .catch(() => {
+                // Fallback gracefully to demo chat store
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     // Tự cuộn xuống tin nhắn mới nhất.
     useEffect(() => {
         const container = messagesContainerRef.current;
@@ -446,7 +494,7 @@ export default function CaregiverMessages() {
     ]);
 
     // Gửi tin nhắn.
-    const handleSendMessage = (event) => {
+    const handleSendMessage = async (event) => {
         event?.preventDefault();
 
         const trimmed = inputText.trim();
@@ -454,6 +502,14 @@ export default function CaregiverMessages() {
         if (!trimmed || locked) return;
 
         addDemoMessage("caregiver", trimmed);
+
+        if (demoState.activeConversationId) {
+            try {
+                await conversationApi.sendMessage(demoState.activeConversationId, { content: trimmed });
+            } catch (err) {
+                console.warn("[CareLink] Gửi tin nhắn thực tế thất bại:", err);
+            }
+        }
 
         setInputText("");
         setQuickRepliesOpen(false);
@@ -475,9 +531,38 @@ export default function CaregiverMessages() {
         });
     };
 
-    // Chấp nhận yêu cầu nhận ca.
-    const handleAcceptRequest = () => {
+    const [toastMessage, setToastMessage] = useState(null);
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+    };
+
+    // Chấp nhận yêu cầu nhận ca (Tự động sinh Booking status PendingPayment phía Backend)
+    const handleAcceptRequest = async () => {
         if (demoState.status !== "family_confirmed") return;
+
+        // Nếu có conversation/proposal từ real API
+        if (demoState.activeProposalId && demoState.activeConversationId) {
+            try {
+                const res = await conversationApi.acceptProposal(
+                    demoState.activeConversationId,
+                    demoState.activeProposalId,
+                    { responseNote: "Điều dưỡng đã xác nhận nhận ca." }
+                );
+                showToast("Đã đồng ý nhận ca! Ca chăm sóc đã được tạo ở trạng thái Chờ thanh toán.");
+                if (res.bookingId) {
+                    // Cập nhật bookingId vào state
+                    setDemoStatus("caregiver_accepted");
+                    return;
+                }
+            } catch (err) {
+                console.error("[CareLink] Chấp nhận proposal thất bại:", err);
+                const msg = err.response?.data?.detail || err.response?.data?.message || "Lỗi khi chấp nhận đề xuất ca.";
+                showToast(msg);
+                return;
+            }
+        }
 
         setDemoStatus("caregiver_accepted");
     };
@@ -491,7 +576,7 @@ export default function CaregiverMessages() {
     };
 
     // Xác nhận từ chối.
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (demoState.status !== "family_confirmed") return;
 
         const finalReason =
@@ -502,6 +587,22 @@ export default function CaregiverMessages() {
         if (!finalReason) {
             setRejectError("Vui lòng nhập lý do từ chối.");
             return;
+        }
+
+        if (demoState.activeProposalId && demoState.activeConversationId) {
+            try {
+                await conversationApi.rejectProposal(
+                    demoState.activeConversationId,
+                    demoState.activeProposalId,
+                    { reason: finalReason }
+                );
+                showToast("Đã từ chối đề xuất nhận ca.");
+            } catch (err) {
+                console.error("[CareLink] Từ chối proposal thất bại:", err);
+                const msg = err.response?.data?.detail || err.response?.data?.message || "Lỗi khi từ chối đề xuất ca.";
+                showToast(msg);
+                return;
+            }
         }
 
         setDemoStatus("caregiver_rejected", finalReason);
@@ -834,6 +935,14 @@ export default function CaregiverMessages() {
                     danger={true}
                     icon={RotateCcw}
                 />
+
+                {/* Toast feedback */}
+                {toastMessage && (
+                    <div className="fixed bottom-6 right-6 z-50 animate-bounce bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-medium border border-slate-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+                        <span>{toastMessage}</span>
+                    </div>
+                )}
             </div>
         </div>
     );

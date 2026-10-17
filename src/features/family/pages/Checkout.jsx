@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import familyApi from "../../../api/familyApi";
 
 // 1. Danh sách phương thức thanh toán "Sang - Xịn" với Brand Colors riêng biệt
 const paymentMethods = [
@@ -90,25 +91,89 @@ const progressItems = [
 
 export default function Checkout() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+
+    // Lấy bookingId từ router state hoặc search query params
+    const bookingId = location.state?.bookingId || searchParams.get("bookingId");
+    const [booking, setBooking] = useState(location.state?.booking || null);
+    const [isLoadingBooking, setIsLoadingBooking] = useState(Boolean(bookingId && !location.state?.booking));
+
     const [selectedPayment, setSelectedPayment] = useState("vnpay");
     const [acceptedTerms, setAcceptedTerms] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState("");
+    const [paymentError, setPaymentError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Tải thông tin booking thật nếu có bookingId
+    useEffect(() => {
+        if (!bookingId) return;
+        let isMounted = true;
+        setIsLoadingBooking(true);
+        familyApi.getBookingDetail(bookingId)
+            .then((res) => {
+                if (isMounted) {
+                    setBooking(res);
+                    setIsLoadingBooking(false);
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setIsLoadingBooking(false);
+                }
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [bookingId]);
 
     // Lấy data của phương thức đang được chọn để làm màu chủ đạo cho các nút bấm
     const selectedMethodData = paymentMethods.find((m) => m.id === selectedPayment);
 
-    const handlePayment = (e) => {
+    const handlePayment = async (e) => {
         e.preventDefault();
+        setPaymentError("");
         if (!acceptedTerms) {
-            setAcceptedTerms(true);
+            setPaymentError("Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách thanh toán trước khi tiếp tục.");
+            return;
         }
 
-        setPaymentStatus(`Đang kết nối cổng thanh toán ${selectedMethodData?.label}...`);
+        if (!bookingId) {
+            setPaymentStatus("Chế độ xem trước (Demo): Vui lòng chọn ca cần thanh toán từ Lịch hẹn hoặc Cuộc trò chuyện để tạo liên kết thanh toán PayOS thực tế.");
+            return;
+        }
 
-        // Chuyển hướng tới Family Dashboard sau khi thanh toán thành công
-        setTimeout(() => {
-            navigate("/dashboard");
-        }, 1000);
+        setIsSubmitting(true);
+        setPaymentStatus("Đang khởi tạo liên kết thanh toán PayOS bảo mật...");
+        try {
+            const res = await familyApi.createPaymentLink(bookingId);
+            if (res?.checkoutUrl) {
+                sessionStorage.setItem("carelink_pending_payment_booking_id", bookingId);
+                setPaymentStatus("Đang chuyển hướng tới cổng thanh toán an toàn PayOS...");
+                window.location.href = res.checkoutUrl;
+            } else {
+                setPaymentError("Không nhận được liên kết thanh toán từ cổng PayOS. Vui lòng thử lại sau.");
+                setPaymentStatus("");
+            }
+        } catch (err) {
+            const status = err.response?.status;
+            let msg = err.response?.data?.detail || err.response?.data?.message;
+            if (!msg) {
+                if (status === 409) {
+                    msg = "Ca chăm sóc này đã được thanh toán hoặc không ở trạng thái chờ thanh toán.";
+                } else if (status === 401 || status === 403) {
+                    msg = "Phiên làm việc đã hết hạn hoặc bạn không có quyền thanh toán cho ca này.";
+                } else if (status === 404) {
+                    msg = "Không tìm thấy thông tin ca chăm sóc trên hệ thống.";
+                } else {
+                    msg = "Chưa thể tạo liên kết thanh toán PayOS lúc này. Vui lòng kiểm tra đường truyền và thử lại.";
+                }
+            }
+            setPaymentError(msg);
+            setPaymentStatus("");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -160,10 +225,19 @@ export default function Checkout() {
 
                             {/* Thẻ tổng cộng phí */}
                             <div className="p-6 rounded-xl bg-[#f1f4f6] border border-[#c4c6cf4c] flex flex-col gap-1">
-                                <span className="text-sm text-[#43474e]">Tổng cộng phí dịch vụ</span>
-                                <span className="text-3xl sm:text-4xl font-bold text-prussian-blue">
-                                    60.000 VNĐ
+                                <span className="text-sm text-[#43474e]">
+                                    {booking?.serviceName ? `Tổng cộng phí dịch vụ (${booking.serviceName})` : "Tổng cộng phí dịch vụ"}
                                 </span>
+                                <span className="text-3xl sm:text-4xl font-bold text-prussian-blue">
+                                    {booking?.totalPrice
+                                        ? Number(booking.totalPrice).toLocaleString("vi-VN") + " VNĐ"
+                                        : "60.000 VNĐ"}
+                                </span>
+                                {booking?.recipientName && (
+                                    <span className="text-xs text-slate-500 mt-1">
+                                        Người nhận: <strong>{booking.recipientName}</strong> · Điều dưỡng: <strong>{booking.nurseName || "Đang xếp lịch"}</strong>
+                                    </span>
+                                )}
                             </div>
 
                             {/* Phương thức thanh toán - Áp dụng màu thương hiệu */}
@@ -245,25 +319,31 @@ export default function Checkout() {
                                 <button
                                     type="button"
                                     onClick={handlePayment}
-                                    className="w-full py-4 px-6 text-white rounded-xl text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0"
+                                    disabled={isSubmitting}
+                                    className="w-full py-4 px-6 text-white rounded-xl text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                     style={{ backgroundColor: selectedMethodData?.brandHex || '#102030' }}
                                 >
-                                    Thanh toán qua {selectedMethodData?.label}
+                                    {isSubmitting ? "Đang kết nối cổng PayOS..." : `Thanh toán qua ${selectedMethodData?.label}`}
                                 </button>
+
+                                {paymentError && (
+                                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center font-medium leading-relaxed">
+                                        {paymentError}
+                                    </div>
+                                )}
 
                                 {paymentStatus && (
                                     <p
                                         role="status"
-                                        className={`text-sm text-center font-medium ${acceptedTerms ? "animate-pulse" : "text-rose-600"
-                                            }`}
-                                        style={{ color: acceptedTerms ? (selectedMethodData?.brandHex || '#00677c') : undefined }}
+                                        className="text-sm text-center font-medium animate-pulse"
+                                        style={{ color: selectedMethodData?.brandHex || '#00677c' }}
                                     >
                                         {paymentStatus}
                                     </p>
                                 )}
 
                                 <p className="text-xs text-center italic text-[#44474e] pt-1">
-                                    Sau khi hoàn tất thanh toán, bạn sẽ được chuyển đến Bảng điều khiển Gia đình.
+                                    Giao dịch được bảo mật và xác thực bởi cổng thanh toán PayOS.
                                 </p>
                             </div>
 

@@ -30,6 +30,11 @@ export default function CaregiverFilterSidebar({
     setPriceRange,
     selectedAvailability,
     setSelectedAvailability,
+    minRating = null,
+    setMinRating,
+    servicesList = [],
+    activeService = null,
+    setActiveService,
     resetFilters,
     toggleItem,
 }) {
@@ -150,6 +155,94 @@ export default function CaregiverFilterSidebar({
                             <span>500.000đ</span>
                         </div>
                     </div>
+
+                    {/* RATING (MinRating parameter in Backend) */}
+                    {setMinRating && (
+                        <div className="pt-5 border-t border-[#edf1ef]">
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400 mb-3">
+                                Đánh giá tối thiểu
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5">
+                                {[
+                                    { label: "Tất cả", value: null },
+                                    { label: "4.5★ trở lên", value: 4.5 },
+                                    { label: "4.0★ trở lên", value: 4.0 },
+                                    { label: "3.5★ trở lên", value: 3.5 },
+                                ].map((r) => {
+                                    const isSelected = minRating === r.value;
+                                    return (
+                                        <button
+                                            key={r.label}
+                                            type="button"
+                                            onClick={() => setMinRating(r.value)}
+                                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                                isSelected
+                                                    ? "bg-[#00677c] border-[#00677c] text-white shadow-2xs"
+                                                    : "bg-[#f8faf9] border-[#e1e9e6] text-slate-600 hover:border-[#a8d4ca] hover:text-[#00677c]"
+                                            }`}
+                                        >
+                                            {r.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SERVICES (ServiceId parameter in Backend) */}
+                    {servicesList && servicesList.length > 0 && setActiveService && (
+                        <div className="pt-5 border-t border-[#edf1ef]">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
+                                    Gói dịch vụ
+                                </h3>
+                                {activeService && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveService(null)}
+                                        className="text-[10px] font-semibold text-[#00677c] hover:underline cursor-pointer"
+                                    >
+                                        Bỏ chọn
+                                    </button>
+                                )}
+                            </div>
+                            <div className="space-y-1.5">
+                                {servicesList.map((srv) => {
+                                    const isSelected = activeService?.id === srv.id;
+                                    return (
+                                        <button
+                                            key={srv.id}
+                                            type="button"
+                                            onClick={() =>
+                                                setActiveService(isSelected ? null : srv)
+                                            }
+                                            className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                                                isSelected
+                                                    ? "bg-[#eef7f4] border-[#00677c] text-[#00677c]"
+                                                    : "bg-[#f8faf9] border-[#e1e9e6] text-slate-700 hover:border-[#b4dcd3]"
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold truncate">
+                                                    {srv.serviceName || srv.title}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                                    {srv.basePrice
+                                                        ? `${Number(srv.basePrice).toLocaleString("vi-VN")}đ / ca`
+                                                        : srv.durationMinutes
+                                                        ? `${srv.durationMinutes} phút`
+                                                        : ""}
+                                                </p>
+                                            </div>
+                                            {isSelected && (
+                                                <CheckIcon className="w-3.5 h-3.5 shrink-0 text-[#00677c]" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* AVAILABILITY */}
                     <div className="pt-5 border-t border-[#edf1ef]">

@@ -8,3 +8,4 @@ export { default as caregiverApi } from "./caregiverApi";
 export { default as adminApi } from "./adminApi";
 export { default as handbookApi } from "./handbookApi";
 export { default as notificationApi } from "./notificationApi";
+export { default as conversationApi } from "./conversationApi";
