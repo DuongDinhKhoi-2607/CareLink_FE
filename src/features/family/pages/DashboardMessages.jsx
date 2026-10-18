@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
 import conversationApi from "../../../api/conversationApi";
+import CreateProposalModal from "../components/CreateProposalModal";
 
 // Dữ liệu danh sách các cuộc trò chuyện trong Dashboard
 const initialConversations = [
@@ -177,10 +179,37 @@ export default function DashboardMessages() {
     const [showRightDrawer, setShowRightDrawer] = useState(false);
     const [mobileView, setMobileView] = useState("chat"); // 'list' | 'chat'
     const [toastMessage, setToastMessage] = useState(null);
+    const [showProposalModal, setShowProposalModal] = useState(false);
 
     const showToast = (msg) => {
         setToastMessage(msg);
         setTimeout(() => setToastMessage(null), 4000);
+    };
+
+    const handleProposalCreated = (newProposal) => {
+        showToast("Đã gửi đề xuất ca chăm sóc thành công! Đang chờ điều dưỡng phản hồi.");
+        if (activeChatId) {
+            conversationApi
+                .getMessages(activeChatId, { PageNumber: 1, PageSize: 50 })
+                .then((res) => {
+                    const items = res?.items || (Array.isArray(res) ? res : []);
+                    const mappedMsgs = items.map((m) => ({
+                        id: m.id,
+                        sender: m.isMine ? "family" : "caregiver",
+                        text: m.content,
+                        time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                        type: m.type === 2 ? "proposal_card" : "text",
+                        proposalId: m.proposalId,
+                        bookingId: m.bookingId,
+                    }));
+                    setMessagesMap((prev) => ({
+                        ...prev,
+                        [activeChatId]: mappedMsgs,
+                    }));
+                    setTimeout(() => scrollToBottom("smooth"), 100);
+                })
+                .catch(() => {});
+        }
     };
 
     // 1. Tải danh sách hội thoại thực từ Backend API (GET /api/v1/conversations)
@@ -663,6 +692,19 @@ export default function DashboardMessages() {
 
                         {/* Các nút công cụ thao tác */}
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                            {/* Nút Tạo đề xuất ca chăm sóc mới */}
+                            {activeConv?.isRealApi && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProposalModal(true)}
+                                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-[#00677c] text-white hover:from-teal-700 hover:to-[#005566] font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                                    title="Tạo đề xuất ca chăm sóc mới gửi cho điều dưỡng"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Tạo đề xuất ca</span>
+                                </button>
+                            )}
+
                             <button
                                 type="button"
                                 onClick={() => alert(`Đang kết nối cuộc gọi thoại với ${activeConv.name}...`)}
@@ -1030,6 +1072,15 @@ export default function DashboardMessages() {
                     )}
                 </div>
             </div>
+
+            {/* Modal tạo đề xuất ca chăm sóc mới (Kết nối API thực) */}
+            <CreateProposalModal
+                isOpen={showProposalModal}
+                onClose={() => setShowProposalModal(false)}
+                conversationId={activeChatId}
+                caregiverName={activeConv?.name}
+                onProposalCreated={handleProposalCreated}
+            />
 
             {/* Toast feedback */}
             {toastMessage && (
