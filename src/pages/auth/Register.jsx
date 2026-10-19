@@ -395,8 +395,14 @@ export default function Register() {
         });
 
         window.setTimeout(() => {
-            navigate("/");
-        }, 2500);
+            if (user.role === "caregiver") {
+                navigate("/caregiver/dashboard");
+            } else if (user.role === "admin") {
+                navigate("/admin");
+            } else {
+                navigate("/");
+            }
+        }, 1500);
     };
 
     /* REGISTER WITH EMAIL + PASSWORD */
@@ -526,6 +532,15 @@ export default function Register() {
             });
 
             const data = res?.data || res;
+            const beRole = String(data.user?.role || "").toLowerCase();
+            let targetRole = role === "caregiver" || role === "nurse" ? "caregiver" : "family";
+            if (beRole.includes("nurse") || beRole.includes("caregiver")) {
+                targetRole = "caregiver";
+            } else if (beRole.includes("admin")) {
+                targetRole = "admin";
+            } else if (beRole.includes("customer") || beRole.includes("family")) {
+                targetRole = "family";
+            }
 
             const userObj = {
                 id: data.user?.id,
@@ -533,9 +548,11 @@ export default function Register() {
                     ? data.user.email.split("@")[0]
                     : "Người dùng Google",
                 email: data.user?.email || "google.user@carelink.vn",
-                role: data.user?.role || role,
+                role: targetRole,
                 avatar:
-                    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                    targetRole === "caregiver"
+                        ? "/images/caregiver_avatar.svg"
+                        : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             };
 
             saveUserAndNavigate(

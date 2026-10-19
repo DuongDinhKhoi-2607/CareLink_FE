@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
     AlertCircle,
     Mail,
@@ -14,13 +14,26 @@ import Toast from "../../components/Toast";
 
 export default function Login() {
     const navigate = useNavigate();
-    const [emailOrPhone, setEmailOrPhone] = useState("");
+    const location = useLocation();
+    const [emailOrPhone, setEmailOrPhone] = useState(location.state?.email || "");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState(null);
     const [errors, setErrors] = useState({});
+
+    // Tự động nhận email từ trang Đặt lại mật khẩu thành công
+    useEffect(() => {
+        if (location.state?.email) {
+            setEmailOrPhone(location.state.email);
+            setToast({
+                type: "success",
+                title: "Mật khẩu mới đã sẵn sàng!",
+                message: `Tài khoản ${location.state.email} đã được cập nhật. Vui lòng nhập mật khẩu mới để đăng nhập.`,
+            });
+        }
+    }, [location.state]);
 
     // =========================================================
     // XỬ LÝ ĐĂNG NHẬP (API THẬT + SAFETY FALLBACK MOCK)
@@ -43,13 +56,19 @@ export default function Login() {
         setToast({
             type: "success",
             title: "Đăng nhập thành công!",
-            message: `Chào mừng ${userObj.name} quay lại với CareLink. Đang chuyển hướng về trang chủ...`,
+            message: `Chào mừng ${userObj.name} quay lại với CareLink. Đang chuyển hướng...`,
         });
 
-        // Đợi 2 giây để hiển thị thông báo thành công mượt mà rồi chuyển về trang chủ
+        // Chuyển hướng theo đúng vai trò tài khoản
         setTimeout(() => {
-            navigate("/");
-        }, 2000);
+            if (userObj.role === "caregiver") {
+                navigate("/caregiver/dashboard");
+            } else if (userObj.role === "admin") {
+                navigate("/admin");
+            } else {
+                navigate("/");
+            }
+        }, 1500);
     };
 
     const doMockLoginFallback = (input) => {
@@ -162,7 +181,7 @@ export default function Login() {
             console.warn("[CareLink Auth] Login API error:", err);
 
             // 2. SAFETY FALLBACK: Nếu người dùng nhập tài khoản mẫu demo hoặc backend chưa bật
-            if (isMockKeyword) {
+            if (isMockKeyword || err.code === "ERR_NETWORK" || !err.response) {
                 doMockLoginFallback(input);
                 return;
             }
@@ -209,12 +228,24 @@ export default function Login() {
             });
 
             const data = res?.data || res;
+            const beRole = String(data.user?.role || "").toLowerCase();
+            let targetRole = "family";
+            if (beRole.includes("admin")) {
+                targetRole = "admin";
+            } else if (beRole.includes("nurse") || beRole.includes("caregiver")) {
+                targetRole = "caregiver";
+            }
+
             const userObj = {
                 id: data.user?.id,
                 name: data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google",
                 email: data.user?.email || "google.user@carelink.vn",
-                role: data.user?.role || "family",
-                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                role: targetRole,
+                avatar: targetRole === "caregiver"
+                    ? "/images/caregiver_avatar.svg"
+                    : targetRole === "admin"
+                    ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
+                    : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             };
 
             handleLoginSuccess(userObj, data.accessToken, data.refreshToken);

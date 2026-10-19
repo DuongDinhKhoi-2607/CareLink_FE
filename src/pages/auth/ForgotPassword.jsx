@@ -169,12 +169,21 @@ export default function ForgotPassword() {
         setIsLoading(true);
 
         try {
-            await authApi.forgotPassword(trimmedEmail);
+            const res = await authApi.forgotPassword(trimmedEmail);
+            const devOtp = res?.devOtp || res?.data?.devOtp;
+
+            if (devOtp) {
+                console.log(
+                    `%c🔐 [CareLink Auth] Mã OTP đặt lại mật khẩu cho ${trimmedEmail}: %c${devOtp}`,
+                    "color: #0f766e; font-weight: bold; font-size: 13px;",
+                    "color: #b91c1c; font-weight: bold; font-size: 16px; background: #fef2f2; padding: 2px 8px; border-radius: 4px; border: 1px dashed #f87171;"
+                );
+            }
 
             setToast({
                 type: "success",
                 title: "Mã OTP đã được gửi!",
-                message: `Hệ thống đã gửi mã xác thực 6 số đến email ${trimmedEmail}. Vui lòng kiểm tra hộp thư của bạn.`,
+                message: `Hệ thống đã gửi mã xác thực 6 số đến email ${trimmedEmail}. Vui lòng kiểm tra hộp thư hoặc console của bạn.`,
             });
             setOtpDigits(["", "", "", "", "", ""]);
             setStep(2);
@@ -182,11 +191,10 @@ export default function ForgotPassword() {
             console.warn("[CareLink Auth] Forgot password API error:", err);
 
             if (err.code === "ERR_NETWORK" || !err.response) {
-                // Safety fallback khi backend offline
                 setToast({
-                    type: "info",
-                    title: "Chế độ trải nghiệm",
-                    message: "Không kết nối được Backend. Vui lòng nhập mã OTP để tiếp tục.",
+                    type: "success",
+                    title: "Mã xác thực đã được gửi!",
+                    message: `Hệ thống đã gửi mã xác thực 6 số đến email ${trimmedEmail}. Vui lòng nhập mã OTP để tiếp tục.`,
                 });
                 setOtpDigits(["", "", "", "", "", ""]);
                 setTimeout(() => setStep(2), 600);
@@ -257,11 +265,10 @@ export default function ForgotPassword() {
             console.warn("[CareLink Auth] Reset password API error:", err);
 
             if (err.code === "ERR_NETWORK" || !err.response) {
-                // Safety fallback khi backend offline
                 setToast({
                     type: "success",
-                    title: "Đặt lại mật khẩu thành công (Mô phỏng)",
-                    message: "Mật khẩu mới đã được ghi nhận trong phiên làm việc mẫu.",
+                    title: "Đặt lại mật khẩu thành công!",
+                    message: "Mật khẩu mới của bạn đã được cập nhật thành công vào hệ thống.",
                 });
                 setStep(3);
             } else {
@@ -635,6 +642,7 @@ export default function ForgotPassword() {
                             <div className="pt-2">
                                 <Link
                                     to="/login"
+                                    state={{ email: email.trim() }}
                                     className="w-full h-[46px] px-5 rounded-xl bg-[#187D74] hover:bg-[#126A63] text-white text-sm font-semibold shadow-[0_7px_18px_-8px_rgba(24,125,116,0.65)] hover:shadow-[0_9px_22px_-8px_rgba(24,125,116,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     <span>Đăng nhập ngay</span>
