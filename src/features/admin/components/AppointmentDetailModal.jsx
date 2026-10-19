@@ -257,6 +257,7 @@ export default function AppointmentDetailModal({
         appointment?.totalAmount ? parseInt(appointment.totalAmount.replace(/[^\d]/g, ""), 10) : 500000
     );
     const [resolveNote, setResolveNote] = useState("");
+    const [resolveError, setResolveError] = useState("");
 
     // Cho phép đóng modal bằng phím Escape.
     useEffect(() => {
@@ -284,9 +285,10 @@ export default function AppointmentDetailModal({
 
     const handleConfirmResolution = () => {
         if (!resolveNote.trim()) {
-            alert("Vui lòng nhập ghi chú kết quả đối soát / lý do giải quyết.");
+            setResolveError("Vui lòng nhập ghi chú kết quả đối soát / lý do giải quyết.");
             return;
         }
+        setResolveError("");
         if (onResolveDispute) {
             onResolveDispute(appointment.id, {
                 resolutionType: resolveType,
@@ -760,6 +762,9 @@ export default function AppointmentDetailModal({
                                                                 placeholder="Ví dụ: Đã đối soát camera và xác nhận điều dưỡng vắng mặt 15 phút. Đồng ý hoàn 50% chi phí cho gia đình..."
                                                                 className="w-full rounded-lg border border-slate-200 p-2.5 text-xs focus:border-[#00677c] focus:outline-none"
                                                             />
+                                                            {resolveError && (
+                                                                <p className="text-xs text-rose-600 font-semibold mt-1">{resolveError}</p>
+                                                            )}
                                                         </div>
 
                                                         <div className="flex items-center justify-end gap-2 pt-1">

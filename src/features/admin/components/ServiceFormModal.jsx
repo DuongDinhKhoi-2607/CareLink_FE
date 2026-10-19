@@ -26,14 +26,17 @@ export default function ServiceFormModal({ service, isOpen, onClose, onSave }) {
         }
     }, [service, isOpen]);
 
+    const [nameError, setNameError] = useState("");
+
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!formData.name.trim()) {
-            alert("Vui lòng nhập tên gói dịch vụ!");
+            setNameError("Vui lòng nhập tên gói dịch vụ!");
             return;
         }
+        setNameError("");
         onSave(formData);
     };
 
@@ -70,6 +73,9 @@ export default function ServiceFormModal({ service, isOpen, onClose, onSave }) {
                             required
                             className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00677c]/20 focus:border-[#00677c]"
                         />
+                        {nameError && (
+                            <p className="text-xs text-rose-600 font-semibold mt-1">{nameError}</p>
+                        )}
                     </div>
 
                     {/* Phân loại & Thời lượng */}

@@ -54,6 +54,7 @@ export default function AdminHandbook() {
     const [previewArticle, setPreviewArticle] = useState(null);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [articleToDelete, setArticleToDelete] = useState(null);
+    const [resetModalOpen, setResetModalOpen] = useState(false);
 
     // Lưu vào localStorage khi danh sách thay đổi
     useEffect(() => {
@@ -164,11 +165,14 @@ export default function AdminHandbook() {
 
     // Khôi phục dữ liệu gốc
     const handleResetData = () => {
-        if (window.confirm("Khôi phục toàn bộ bài viết Cẩm nang về mặc định? Các chỉnh sửa thử nghiệm sẽ bị xóa.")) {
-            localStorage.removeItem(STORAGE_KEY);
-            setArticlesList(initialArticles.map(a => ({ ...a, status: "published" })));
-            setToastMessage("Đã khôi phục dữ liệu Cẩm nang ban đầu!");
-        }
+        setResetModalOpen(true);
+    };
+
+    const confirmResetData = () => {
+        localStorage.removeItem(STORAGE_KEY);
+        setArticlesList(initialArticles.map((a) => ({ ...a, status: "published" })));
+        setToastMessage("Đã khôi phục dữ liệu Cẩm nang ban đầu!");
+        setResetModalOpen(false);
     };
 
     return (
@@ -685,6 +689,43 @@ export default function AdminHandbook() {
                                 className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors shadow-xs"
                             >
                                 Xác nhận xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                MODAL XÁC NHẬN KHÔI PHỤC DỮ LIỆU
+            ═══════════════════════════════════════════════════════════════ */}
+            {resetModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                            <RefreshCw className="w-6 h-6" />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <h3 className="text-base font-bold text-slate-900">
+                                Khôi phục dữ liệu Cẩm nang?
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                                Khôi phục toàn bộ bài viết Cẩm nang về mặc định? Các chỉnh sửa thử nghiệm sẽ bị hoàn tác.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setResetModalOpen(false)}
+                                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmResetData}
+                                className="flex-1 py-2.5 bg-[#00677c] hover:bg-[#005566] text-white font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors shadow-xs"
+                            >
+                                Xác nhận khôi phục
                             </button>
                         </div>
                     </div>

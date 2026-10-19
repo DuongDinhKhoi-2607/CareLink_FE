@@ -3,6 +3,7 @@ import { X, FileText, Check, AlertCircle, Eye, ShieldCheck, XCircle } from "luci
 
 export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onReject }) {
     const [rejectReason, setRejectReason] = useState("");
+    const [rejectError, setRejectError] = useState("");
     const [isRejecting, setIsRejecting] = useState(false);
     const [selectedDocPreview, setSelectedDocPreview] = useState(null);
 
@@ -10,10 +11,11 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
 
     const handleConfirmReject = () => {
         if (!rejectReason.trim()) {
-            alert("Vui lòng nhập lý do từ chối để gửi thông báo cho điều dưỡng!");
+            setRejectError("Vui lòng nhập lý do từ chối để gửi thông báo cho điều dưỡng!");
             return;
         }
-        onReject(caregiver.id, rejectReason);
+        setRejectError("");
+        onReject(caregiver.id, rejectReason.trim());
     };
 
     return (
@@ -148,6 +150,9 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                                 rows={3}
                                 className="w-full p-2.5 bg-white border border-rose-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
                             />
+                            {rejectError && (
+                                <p className="text-xs text-rose-600 font-semibold">{rejectError}</p>
+                            )}
                             <div className="flex items-center justify-end gap-2">
                                 <button
                                     type="button"

@@ -88,16 +88,22 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
         }));
     };
 
+    const [errors, setErrors] = useState({});
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        const newErrors = {};
         if (!formData.title.trim()) {
-            alert("Vui lòng nhập tiêu đề bài viết!");
-            return;
+            newErrors.title = "Vui lòng nhập tiêu đề bài viết!";
         }
         if (!formData.summary.trim()) {
-            alert("Vui lòng nhập tóm tắt ngắn cho bài viết!");
+            newErrors.summary = "Vui lòng nhập tóm tắt ngắn cho bài viết!";
+        }
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
+        setErrors({});
         const cleanedReferences = (formData.references || []).filter(
             (r) => (r.text && r.text.trim()) || (r.url && r.url.trim())
         );
@@ -147,6 +153,9 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
                             placeholder="Ví dụ: 5 Dấu hiệu suy giảm sức khỏe ở người cao tuổi..."
                             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00677c]/20 focus:border-[#00677c] font-medium"
                         />
+                        {errors.title && (
+                            <p className="text-xs text-rose-600 font-semibold mt-1">{errors.title}</p>
+                        )}
                     </div>
 
                     {/* Hàng 2: Chuyên mục & Thời gian đọc */}
@@ -248,6 +257,9 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
                             placeholder="Mô tả súc tích thông điệp chính của bài viết, thu hút người đọc..."
                             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00677c]/20 focus:border-[#00677c] font-medium resize-none"
                         />
+                        {errors.summary && (
+                            <p className="text-xs text-rose-600 font-semibold mt-1">{errors.summary}</p>
+                        )}
                     </div>
 
                     {/* Nội dung chi tiết bài viết */}
