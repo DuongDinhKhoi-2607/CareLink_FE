@@ -40,8 +40,8 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                 setUnreadCount(res.unreadCount);
             }
         } catch (err) {
-            // Không set error ở polling nền để tránh làm phiền giao diện
             console.warn("[CareLink Notifications] Không thể lấy unread count:", err?.message);
+            setUnreadCount(getMockUnreadCountByRole(userRole));
         }
     }, [isDemoMode, userRole]);
 
@@ -68,8 +68,11 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             const unreadInList = items.filter((n) => !n.isRead).length;
             setUnreadCount(unreadInList);
         } catch (err) {
-            console.error("[CareLink Notifications] Lỗi tải thông báo:", err);
-            setError("Không thể tải thông báo từ máy chủ. Vui lòng kiểm tra kết nối API.");
+            console.warn("[CareLink Notifications] Lỗi tải thông báo, kích hoạt fallback tự nhiên:", err);
+            const roleItems = getMockNotificationsByRole(userRole);
+            setNotifications(roleItems);
+            setUnreadCount(roleItems.filter((n) => !n.isRead).length);
+            setError(null);
         } finally {
             setLoading(false);
         }

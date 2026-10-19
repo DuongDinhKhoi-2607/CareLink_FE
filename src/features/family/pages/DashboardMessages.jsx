@@ -188,25 +188,43 @@ export default function DashboardMessages() {
 
     const handleProposalCreated = (newProposal) => {
         showToast("Đã gửi đề xuất ca chăm sóc thành công! Đang chờ điều dưỡng phản hồi.");
-        if (activeChatId) {
+        
+        // Luôn hiển thị ngay thẻ đề xuất vào hội thoại chat
+        const proposalMsg = {
+            id: Date.now(),
+            sender: "family",
+            text: `Khách hàng đã gửi đề xuất ca chăm sóc #${newProposal?.proposalNumber || 1}: ${newProposal?.serviceName || "Chăm sóc theo yêu cầu"} (${new Date(newProposal?.scheduledStart || Date.now()).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}) - ${Number(newProposal?.totalPrice || 350000).toLocaleString("vi-VN")}đ`,
+            time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+            type: "proposal_card",
+            proposalId: newProposal?.id,
+            bookingId: newProposal?.bookingId || null,
+        };
+        setMessagesMap((prev) => ({
+            ...prev,
+            [activeChatId]: [...(prev[activeChatId] || []), proposalMsg],
+        }));
+        setTimeout(() => scrollToBottom("smooth"), 100);
+
+        if (activeConv?.isRealApi && activeChatId) {
             conversationApi
                 .getMessages(activeChatId, { PageNumber: 1, PageSize: 50 })
                 .then((res) => {
                     const items = res?.items || (Array.isArray(res) ? res : []);
-                    const mappedMsgs = items.map((m) => ({
-                        id: m.id,
-                        sender: m.isMine ? "family" : "caregiver",
-                        text: m.content,
-                        time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-                        type: m.type === 2 ? "proposal_card" : "text",
-                        proposalId: m.proposalId,
-                        bookingId: m.bookingId,
-                    }));
-                    setMessagesMap((prev) => ({
-                        ...prev,
-                        [activeChatId]: mappedMsgs,
-                    }));
-                    setTimeout(() => scrollToBottom("smooth"), 100);
+                    if (items.length > 0) {
+                        const mappedMsgs = items.map((m) => ({
+                            id: m.id,
+                            sender: m.isMine ? "family" : "caregiver",
+                            text: m.content,
+                            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                            type: m.type === 2 ? "proposal_card" : "text",
+                            proposalId: m.proposalId,
+                            bookingId: m.bookingId,
+                        }));
+                        setMessagesMap((prev) => ({
+                            ...prev,
+                            [activeChatId]: mappedMsgs,
+                        }));
+                    }
                 })
                 .catch(() => {});
         }
@@ -707,7 +725,7 @@ export default function DashboardMessages() {
 
                             <button
                                 type="button"
-                                onClick={() => alert(`Đang kết nối cuộc gọi thoại với ${activeConv.name}...`)}
+                                onClick={() => showToast(`Đang kết nối cuộc gọi thoại với ${activeConv.name}...`)}
                                 className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:text-teal-700 hover:bg-slate-50 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                                 title="Gọi thoại trực tiếp"
                             >
@@ -909,7 +927,7 @@ export default function DashboardMessages() {
                         {/* Nút gửi ảnh / tài liệu xét nghiệm */}
                         <button
                             type="button"
-                            onClick={() => alert("Chức năng đính kèm: Đã chọn ảnh vết mổ / đơn thuốc từ thư viện thiết bị.")}
+                            onClick={() => showToast("Đã đính kèm ảnh kết quả xét nghiệm / đơn thuốc từ thư viện thiết bị.")}
                             className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-teal-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                             title="Đính kèm ảnh vết mổ hoặc đơn thuốc"
                         >

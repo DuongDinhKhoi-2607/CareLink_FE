@@ -116,6 +116,7 @@ export default function CaregiverWallet() {
         accountHolder: "NGUYEN THUY LINH",
         note: "",
     });
+    const [payoutError, setPayoutError] = useState("");
     const [toastMessage, setToastMessage] = useState(null);
 
     const showToast = (msg) => {
@@ -125,23 +126,24 @@ export default function CaregiverWallet() {
 
     const handleCreatePayout = (e) => {
         e.preventDefault();
+        setPayoutError("");
         const withdrawAmount = Number(payoutForm.amount);
 
         // Quy chuẩn Backend CreatePayoutRequest: Range(50_000, 1_000_000_000)
         if (isNaN(withdrawAmount) || withdrawAmount < 50000) {
-            alert("Số tiền rút tối thiểu là 50.000 VNĐ theo quy định hệ thống!");
+            setPayoutError("Số tiền rút tối thiểu là 50.000 VNĐ theo quy định hệ thống!");
             return;
         }
 
         if (withdrawAmount > wallet.availableBalance) {
-            alert(`Số tiền rút vượt quá số dư khả dụng hiện có (${wallet.availableBalance.toLocaleString("vi-VN")} ₫)!`);
+            setPayoutError(`Số tiền rút vượt quá số dư khả dụng hiện có (${wallet.availableBalance.toLocaleString("vi-VN")} ₫)!`);
             return;
         }
 
         const cleanAccNumber = payoutForm.accountNumber.trim();
         // Quy chuẩn Backend: RegularExpression(@"^[0-9]{6,30}$")
         if (!/^\d{6,30}$/.test(cleanAccNumber)) {
-            alert("Số tài khoản ngân hàng chỉ được gồm từ 6 đến 30 chữ số!");
+            setPayoutError("Số tài khoản ngân hàng chỉ được gồm từ 6 đến 30 chữ số!");
             return;
         }
 
@@ -518,6 +520,15 @@ export default function CaregiverWallet() {
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
                                 />
                             </div>
+
+                            {payoutError && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-medium flex items-center gap-2">
+                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                    </svg>
+                                    <span>{payoutError}</span>
+                                </div>
+                            )}
 
                             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                                 <button

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { RelativeDetailModal, RelativeFormModal } from "../components/RelativeModals";
+import Toast from "../../../components/Toast";
 
 export default function Relatives() {
+    const [toast, setToast] = useState(null);
     // Danh sách người thân mock data chuẩn y như hình ảnh thực tế của CareLink
     const [relatives, setRelatives] = useState([
         {
@@ -125,7 +127,7 @@ export default function Relatives() {
     const handleSaveForm = (e) => {
         e.preventDefault();
         if (!formData.name.trim()) {
-            alert("Vui lòng nhập họ và tên người thân!");
+            setToast({ type: "warning", message: "Vui lòng nhập họ và tên người thân!" });
             return;
         }
 
@@ -147,6 +149,7 @@ export default function Relatives() {
                         : r
                 )
             );
+            setToast({ type: "success", message: "Đã cập nhật hồ sơ người thân thành công!" });
         } else {
             const newRel = {
                 id: `rel-${Date.now()}`,
@@ -172,6 +175,7 @@ export default function Relatives() {
                 assignedCaregiver: "Đang phân công",
             };
             setRelatives((prev) => [...prev, newRel]);
+            setToast({ type: "success", message: "Đã thêm người thân mới vào danh sách!" });
         }
 
         setIsFormOpen(false);
@@ -469,6 +473,9 @@ export default function Relatives() {
                     onSave={handleSaveForm}
                 />
             )}
+
+            {/* Toast Thông báo */}
+            {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
     );
 }

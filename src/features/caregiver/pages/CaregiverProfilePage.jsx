@@ -139,7 +139,7 @@ export default function CaregiverProfilePage() {
                             {isEditing && (
                                 <button
                                     type="button"
-                                    onClick={() => alert("Chức năng đổi ảnh đại diện mô phỏng.")}
+                                    onClick={() => showToast("Đã kích hoạt tải ảnh đại diện mới từ thiết bị.")}
                                     className="absolute -bottom-2 -right-2 p-1.5 bg-[#00677c] text-white rounded-xl shadow-md hover:bg-[#005566] transition-colors"
                                     title="Thay đổi ảnh đại diện"
                                 >

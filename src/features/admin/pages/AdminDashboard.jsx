@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
     CircleDollarSign,
@@ -14,10 +14,33 @@ import {
     Activity,
     Clock,
 } from "lucide-react";
+import adminApi from "../../../api/adminApi";
 
 export default function AdminDashboard() {
     const [timeRange, setTimeRange] = useState("30days");
     const [chartMode, setChartMode] = useState("month");
+    const [liveSummary, setLiveSummary] = useState(null);
+
+    // Kết nối API thống kê Dashboard & Doanh thu (GET /api/v1/admin/dashboard/summary & /revenue)
+    useEffect(() => {
+        let isMounted = true;
+        adminApi.getDashboardSummary()
+            .then((res) => {
+                if (isMounted && res) {
+                    setLiveSummary(res);
+                }
+            })
+            .catch((err) => {
+                console.warn("[CareLink Admin] Dashboard summary API offline fallback:", err);
+            });
+        
+        adminApi.getRevenueMetrics({ range: timeRange })
+            .catch(() => {});
+
+        return () => {
+            isMounted = false;
+        };
+    }, [timeRange]);
 
     // Dữ liệu mô phỏng KPI theo thời gian
     const kpiData = {
@@ -53,7 +76,17 @@ export default function AdminDashboard() {
         },
     };
 
-    const currentKpi = kpiData[timeRange];
+    const baseKpi = kpiData[timeRange];
+    const currentKpi = {
+        revenue: liveSummary?.totalRevenue != null ? Number(liveSummary.totalRevenue).toLocaleString("vi-VN") + " ₫" : baseKpi.revenue,
+        revenueGrowth: baseKpi.revenueGrowth,
+        completedShifts: liveSummary?.completedBookings != null ? String(liveSummary.completedBookings) : baseKpi.completedShifts,
+        shiftsGrowth: baseKpi.shiftsGrowth,
+        newFamilies: liveSummary?.totalCustomers != null ? String(liveSummary.totalCustomers) : baseKpi.newFamilies,
+        familyGrowth: baseKpi.familyGrowth,
+        activeCaregivers: liveSummary?.activeCaregivers != null ? String(liveSummary.activeCaregivers) : baseKpi.activeCaregivers,
+        caregiverNote: baseKpi.caregiverNote,
+    };
 
     // Hoạt động gần đây (Mock data với Lucide icons)
     const recentActivities = [

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { AlertTriangle, Trash2, LogOut, X } from "lucide-react";
 
 const getAddressLabelBadge = (label) => {
     switch (label) {
@@ -39,6 +40,9 @@ const getAddressLabelBadge = (label) => {
 
 export default function FamilyProfile() {
     const navigate = useNavigate();
+    const [passwordError, setPasswordError] = useState("");
+    const [addressToDelete, setAddressToDelete] = useState(null);
+    const [isLogoutAllOpen, setIsLogoutAllOpen] = useState(false);
 
     // Section 1: Thông tin cá nhân
     const [personalInfo, setPersonalInfo] = useState({
@@ -190,13 +194,17 @@ export default function FamilyProfile() {
         const target = addressList.find((a) => a.id === id);
         if (!target) return;
         if (target.isDefault && addressList.length > 1) {
-            alert("Đây là địa chỉ mặc định. Vui lòng chọn một địa chỉ khác làm mặc định trước khi xóa!");
+            showSuccessToast("Đây là địa chỉ mặc định. Vui lòng chọn địa chỉ khác làm mặc định trước khi xóa!");
             return;
         }
-        if (window.confirm(`Bạn có chắc chắn muốn xóa địa chỉ "${target.label}"?`)) {
-            setAddressList((prev) => prev.filter((a) => a.id !== id));
-            showSuccessToast(`Đã xóa địa chỉ "${target.label}"!`);
-        }
+        setAddressToDelete(target);
+    };
+
+    const confirmDeleteAddress = () => {
+        if (!addressToDelete) return;
+        setAddressList((prev) => prev.filter((a) => a.id !== addressToDelete.id));
+        showSuccessToast(`Đã xóa địa chỉ "${addressToDelete.label}"!`);
+        setAddressToDelete(null);
     };
 
     const handleSetDefaultAddress = (id) => {
@@ -211,20 +219,29 @@ export default function FamilyProfile() {
 
     const handleSavePassword = (e) => {
         e.preventDefault();
+        setPasswordError("");
+        if (passwordForm.newPass.length < 8) {
+            setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự!");
+            return;
+        }
         if (passwordForm.newPass !== passwordForm.confirm) {
-            alert("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+            setPasswordError("Mật khẩu mới và xác nhận mật khẩu không khớp!");
             return;
         }
         setIsPasswordModalOpen(false);
         setPasswordForm({ current: "", newPass: "", confirm: "" });
+        setPasswordError("");
         showSuccessToast("Đã đổi mật khẩu tài khoản thành công!");
     };
 
     const handleLogoutAllDevices = () => {
-        if (window.confirm("Bạn có chắc chắn muốn đăng xuất khỏi tất cả các thiết bị?")) {
-            localStorage.removeItem("carelink_user");
-            navigate("/login");
-        }
+        setIsLogoutAllOpen(true);
+    };
+
+    const confirmLogoutAll = () => {
+        localStorage.removeItem("carelink_user");
+        setIsLogoutAllOpen(false);
+        navigate("/login");
     };
 
     return (
@@ -785,7 +802,7 @@ export default function FamilyProfile() {
                         </div>
                         <button
                             type="button"
-                            onClick={() => alert("Hiện tại tài khoản chỉ đang hoạt động trên thiết bị này.")}
+                            onClick={() => showSuccessToast("Hiện tại tài khoản chỉ đang hoạt động trên thiết bị này.")}
                             className="px-4 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold transition-colors cursor-pointer shadow-2xs shrink-0"
                         >
                             Quản lý
@@ -859,10 +876,17 @@ export default function FamilyProfile() {
                                 />
                             </div>
 
+                            {passwordError && (
+                                <p className="text-xs text-red-500 font-medium">{passwordError}</p>
+                            )}
+
                             <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
                                 <button
                                     type="button"
-                                    onClick={() => setIsPasswordModalOpen(false)}
+                                    onClick={() => {
+                                        setIsPasswordModalOpen(false);
+                                        setPasswordError("");
+                                    }}
                                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs"
                                 >
                                     Hủy
@@ -875,6 +899,74 @@ export default function FamilyProfile() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* In-app Modal: Xác nhận xóa địa chỉ */}
+            {addressToDelete && createPortal(
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 space-y-4">
+                        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+                            <Trash2 className="w-6 h-6" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-base font-bold text-slate-900">Xóa địa chỉ chăm sóc?</h3>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Bạn có chắc chắn muốn xóa địa chỉ <span className="font-semibold text-slate-700">"{addressToDelete.label}"</span> khỏi sổ địa chỉ? Thao tác này không thể khôi phục.
+                            </p>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setAddressToDelete(null)}
+                                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
+                            >
+                                Giữ lại
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeleteAddress}
+                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs"
+                            >
+                                Xóa địa chỉ
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* In-app Modal: Xác nhận đăng xuất tất cả thiết bị */}
+            {isLogoutAllOpen && createPortal(
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 space-y-4">
+                        <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+                            <LogOut className="w-6 h-6" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-base font-bold text-slate-900">Đăng xuất khỏi tất cả thiết bị?</h3>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Bạn sẽ bị đăng xuất khỏi tất cả phiên trình duyệt hiện tại và cần đăng nhập lại bằng thông tin tài khoản.
+                            </p>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsLogoutAllOpen(false)}
+                                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmLogoutAll}
+                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs"
+                            >
+                                Xác nhận đăng xuất
+                            </button>
+                        </div>
                     </div>
                 </div>,
                 document.body
