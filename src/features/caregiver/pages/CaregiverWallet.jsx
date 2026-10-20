@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import caregiverApi from "../../../api/caregiverApi";
 
 export default function CaregiverWallet() {
     // ── STATE SỐ DƯ & VÍ ĐIỀU DƯỠNG (KHỚP CHUẨN DTO BACKEND: WalletResponse & PayoutResponse) ──
     const [wallet, setWallet] = useState({
-        balance: 4250000, // Tổng số dư ví thực tế
-        availableBalance: 2250000, // Số dư khả dụng (Balance - PendingPayout theo DTO BE)
-        pendingPayout: 2000000, // Tiền đang chờ Admin đối soát & duyệt rút (PendingPayout)
-        totalEarned: 18600000, // Tổng thu nhập lũy kế
-        totalWithdrawn: 5000000, // Tổng tiền đã rút thành công
+        balance: 4250000,
+        availableBalance: 2250000,
+        pendingPayout: 2000000,
+        totalEarned: 18600000,
+        totalWithdrawn: 5000000,
         bankAccount: {
             bankName: "Vietcombank (Ngân hàng Ngoại thương Việt Nam)",
             accountNumber: "1018992345",
@@ -15,48 +16,9 @@ export default function CaregiverWallet() {
         },
     });
 
-    // ── DANH SÁCH YÊU CẦU RÚT TIỀN (PAYOUTS) ──
-    const [payouts, setPayouts] = useState([
-        {
-            id: "PO-20261014-01",
-            createdAt: "14/10/2026 – 09:30",
-            amount: 2000000,
-            bankName: "Vietcombank",
-            accountNumber: "1018992345",
-            accountHolder: "NGUYEN THUY LINH",
-            status: "pending", // pending | approved | rejected
-            statusLabel: "Chờ Admin duyệt",
-            statusColor: "bg-amber-50 text-amber-700 border-amber-200",
-            referenceCode: null,
-            note: "Rút tiền phụ cấp đợt 1 tháng 10",
-        },
-        {
-            id: "PO-20261005-02",
-            createdAt: "05/10/2026 – 16:45",
-            amount: 3500000,
-            bankName: "Vietcombank",
-            accountNumber: "1018992345",
-            accountHolder: "NGUYEN THUY LINH",
-            status: "approved",
-            statusLabel: "Đã chuyển khoản",
-            statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-            referenceCode: "FT261005881923",
-            note: "Thanh toán thành công qua Napas247",
-        },
-        {
-            id: "PO-20260925-01",
-            createdAt: "25/09/2026 – 14:10",
-            amount: 1500000,
-            bankName: "Vietcombank",
-            accountNumber: "1018992345",
-            accountHolder: "NGUYEN THUY LINH",
-            status: "approved",
-            statusLabel: "Đã chuyển khoản",
-            statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-            referenceCode: "FT260925102941",
-            note: "Đã giải ngân",
-        },
-    ]);
+    const [payouts, setPayouts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [submittingPayout, setSubmittingPayout] = useState(false);
 
     // ── LỊCH SỬ BIẾN ĐỘNG SỐ DƯ (TRANSACTIONS - CỐ ĐỊNH PHÍ SÀN 50K/CA THEO NGHIỆP VỤ) ──
     const [transactions, setTransactions] = useState([
@@ -124,7 +86,118 @@ export default function CaregiverWallet() {
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    const handleCreatePayout = (e) => {
+    // ── 60. GET /api/v1/wallet/me (Xem số dư ví) ──────────────────────────────────
+    const fetchWallet = useCallback(async () => {
+        try {
+            const res = await caregiverApi.getWallet();
+            const data = res?.data || res;
+            if (data && typeof data === "object") {
+                setWallet((prev) => ({
+                    ...prev,
+                    balance: Number(data.balance ?? data.currentBalance ?? prev.balance),
+                    availableBalance: Number(
+                        data.availableBalance ??
+                        (data.balance !== undefined && data.pendingPayout !== undefined
+                            ? data.balance - data.pendingPayout
+                            : prev.availableBalance)
+                    ),
+                    pendingPayout: Number(data.pendingPayout ?? data.pendingBalance ?? prev.pendingPayout),
+                    totalEarned: Number(data.totalEarned ?? data.totalIncome ?? prev.totalEarned),
+                    totalWithdrawn: Number(data.totalWithdrawn ?? data.totalPayout ?? prev.totalWithdrawn),
+                    bankAccount: {
+                        bankName: data.bankName || data.bankAccount?.bankName || prev.bankAccount.bankName,
+                        accountNumber: data.accountNumber || data.bankAccount?.accountNumber || prev.bankAccount.accountNumber,
+                        accountHolder: data.accountHolder || data.bankAccount?.accountHolder || prev.bankAccount.accountHolder,
+                    },
+                }));
+            }
+        } catch (err) {
+            console.warn("Lỗi tải số dư ví:", err);
+        }
+    }, []);
+
+    // ── 61. GET /api/v1/wallet/me/transactions (Xem lịch sử giao dịch) ─────────────
+    const fetchTransactions = useCallback(async () => {
+        try {
+            const res = await caregiverApi.getWalletTransactions();
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.data)
+                ? res.data
+                : Array.isArray(res?.items)
+                ? res.items
+                : [];
+            if (list.length > 0) {
+                setTransactions(
+                    list.map((t, idx) => ({
+                        id: t.id || `TX-${t.bookingId || idx + 100}`,
+                        date: t.createdAt ? new Date(t.createdAt).toLocaleString("vi-VN") : t.date || "Vừa xong",
+                        title: t.title || t.description || "Biến động số dư",
+                        type: t.type || (t.amount > 0 ? "earning" : "platform_fee"),
+                        amount: Number(t.amount || 0),
+                        balanceAfter: Number(t.balanceAfter ?? t.balance ?? 0),
+                        note: t.note || t.reference || "",
+                    }))
+                );
+            }
+        } catch (err) {
+            console.warn("Lỗi tải lịch sử giao dịch:", err);
+        }
+    }, []);
+
+    // ── 63. GET /api/v1/wallet/payouts (Xem lịch sử yêu cầu rút tiền) ───────────────
+    const fetchPayouts = useCallback(async () => {
+        try {
+            const res = await caregiverApi.getMyPayouts();
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.data)
+                ? res.data
+                : Array.isArray(res?.items)
+                ? res.items
+                : [];
+            if (list.length > 0) {
+                setPayouts(
+                    list.map((p) => {
+                        const statusStr = (p.status || "").toLowerCase();
+                        const isApproved = statusStr === "approved" || p.status === 1;
+                        const isRejected = statusStr === "rejected" || p.status === 2;
+                        return {
+                            id: p.id || `PO-${p.code || "N/A"}`,
+                            createdAt: p.createdAt ? new Date(p.createdAt).toLocaleString("vi-VN") : p.requestDate || "Vừa xong",
+                            amount: Number(p.amount || 0),
+                            bankName: p.bankName || p.bank || "Ngân hàng",
+                            accountNumber: p.accountNumber || "—",
+                            accountHolder: p.accountHolder || "—",
+                            status: isApproved ? "approved" : isRejected ? "rejected" : "pending",
+                            statusLabel: isApproved ? "Đã chuyển khoản" : isRejected ? "Từ chối" : "Chờ Admin duyệt",
+                            statusColor: isApproved
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : isRejected
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200",
+                            referenceCode: p.referenceCode || p.transactionCode || null,
+                            note: p.note || p.rejectReason || "",
+                        };
+                    })
+                );
+            }
+        } catch (err) {
+            console.warn("Lỗi tải lịch sử rút tiền:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        const loadAll = async () => {
+            setLoading(true);
+            await Promise.all([fetchWallet(), fetchTransactions(), fetchPayouts()]);
+            setLoading(false);
+        };
+        loadAll();
+    }, [fetchWallet, fetchTransactions, fetchPayouts]);
+
+    // ── 62. POST /api/v1/wallet/payouts (Tạo yêu cầu rút tiền — Không tự ý sửa số dư khi BE chưa xác nhận) ──
+    const handleCreatePayout = async (e) => {
         e.preventDefault();
         setPayoutError("");
         const withdrawAmount = Number(payoutForm.amount);
@@ -147,41 +220,32 @@ export default function CaregiverWallet() {
             return;
         }
 
-        const newPayout = {
-            id: `PO-${Date.now().toString().slice(-8)}`,
-            createdAt: "Vừa xong",
-            amount: withdrawAmount,
-            bankName: payoutForm.bankName,
-            accountNumber: cleanAccNumber,
-            accountHolder: payoutForm.accountHolder.trim().toUpperCase(),
-            status: "pending",
-            statusLabel: "Chờ Admin duyệt",
-            statusColor: "bg-amber-50 text-amber-700 border-amber-200",
-            referenceCode: null,
-            note: payoutForm.note || "Yêu cầu rút tiền về tài khoản",
-        };
+        setSubmittingPayout(true);
+        try {
+            const payload = {
+                amount: withdrawAmount,
+                bankName: payoutForm.bankName,
+                accountNumber: cleanAccNumber,
+                accountHolder: payoutForm.accountHolder.trim().toUpperCase(),
+                note: payoutForm.note?.trim() || "Yêu cầu rút tiền về tài khoản ngân hàng",
+            };
 
-        const newTransaction = {
-            id: `TX-${Date.now().toString().slice(-4)}`,
-            date: "Vừa xong",
-            title: "Lệnh rút tiền (Chờ đối soát)",
-            type: "payout",
-            amount: -withdrawAmount,
-            balanceAfter: wallet.availableBalance - withdrawAmount,
-            note: `Lệnh ${newPayout.id} gửi tới ${payoutForm.bankName}`,
-        };
+            await caregiverApi.requestPayout(payload);
 
-        // Khấu trừ số dư khả dụng và tăng pendingPayout (Khớp chuẩn logic Backend: AvailableBalance = Balance - PendingPayout)
-        setWallet((prev) => ({
-            ...prev,
-            availableBalance: prev.availableBalance - withdrawAmount,
-            pendingPayout: prev.pendingPayout + withdrawAmount,
-        }));
-        setPayouts((prev) => [newPayout, ...prev]);
-        setTransactions((prev) => [newTransaction, ...prev]);
-        setIsPayoutModalOpen(false);
-        setPayoutForm({ ...payoutForm, amount: "", note: "" });
-        showToast("Đã gửi yêu cầu rút tiền thành công! Admin sẽ duyệt và giải ngân.");
+            // BẮT BUỘC: Không tự đổi số dư trên giao diện! Gọi fetch từ Backend để nhận số dư chuẩn xác sau khi tạo lệnh
+            await Promise.all([fetchWallet(), fetchPayouts(), fetchTransactions()]);
+
+            setIsPayoutModalOpen(false);
+            setPayoutForm({ ...payoutForm, amount: "", note: "" });
+            showToast("✓ Đã gửi yêu cầu rút tiền thành công! Admin sẽ đối soát và giải ngân.");
+        } catch (err) {
+            console.error("Lỗi gửi yêu cầu rút tiền:", err);
+            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể tạo yêu cầu rút tiền. Vui lòng kiểm tra lại!";
+            setPayoutError(msg);
+            showToast(`⚠️ ${msg}`);
+        } finally {
+            setSubmittingPayout(false);
+        }
     };
 
     return (
@@ -534,15 +598,23 @@ export default function CaregiverWallet() {
                                 <button
                                     type="button"
                                     onClick={() => setIsPayoutModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                                    disabled={submittingPayout}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                                    disabled={submittingPayout}
+                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
                                 >
-                                    Xác nhận gửi yêu cầu
+                                    {submittingPayout && (
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                        </svg>
+                                    )}
+                                    {submittingPayout ? "Đang gửi yêu cầu..." : "Xác nhận gửi yêu cầu"}
                                 </button>
                             </div>
                         </form>

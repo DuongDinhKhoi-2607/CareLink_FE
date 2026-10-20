@@ -70,6 +70,29 @@ export default function DashboardLayout() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const mainRef = useRef(null);
 
+    // Thông tin người dùng hiện tại từ localStorage
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            const raw = localStorage.getItem("carelink_user");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    useEffect(() => {
+        const handleSync = () => {
+            try {
+                const raw = localStorage.getItem("carelink_user");
+                setCurrentUser(raw ? JSON.parse(raw) : null);
+            } catch {
+                setCurrentUser(null);
+            }
+        };
+        window.addEventListener("storage", handleSync);
+        return () => window.removeEventListener("storage", handleSync);
+    }, []);
+
     // Tự động cuộn lên đầu trang khi chuyển đổi giữa các tab dịch vụ trong Dashboard
     useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -286,14 +309,18 @@ export default function DashboardLayout() {
                         <div className="flex items-center justify-between p-2.5 bg-[#e5e9eb80] rounded-2xl shadow-xs border border-slate-200/50">
                             <div className="flex items-center gap-2.5 min-w-0">
                                 <img
-                                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"
-                                    alt="Gia đình Bác An"
+                                    src={currentUser?.avatar || currentUser?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150"}
+                                    alt={currentUser?.name || currentUser?.fullName || "Người dùng"}
                                     className="w-9.5 h-9.5 rounded-full object-cover shrink-0 border border-white shadow-2xs"
                                 />
                                 <div className="flex flex-col min-w-0">
-                                    <span className="text-xs font-bold text-[#181c1e] truncate">Gia đình Bác An</span>
+                                    <span className="text-xs font-bold text-[#181c1e] truncate">
+                                        {currentUser?.name || currentUser?.fullName || "Tài khoản Gia đình"}
+                                    </span>
                                     <span className="text-[9.5px] font-bold text-teal-700 tracking-wider uppercase truncate">
-                                        TÀI KHOẢN GIA ĐÌNH
+                                        {currentUser?.role === "family" || currentUser?.role === "customer"
+                                            ? "TÀI KHOẢN GIA ĐÌNH"
+                                            : (currentUser?.role || "GIA ĐÌNH")}
                                     </span>
                                 </div>
                             </div>

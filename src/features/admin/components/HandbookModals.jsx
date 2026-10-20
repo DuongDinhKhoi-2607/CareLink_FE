@@ -12,12 +12,20 @@ const SOURCE_SUGGESTIONS = [
     "Hội Thần kinh học Việt Nam",
 ];
 
-// ══════════════════════════════════════════════════════════════════════
-// 1. MODAL THÊM / CHỈNH SỬA BÀI VIẾT CẨM NANG
-// ══════════════════════════════════════════════════════════════════════
-export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave }) {
+const toSlug = (text = "") =>
+    text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+
+export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave, isSubmitting = false }) {
     const [formData, setFormData] = useState({
         title: "",
+        slug: "",
         category: "elderly",
         categoryName: "Chăm sóc người cao tuổi",
         summary: "",
@@ -36,11 +44,13 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
         if (initialData) {
             setFormData({
                 ...initialData,
+                slug: initialData.slug || toSlug(initialData.title || ""),
                 references: Array.isArray(initialData.references) ? initialData.references : [],
             });
         } else {
             setFormData({
                 title: "",
+                slug: "",
                 category: "elderly",
                 categoryName: "Chăm sóc người cao tuổi",
                 summary: "",
@@ -148,14 +158,38 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
                         <input
                             type="text"
                             required
+                            disabled={isSubmitting}
                             value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            onChange={(e) => {
+                                const newTitle = e.target.value;
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    title: newTitle,
+                                    slug: prev.slug === toSlug(prev.title) || !prev.slug ? toSlug(newTitle) : prev.slug,
+                                }));
+                            }}
                             placeholder="Ví dụ: 5 Dấu hiệu suy giảm sức khỏe ở người cao tuổi..."
                             className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00677c]/20 focus:border-[#00677c] font-medium"
                         />
                         {errors.title && (
                             <p className="text-xs text-rose-600 font-semibold mt-1">{errors.title}</p>
                         )}
+                    </div>
+
+                    {/* Đường dẫn Slug */}
+                    <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 flex items-center justify-between">
+                            <span>Đường dẫn bài viết (Slug) <span className="text-slate-400 font-normal">Tự động tạo hoặc nhập thủ công</span></span>
+                            <span className="text-[10px] text-teal-700 font-mono">/handbook/{formData.slug || "..."}</span>
+                        </label>
+                        <input
+                            type="text"
+                            disabled={isSubmitting}
+                            value={formData.slug}
+                            onChange={(e) => setFormData({ ...formData, slug: toSlug(e.target.value) })}
+                            placeholder="duong-dan-bai-viet-slug"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00677c]/20 focus:border-[#00677c] font-mono text-xs"
+                        />
                     </div>
 
                     {/* Hàng 2: Chuyên mục & Thời gian đọc */}
@@ -370,16 +404,27 @@ export function HandbookArticleFormModal({ isOpen, initialData, onClose, onSave 
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer"
+                            disabled={isSubmitting}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
                         >
                             Hủy bỏ
                         </button>
                         <button
                             type="submit"
-                            className="px-5 py-2 bg-[#00677c] hover:bg-[#005566] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                            disabled={isSubmitting}
+                            className="px-5 py-2 bg-[#00677c] hover:bg-[#005566] text-white font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                         >
-                            <Check className="w-4 h-4" />
-                            <span>{initialData ? "Lưu thay đổi" : "Xuất bản bài viết"}</span>
+                            {isSubmitting ? (
+                                <>
+                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Đang lưu...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="w-4 h-4" />
+                                    <span>{initialData ? "Lưu thay đổi" : "Xuất bản bài viết"}</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

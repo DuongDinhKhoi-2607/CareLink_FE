@@ -164,11 +164,10 @@ function Toast({ message, type }) {
     const isLock = type === "lock";
     return (
         <div
-            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-lg border flex items-center gap-3 ${
-                isLock
+            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-lg border flex items-center gap-3 ${isLock
                     ? "bg-rose-600 text-white border-rose-400"
                     : "bg-[#00677c] text-white border-teal-400"
-            }`}
+                }`}
         >
             {isLock ? (
                 <ShieldOff className="w-4 h-4 text-rose-200 shrink-0" />
@@ -189,11 +188,10 @@ function UserRow({ user, onToggleLock, isCaregiver }) {
             <td className="py-3.5 px-4 sm:px-6">
                 <div className="flex items-center gap-3">
                     <div
-                        className={`w-9 h-9 rounded-xl font-bold flex items-center justify-center border shrink-0 text-sm ${
-                            isCaregiver
+                        className={`w-9 h-9 rounded-xl font-bold flex items-center justify-center border shrink-0 text-sm ${isCaregiver
                                 ? "bg-sky-50 text-sky-600 border-sky-100"
                                 : "bg-teal-50 text-[#00677c] border-teal-100"
-                        }`}
+                            }`}
                     >
                         {user.name.charAt(0)}
                     </div>
@@ -233,11 +231,10 @@ function UserRow({ user, onToggleLock, isCaregiver }) {
                 {isCaregiver ? (
                     <div>
                         <span
-                            className={`inline-block px-2 py-0.5 rounded-lg text-[10px] font-semibold ${
-                                user.role === "Điều dưỡng chuyên nghiệp"
+                            className={`inline-block px-2 py-0.5 rounded-lg text-[10px] font-semibold ${user.role === "Điều dưỡng chuyên nghiệp"
                                     ? "bg-teal-50 text-[#00677c] border border-teal-200"
                                     : "bg-sky-50 text-sky-700 border border-sky-200"
-                            }`}
+                                }`}
                         >
                             {user.role}
                         </span>
@@ -253,11 +250,10 @@ function UserRow({ user, onToggleLock, isCaregiver }) {
             {/* Status */}
             <td className="py-3.5 px-4">
                 <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
-                        isLocked
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${isLocked
                             ? "bg-rose-50 text-rose-700 border-rose-200"
                             : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    }`}
+                        }`}
                 >
                     <span className={`w-1.5 h-1.5 rounded-full ${isLocked ? "bg-rose-500" : "bg-emerald-500"}`}></span>
                     {user.status}
@@ -269,11 +265,10 @@ function UserRow({ user, onToggleLock, isCaregiver }) {
                 <button
                     type="button"
                     onClick={() => onToggleLock(user.id)}
-                    className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 ${
-                        isLocked
+                    className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 ${isLocked
                             ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200"
                             : "bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white border border-rose-200"
-                    }`}
+                        }`}
                 >
                     {isLocked ? (
                         <><Unlock className="w-3.5 h-3.5" /> Mở khóa</>
@@ -389,18 +384,16 @@ export default function UserManagement() {
                     <button
                         type="button"
                         onClick={() => { setActiveTab("family"); setSearchQuery(""); }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            activeTab === "family"
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "family"
                                 ? "bg-white text-[#00677c] shadow-xs"
                                 : "text-slate-600 hover:text-slate-900"
-                        }`}
+                            }`}
                     >
                         <Users className="w-3.5 h-3.5" />
                         Gia đình
                         <span
-                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                                activeTab === "family" ? "bg-teal-50 text-[#00677c]" : "bg-slate-200 text-slate-600"
-                            }`}
+                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${activeTab === "family" ? "bg-teal-50 text-[#00677c]" : "bg-slate-200 text-slate-600"
+                                }`}
                         >
                             {families.length}
                         </span>
@@ -408,18 +401,16 @@ export default function UserManagement() {
                     <button
                         type="button"
                         onClick={() => { setActiveTab("caregiver"); setSearchQuery(""); }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            activeTab === "caregiver"
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "caregiver"
                                 ? "bg-white text-[#00677c] shadow-xs"
                                 : "text-slate-600 hover:text-slate-900"
-                        }`}
+                            }`}
                     >
                         <ShieldCheck className="w-3.5 h-3.5" />
                         Điều dưỡng
                         <span
-                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                                activeTab === "caregiver" ? "bg-teal-50 text-[#00677c]" : "bg-slate-200 text-slate-600"
-                            }`}
+                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${activeTab === "caregiver" ? "bg-teal-50 text-[#00677c]" : "bg-slate-200 text-slate-600"
+                                }`}
                         >
                             {caregivers.length}
                         </span>

@@ -142,6 +142,7 @@ export function RelativeFormModal({
     setFormData,
     onClose,
     onSave,
+    submitting = false,
 }) {
     if (!isOpen) return null;
 
@@ -314,18 +315,80 @@ export function RelativeFormModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                            disabled={submitting}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
                         >
                             Hủy
                         </button>
                         <button
                             type="submit"
-                            className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                            disabled={submitting}
+                            className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
                         >
-                            {editingRelative ? "Lưu thay đổi" : "Thêm hồ sơ"}
+                            {submitting && (
+                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                </svg>
+                            )}
+                            {submitting ? "Đang lưu..." : editingRelative ? "Lưu thay đổi" : "Thêm hồ sơ"}
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 3. MODAL XÁC NHẬN XÓA HỔ SƠ NGƯỜI THÂN
+// ════════════════════════════════════════════════════════════════════
+export function DeleteConfirmModal({ name, deleting, onConfirm, onCancel }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                        <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 text-base">Xóa hồ sơ người thân</h3>
+                        <p className="text-slate-500 text-xs mt-0.5">
+                            Hành động này không thể hoàn tác.
+                        </p>
+                    </div>
+                </div>
+
+                <p className="text-sm text-slate-700 bg-red-50/60 border border-red-100 rounded-xl p-3">
+                    Bạn có chắc chắn muốn xóa hồ sơ <strong className="text-slate-900">"{name}"</strong> khỏi hệ thống không? Toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn.
+                </p>
+
+                <div className="flex items-center justify-end gap-2.5 pt-1">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        disabled={deleting}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={deleting}
+                        className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
+                    >
+                        {deleting && (
+                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                            </svg>
+                        )}
+                        {deleting ? "Đang xóa..." : "Xác nhận xóa"}
+                    </button>
+                </div>
             </div>
         </div>
     );

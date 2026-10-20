@@ -82,11 +82,12 @@ const mapBookingToAppointment = (b) => {
     return {
         id: b.id,
         rawId: b.id,
+        nurseId: b.nurseId || null, // ID điều dưỡng — dùng để xem profile & đánh giá
         tab,
         caregiver: {
             name: b.nurseName || "Điều dưỡng CareLink",
             role: "Điều dưỡng chuyên môn CareLink",
-            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+            avatar: b.nurseAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
             verified: true,
             phone: "0903 888 999",
         },
@@ -106,6 +107,16 @@ const mapBookingToAppointment = (b) => {
         canPay: rawStatus === 1,
         price: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + "đ" : "0đ",
         tasks: ["Đo huyết áp & sinh hiệu", "Theo dõi sức khỏe theo đơn", "Ghi nhật ký thể trạng"],
+        // reviewed: backend trả về true nếu khách đã gửi review cho ca này
+        reviewed: b.isReviewed || b.reviewed || false,
+        reviewRating: b.reviewRating || b.customerRating || null,
+        dispute: b.dispute || (rawStatus === 7 ? {
+            id: b.disputeId || `DSP-${b.id}`,
+            code: `DSP-${b.id}`,
+            bookingId: b.id,
+            status: "Đang xác minh",
+            reason: b.disputeReason || "Gia đình đã gửi khiếu nại đối soát cho ca trực.",
+        } : null),
         rawBackendData: b
     };
 };
@@ -271,6 +282,7 @@ export default function Appointments() {
     const [selectedAppointment, setSelectedAppointment] = useState(null); // Cho modal xem chi tiết
     const [viewingHealthRecord, setViewingHealthRecord] = useState(null); // Cho modal xem báo cáo sức khỏe
     const [disputingAppointment, setDisputingAppointment] = useState(null); // Cho modal khiếu nại
+    const [viewingDispute, setViewingDispute] = useState(null); // Cho modal xem tiến độ khiếu nại
     const [cancellingAppointment, setCancellingAppointment] = useState(null); // Cho modal xác nhận hủy ca
     const [toastMessage, setToastMessage] = useState(null);
 
@@ -364,24 +376,46 @@ export default function Appointments() {
         }
     };
 
-    // Xử lý gửi khiếu nại thành công
-    const handleDisputeSuccess = (disputeDto) => {
-        setAppointments((prev) =>
-            prev.map((apt) =>
-                apt.id === disputeDto.bookingId
-                    ? {
-                          ...apt,
-                          dispute: disputeDto,
-                          status: "disputed",
-                          statusLabel: "ĐANG KHIẾU NẠI",
-                          statusBadge: "bg-rose-50 text-rose-700 border border-rose-200",
-                          dotColor: "bg-rose-500",
-                      }
-                    : apt
-            )
-        );
-        setToastMessage(`Đã gửi khiếu nại #${disputeDto.code} thành công! Ban Quản trị CareLink sẽ liên hệ hỗ trợ trong 24h.`);
-        setTimeout(() => setToastMessage(null), 5000);
+    // ── 73. GET /api/v1/disputes/{id} ── Xem chi tiết khiếu nại
+    const handleViewDispute = async (dispute, apt) => {
+        const initial = {
+            id: dispute.id || `DSP-${apt.id}`,
+            code: dispute.code || `DSP-${apt.id}`,
+            bookingId: apt.id,
+            caregiverName: apt.caregiver?.name,
+            serviceName: apt.service,
+            reason: dispute.reason || "Khiếu nại ca trực",
+            status: dispute.status || "Đang xác minh",
+            evidenceUrls: dispute.evidenceUrls || [],
+            statusNote: dispute.statusNote || "Ban Quản trị CareLink đang xem xét đối soát ca trực.",
+            resolutionNotes: dispute.resolutionNotes || "",
+            createdAt: dispute.createdAt || "Hôm nay",
+            loading: true,
+        };
+        setViewingDispute(initial);
+
+        try {
+            const targetId = dispute.rawId || dispute.id || apt.id;
+            const res = await familyApi.getDisputeDetail(targetId);
+            const detail = res?.data?.data || res?.data;
+            if (detail) {
+                setViewingDispute((prev) => ({
+                    ...prev,
+                    reason: detail.reason || prev.reason,
+                    description: detail.description || prev.description,
+                    status: detail.status || prev.status,
+                    evidenceUrls: detail.evidenceUrls || prev.evidenceUrls,
+                    resolutionNotes: detail.resolutionNotes || detail.notes || prev.resolutionNotes,
+                    statusNote: detail.statusNote || prev.statusNote,
+                    loading: false,
+                }));
+            } else {
+                setViewingDispute((prev) => ({ ...prev, loading: false }));
+            }
+        } catch (err) {
+            console.warn("Không thể tải chi tiết khiếu nại từ server, giữ thông tin cục bộ:", err);
+            setViewingDispute((prev) => ({ ...prev, loading: false }));
+        }
     };
 
     // Lọc theo Tab, Tìm kiếm, Dịch vụ, Trạng thái
@@ -833,13 +867,25 @@ export default function Appointments() {
                                         {apt.tab === "completed" && (
                                             apt.reviewed ? (
                                                 <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200">
-                                                    ⭐ {apt.rating}/5 Đã đánh giá
+                                                    ⭐ {apt.reviewRating ? `${apt.reviewRating}/5` : ""} Đã đánh giá
                                                 </span>
                                             ) : (
                                                 <Link
-                                                    to="/review"
-                                                    className="px-3.5 py-2 bg-[#00677c] text-white hover:bg-[#005263] font-semibold rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-1 shadow-2xs"
+                                                    to={`/review?bookingId=${apt.id}`}
+                                                    state={{
+                                                        bookingId: apt.id,
+                                                        nurseId: apt.nurseId,
+                                                        nurseName: apt.caregiver.name,
+                                                        nurseAvatar: apt.caregiver.avatar,
+                                                        serviceName: apt.service,
+                                                        bookingDate: apt.date,
+                                                        booking: apt,
+                                                    }}
+                                                    className="px-3.5 py-2 bg-[#00677c] text-white hover:bg-[#005263] font-semibold rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-1.5 shadow-2xs"
                                                 >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                                                    </svg>
                                                     Đánh giá ca
                                                 </Link>
                                             )
@@ -848,9 +894,17 @@ export default function Appointments() {
                                         {/* Ca đã hoàn thành: Khiếu nại / Báo cáo sự cố */}
                                         {apt.tab === "completed" && (
                                             apt.dispute ? (
-                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-200">
-                                                    ⚠ Đang khiếu nại
-                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleViewDispute(apt.dispute, apt)}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-xl border border-rose-200 transition-colors cursor-pointer shadow-2xs"
+                                                    title="Xem tiến độ và kết quả giải quyết khiếu nại"
+                                                >
+                                                    <svg className="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                                    </svg>
+                                                    <span>Xem khiếu nại</span>
+                                                </button>
                                             ) : (
                                                 <button
                                                     type="button"
@@ -1103,6 +1157,74 @@ export default function Appointments() {
                 appointment={disputingAppointment}
                 onSubmitSuccess={handleDisputeSuccess}
             />
+
+            {/* Modal Xem chi tiết trạng thái khiếu nại (API 73: GET /api/v1/disputes/{id}) */}
+            {viewingDispute && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 overflow-hidden"
+                    style={{ background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)" }}
+                    onClick={() => setViewingDispute(null)}
+                >
+                    <div
+                        className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-5 bg-gradient-to-r from-rose-600 to-amber-600 text-white flex items-start justify-between">
+                            <div>
+                                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-white/20">
+                                    Chi tiết khiếu nại ca trực
+                                </span>
+                                <h3 className="text-base font-bold mt-1">Mã khiếu nại: #{viewingDispute.code || viewingDispute.id}</h3>
+                                <p className="text-xs text-rose-100">Ca hẹn: #{viewingDispute.bookingId} · {viewingDispute.serviceName}</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setViewingDispute(null)}
+                                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4 overflow-y-auto text-xs">
+                            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                                <span className="font-bold text-slate-700">Trạng thái xử lý:</span>
+                                <span className="px-2.5 py-1 rounded-full font-bold text-rose-700 bg-rose-50 border border-rose-200">
+                                    {viewingDispute.status || "Đang xác minh"}
+                                </span>
+                            </div>
+
+                            <div className="space-y-1">
+                                <span className="font-bold text-slate-800">Lý do & Nội dung phản ánh:</span>
+                                <p className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 leading-relaxed italic">
+                                    "{viewingDispute.reason}"
+                                </p>
+                            </div>
+
+                            {viewingDispute.resolutionNotes && (
+                                <div className="space-y-1 p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-950">
+                                    <span className="font-bold block">Phán quyết từ Ban Quản trị:</span>
+                                    <p className="mt-1 leading-relaxed">{viewingDispute.resolutionNotes}</p>
+                                </div>
+                            )}
+
+                            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-amber-900 leading-relaxed text-[11px]">
+                                {viewingDispute.statusNote || "Khiếu nại đang được Ban Quản trị đối soát cùng Điều dưỡng trong vòng 24 giờ làm việc."}
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-slate-100 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setViewingDispute(null)}
+                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Xác nhận Hủy ca chăm sóc chuẩn UI/UX */}
             <CancelBookingModal

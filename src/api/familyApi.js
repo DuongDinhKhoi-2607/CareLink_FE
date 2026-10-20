@@ -42,11 +42,15 @@ export const familyApi = {
     // ── 6. Xem bệnh án theo ca (Health Records) ──
     getBookingHealthRecord: (bookingId) =>
         axiosClient.get(`/api/v1/bookings/${bookingId}/health-record`),
+    getRecipientHealthHistory: (recipientId, params) =>
+        axiosClient.get(`/api/v1/recipients/${recipientId}/health-history`, { params }),
 
     // ── 7. Đánh giá & Khiếu nại (Reviews & Disputes) ──
     createReview: (bookingId, data) =>
         axiosClient.post(`/api/v1/bookings/${bookingId}/reviews`, data),
     getReviewDetail: (id) => axiosClient.get(`/api/v1/reviews/${id}`),
+    getUserReviews: (userId, params) =>
+        axiosClient.get(`/api/v1/reviews/users/${userId}`, { params }),
     createDispute: (bookingId, data) =>
         axiosClient.post(`/api/v1/bookings/${bookingId}/disputes`, data),
     getDisputeDetail: (id) => axiosClient.get(`/api/v1/disputes/${id}`),

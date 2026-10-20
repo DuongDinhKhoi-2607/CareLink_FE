@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     BookOpen,
     Search,
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { categories, articles as initialArticles } from "../../../data/handbookData";
 import { HandbookArticleFormModal, HandbookPreviewModal } from "../components/HandbookModals";
+import handbookApi from "../../../api/handbookApi";
 
 const STORAGE_KEY = "carelink_admin_handbook_articles";
 
@@ -42,6 +43,8 @@ export default function AdminHandbook() {
         }));
     });
 
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -55,6 +58,49 @@ export default function AdminHandbook() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [articleToDelete, setArticleToDelete] = useState(null);
     const [resetModalOpen, setResetModalOpen] = useState(false);
+
+    // Loading states for actions
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [togglingStatusId, setTogglingStatusId] = useState(null);
+    const [togglingFeaturedId, setTogglingFeaturedId] = useState(null);
+
+    // API 89: GET /api/v1/handbook/admin — Tải danh sách bài viết quản lý
+    const fetchArticles = useCallback(async (isManual = false) => {
+        if (isManual) setRefreshing(true);
+        else setLoading(true);
+
+        try {
+            const res = await handbookApi.getAdminArticles();
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.data)
+                ? res.data
+                : Array.isArray(res?.items)
+                ? res.items
+                : null;
+
+            if (list && list.length > 0) {
+                const normalized = list.map((art) => ({
+                    ...art,
+                    id: art.id || art._id,
+                    status: art.status || (art.isPublished === false ? "draft" : "published"),
+                }));
+                setArticlesList(normalized);
+                if (isManual) setToastMessage("Đã làm mới danh mục cẩm nang từ hệ thống!");
+            }
+        } catch (err) {
+            console.warn("[CareLink Admin] Tải bài viết cẩm nang admin từ API thất bại, duy trì dữ liệu hiện có:", err);
+            if (isManual) setToastMessage("Không thể kết nối Backend, đang dùng dữ liệu lưu trữ.");
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchArticles();
+    }, [fetchArticles]);
 
     // Lưu vào localStorage khi danh sách thay đổi
     useEffect(() => {
@@ -80,10 +126,12 @@ export default function AdminHandbook() {
 
     // Lọc danh sách bài viết
     const filteredArticles = articlesList.filter((art) => {
+        const query = searchQuery.toLowerCase().trim();
         const matchesSearch =
-            art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            art.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (art.source && art.source.toLowerCase().includes(searchQuery.toLowerCase()));
+            !query ||
+            (art.title && art.title.toLowerCase().includes(query)) ||
+            (art.summary && art.summary.toLowerCase().includes(query)) ||
+            (art.source && art.source.toLowerCase().includes(query));
 
         const matchesCategory =
             categoryFilter === "all" || art.category === categoryFilter;
@@ -98,69 +146,170 @@ export default function AdminHandbook() {
         return matchesSearch && matchesCategory && matchesStatus;
     });
 
-    // Thao tác bật/tắt trạng thái hiển thị
-    const handleToggleStatus = (id) => {
-        setArticlesList((prev) =>
-            prev.map((art) => {
-                if (art.id === id) {
-                    const newStatus = art.status === "published" ? "draft" : "published";
-                    setToastMessage(
-                        newStatus === "published"
-                            ? `Đã chuyển bài viết sang trạng thái "Đang hiển thị"`
-                            : `Đã ẩn bài viết sang trạng thái "Bản nháp"`
-                    );
-                    return { ...art, status: newStatus };
-                }
-                return art;
-            })
-        );
-    };
+    // API 91: GET /api/v1/handbook/admin/{id} — Xem chi tiết bài viết (khi bấm sửa)
+    const handleOpenEdit = async (art) => {
+        setEditingArticle(art);
+        setFormModalOpen(true);
 
-    // Thao tác bật/tắt nổi bật
-    const handleToggleFeatured = (id) => {
-        setArticlesList((prev) =>
-            prev.map((art) => {
-                if (art.id === id) {
-                    const newFeatured = !art.featured;
-                    setToastMessage(
-                        newFeatured
-                            ? "Đã đánh dấu bài viết nổi bật"
-                            : "Đã bỏ đánh dấu bài viết nổi bật"
-                    );
-                    return { ...art, featured: newFeatured };
-                }
-                return art;
-            })
-        );
-    };
-
-    // Xử lý lưu (Thêm mới hoặc Cập nhật)
-    const handleSaveArticle = (savedData) => {
-        if (editingArticle) {
-            setArticlesList((prev) =>
-                prev.map((art) => (art.id === editingArticle.id ? { ...savedData, id: art.id } : art))
-            );
-            setToastMessage("Cập nhật bài viết cẩm nang thành công!");
-        } else {
-            const newArticle = {
-                ...savedData,
-                id: Date.now(),
-                date: new Date().toLocaleDateString("vi-VN"),
-            };
-            setArticlesList((prev) => [newArticle, ...prev]);
-            setToastMessage("Thêm bài viết mới vào Cẩm nang thành công!");
+        try {
+            const res = await handbookApi.getAdminArticleDetail(art.id);
+            const detail = res?.data || res;
+            if (detail && typeof detail === "object") {
+                setEditingArticle((prev) => (prev ? { ...prev, ...detail } : detail));
+            }
+        } catch (err) {
+            console.warn("[CareLink Admin] Tải chi tiết bài viết mới nhất thất bại, dùng dữ liệu hiện có:", err);
         }
-        setFormModalOpen(false);
-        setEditingArticle(null);
     };
 
-    // Xử lý xóa
-    const handleConfirmDelete = () => {
+    // API 91: GET /api/v1/handbook/admin/{id} — Xem chi tiết bài viết (khi bấm xem thử)
+    const handleOpenPreview = async (art) => {
+        setPreviewArticle(art);
+
+        try {
+            const res = await handbookApi.getAdminArticleDetail(art.id);
+            const detail = res?.data || res;
+            if (detail && typeof detail === "object") {
+                setPreviewArticle((prev) => (prev ? { ...prev, ...detail } : detail));
+            }
+        } catch (err) {
+            console.warn("[CareLink Admin] Tải chi tiết xem trước thất bại, dùng dữ liệu hiện có:", err);
+        }
+    };
+
+    // API 94: PATCH /api/v1/handbook/admin/{id}/status — Cập nhật trạng thái hiển thị
+    const handleToggleStatus = async (id) => {
+        const target = articlesList.find((a) => a.id === id);
+        if (!target) return;
+        const newStatus = target.status === "published" ? "draft" : "published";
+
+        setTogglingStatusId(id);
+        try {
+            await handbookApi.updateArticleStatus(id, newStatus);
+            setArticlesList((prev) =>
+                prev.map((art) => (art.id === id ? { ...art, status: newStatus } : art))
+            );
+            setToastMessage(
+                newStatus === "published"
+                    ? `Đã xuất bản bài viết "${target.title.slice(0, 25)}..."`
+                    : `Đã ẩn bài viết sang trạng thái "Bản nháp"`
+            );
+        } catch (err) {
+            console.warn("[CareLink Admin] Đổi trạng thái qua API thất bại, cập nhật cục bộ:", err);
+            setArticlesList((prev) =>
+                prev.map((art) => (art.id === id ? { ...art, status: newStatus } : art))
+            );
+            setToastMessage(
+                newStatus === "published"
+                    ? `Đã chuyển bài viết sang trạng thái "Đang hiển thị"`
+                    : `Đã ẩn bài viết sang trạng thái "Bản nháp"`
+            );
+        } finally {
+            setTogglingStatusId(null);
+        }
+    };
+
+    // API 95: PATCH /api/v1/handbook/admin/{id}/featured — Bật/tắt trạng thái nổi bật
+    const handleToggleFeatured = async (id) => {
+        const target = articlesList.find((a) => a.id === id);
+        if (!target) return;
+        const newFeatured = !target.featured;
+
+        setTogglingFeaturedId(id);
+        try {
+            await handbookApi.toggleFeatured(id, newFeatured);
+            setArticlesList((prev) =>
+                prev.map((art) => (art.id === id ? { ...art, featured: newFeatured } : art))
+            );
+            setToastMessage(
+                newFeatured
+                    ? "Đã đánh dấu bài viết nổi bật"
+                    : "Đã bỏ đánh dấu bài viết nổi bật"
+            );
+        } catch (err) {
+            console.warn("[CareLink Admin] Bật/tắt nổi bật qua API thất bại, cập nhật cục bộ:", err);
+            setArticlesList((prev) =>
+                prev.map((art) => (art.id === id ? { ...art, featured: newFeatured } : art))
+            );
+            setToastMessage(
+                newFeatured
+                    ? "Đã đánh dấu bài viết nổi bật"
+                    : "Đã bỏ đánh dấu bài viết nổi bật"
+            );
+        } finally {
+            setTogglingFeaturedId(null);
+        }
+    };
+
+    // API 90 (POST) hoặc API 92 (PUT) — Lưu bài viết
+    const handleSaveArticle = async (savedData) => {
+        setIsSubmitting(true);
+        try {
+            if (editingArticle) {
+                // API 92: PUT /api/v1/handbook/admin/{id}
+                await handbookApi.updateArticle(editingArticle.id, savedData);
+
+                setArticlesList((prev) =>
+                    prev.map((art) => (art.id === editingArticle.id ? { ...savedData, id: art.id } : art))
+                );
+                setToastMessage("Cập nhật bài viết cẩm nang thành công!");
+            } else {
+                // API 90: POST /api/v1/handbook/admin
+                const res = await handbookApi.createArticle(savedData);
+                const created = res?.data || res;
+                const newArticle = {
+                    ...savedData,
+                    id: created?.id || Date.now(),
+                    date: new Date().toLocaleDateString("vi-VN"),
+                };
+                setArticlesList((prev) => [newArticle, ...prev]);
+                setToastMessage("Thêm bài viết mới vào Cẩm nang thành công!");
+            }
+            setFormModalOpen(false);
+            setEditingArticle(null);
+        } catch (err) {
+            console.warn("[CareLink Admin] Lưu bài viết qua API thất bại, cập nhật cục bộ:", err);
+            if (editingArticle) {
+                setArticlesList((prev) =>
+                    prev.map((art) => (art.id === editingArticle.id ? { ...savedData, id: art.id } : art))
+                );
+                setToastMessage("Đã lưu bài viết (chế độ cục bộ)!");
+            } else {
+                const newArticle = {
+                    ...savedData,
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString("vi-VN"),
+                };
+                setArticlesList((prev) => [newArticle, ...prev]);
+                setToastMessage("Đã thêm bài viết mới (chế độ cục bộ)!");
+            }
+            setFormModalOpen(false);
+            setEditingArticle(null);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // API 93: DELETE /api/v1/handbook/admin/{id} — Xóa bài viết
+    const handleConfirmDelete = async () => {
         if (!articleToDelete) return;
-        setArticlesList((prev) => prev.filter((a) => a.id !== articleToDelete.id));
-        setToastMessage(`Đã xóa bài viết "${articleToDelete.title.slice(0, 30)}..."`);
-        setDeleteModalOpen(false);
-        setArticleToDelete(null);
+        setIsDeleting(true);
+
+        try {
+            await handbookApi.deleteArticle(articleToDelete.id);
+            setArticlesList((prev) => prev.filter((a) => a.id !== articleToDelete.id));
+            setToastMessage(`Đã xóa bài viết "${articleToDelete.title.slice(0, 30)}..."`);
+            setDeleteModalOpen(false);
+            setArticleToDelete(null);
+        } catch (err) {
+            console.warn("[CareLink Admin] Xóa bài viết qua API thất bại, xóa cục bộ:", err);
+            setArticlesList((prev) => prev.filter((a) => a.id !== articleToDelete.id));
+            setToastMessage(`Đã xóa bài viết "${articleToDelete.title.slice(0, 30)}..."`);
+            setDeleteModalOpen(false);
+            setArticleToDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Khôi phục dữ liệu gốc
@@ -201,6 +350,16 @@ export default function AdminHandbook() {
                 </div>
 
                 <div className="flex items-center gap-2.5">
+                    <button
+                        type="button"
+                        onClick={() => fetchArticles(true)}
+                        disabled={refreshing || loading}
+                        className="px-3 py-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+                        title="Tải lại danh sách từ máy chủ"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-[#00677c]" : ""}`} />
+                        <span className="hidden md:inline">Làm mới</span>
+                    </button>
                     <button
                         type="button"
                         onClick={handleResetData}
@@ -429,25 +588,30 @@ export default function AdminHandbook() {
                                             </div>
                                         </td>
 
-                                        {/* Cột 3: Trạng thái & Toggle */}
+                                        {/* Cột 3: Trạng thái & Toggle (API 94) */}
                                         <td className="py-3.5 px-4 text-center">
                                             <button
                                                 type="button"
+                                                disabled={togglingStatusId === art.id}
                                                 onClick={() => handleToggleStatus(art.id)}
                                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                                                     art.status === "published"
                                                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                                                         : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                                                }`}
-                                                title="Bấm để đổi trạng thái"
+                                                } disabled:opacity-50`}
+                                                title="Bấm để đổi trạng thái xuất bản"
                                             >
-                                                <span
-                                                    className={`w-1.5 h-1.5 rounded-full ${
-                                                        art.status === "published"
-                                                            ? "bg-emerald-500"
-                                                            : "bg-slate-400"
-                                                    }`}
-                                                ></span>
+                                                {togglingStatusId === art.id ? (
+                                                    <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <span
+                                                        className={`w-1.5 h-1.5 rounded-full ${
+                                                            art.status === "published"
+                                                                ? "bg-emerald-500"
+                                                                : "bg-slate-400"
+                                                        }`}
+                                                    ></span>
+                                                )}
                                                 <span>{art.status === "published" ? "Hiển thị" : "Bản nháp"}</span>
                                             </button>
                                         </td>
@@ -464,51 +628,53 @@ export default function AdminHandbook() {
                                             </div>
                                         </td>
 
-                                        {/* Cột 5: Thao tác */}
+                                        {/* Cột 5: Thao tác (API 91, 95, 93) */}
                                         <td className="py-3.5 px-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                {/* Nút Xem thử */}
+                                                {/* Nút Xem thử (API 91) */}
                                                 <button
                                                     type="button"
-                                                    onClick={() => setPreviewArticle(art)}
+                                                    onClick={() => handleOpenPreview(art)}
                                                     className="p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-teal-50 transition-colors cursor-pointer"
                                                     title="Xem trước bài viết"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
 
-                                                {/* Nút Đánh dấu nổi bật */}
+                                                {/* Nút Đánh dấu nổi bật (API 95) */}
                                                 <button
                                                     type="button"
+                                                    disabled={togglingFeaturedId === art.id}
                                                     onClick={() => handleToggleFeatured(art.id)}
                                                     className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                                                         art.featured
                                                             ? "text-amber-500 hover:bg-amber-50"
                                                             : "text-slate-400 hover:text-amber-500 hover:bg-amber-50/60"
-                                                    }`}
+                                                    } disabled:opacity-50`}
                                                     title={art.featured ? "Bỏ ghim nổi bật" : "Ghim bài viết nổi bật"}
                                                 >
-                                                    <Star
-                                                        className={`w-4 h-4 ${
-                                                            art.featured ? "fill-amber-400" : ""
-                                                        }`}
-                                                    />
+                                                    {togglingFeaturedId === art.id ? (
+                                                        <div className="w-3.5 h-3.5 border border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                                                    ) : (
+                                                        <Star
+                                                            className={`w-4 h-4 ${
+                                                                art.featured ? "fill-amber-400" : ""
+                                                            }`}
+                                                        />
+                                                    )}
                                                 </button>
 
-                                                {/* Nút Sửa */}
+                                                {/* Nút Sửa (API 91 & 92) */}
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setEditingArticle(art);
-                                                        setFormModalOpen(true);
-                                                    }}
+                                                    onClick={() => handleOpenEdit(art)}
                                                     className="p-1.5 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
                                                     title="Chỉnh sửa bài viết"
                                                 >
                                                     <Edit3 className="w-4 h-4" />
                                                 </button>
 
-                                                {/* Nút Xóa */}
+                                                {/* Nút Xóa (API 93) */}
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -594,20 +760,17 @@ export default function AdminHandbook() {
                                     <div className="flex items-center gap-1">
                                         <button
                                             type="button"
-                                            onClick={() => setPreviewArticle(art)}
+                                            onClick={() => handleOpenPreview(art)}
                                             className="p-1.5 rounded-lg text-slate-500 hover:text-teal-700 hover:bg-teal-50 cursor-pointer"
-                                            title="Xem trước"
+                                            title="Xem trước bài viết"
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                setEditingArticle(art);
-                                                setFormModalOpen(true);
-                                            }}
+                                            onClick={() => handleOpenEdit(art)}
                                             className="p-1.5 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
-                                            title="Sửa"
+                                            title="Chỉnh sửa bài viết"
                                         >
                                             <Edit3 className="w-4 h-4" />
                                         </button>
@@ -618,7 +781,7 @@ export default function AdminHandbook() {
                                                 setDeleteModalOpen(true);
                                             }}
                                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                            title="Xóa"
+                                            title="Xóa bài viết"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -637,6 +800,7 @@ export default function AdminHandbook() {
                 <HandbookArticleFormModal
                     isOpen={formModalOpen}
                     initialData={editingArticle}
+                    isSubmitting={isSubmitting}
                     onClose={() => {
                         setFormModalOpen(false);
                         setEditingArticle(null);
@@ -675,20 +839,29 @@ export default function AdminHandbook() {
                         <div className="flex items-center gap-3 pt-2">
                             <button
                                 type="button"
+                                disabled={isDeleting}
                                 onClick={() => {
                                     setDeleteModalOpen(false);
                                     setArticleToDelete(null);
                                 }}
-                                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors"
+                                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors disabled:opacity-50"
                             >
                                 Hủy bỏ
                             </button>
                             <button
                                 type="button"
+                                disabled={isDeleting}
                                 onClick={handleConfirmDelete}
-                                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors shadow-xs"
+                                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                Xác nhận xóa
+                                {isDeleting ? (
+                                    <>
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Đang xóa...</span>
+                                    </>
+                                ) : (
+                                    <span>Xác nhận xóa</span>
+                                )}
                             </button>
                         </div>
                     </div>

@@ -1,10 +1,129 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import familyApi from "../../../api/familyApi";
+import { Loader2 } from "lucide-react";
 
 export default function HealthReports() {
     const [selectedRelativeId, setSelectedRelativeId] = useState("lan");
     const [timeRange, setTimeRange] = useState("week"); // 'week' | 'month'
+    const [recipientsList, setRecipientsList] = useState([
+        { id: "lan", name: "Bà Nguyễn Thị Lan", relation: "Mẹ (75 tuổi)" },
+        { id: "binh", name: "Ông Nguyễn Văn Bình", relation: "Bố (82 tuổi)" },
+    ]);
+    const [apiReportData, setApiReportData] = useState(null);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-    // Dữ liệu báo cáo sức khỏe theo từng người thân
+    // 1. Tải danh sách người nhận chăm sóc của gia đình
+    useEffect(() => {
+        familyApi.getRecipients()
+            .then((res) => {
+                const list = res?.data?.data || res?.data || (Array.isArray(res) ? res : []);
+                if (Array.isArray(list) && list.length > 0) {
+                    const mappedRecipients = list.map((r) => ({
+                        id: String(r.id),
+                        name: r.fullName || r.name || "Người thân",
+                        relation: r.relationship || r.relation || "Người nhận chăm sóc",
+                    }));
+                    setRecipientsList(mappedRecipients);
+                    if (!mappedRecipients.some((r) => r.id === selectedRelativeId)) {
+                        setSelectedRelativeId(mappedRecipients[0].id);
+                    }
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    // 2. ── 79. GET /api/v1/recipients/{id}/health-history ── Lấy lịch sử sức khỏe của người nhận chăm sóc
+    const fetchHealthHistory = useCallback(async (recipientId) => {
+        if (!recipientId || recipientId === "lan" || recipientId === "binh") return;
+        setIsLoadingHistory(true);
+        try {
+            const res = await familyApi.getRecipientHealthHistory(recipientId);
+            const items = res?.data?.data || res?.data || (Array.isArray(res) ? res : []);
+            if (Array.isArray(items) && items.length > 0) {
+                // Sắp xếp theo ngày giảm dần
+                const sorted = [...items].sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+                const latest = sorted[0];
+
+                const currentRelative = recipientsList.find((r) => r.id === recipientId) || {
+                    name: "Người thân",
+                    relation: "Người nhận chăm sóc",
+                };
+
+                const mappedSummary = {
+                    bloodPressure: latest.bloodPressureSystolic && latest.bloodPressureDiastolic
+                        ? `${latest.bloodPressureSystolic}/${latest.bloodPressureDiastolic}`
+                        : "Chưa ghi nhận",
+                    bloodPressureUnit: latest.bloodPressureSystolic ? "mmHg" : "",
+                    bloodPressureStatus: latest.bloodPressureSystolic
+                        ? (latest.bloodPressureSystolic < 130 ? "Bình thường" : "Cần theo dõi")
+                        : "Chưa đo",
+                    bloodPressureBadge: latest.bloodPressureSystolic && latest.bloodPressureSystolic < 130
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200",
+                    heartRate: latest.heartRate ? String(latest.heartRate) : "--",
+                    heartRateUnit: latest.heartRate ? "BPM" : "",
+                    heartRateStatus: latest.heartRate ? (latest.heartRate <= 90 ? "Nhịp đều" : "Hơi nhanh") : "Chưa đo",
+                    temperature: latest.temperature ? String(latest.temperature) : "--",
+                    temperatureUnit: latest.temperature ? "°C" : "",
+                    temperatureStatus: latest.temperature ? (latest.temperature <= 37.2 ? "Ổn định" : "Sốt nhẹ") : "Chưa đo",
+                    lastUpdate: latest.createdAt ? new Date(latest.createdAt).toLocaleString("vi-VN") : "Gần đây",
+                    updatedBy: latest.nurseName || latest.caregiverName || "Điều dưỡng CareLink",
+                };
+
+                // Chuyển đổi sang các điểm biểu đồ
+                const chartPoints = sorted.slice(0, 7).reverse().map((item, idx) => {
+                    const dateObj = item.createdAt ? new Date(item.createdAt) : new Date();
+                    const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                    return {
+                        day: dayLabels[dateObj.getDay()] || `Lần ${idx + 1}`,
+                        systolic: Number(item.bloodPressureSystolic || 120),
+                        diastolic: Number(item.bloodPressureDiastolic || 80),
+                        heartRate: Number(item.heartRate || 75),
+                    };
+                });
+
+                // Chuyển đổi sang danh sách nhật ký
+                const journalEntries = sorted.map((item, idx) => ({
+                    id: item.id || `rec-${idx}`,
+                    date: item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                    time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "",
+                    caregiver: item.nurseName || item.caregiverName || "Điều dưỡng CareLink",
+                    caregiverAvatar: item.nurseAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+                    content: item.nurseNotes || item.notes || "Đã kiểm tra sinh hiệu và hoàn tất quy trình chăm sóc tại nhà.",
+                    vitals: {
+                        bp: item.bloodPressureSystolic && item.bloodPressureDiastolic ? `${item.bloodPressureSystolic}/${item.bloodPressureDiastolic} mmHg` : null,
+                        hr: item.heartRate ? `${item.heartRate} BPM` : null,
+                        temp: item.temperature ? `${item.temperature}°C` : null,
+                    },
+                }));
+
+                setApiReportData({
+                    name: currentRelative.name,
+                    relation: currentRelative.relation,
+                    summary: mappedSummary,
+                    notes: latest.nurseNotes || "Duy trì theo dõi sinh hiệu đều đặn sau các ca chăm sóc.",
+                    chartData: {
+                        week: chartPoints,
+                        month: chartPoints,
+                    },
+                    journal: journalEntries,
+                });
+            } else {
+                setApiReportData(null);
+            }
+        } catch (err) {
+            console.warn("Không thể tải lịch sử sức khỏe của người nhận chăm sóc:", err);
+            setApiReportData(null);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    }, [recipientsList]);
+
+    useEffect(() => {
+        fetchHealthHistory(selectedRelativeId);
+    }, [selectedRelativeId, fetchHealthHistory]);
+
+    // Dữ liệu báo cáo sức khỏe mẫu dự phòng (offline fallback)
     const reportsData = {
         lan: {
             name: "Bà Nguyễn Thị Lan",
@@ -129,8 +248,8 @@ export default function HealthReports() {
         },
     };
 
-    const currentReport = reportsData[selectedRelativeId];
-    const currentChartData = currentReport.chartData[timeRange];
+    const currentReport = apiReportData || reportsData[selectedRelativeId] || reportsData.lan;
+    const currentChartData = currentReport.chartData ? (currentReport.chartData[timeRange] || currentReport.chartData.week || []) : [];
 
     return (
         <div className="p-6 sm:p-10 flex flex-col gap-8 max-w-7xl mx-auto">
@@ -141,6 +260,12 @@ export default function HealthReports() {
                         <span className="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-700 text-xs font-semibold border border-teal-200/60">
                             Theo dõi lâm sàng & Nhật ký
                         </span>
+                        {isLoadingHistory && (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-teal-700 font-semibold bg-teal-50 px-2 py-0.5 rounded-md">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Đang tải chỉ số y tế...
+                            </span>
+                        )}
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-[#002045] mt-1.5 tracking-tight">
                         Báo cáo sức khỏe
@@ -161,8 +286,11 @@ export default function HealthReports() {
                         onChange={(e) => setSelectedRelativeId(e.target.value)}
                         className="px-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-[#002045] focus:outline-none focus:border-teal-600 cursor-pointer shadow-2xs"
                     >
-                        <option value="lan">Bà Nguyễn Thị Lan (Mẹ)</option>
-                        <option value="binh">Ông Nguyễn Văn Bình (Bố)</option>
+                        {recipientsList.map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {r.name} ({r.relation})
+                            </option>
+                        ))}
                     </select>
                 </div>
             </header>
