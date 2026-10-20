@@ -8,7 +8,18 @@ export default function PageTransition({ children }) {
 
     useEffect(() => {
         if (location.pathname !== displayLocation.pathname) {
-            // Bắt đầu hiệu ứng chuyển trang
+            // Nếu chuyển qua lại giữa các tab trong admin, caregiver hoặc dashboard thì chuyển ngay lập tức, không xoay loader
+            const isInstantTransition =
+                (location.pathname.startsWith("/admin") && displayLocation.pathname.startsWith("/admin")) ||
+                (location.pathname.startsWith("/dashboard") && displayLocation.pathname.startsWith("/dashboard")) ||
+                (location.pathname.startsWith("/caregiver") && displayLocation.pathname.startsWith("/caregiver"));
+
+            if (isInstantTransition) {
+                setDisplayLocation(location);
+                return;
+            }
+
+            // Bắt đầu hiệu ứng chuyển trang cho các trang khác
             setIsTransitioning(true);
             window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 
@@ -16,7 +27,7 @@ export default function PageTransition({ children }) {
             const timer = setTimeout(() => {
                 setDisplayLocation(location);
                 setIsTransitioning(false);
-            }, 600); // Tăng thời gian nhẹ để user kịp nhìn thấy loader xịn
+            }, 600); // Thời gian chuyển mượt mà
 
             return () => clearTimeout(timer);
         }

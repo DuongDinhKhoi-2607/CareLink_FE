@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import familyApi from "../../../api/familyApi";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -13,7 +14,7 @@ const verificationItems = [
 // Chi tiết hồ sơ nhanh
 const profileDetails = [
     { text: "4.9 (128 đánh giá)", isRating: true },
-    { text: "Đống Đa, Hà Nội", isRating: false },
+    { text: "Bình Thạnh, TP. HCM", isRating: false },
     { text: "3 năm kinh nghiệm", isRating: false },
 ];
 
@@ -30,11 +31,11 @@ const skills = [
 const certificates = [
     {
         name: "Chứng chỉ Điều dưỡng Cơ bản",
-        provider: "ĐH Y HÀ NỘI • 2022",
+        provider: "ĐH Y DƯỢC TP.HCM • 2022",
     },
     {
         name: "Chứng chỉ Kỹ thuật Tiêm truyền",
-        provider: "BV BẠCH MAI • 2023",
+        provider: "BV CHỢ RẪY • 2023",
     },
 ];
 
@@ -44,7 +45,7 @@ const experiences = [
         period: "HIỆN TẠI",
         current: true,
         title: "Thực tập sinh Điều dưỡng",
-        organization: "Bệnh viện Đại học Y Hà Nội",
+        organization: "Bệnh viện Chợ Rẫy TP.HCM",
         description:
             "Hỗ trợ chăm sóc bệnh nhân tại khoa Nội tổng hợp, theo dõi chỉ số sinh tồn, thực hiện y lệnh của bác sĩ và hướng dẫn phục hồi chức năng cơ bản cho bệnh nhân sau phẫu thuật.",
     },
@@ -112,15 +113,70 @@ export default function CaregiverProfile() {
     const [saved, setSaved] = useState(false);
     const [contacted, setContacted] = useState(false);
 
-    // Fallback ảnh online chất lượng cao, bền vững
-    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=600";
+    // Fallback ảnh online chất lượng cao, bền vững (dùng chung avatar ĐD. Nguyễn Thùy Linh)
+    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
     const displayName = caregiver?.name || "Nguyễn Thùy Linh";
-    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Hà Nội";
+    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
 
     const handleContact = () => {
         setContacted(true);
         navigate("/chat", { state: { caregiver } });
     };
+
+    // ── Trích xuất nurseId từ state hoặc params
+    const nurseId = caregiver?.id || caregiver?.nurseId || null;
+
+    // ── STATE: Đánh giá & Tổng quan
+    const [reviews, setReviews] = useState([]);
+    const [reviewSummary, setReviewSummary] = useState(null);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [reviewsPage, setReviewsPage] = useState(1);
+    const [reviewsHasMore, setReviewsHasMore] = useState(false);
+    const REVIEWS_PAGE_SIZE = 5;
+
+    // ── 70. GET /api/v1/nurses/{nurseId}/reviews
+    const fetchReviews = useCallback(async (page = 1) => {
+        if (!nurseId) return;
+        setReviewsLoading(true);
+        try {
+            const res = await familyApi.getNurseReviews(nurseId, {
+                PageNumber: page,
+                PageSize: REVIEWS_PAGE_SIZE,
+            });
+            const items = res?.items || res?.data?.items || (Array.isArray(res) ? res : []);
+            const totalCount = res?.totalCount || res?.data?.totalCount || items.length;
+            if (page === 1) {
+                setReviews(items);
+            } else {
+                setReviews((prev) => [...prev, ...items]);
+            }
+            setReviewsHasMore(page * REVIEWS_PAGE_SIZE < totalCount);
+            setReviewsPage(page);
+        } catch {
+            // Reviews không load được — hiển thị empty state
+        } finally {
+            setReviewsLoading(false);
+        }
+    }, [nurseId]);
+
+    // ── 71. GET /api/v1/nurses/{nurseId}/reviews/summary
+    const fetchReviewSummary = useCallback(async () => {
+        if (!nurseId) return;
+        try {
+            const res = await familyApi.getNurseRatingSummary(nurseId);
+            const data = res?.data || res;
+            if (data && typeof data === "object") {
+                setReviewSummary(data);
+            }
+        } catch {
+            // Summary không ảnh hưởng đến UI chính
+        }
+    }, [nurseId]);
+
+    useEffect(() => {
+        fetchReviews(1);
+        fetchReviewSummary();
+    }, [fetchReviews, fetchReviewSummary]);
 
     return (
         <div className="bg-[#f8fafc] py-8 font-sans antialiased text-[#102030]">
@@ -391,8 +447,8 @@ export default function CaregiverProfile() {
                                     type="button"
                                     onClick={handleContact}
                                     className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold transition-all shadow-sm ${contacted
-                                            ? "bg-slate-100 text-slate-500 cursor-default"
-                                            : "bg-[#00677c] text-white hover:bg-[#005263] hover:shadow-md"
+                                        ? "bg-slate-100 text-slate-500 cursor-default"
+                                        : "bg-[#00677c] text-white hover:bg-[#005263] hover:shadow-md"
                                         }`}
                                 >
                                     {contacted ? "Đã gửi yêu cầu liên hệ" : "Liên hệ ngay"}
@@ -402,8 +458,8 @@ export default function CaregiverProfile() {
                                     type="button"
                                     onClick={() => setSaved(!saved)}
                                     className={`w-full py-3 px-4 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 ${saved
-                                            ? "bg-rose-50 text-rose-600 border-rose-200"
-                                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                        ? "bg-rose-50 text-rose-600 border-rose-200"
+                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                                         }`}
                                 >
                                     <span>{saved ? "♥" : "♡"}</span>
