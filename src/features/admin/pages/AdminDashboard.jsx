@@ -78,14 +78,20 @@ export default function AdminDashboard() {
 
     const baseKpi = kpiData[timeRange];
     const currentKpi = {
-        revenue: liveSummary?.totalRevenue != null ? Number(liveSummary.totalRevenue).toLocaleString("vi-VN") + " ₫" : baseKpi.revenue,
-        revenueGrowth: baseKpi.revenueGrowth,
+        revenue: liveSummary?.totalPlatformFee != null
+            ? Number(liveSummary.totalPlatformFee).toLocaleString("vi-VN") + " ₫"
+            : (liveSummary?.totalGmv != null ? Number(liveSummary.totalGmv).toLocaleString("vi-VN") + " ₫" : baseKpi.revenue),
+        revenueGrowth: liveSummary?.totalGmv != null ? `GMV: ${Number(liveSummary.totalGmv).toLocaleString("vi-VN")} ₫` : baseKpi.revenueGrowth,
         completedShifts: liveSummary?.completedBookings != null ? String(liveSummary.completedBookings) : baseKpi.completedShifts,
         shiftsGrowth: baseKpi.shiftsGrowth,
-        newFamilies: liveSummary?.totalCustomers != null ? String(liveSummary.totalCustomers) : baseKpi.newFamilies,
-        familyGrowth: baseKpi.familyGrowth,
-        activeCaregivers: liveSummary?.activeCaregivers != null ? String(liveSummary.activeCaregivers) : baseKpi.activeCaregivers,
-        caregiverNote: baseKpi.caregiverNote,
+        newFamilies: liveSummary?.totalBookings != null ? String(liveSummary.totalBookings) : baseKpi.newFamilies,
+        familyGrowth: liveSummary?.pendingBookings != null ? `${liveSummary.pendingBookings} ca chờ` : baseKpi.familyGrowth,
+        activeCaregivers: liveSummary?.platformAverageRating != null && Number(liveSummary.platformAverageRating) > 0
+            ? `${Number(liveSummary.platformAverageRating).toFixed(1)} ★`
+            : baseKpi.activeCaregivers,
+        caregiverNote: liveSummary?.inProgressBookings != null
+            ? `${liveSummary.inProgressBookings} ca đang trực`
+            : (liveSummary?.openDisputesCount != null ? `${liveSummary.openDisputesCount} khiếu nại mở` : baseKpi.caregiverNote),
     };
 
     // Hoạt động gần đây (Mock data với Lucide icons)

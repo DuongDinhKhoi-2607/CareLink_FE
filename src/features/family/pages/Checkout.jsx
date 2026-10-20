@@ -139,11 +139,7 @@ export default function Checkout() {
         }
 
         if (!bookingId) {
-            setIsSubmitting(true);
-            setPaymentStatus("Đang chuyển hướng tới cổng thanh toán an toàn PayOS...");
-            setTimeout(() => {
-                navigate(`/payment-result?bookingId=CK-28491&status=PAID&code=00&orderCode=${Date.now().toString().slice(-6)}`);
-            }, 800);
+            setPaymentError("Không tìm thấy mã ca chăm sóc để thanh toán. Vui lòng mở lại từ danh sách Lịch hẹn của bạn.");
             return;
         }
 
@@ -158,17 +154,12 @@ export default function Checkout() {
             } else {
                 setPaymentError("Không nhận được liên kết thanh toán từ cổng PayOS. Vui lòng thử lại sau.");
                 setPaymentStatus("");
+                setIsSubmitting(false);
             }
         } catch (err) {
-            console.warn("[CareLink] Tạo link thanh toán offline fallback:", err);
-            if (err.code === "ERR_NETWORK" || !err.response) {
-                sessionStorage.setItem("carelink_pending_payment_booking_id", bookingId);
-                setPaymentStatus("Đang chuyển hướng tới cổng thanh toán an toàn PayOS...");
-                setTimeout(() => {
-                    navigate(`/payment-result?bookingId=${bookingId}&status=PAID&code=00&orderCode=${Date.now().toString().slice(-6)}`);
-                }, 800);
-                return;
-            }
+            console.error("[CareLink] Lỗi khi tạo liên kết thanh toán PayOS:", err);
+            setIsSubmitting(false);
+            setPaymentStatus("");
             const status = err.response?.status;
             let msg = err.response?.data?.detail || err.response?.data?.message;
             if (!msg) {

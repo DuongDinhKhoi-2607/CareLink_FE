@@ -255,28 +255,9 @@ export default function CreateProposalModal({
             }
             onClose();
         } catch (err) {
-            console.warn("[CareLink] createProposal error, using graceful fallback simulation:", err);
-            // Giả lập đề xuất ca mượt mà theo đúng DTO BookingProposalResponse nếu máy chủ đang offline
-            const fallbackProposal = {
-                id: "prop-" + Date.now(),
-                conversationId: conversationId,
-                proposalNumber: 1,
-                serviceId: payload.serviceId,
-                serviceName: selectedService?.serviceName || "Chăm sóc phục hồi sau phẫu thuật",
-                serviceDurationMinutes: selectedService?.durationMinutes || 120,
-                recipientId: payload.recipientId,
-                recipientName: selectedRecipient?.fullName || "Bà Nguyễn Thị Lan",
-                addressSnapshot: selectedAddress?.fullAddress || "123 Nguyễn Gia Trí, Phường 25, Quận Bình Thạnh, TP. Hồ Chí Minh",
-                totalPrice: selectedService?.basePrice || 350000,
-                scheduledStart: payload.scheduledStart,
-                notes: payload.notes,
-                status: 1, // Pending
-                createdAt: new Date().toISOString(),
-            };
-            if (onProposalCreated) {
-                onProposalCreated(fallbackProposal);
-            }
-            onClose();
+            console.error("[CareLink] Lỗi khi tạo đề xuất ca:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất ca chăm sóc tới điều dưỡng. Vui lòng thử lại.";
+            setSubmitError(msg);
         } finally {
             setIsSubmitting(false);
         }

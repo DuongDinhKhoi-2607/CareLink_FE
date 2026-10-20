@@ -342,36 +342,11 @@ export default function Appointments() {
             });
             fetchAppointments();
         } catch (err) {
-            console.warn("[CareLink] Hủy ca thất bại, áp dụng cập nhật cục bộ:", err);
-            // Optimistic update khi API lỗi hoặc mất kết nối
-            if (err.code === "ERR_NETWORK" || !err.response) {
-                setAppointments((prev) =>
-                    prev.map((apt) =>
-                        apt.id === id
-                            ? {
-                                  ...apt,
-                                  tab: "cancelled",
-                                  status: "cancelled",
-                                  statusLabel: "ĐÃ HỦY",
-                                  statusBadge: "bg-rose-50 text-rose-700 border border-rose-200",
-                                  dotColor: "bg-rose-500",
-                                  canCancel: false,
-                                  canPay: false,
-                              }
-                            : apt
-                    )
-                );
-                setToastMessage({
-                    type: "success",
-                    title: "Đã hủy ca chăm sóc thành công",
-                    message: `Lịch hẹn #${id} đã được hủy trong phiên làm việc hiện tại.`,
-                });
-                return;
-            }
+            console.error("[CareLink] Lỗi khi hủy ca:", err);
             const errorMsg =
                 err.response?.data?.detail ||
                 err.response?.data?.message ||
-                "Không thể hủy ca chăm sóc lúc này. Vui lòng thử lại sau.";
+                "Không thể hủy ca chăm sóc lúc này. Vui lòng kiểm tra lại kết nối mạng hoặc chính sách hủy ca.";
             throw new Error(errorMsg);
         }
     };

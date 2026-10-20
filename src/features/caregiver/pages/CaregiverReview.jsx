@@ -532,10 +532,12 @@ export default function CaregiverReview() {
 
         try {
             const payload = {
-                rating: Math.round(averageRating),
                 overallRating: Math.round(averageRating),
+                respectRating: ratings.respect || null,
+                safetyRating: ratings.safety || null,
+                suppliesRating: ratings.supplies || null,
+                paymentRating: ratings.payment || null,
                 comment: note.trim() || null,
-                criteriaRatings: ratings,
             };
 
             await caregiverApi.reviewCustomer(bookingId, payload);

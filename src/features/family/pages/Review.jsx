@@ -103,13 +103,13 @@ export default function Review() {
 
         try {
             const payload = {
-                overallRating,
+                overallRating: Number(overallRating),
+                expertiseRating: criteriaRatings.professionalism > 0 ? criteriaRatings.professionalism : null,
+                communicationRating: criteriaRatings.communication > 0 ? criteriaRatings.communication : null,
+                punctualityRating: criteriaRatings.punctuality > 0 ? criteriaRatings.punctuality : null,
+                careQualityRating: criteriaRatings.careQuality > 0 ? criteriaRatings.careQuality : null,
+                wouldRehire: rehire === "yes" ? true : rehire === "no" ? false : null,
                 comment: comment.trim() || null,
-                wouldRehire: rehire === "yes",
-                // Tiêu chí chi tiết — backend có thể bỏ qua nếu chưa có DTO
-                criteriaRatings: Object.fromEntries(
-                    Object.entries(criteriaRatings).filter(([, v]) => v > 0)
-                ),
             };
 
             await familyApi.createReview(bookingId, payload);

@@ -633,14 +633,14 @@ export default function CaregiverBookingRequests() {
             });
             fetchBookings();
         } catch (err) {
-            console.warn("[CareLink] Chấp nhận ca offline fallback:", err);
-            setBookings((prev) =>
-                prev.map((b) => (b.id === id ? { ...b, status: "accepted" } : b))
-            );
+            console.error("[CareLink] Lỗi khi tiếp nhận ca:", err);
             showToast({
-                type: "success",
-                title: "Đã tiếp nhận ca thành công",
-                message: "Ca chăm sóc đã chuyển sang trạng thái sẵn sàng thực hiện.",
+                type: "error",
+                title: "Không thể tiếp nhận ca",
+                message:
+                    err.response?.data?.detail ||
+                    err.response?.data?.message ||
+                    "Không thể kết nối đến máy chủ hoặc ca không ở trạng thái chờ duyệt.",
             });
         }
     };
@@ -656,19 +656,12 @@ export default function CaregiverBookingRequests() {
             });
             fetchBookings();
         } catch (err) {
-            console.warn("[CareLink] Từ chối ca offline fallback:", err);
-            if (err.code === "ERR_NETWORK" || !err.response) {
-                setBookings((prev) =>
-                    prev.map((b) => (b.id === id ? { ...b, status: "rejected" } : b))
-                );
-                showToast({
-                    type: "success",
-                    title: "Đã từ chối nhận ca",
-                    message: "Hệ thống đã ghi nhận lý do trong phiên làm việc hiện tại.",
-                });
-                return;
-            }
-            throw new Error(err.response?.data?.detail || err.response?.data?.message || "Lỗi khi từ chối ca hẹn.");
+            console.error("[CareLink] Lỗi khi từ chối ca:", err);
+            throw new Error(
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Lỗi khi từ chối ca hẹn trên hệ thống."
+            );
         }
     };
 
@@ -676,14 +669,22 @@ export default function CaregiverBookingRequests() {
     const handleStart = async (id) => {
         try {
             await caregiverApi.startBooking(id);
-            showToast("Ca chăm sóc đã bắt đầu! Bạn có thể ghi nhận sinh hiệu khi kết thúc ca.");
+            showToast({
+                type: "success",
+                title: "Đã bắt đầu ca chăm sóc",
+                message: "Ca chăm sóc đã chuyển sang trạng thái Đang thực hiện. Bạn có thể ghi bệnh án.",
+            });
             fetchBookings();
         } catch (err) {
-            console.warn("[CareLink] Bắt đầu ca offline fallback:", err);
-            setBookings((prev) =>
-                prev.map((b) => (b.id === id ? { ...b, status: "in_progress" } : b))
-            );
-            showToast("Ca chăm sóc đã bắt đầu! Bạn có thể ghi nhận sinh hiệu khi kết thúc ca.");
+            console.error("[CareLink] Lỗi khi bắt đầu ca:", err);
+            showToast({
+                type: "error",
+                title: "Không thể bắt đầu ca",
+                message:
+                    err.response?.data?.detail ||
+                    err.response?.data?.message ||
+                    "Không thể kết nối đến máy chủ hoặc chưa đến thời gian cho phép bắt đầu ca.",
+            });
         }
     };
 

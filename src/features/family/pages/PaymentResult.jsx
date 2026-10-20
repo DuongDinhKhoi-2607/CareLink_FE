@@ -94,42 +94,19 @@ export default function PaymentResult() {
                 setVerifying(false);
             }
         } catch (err) {
-            console.warn("[CareLink] Verify payment offline fallback:", err);
-            // Nếu mất kết nối hoặc ở chế độ kiểm thử kết quả giao dịch
-            if (err.code === "ERR_NETWORK" || !err.response || payOsCode === "00" || payOsStatus === "PAID") {
-                setPayment({
-                    status: isCancelRoute ? 3 : 2, // 2 = Paid, 3 = Failed/Canceled
-                    amount: 420000,
-                    orderCode: orderCode || 123456,
-                    transactionId: "TXN-" + Date.now(),
-                    paidAt: new Date().toISOString(),
-                });
-                setBooking((prev) => prev || {
-                    id: bookingId || "CK-28491",
-                    serviceName: "Chăm sóc phục hồi chức năng & Vận động y tế",
-                    nurseName: "Điều dưỡng Nguyễn Thùy Linh",
-                    recipientName: "Bà Nguyễn Thị Lan",
-                    addressSnapshot: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP.HCM",
-                    scheduledStart: new Date(Date.now() + 86400000).toISOString(),
-                    totalPrice: 420000,
-                });
-                sessionStorage.removeItem("carelink_pending_payment_booking_id");
-                setLoading(false);
-                setVerifying(false);
-                return;
-            }
+            console.error("[CareLink] Lỗi xác minh trạng thái thanh toán từ Backend:", err);
             setLoading(false);
             setVerifying(false);
             const status = err.response?.status;
             if (status === 404) {
-                setErrorMsg("Không tìm thấy thông tin giao dịch thanh toán cho ca chăm sóc này.");
+                setErrorMsg("Chưa tìm thấy thông tin giao dịch thanh toán cho ca chăm sóc này. Nếu bạn vừa thanh toán qua PayOS, hệ thống có thể cần 5-10 giây để nhận webhook. Vui lòng bấm 'Kiểm tra lại'.");
             } else if (status === 401 || status === 403) {
-                setErrorMsg("Phiên làm việc hết hạn hoặc bạn không có quyền xem thông tin ca này.");
+                setErrorMsg("Phiên làm việc hết hạn hoặc bạn không có quyền xem thông tin ca này. Vui lòng đăng nhập lại.");
             } else {
-                setErrorMsg("Chưa thể kết nối tới máy chủ để xác minh giao dịch. Vui lòng thử lại.");
+                setErrorMsg("Chưa thể kết nối tới máy chủ để xác minh giao dịch. Vui lòng kiểm tra kết nối mạng và thử lại.");
             }
         }
-    }, [bookingId, isCancelRoute, orderCode, payOsCode, payOsStatus]);
+    }, [bookingId, isCancelRoute]);
 
     useEffect(() => {
         verifyPaymentStatus();

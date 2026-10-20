@@ -584,13 +584,8 @@ export default function CaregiverMessages() {
                     return;
                 }
             } catch (err) {
-                console.warn("[CareLink] Chấp nhận proposal offline fallback:", err);
-                if (err.code === "ERR_NETWORK" || !err.response) {
-                    showToast("Đã đồng ý nhận ca! Ca chăm sóc đã được tạo ở trạng thái Chờ thanh toán.");
-                    setDemoStatus("caregiver_accepted");
-                    return;
-                }
-                const msg = err.response?.data?.detail || err.response?.data?.message || "Lỗi khi chấp nhận đề xuất ca.";
+                console.error("[CareLink] Lỗi khi chấp thuận đề xuất ca:", err);
+                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi nhận ca.";
                 showToast(msg);
                 return;
             }
@@ -629,15 +624,12 @@ export default function CaregiverMessages() {
                     { reason: finalReason }
                 );
                 showToast("Đã từ chối đề xuất nhận ca.");
+                setDemoStatus("caregiver_rejected", finalReason);
+                setShowRejectModal(false);
+                return;
             } catch (err) {
-                console.warn("[CareLink] Từ chối proposal offline fallback:", err);
-                if (err.code === "ERR_NETWORK" || !err.response) {
-                    showToast("Đã từ chối đề xuất nhận ca.");
-                    setDemoStatus("caregiver_rejected", finalReason);
-                    setShowRejectModal(false);
-                    return;
-                }
-                const msg = err.response?.data?.detail || err.response?.data?.message || "Lỗi khi từ chối đề xuất ca.";
+                console.error("[CareLink] Lỗi khi từ chối đề xuất ca:", err);
+                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi từ chối ca.";
                 showToast(msg);
                 return;
             }
