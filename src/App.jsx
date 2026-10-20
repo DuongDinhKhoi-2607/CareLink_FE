@@ -21,6 +21,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import MedicalHandbook from "./pages/public/MedicalHandbook";
+import HandbookDetail from "./pages/public/HandbookDetail";
 import PrivacyPolicy from "./pages/public/PrivacyPolicy";
 import TermsOfService from "./pages/public/TermsOfService";
 
@@ -42,6 +43,7 @@ import PageTransition from "./components/PageTransition";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./features/admin/pages/AdminDashboard";
 import CaregiverApprovals from "./features/admin/pages/CaregiverApprovals";
+import AdminServices from "./features/admin/pages/AdminServices";
 import ServiceManagement from "./features/admin/pages/ServiceManagement";
 import AdminAppointments from "./features/admin/pages/AdminAppointments";
 import UserManagement from "./features/admin/pages/UserManagement";
@@ -70,6 +72,7 @@ export default function App() {
             <Route path="/caregiver" element={<ForCaregiver />} />
             {/* Cẩm nang y tế & Sức khỏe gia đình */}
             <Route path="/handbook" element={<MedicalHandbook />} />
+            <Route path="/handbook/:idOrSlug" element={<HandbookDetail />} />
             {/* Trang chọn loại dịch vụ */}
             <Route path="/services" element={<Services />} />
             {/* Pháp lý, Điều khoản & Chính sách bảo mật */}
@@ -115,7 +118,7 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/approvals" element={<CaregiverApprovals />} />
-            <Route path="/admin/services" element={<ServiceManagement />} />
+            <Route path="/admin/services" element={<AdminServices />} />
             <Route path="/admin/appointments" element={<AdminAppointments />} />
             <Route path="/admin/disputes" element={<AdminDisputes />} />
             <Route path="/admin/users" element={<UserManagement />} />

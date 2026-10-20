@@ -514,7 +514,14 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                                     Xem bệnh án đã nộp
                                 </button>
                                 <Link
-                                    to="/caregiver/review"
+                                    to={`/caregiver/review?bookingId=${booking.id}`}
+                                    state={{
+                                        bookingId: booking.id,
+                                        family: booking.customerName || booking.patientName || "Gia đình khách hàng",
+                                        service: booking.serviceName || "Dịch vụ chăm sóc",
+                                        date: booking.date || booking.scheduledAt,
+                                        duration: booking.duration || "Theo ca",
+                                    }}
                                     className="flex-1 py-2.5 rounded-xl bg-[#00677c] hover:bg-[#005263] text-white font-bold text-xs transition-colors shadow-2xs text-center flex items-center justify-center gap-1.5"
                                 >
                                     <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
@@ -838,6 +845,13 @@ export default function CaregiverBookingRequests() {
                 onClose={() => setViewingRecordBooking(null)}
                 booking={viewingRecordBooking}
                 healthRecord={viewingRecordBooking?.healthRecord}
+                onEdit={(b, r) => {
+                    setReportingBooking({
+                        ...b,
+                        healthRecord: r,
+                        hasHealthRecord: true,
+                    });
+                }}
                 showHistoryLink={false}
             />
 

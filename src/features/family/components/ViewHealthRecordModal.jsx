@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import familyApi from "../../../api/familyApi";
 import {
     Activity,
     Heart,
@@ -15,6 +16,8 @@ import {
     UserRound,
     ShieldCheck,
     ArrowUpRight,
+    Loader2,
+    Edit3,
 } from "lucide-react";
 
 /**
@@ -23,15 +26,54 @@ import {
  * Modal hiển thị Bệnh án & Sinh hiệu lâm sàng sau ca chăm sóc.
  * Dùng chung cho cả Family (xem báo cáo của người thân), Caregiver (xem lại bệnh án đã nộp)
  * và Admin (đối soát lâm sàng trong chi tiết ca).
+ * 
+ * Tích hợp API 78: GET /api/v1/bookings/{id}/health-record
  */
 export default function ViewHealthRecordModal({
     isOpen,
     onClose,
     booking,
-    healthRecord,
+    healthRecord: propHealthRecord,
+    onEdit = null,
     showHistoryLink = true,
 }) {
-    if (!isOpen || !healthRecord) return null;
+    if (!isOpen || !booking) return null;
+
+    const [healthRecord, setHealthRecord] = useState(propHealthRecord || booking?.healthRecord || null);
+    const [isLoading, setIsLoading] = useState(!healthRecord && Boolean(booking?.id));
+    const [fetchError, setFetchError] = useState(null);
+
+    // ── 78. GET /api/v1/bookings/{id}/health-record ── Lấy bệnh án từ server
+    useEffect(() => {
+        if (isOpen && booking?.id) {
+            if (propHealthRecord) {
+                setHealthRecord(propHealthRecord);
+                setIsLoading(false);
+            } else {
+                setIsLoading(true);
+                setFetchError(null);
+                familyApi.getBookingHealthRecord(booking.id)
+                    .then((res) => {
+                        const data = res?.data?.data || res?.data;
+                        if (data) {
+                            setHealthRecord(data);
+                        }
+                    })
+                    .catch((err) => {
+                        console.warn("Lỗi tải bệnh án của booking từ server:", err);
+                        // Giữ fallback nếu ca đã có healthRecord nhúng sẵn
+                        if (booking?.healthRecord) {
+                            setHealthRecord(booking.healthRecord);
+                        } else {
+                            setFetchError("Chưa có hồ sơ sức khỏe lâm sàng được ghi nhận cho ca này.");
+                        }
+                    })
+                    .finally(() => {
+                        setIsLoading(false);
+                    });
+            }
+        }
+    }, [isOpen, booking, propHealthRecord]);
 
     const patientName = booking?.patient?.name || booking?.recipient || booking?.relative || "Người nhận chăm sóc";
     const patientCondition = booking?.patient?.condition || booking?.service || "Chăm sóc phục hồi";
@@ -47,7 +89,7 @@ export default function ViewHealthRecordModal({
         return { label: "Tăng huyết áp", color: "bg-rose-50 text-rose-700 border-rose-200" };
     };
 
-    const bpStatus = getBpStatus(healthRecord.bloodPressureSystolic, healthRecord.bloodPressureDiastolic);
+    const bpStatus = getBpStatus(healthRecord?.bloodPressureSystolic, healthRecord?.bloodPressureDiastolic);
 
     return createPortal(
         <div
@@ -89,17 +131,31 @@ export default function ViewHealthRecordModal({
 
                 {/* ── CONTENT ── */}
                 <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6">
-                    {/* Timestamp & Meta Banner */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-[#00677c]" />
-                            <span>Thời điểm ghi nhận: <strong className="text-slate-800">{recordTime}</strong></span>
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center p-12 text-slate-400 gap-3">
+                            <Loader2 className="w-8 h-8 animate-spin text-[#00677c]" />
+                            <p className="text-xs font-semibold">Đang tải hồ sơ bệnh án lâm sàng từ máy chủ...</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                            <span className="text-emerald-700 font-semibold">Đã kiểm chứng lâm sàng</span>
+                    ) : fetchError || !healthRecord ? (
+                        <div className="flex flex-col items-center justify-center p-12 text-slate-500 gap-3 text-center">
+                            <FileText className="w-10 h-10 text-slate-300" />
+                            <p className="text-xs font-medium text-slate-600 max-w-sm leading-relaxed">
+                                {fetchError || "Chưa có hồ sơ sức khỏe lâm sàng được ghi nhận cho ca này."}
+                            </p>
                         </div>
-                    </div>
+                    ) : (
+                        <>
+                            {/* Timestamp & Meta Banner */}
+                            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-[#00677c]" />
+                                    <span>Thời điểm ghi nhận: <strong className="text-slate-800">{recordTime}</strong></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                    <span className="text-emerald-700 font-semibold">Đã kiểm chứng lâm sàng</span>
+                                </div>
+                            </div>
 
                     {/* ── CARDS: SINH HIỆU LÂM SÀNG ── */}
                     <div>
@@ -227,6 +283,8 @@ export default function ViewHealthRecordModal({
                             {healthRecord.nurseNotes || "Chưa có ghi chú bổ sung."}
                         </div>
                     </div>
+                        </>
+                    )}
                 </div>
 
                 {/* ── FOOTER ── */}
@@ -244,13 +302,28 @@ export default function ViewHealthRecordModal({
                         <span className="text-xs text-slate-400">Lưu trữ an toàn trên CareLink</span>
                     )}
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 py-2 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    >
-                        Đã xem, đóng
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {onEdit && healthRecord && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onClose();
+                                    onEdit(booking, healthRecord);
+                                }}
+                                className="px-4 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] text-xs font-bold transition-all border border-teal-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                Chỉnh sửa bệnh án
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-5 py-2 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        >
+                            Đã xem, đóng
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>,

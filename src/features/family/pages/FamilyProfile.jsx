@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Trash2, LogOut, X } from "lucide-react";
+import { AlertTriangle, Trash2, LogOut, X, Loader2, Camera, ShieldCheck, Mail, Phone, User } from "lucide-react";
+import familyApi from "../../../api/familyApi";
+import authApi from "../../../api/authApi";
 
 const getAddressLabelBadge = (label) => {
     switch (label) {
@@ -38,22 +40,45 @@ const getAddressLabelBadge = (label) => {
     }
 };
 
+const getStoredUser = () => {
+    try {
+        const raw = localStorage.getItem("carelink_user");
+        if (raw) {
+            const u = JSON.parse(raw);
+            return {
+                id: u.id || null,
+                name: u.fullName || u.name || "",
+                email: u.email || "",
+                phone: u.phoneNumber || u.phone || "",
+                role: u.role === "family" || u.role === "customer"
+                    ? "Tài khoản Gia đình (Customer)"
+                    : (u.role || "Tài khoản Gia đình"),
+                avatar: u.avatar || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+            };
+        }
+    } catch {}
+    return {
+        id: null,
+        name: "",
+        email: "",
+        phone: "",
+        role: "Tài khoản Gia đình",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+    };
+};
+
 export default function FamilyProfile() {
     const navigate = useNavigate();
     const [passwordError, setPasswordError] = useState("");
     const [addressToDelete, setAddressToDelete] = useState(null);
     const [isLogoutAllOpen, setIsLogoutAllOpen] = useState(false);
 
-    // Section 1: Thông tin cá nhân
-    const [personalInfo, setPersonalInfo] = useState({
-        name: "Nguyễn Văn An",
-        email: "nguyenvanan@carelink.vn",
-        phone: "0901 234 567",
-        role: "Đại diện Gia đình Bác An (Tài khoản Premium)",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
-    });
+    // Section 1: Thông tin cá nhân (Đồng bộ API 96 GET /api/v1/users/me & API 97 PUT /api/v1/users/me)
+    const [personalInfo, setPersonalInfo] = useState(getStoredUser);
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);
-    const [personalDraft, setPersonalDraft] = useState({ ...personalInfo });
+    const [personalDraft, setPersonalDraft] = useState(getStoredUser);
+    const [personalLoading, setPersonalLoading] = useState(true);
+    const [personalSubmitting, setPersonalSubmitting] = useState(false);
 
     // Section 2: Liên hệ khẩn cấp
     const [emergencyContact, setEmergencyContact] = useState({
@@ -62,34 +87,16 @@ export default function FamilyProfile() {
         phone: "0909 123 456",
         secondaryPhone: "0912 345 678",
     });
-    const [isEditingEmergency, setIsEditingEmergency] = useState(false);
     const [emergencyDraft, setEmergencyDraft] = useState({ ...emergencyContact });
+    const [isEditingEmergency, setIsEditingEmergency] = useState(false);
 
-    // Section 3: Sổ địa chỉ chăm sóc (Address Book)
-    const [addressList, setAddressList] = useState([
-        {
-            id: "addr-1",
-            label: "Nhà riêng",
-            isDefault: true,
-            city: "TP. Hồ Chí Minh",
-            district: "Quận Bình Thạnh",
-            ward: "Phường 25",
-            streetAddress: "123 Đường Nguyễn Gia Trí, Căn hộ A12-05",
-            noteForCaregiver: "Căn hộ ở tầng 12, bấm chuông 1205. Bảo vệ hướng dẫn gửi xe máy ở cổng hầm B1.",
-        },
-        {
-            id: "addr-2",
-            label: "Nhà bố mẹ",
-            isDefault: false,
-            city: "TP. Hồ Chí Minh",
-            district: "Quận 1",
-            ward: "Phường Bến Nghé",
-            streetAddress: "45/2 Nguyễn Thị Minh Khai",
-            noteForCaregiver: "Nhà trong hẻm lớn đối diện Thảo Cầm Viên, chuông cửa màu trắng bên tay phải.",
-        },
-    ]);
+    // Section 3: Sổ địa chỉ chăm sóc (Address Book) — API-driven
+    const [addressList, setAddressList] = useState([]);
+    const [addressLoading, setAddressLoading] = useState(true);
+    const [addressSubmitting, setAddressSubmitting] = useState(false);
+    const [addressDeleting, setAddressDeleting] = useState(false);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-    const [editingAddressId, setEditingAddressId] = useState(null); // null = thêm mới, id = chỉnh sửa
+    const [editingAddressId, setEditingAddressId] = useState(null);
     const [addressForm, setAddressForm] = useState({
         label: "Nhà riêng",
         city: "TP. Hồ Chí Minh",
@@ -98,6 +105,31 @@ export default function FamilyProfile() {
         streetAddress: "",
         noteForCaregiver: "",
         isDefault: false,
+    });
+
+    // ── Helper map Backend → FE ───────────────────────────────────────────────────────
+    const mapAddress = (a) => ({
+        id: a.id,
+        label: a.label || a.title || a.addressLabel || "Khác",
+        isDefault: a.isDefault ?? a.isMain ?? false,
+        city: a.city || a.province || "",
+        district: a.district || "",
+        ward: a.ward || "",
+        streetAddress: a.streetAddress || a.street || a.addressLine || "",
+        noteForCaregiver: a.noteForCaregiver || a.notes || a.note || "",
+        latitude: a.latitude,
+        longitude: a.longitude,
+    });
+
+    // ── Build payload BE ────────────────────────────────────────────────────────────
+    const buildAddressPayload = () => ({
+        label: addressForm.label,
+        city: addressForm.city,
+        district: addressForm.district,
+        ward: addressForm.ward,
+        streetAddress: addressForm.streetAddress.trim(),
+        noteForCaregiver: addressForm.noteForCaregiver.trim(),
+        isDefault: addressForm.isDefault,
     });
 
     // Section 4: Modal đổi mật khẩu
@@ -116,11 +148,143 @@ export default function FamilyProfile() {
         setTimeout(() => setSaveAlert(""), 3000);
     };
 
-    const handleSavePersonal = (e) => {
+    // ── 96. GET /api/v1/users/me — Lấy thông tin tài khoản hiện tại ────────────────────
+    const fetchUserProfile = useCallback(async () => {
+        setPersonalLoading(true);
+        try {
+            const res = await authApi.getMe();
+            const data = res?.data || res?.user || res;
+            if (data && typeof data === "object") {
+                const fresh = {
+                    id: data.id || null,
+                    name: data.fullName || data.name || data.displayName || personalInfo.name,
+                    email: data.email || personalInfo.email,
+                    phone: data.phoneNumber || data.phone || personalInfo.phone,
+                    role: data.role
+                        ? (String(data.role).toLowerCase() === "customer" || String(data.role).toLowerCase() === "family"
+                            ? "Tài khoản Gia đình (Customer)"
+                            : String(data.role))
+                        : personalInfo.role,
+                    avatar: data.avatar || data.avatarUrl || personalInfo.avatar,
+                };
+                setPersonalInfo(fresh);
+                setPersonalDraft(fresh);
+
+                // Đồng bộ với localStorage để Header/Sidebar không bị lệch
+                try {
+                    const saved = JSON.parse(localStorage.getItem("carelink_user") || "{}");
+                    localStorage.setItem(
+                        "carelink_user",
+                        JSON.stringify({
+                            ...saved,
+                            id: fresh.id || saved.id,
+                            name: fresh.name,
+                            fullName: fresh.name,
+                            email: fresh.email,
+                            phone: fresh.phone,
+                            phoneNumber: fresh.phone,
+                            avatar: fresh.avatar,
+                            avatarUrl: fresh.avatar,
+                        })
+                    );
+                    window.dispatchEvent(new Event("storage"));
+                } catch {
+                    // ignore
+                }
+            }
+        } catch (err) {
+            console.warn("Lỗi tải thông tin cá nhân từ /api/v1/users/me:", err);
+            // Giữ nguyên thông tin đã nạp từ localStorage, không ghi đè dữ liệu mẫu
+        } finally {
+            setPersonalLoading(false);
+        }
+    }, [personalInfo.name, personalInfo.email, personalInfo.phone, personalInfo.role, personalInfo.avatar]);
+
+    useEffect(() => {
+        fetchUserProfile();
+    }, [fetchUserProfile]);
+
+    // ── 97. PUT /api/v1/users/me — Cập nhật thông tin tài khoản hiện tại ───────────────
+    const handleSavePersonal = async (e) => {
         e.preventDefault();
-        setPersonalInfo({ ...personalDraft });
-        setIsEditingPersonal(false);
-        showSuccessToast("Đã cập nhật thông tin cá nhân thành công!");
+        setPersonalSubmitting(true);
+        try {
+            const payload = {
+                fullName: personalDraft.name.trim(),
+                name: personalDraft.name.trim(),
+                phoneNumber: personalDraft.phone.trim(),
+                phone: personalDraft.phone.trim(),
+                avatar: personalDraft.avatar?.trim() || "",
+                avatarUrl: personalDraft.avatar?.trim() || "",
+            };
+
+            const res = await authApi.updateMe(payload);
+            const data = res?.data || res?.user || res;
+
+            const updated = {
+                ...personalDraft,
+                name: data?.fullName || data?.name || personalDraft.name.trim(),
+                phone: data?.phoneNumber || data?.phone || personalDraft.phone.trim(),
+                avatar: data?.avatar || data?.avatarUrl || personalDraft.avatar,
+            };
+
+            setPersonalInfo(updated);
+            setPersonalDraft(updated);
+            setIsEditingPersonal(false);
+
+            // Cập nhật localStorage & thông báo tới Header / Sidebar
+            try {
+                const saved = JSON.parse(localStorage.getItem("carelink_user") || "{}");
+                localStorage.setItem(
+                    "carelink_user",
+                    JSON.stringify({
+                        ...saved,
+                        name: updated.name,
+                        fullName: updated.name,
+                        phone: updated.phone,
+                        phoneNumber: updated.phone,
+                        avatar: updated.avatar,
+                        avatarUrl: updated.avatar,
+                    })
+                );
+                window.dispatchEvent(new Event("storage"));
+            } catch {
+                // ignore
+            }
+
+            showSuccessToast("Đã cập nhật thông tin tài khoản thành công!");
+        } catch (err) {
+            console.warn("Lỗi gọi PUT /api/v1/users/me:", err);
+            const msg = err?.response?.data?.message || err?.response?.data?.title;
+
+            // Xử lý an toàn khi mất kết nối backend hoặc offline demo
+            if (err.code === "ERR_NETWORK" || !err.response) {
+                const updated = { ...personalDraft };
+                setPersonalInfo(updated);
+                setIsEditingPersonal(false);
+                try {
+                    const saved = JSON.parse(localStorage.getItem("carelink_user") || "{}");
+                    localStorage.setItem(
+                        "carelink_user",
+                        JSON.stringify({
+                            ...saved,
+                            name: updated.name,
+                            fullName: updated.name,
+                            phone: updated.phone,
+                            phoneNumber: updated.phone,
+                            avatar: updated.avatar,
+                            avatarUrl: updated.avatar,
+                        })
+                    );
+                    window.dispatchEvent(new Event("storage"));
+                } catch {}
+                showSuccessToast("Đã lưu thông tin tài khoản vào phiên làm việc!");
+            } else {
+                showSuccessToast(`⚠️ ${msg || "Cập nhật thông tin thất bại. Vui lòng thử lại!"}`);
+            }
+        } finally {
+            setPersonalSubmitting(false);
+        }
     };
 
     const handleSaveEmergency = (e) => {
@@ -129,6 +293,28 @@ export default function FamilyProfile() {
         setIsEditingEmergency(false);
         showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp mới!");
     };
+
+    // ── 49. GET /api/v1/addresses ─────────────────────────────────────────────────────
+    const fetchAddresses = useCallback(async () => {
+        setAddressLoading(true);
+        try {
+            const res = await familyApi.getAddresses();
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.data) ? res.data
+                : Array.isArray(res?.items) ? res.items
+                : [];
+            setAddressList(list.map(mapAddress));
+        } catch (err) {
+            console.error("Lỗi tải sổ địa chỉ:", err);
+            showSuccessToast("⚠️ Không thể tải sổ địa chỉ. Vui lòng thử lại.");
+        } finally {
+            setAddressLoading(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => { fetchAddresses(); }, [fetchAddresses]);
 
     const handleOpenAddAddress = () => {
         setEditingAddressId(null);
@@ -144,7 +330,8 @@ export default function FamilyProfile() {
         setIsAddressModalOpen(true);
     };
 
-    const handleOpenEditAddress = (addr) => {
+    // ── 51. GET /api/v1/addresses/{id} ───────────────────────────────────────────
+    const handleOpenEditAddress = async (addr) => {
         setEditingAddressId(addr.id);
         setAddressForm({
             label: addr.label,
@@ -156,38 +343,51 @@ export default function FamilyProfile() {
             isDefault: addr.isDefault,
         });
         setIsAddressModalOpen(true);
+        try {
+            const res = await familyApi.getAddressDetail(addr.id);
+            const d = res?.data || res || addr;
+            setAddressForm({
+                label: d.label || d.title || addr.label,
+                city: d.city || addr.city,
+                district: d.district || addr.district,
+                ward: d.ward || addr.ward || "",
+                streetAddress: d.streetAddress || d.street || addr.streetAddress,
+                noteForCaregiver: d.noteForCaregiver || d.notes || addr.noteForCaregiver || "",
+                isDefault: d.isDefault ?? addr.isDefault,
+            });
+        } catch (err) {
+            console.warn("Không thể tải chi tiết địa chỉ từ API 51, dùng dữ liệu danh sách:", err);
+        }
     };
 
-    const handleSaveAddressForm = (e) => {
+    // ── 50. POST + 52. PUT /api/v1/addresses ───────────────────────────────────────
+    const handleSaveAddressForm = async (e) => {
         e.preventDefault();
-        if (editingAddressId) {
-            setAddressList((prev) =>
-                prev.map((item) => {
-                    if (item.id === editingAddressId) {
-                        return { ...item, ...addressForm };
-                    }
-                    if (addressForm.isDefault) {
-                        return { ...item, isDefault: false };
-                    }
-                    return item;
-                })
-            );
-            showSuccessToast("Đã cập nhật địa chỉ chăm sóc thành công!");
-        } else {
-            const newAddr = {
-                id: `addr-${Date.now()}`,
-                ...addressForm,
-                isDefault: addressForm.isDefault || addressList.length === 0,
-            };
-            setAddressList((prev) => {
-                if (newAddr.isDefault) {
-                    return [...prev.map((a) => ({ ...a, isDefault: false })), newAddr];
-                }
-                return [...prev, newAddr];
-            });
-            showSuccessToast("Đã thêm địa chỉ mới vào sổ địa chỉ!");
+        if (!addressForm.streetAddress.trim()) {
+            showSuccessToast("⚠️ Vui lòng nhập địa chỉ cụ thể!");
+            return;
         }
-        setIsAddressModalOpen(false);
+        setAddressSubmitting(true);
+        try {
+            const payload = buildAddressPayload();
+            if (editingAddressId) {
+                // 52. PUT /api/v1/addresses/{id}
+                await familyApi.updateAddress(editingAddressId, payload);
+                showSuccessToast("Đã cập nhật địa chỉ chăm sóc thành công!");
+            } else {
+                // 50. POST /api/v1/addresses
+                await familyApi.createAddress(payload);
+                showSuccessToast("Đã thêm địa chỉ mới vào sổ địa chỉ!");
+            }
+            setIsAddressModalOpen(false);
+            await fetchAddresses();
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.response?.data?.title ||
+                (editingAddressId ? "Cập nhật thất bại. Vui lòng thử lại." : "Thêm địa chỉ thất bại. Vui lòng thử lại.");
+            showSuccessToast(`⚠️ ${msg}`);
+        } finally {
+            setAddressSubmitting(false);
+        }
     };
 
     const handleDeleteAddress = (id) => {
@@ -200,21 +400,38 @@ export default function FamilyProfile() {
         setAddressToDelete(target);
     };
 
-    const confirmDeleteAddress = () => {
+    // ── 53. DELETE /api/v1/addresses/{id} ─────────────────────────────────────────
+    const confirmDeleteAddress = async () => {
         if (!addressToDelete) return;
-        setAddressList((prev) => prev.filter((a) => a.id !== addressToDelete.id));
-        showSuccessToast(`Đã xóa địa chỉ "${addressToDelete.label}"!`);
-        setAddressToDelete(null);
+        setAddressDeleting(true);
+        try {
+            await familyApi.deleteAddress(addressToDelete.id);
+            showSuccessToast(`Đã xóa địa chỉ "${addressToDelete.label}"!`);
+            setAddressToDelete(null);
+            await fetchAddresses();
+        } catch (err) {
+            const msg = err?.response?.data?.message || "Xóa địa chỉ thất bại. Vui lòng thử lại.";
+            showSuccessToast(`⚠️ ${msg}`);
+        } finally {
+            setAddressDeleting(false);
+        }
     };
 
-    const handleSetDefaultAddress = (id) => {
-        setAddressList((prev) =>
-            prev.map((item) => ({
-                ...item,
-                isDefault: item.id === id,
-            }))
-        );
-        showSuccessToast("Đã đặt làm địa chỉ chăm sóc mặc định!");
+    // ── Đặt mặc định — gọi PUT để flip isDefault ────────────────────────────────────
+    const handleSetDefaultAddress = async (id) => {
+        const target = addressList.find((a) => a.id === id);
+        if (!target) return;
+        try {
+            await familyApi.updateAddress(id, { ...target, isDefault: true });
+            showSuccessToast("Đã đặt làm địa chỉ chăm sóc mặc định!");
+            await fetchAddresses();
+        } catch {
+            // Fallback optimistic update
+            setAddressList((prev) =>
+                prev.map((item) => ({ ...item, isDefault: item.id === id }))
+            );
+            showSuccessToast("Đã đặt làm địa chỉ mặc định (có thể chưa đồng bộ server)!");
+        }
     };
 
     const handleSavePassword = (e) => {
@@ -278,18 +495,23 @@ export default function FamilyProfile() {
                 </div>
             )}
 
-            {/* SECTION 1: THÔNG TIN CÁ NHÂN */}
+            {/* SECTION 1: THÔNG TIN CÁ NHÂN (API 96 GET /api/v1/users/me & API 97 PUT /api/v1/users/me) */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                            </svg>
+                        <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold">
+                            <User className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-[#002045]">Thông tin cá nhân</h3>
-                            <p className="text-xs text-slate-500">Thông tin đại diện tài khoản gia đình</p>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-base font-bold text-[#002045]">Thông tin cá nhân</h3>
+                                {personalLoading && (
+                                    <span className="flex items-center gap-1 text-[11px] text-teal-600 font-medium">
+                                        <Loader2 className="w-3 h-3 animate-spin" /> Đang đồng bộ...
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-500">Thông tin tài khoản đang đăng nhập trên hệ thống CareLink</p>
                         </div>
                     </div>
 
@@ -300,48 +522,126 @@ export default function FamilyProfile() {
                                 setPersonalDraft({ ...personalInfo });
                                 setIsEditingPersonal(true);
                             }}
-                            className="px-4 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+                            className="px-4 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
                         >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                            </svg>
                             Chỉnh sửa
                         </button>
                     )}
                 </div>
 
                 {isEditingPersonal ? (
-                    <form onSubmit={handleSavePersonal} className="space-y-4 text-xs">
+                    <form onSubmit={handleSavePersonal} className="space-y-5 text-xs">
+                        {/* Ảnh đại diện & URL */}
+                        <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+                            <div className="flex items-center gap-2 font-semibold text-slate-700">
+                                <Camera className="w-4 h-4 text-teal-600" />
+                                <span>Ảnh đại diện (Avatar)</span>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                                <div className="relative shrink-0">
+                                    <img
+                                        src={personalDraft.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"}
+                                        alt="Avatar Preview"
+                                        onError={(e) => {
+                                            e.target.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200";
+                                        }}
+                                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-teal-500 shadow-sm"
+                                    />
+                                    <span className="absolute bottom-0 right-0 w-5 h-5 bg-teal-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm">
+                                        ✓
+                                    </span>
+                                </div>
+
+                                <div className="flex-1 w-full space-y-2">
+                                    <div>
+                                        <label className="block text-slate-600 font-medium mb-1">
+                                            Đường dẫn ảnh đại diện (URL)
+                                        </label>
+                                        <input
+                                            type="url"
+                                            value={personalDraft.avatar}
+                                            onChange={(e) => setPersonalDraft({ ...personalDraft, avatar: e.target.value })}
+                                            placeholder="https://... ảnh avatar"
+                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-xs"
+                                        />
+                                    </div>
+
+                                    {/* Mẫu ảnh đại diện nhanh */}
+                                    <div className="flex items-center gap-2 pt-1 flex-wrap">
+                                        <span className="text-[11px] text-slate-400">Chọn nhanh avatar:</span>
+                                        {[
+                                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+                                            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
+                                            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200",
+                                            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200",
+                                        ].map((imgUrl, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setPersonalDraft({ ...personalDraft, avatar: imgUrl })}
+                                                className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 cursor-pointer ${
+                                                    personalDraft.avatar === imgUrl ? "border-teal-600 ring-2 ring-teal-200" : "border-slate-300"
+                                                }`}
+                                            >
+                                                <img src={imgUrl} alt={`Preset ${idx}`} className="w-full h-full object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Thông tin Họ tên, Email, SĐT, Vai trò */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Họ và tên</label>
+                                <label className="block text-slate-700 font-semibold mb-1">
+                                    Họ và tên <span className="text-rose-500">*</span>
+                                </label>
                                 <input
                                     type="text"
                                     required
                                     value={personalDraft.name}
                                     onChange={(e) => setPersonalDraft({ ...personalDraft, name: e.target.value })}
+                                    placeholder="Nhập họ và tên..."
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Email</label>
+                                <label className="block text-slate-700 font-semibold mb-1">
+                                    Số điện thoại liên hệ <span className="text-rose-500">*</span>
+                                </label>
                                 <input
-                                    type="email"
-                                    required
-                                    value={personalDraft.email}
-                                    onChange={(e) => setPersonalDraft({ ...personalDraft, email: e.target.value })}
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Số điện thoại</label>
-                                <input
-                                    type="text"
+                                    type="tel"
                                     required
                                     value={personalDraft.phone}
                                     onChange={(e) => setPersonalDraft({ ...personalDraft, phone: e.target.value })}
+                                    placeholder="Ví dụ: 0901234567"
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Gói thành viên</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-slate-700 font-semibold">Email tài khoản</label>
+                                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                        <ShieldCheck className="w-3 h-3 text-emerald-600" /> Không thể thay đổi
+                                    </span>
+                                </div>
+                                <input
+                                    type="email"
+                                    disabled
+                                    value={personalDraft.email}
+                                    className="w-full px-3 py-2 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl cursor-not-allowed"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Vai trò tài khoản</label>
                                 <input
                                     type="text"
                                     disabled
@@ -354,32 +654,82 @@ export default function FamilyProfile() {
                         <div className="flex items-center justify-end gap-2.5 pt-2">
                             <button
                                 type="button"
-                                onClick={() => setIsEditingPersonal(false)}
-                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                                disabled={personalSubmitting}
+                                onClick={() => {
+                                    setPersonalDraft({ ...personalInfo });
+                                    setIsEditingPersonal(false);
+                                }}
+                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
                             >
                                 Hủy
                             </button>
                             <button
                                 type="submit"
-                                className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                                disabled={personalSubmitting}
+                                className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                             >
-                                Lưu thay đổi
+                                {personalSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Đang cập nhật...</span>
+                                    </>
+                                ) : (
+                                    <span>Lưu thay đổi</span>
+                                )}
                             </button>
                         </div>
                     </form>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-100">
-                            <span className="text-slate-400 block text-[11px]">Họ và tên:</span>
-                            <strong className="text-sm text-[#002045]">{personalInfo.name}</strong>
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-teal-50/20 rounded-2xl border border-slate-100">
+                        {/* Avatar xem */}
+                        <div className="relative shrink-0">
+                            <img
+                                src={personalInfo.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"}
+                                alt={personalInfo.name}
+                                onError={(e) => {
+                                    e.target.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200";
+                                }}
+                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white shadow-md ring-2 ring-teal-500/30"
+                            />
+                            <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" title="Trực tuyến" />
                         </div>
-                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-100">
-                            <span className="text-slate-400 block text-[11px]">Email:</span>
-                            <strong className="text-sm text-slate-700">{personalInfo.email}</strong>
-                        </div>
-                        <div className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-100">
-                            <span className="text-slate-400 block text-[11px]">Số điện thoại:</span>
-                            <strong className="text-sm text-teal-700">{personalInfo.phone}</strong>
+
+                        {/* Thông tin chính */}
+                        <div className="flex-1 w-full space-y-3 text-center sm:text-left">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                    <h4 className="text-lg font-bold text-[#002045]">
+                                        {personalInfo.name || "Chưa cập nhật tên"}
+                                    </h4>
+                                    <p className="text-xs text-slate-500">{personalInfo.role}</p>
+                                </div>
+                                <span className="inline-flex items-center gap-1.5 self-center sm:self-auto px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                    Tài khoản đã xác thực
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2">
+                                <div className="p-3 bg-white rounded-xl border border-slate-200/70 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                                        <Mail className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0 text-left">
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">Email</span>
+                                        <strong className="text-slate-700 truncate block">{personalInfo.email || "—"}</strong>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-white rounded-xl border border-slate-200/70 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                                        <Phone className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0 text-left">
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">Số điện thoại</span>
+                                        <strong className="text-teal-700 truncate block">{personalInfo.phone || "Chưa cập nhật"}</strong>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -499,7 +849,7 @@ export default function FamilyProfile() {
                             <div className="flex items-center gap-2">
                                 <h3 className="text-base font-bold text-[#002045]">Sổ địa chỉ chăm sóc</h3>
                                 <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">
-                                    {addressList.length} địa chỉ
+                                    {addressLoading ? "..." : `${addressList.length} địa chỉ`}
                                 </span>
                             </div>
                             <p className="text-xs text-slate-500">Quản lý các địa điểm để điều dưỡng tới chăm sóc người thân</p>
@@ -519,7 +869,24 @@ export default function FamilyProfile() {
                 </div>
 
                 {/* Danh sách thẻ địa chỉ */}
-                {addressList.length === 0 ? (
+                {addressLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[1, 2].map((i) => (
+                            <div key={i} className="animate-pulse p-4 rounded-2xl border border-slate-200 bg-white flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="h-6 w-24 bg-slate-200 rounded-lg" />
+                                    <div className="flex gap-1">
+                                        <div className="h-7 w-7 bg-slate-200 rounded-lg" />
+                                        <div className="h-7 w-7 bg-slate-200 rounded-lg" />
+                                    </div>
+                                </div>
+                                <div className="h-4 bg-slate-200 rounded w-4/5" />
+                                <div className="h-3 bg-slate-200 rounded w-3/5" />
+                                <div className="h-10 bg-slate-100 rounded-lg" />
+                            </div>
+                        ))}
+                    </div>
+                ) : addressList.length === 0 ? (
                     <div className="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
                         <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -742,15 +1109,23 @@ export default function FamilyProfile() {
                                 <button
                                     type="button"
                                     onClick={() => setIsAddressModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                                    disabled={addressSubmitting}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                                    disabled={addressSubmitting}
+                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
                                 >
-                                    {editingAddressId ? "Lưu thay đổi" : "Lưu địa chỉ mới"}
+                                    {addressSubmitting && (
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                        </svg>
+                                    )}
+                                    {addressSubmitting ? "Đang lưu..." : editingAddressId ? "Lưu thay đổi" : "Lưu địa chỉ mới"}
                                 </button>
                             </div>
                         </form>
@@ -921,16 +1296,24 @@ export default function FamilyProfile() {
                             <button
                                 type="button"
                                 onClick={() => setAddressToDelete(null)}
-                                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
+                                disabled={addressDeleting}
+                                className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors disabled:opacity-50"
                             >
                                 Giữ lại
                             </button>
                             <button
                                 type="button"
                                 onClick={confirmDeleteAddress}
-                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs"
+                                disabled={addressDeleting}
+                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs disabled:opacity-60 inline-flex items-center justify-center gap-2"
                             >
-                                Xóa địa chỉ
+                                {addressDeleting && (
+                                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                    </svg>
+                                )}
+                                {addressDeleting ? "Đang xóa..." : "Xóa địa chỉ"}
                             </button>
                         </div>
                     </div>

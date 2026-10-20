@@ -84,6 +84,29 @@ export default function CaregiverLayout() {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+    // Thông tin người dùng hiện tại từ localStorage
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            const raw = localStorage.getItem("carelink_user");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    useEffect(() => {
+        const handleSync = () => {
+            try {
+                const raw = localStorage.getItem("carelink_user");
+                setCurrentUser(raw ? JSON.parse(raw) : null);
+            } catch {
+                setCurrentUser(null);
+            }
+        };
+        window.addEventListener("storage", handleSync);
+        return () => window.removeEventListener("storage", handleSync);
+    }, []);
+
     // Lưu trạng thái thu gọn vào localStorage để khi chuyển route (Dashboard, Đánh giá...) vẫn giữ nguyên
     const [isCollapsed, setIsCollapsed] = useState(() => {
         try {
@@ -168,12 +191,24 @@ export default function CaregiverLayout() {
                         className="flex items-center gap-2.5 cursor-pointer group p-1 rounded-xl hover:bg-slate-100 transition-colors"
                         title="Tài khoản Điều dưỡng"
                     >
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
-                            N
-                        </div>
+                        {currentUser?.avatar || currentUser?.avatarUrl ? (
+                            <img
+                                src={currentUser.avatar || currentUser.avatarUrl}
+                                alt={currentUser.name || "Caregiver"}
+                                className="w-9 h-9 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
+                            />
+                        ) : (
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
+                                {(currentUser?.name || currentUser?.fullName || "N").charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <div className="hidden sm:flex flex-col text-left">
-                            <span className="text-sm font-semibold text-[#102030] leading-tight">Nguyên</span>
-                            <span className="text-xs text-slate-400 leading-tight">Caregiver</span>
+                            <span className="text-sm font-semibold text-[#102030] leading-tight">
+                                {currentUser?.name || currentUser?.fullName || "Điều dưỡng"}
+                            </span>
+                            <span className="text-xs text-slate-400 leading-tight">
+                                {currentUser?.role || "Caregiver"}
+                            </span>
                         </div>
                     </button>
 
@@ -195,10 +230,14 @@ export default function CaregiverLayout() {
                             <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
                             <div className="absolute right-0 top-12 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl py-2 z-50">
                                 <div className="px-3.5 py-2 border-b border-slate-100">
-                                    <p className="text-xs font-bold text-slate-800">Nguyên</p>
-                                    <p className="text-[11px] text-slate-400 truncate">caregiver@carelink.vn</p>
+                                    <p className="text-xs font-bold text-slate-800">
+                                        {currentUser?.name || currentUser?.fullName || "Điều dưỡng CareLink"}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 truncate">
+                                        {currentUser?.email || "caregiver@carelink.vn"}
+                                    </p>
                                     <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-[10px]">
-                                        Vai trò: Caregiver
+                                        Vai trò: {currentUser?.role || "Caregiver"}
                                     </span>
                                 </div>
                                 <div className="py-1">

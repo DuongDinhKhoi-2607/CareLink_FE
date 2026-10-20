@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import adminApi from "../../../api/adminApi";
 import {
     CircleDollarSign,
     ArrowUpRight,
@@ -274,6 +275,8 @@ export default function AdminFinance() {
     const [searchQuery, setSearchQuery] = useState("");
     const [transactions] = useState(initialTransactions);
     const [withdrawals, setWithdrawals] = useState(initialWithdrawals);
+    const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
+    const [actionLoadingId, setActionLoadingId] = useState(null);
     const [rejectTarget, setRejectTarget] = useState(null);
     const [toast, setToast] = useState(null);
 
@@ -281,6 +284,50 @@ export default function AdminFinance() {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 4000);
     };
+
+    // ── 64. GET /api/v1/admin/payouts (Admin xem danh sách yêu cầu rút tiền) ─────────
+    const fetchPayouts = useCallback(async () => {
+        setLoadingWithdrawals(true);
+        try {
+            const res = await adminApi.getPayouts();
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.data)
+                ? res.data
+                : Array.isArray(res?.items)
+                ? res.items
+                : [];
+            if (list.length > 0) {
+                setWithdrawals(
+                    list.map((w) => {
+                        const s = (w.status || "").toString().toLowerCase();
+                        const isApproved = s === "approved" || s === "1" || w.status === 1;
+                        const isRejected = s === "rejected" || s === "2" || w.status === 2;
+                        const statusText = isApproved ? "Đã duyệt" : isRejected ? "Từ chối" : "Chờ duyệt";
+                        return {
+                            id: w.id || `WD-${w.code || "N/A"}`,
+                            caregiver: w.nurseName || w.caregiverName || w.user?.fullName || w.caregiver || "Điều dưỡng",
+                            caregiverPhone: w.nursePhone || w.caregiverPhone || w.user?.phoneNumber || "—",
+                            amount: Number(w.amount || 0),
+                            bank: w.bankName || w.bank || "Ngân hàng",
+                            accountNumber: w.accountNumber || "—",
+                            requestDate: w.createdAt ? new Date(w.createdAt).toLocaleDateString("vi-VN") : w.requestDate || "Hôm nay",
+                            status: statusText,
+                            note: w.rejectReason || w.note || "",
+                        };
+                    })
+                );
+            }
+        } catch (err) {
+            console.warn("Lỗi tải danh sách yêu cầu rút tiền của Admin:", err);
+        } finally {
+            setLoadingWithdrawals(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPayouts();
+    }, [fetchPayouts]);
 
     // KPI
     const totalRevenue = transactions
@@ -327,19 +374,37 @@ export default function AdminFinance() {
         );
     });
 
-    const handleApprove = (id) => {
-        setWithdrawals((prev) =>
-            prev.map((w) => (w.id === id ? { ...w, status: "Đã duyệt" } : w))
-        );
-        showToast(`Đã duyệt chi trả thành công! Lệnh chuyển tiền đang được xử lý.`, "success");
+    // ── 65. PUT /api/v1/admin/payouts/{id}/approve (Admin duyệt yêu cầu rút tiền) ────
+    const handleApprove = async (id) => {
+        setActionLoadingId(id);
+        try {
+            await adminApi.approvePayout(id, { note: "Đã duyệt chi giải ngân" });
+            showToast(`✓ Đã duyệt chi trả thành công cho yêu cầu ${id}! Lệnh chuyển tiền đang được xử lý.`, "success");
+            await fetchPayouts();
+        } catch (err) {
+            console.error("Lỗi duyệt yêu cầu rút tiền:", err);
+            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể duyệt yêu cầu rút tiền. Vui lòng thử lại!";
+            showToast(`⚠️ ${msg}`, "error");
+        } finally {
+            setActionLoadingId(null);
+        }
     };
 
-    const handleReject = (id, reason) => {
-        setWithdrawals((prev) =>
-            prev.map((w) => (w.id === id ? { ...w, status: "Từ chối", note: reason } : w))
-        );
-        setRejectTarget(null);
-        showToast(`Đã từ chối yêu cầu rút tiền ${id}. Thông báo đã được gửi đến điều dưỡng.`, "error");
+    // ── 66. PUT /api/v1/admin/payouts/{id}/reject (Admin từ chối yêu cầu rút tiền) ───
+    const handleReject = async (id, reason) => {
+        setActionLoadingId(id);
+        try {
+            await adminApi.rejectPayout(id, { reason, note: reason });
+            showToast(`Đã từ chối yêu cầu rút tiền ${id}. Thông báo đã được gửi đến điều dưỡng.`, "error");
+            setRejectTarget(null);
+            await fetchPayouts();
+        } catch (err) {
+            console.error("Lỗi từ chối yêu cầu rút tiền:", err);
+            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể từ chối yêu cầu. Vui lòng thử lại!";
+            showToast(`⚠️ ${msg}`, "error");
+        } finally {
+            setActionLoadingId(null);
+        }
     };
 
     return (
@@ -637,15 +702,21 @@ export default function AdminFinance() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleApprove(w.id)}
-                                                                className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                                                disabled={actionLoadingId === w.id}
+                                                                className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs disabled:opacity-50"
                                                             >
-                                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                {actionLoadingId === w.id ? (
+                                                                    <span className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                                                                ) : (
+                                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                )}
                                                                 Duyệt chi
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setRejectTarget(w)}
-                                                                className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                                                disabled={actionLoadingId === w.id}
+                                                                className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs disabled:opacity-50"
                                                             >
                                                                 <XCircle className="w-3.5 h-3.5" />
                                                                 Từ chối

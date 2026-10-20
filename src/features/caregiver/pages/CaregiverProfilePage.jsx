@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import caregiverApi from "../../../api/caregiverApi";
 
 export default function CaregiverProfilePage() {
     // ── STATE HỒ SƠ ĐIỀU DƯỠNG (KHỚP DTO BACKEND: NurseProfileResponse & UpdateNurseProfileRequest) ──
@@ -34,18 +35,95 @@ export default function CaregiverProfilePage() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [draft, setDraft] = useState({ ...profile });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
 
     const showToast = (msg) => {
         setToastMessage(msg);
-        setTimeout(() => setToastMessage(null), 3000);
+        setTimeout(() => setToastMessage(null), 3500);
     };
 
-    const handleSave = (e) => {
+    // ── 54. GET /api/v1/nurse/profile ──
+    const fetchProfile = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await caregiverApi.getProfile();
+            const data = res?.data || res;
+            if (data && typeof data === "object") {
+                setProfile((prev) => {
+                    const merged = {
+                        ...prev,
+                        fullName: data.fullName || data.name || prev.fullName,
+                        title: data.title || data.degree || data.qualification || prev.title,
+                        email: data.email || prev.email,
+                        phone: data.phone || data.phoneNumber || prev.phone,
+                        avatar: data.avatar || data.avatarUrl || prev.avatar,
+                        rating: Number(data.rating ?? data.averageRating ?? prev.rating),
+                        reviewsCount: Number(data.reviewsCount ?? data.totalReviews ?? prev.reviewsCount),
+                        completedBookings: Number(data.completedBookings ?? data.totalBookings ?? prev.completedBookings),
+                        experienceYears: Number(data.experienceYears ?? data.yearsOfExperience ?? prev.experienceYears),
+                        bio: data.bio || data.description || prev.bio,
+                        maxDistanceKm: Number(data.maxDistanceKm ?? data.serviceRadiusKm ?? prev.maxDistanceKm),
+                        serviceRadiusKm: Number(data.serviceRadiusKm ?? data.maxDistanceKm ?? prev.serviceRadiusKm),
+                        workDistrict: data.workDistrict || data.district || prev.workDistrict,
+                        baseAddress: data.baseAddress || data.address || prev.baseAddress,
+                        preferredDistricts: Array.isArray(data.preferredDistricts) && data.preferredDistricts.length > 0
+                            ? data.preferredDistricts
+                            : prev.preferredDistricts,
+                        skills: Array.isArray(data.skills) && data.skills.length > 0
+                            ? data.skills.map((s) => (typeof s === "string" ? s : s?.name || String(s)))
+                            : typeof data.skills === "string" && data.skills.trim()
+                            ? data.skills.split(",").map((s) => s.trim())
+                            : prev.skills,
+                        verificationStatus: data.verificationStatus || data.status || prev.verificationStatus,
+                        licenseNumber: data.licenseNumber || prev.licenseNumber,
+                        licenseExpiry: data.licenseExpiry || prev.licenseExpiry,
+                    };
+                    setDraft(merged);
+                    return merged;
+                });
+            }
+        } catch (err) {
+            console.warn("Lỗi tải hồ sơ điều dưỡng từ server, giữ thông tin dự phòng:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
+
+    // ── 55. PUT /api/v1/nurse/profile ──
+    const handleSave = async (e) => {
         e.preventDefault();
-        setProfile({ ...draft });
-        setIsEditing(false);
-        showToast("Đã cập nhật hồ sơ năng lực và cấu hình nhận việc thành công!");
+        setSaving(true);
+        try {
+            const payload = {
+                fullName: draft.fullName,
+                title: draft.title,
+                bio: draft.bio,
+                experienceYears: Number(draft.experienceYears),
+                serviceRadiusKm: Number(draft.serviceRadiusKm || draft.maxDistanceKm),
+                maxDistanceKm: Number(draft.maxDistanceKm || draft.serviceRadiusKm),
+                workDistrict: draft.workDistrict,
+                baseAddress: draft.baseAddress,
+                preferredDistricts: draft.preferredDistricts,
+                skills: draft.skills,
+            };
+            await caregiverApi.updateProfile(payload);
+            setProfile({ ...draft });
+            setIsEditing(false);
+            showToast("✓ Đã cập nhật hồ sơ năng lực và cấu hình nhận việc thành công!");
+            await fetchProfile();
+        } catch (err) {
+            console.error("Lỗi cập nhật hồ sơ điều dưỡng:", err);
+            const msg = err?.response?.data?.message || err?.response?.data?.title || "Cập nhật hồ sơ thất bại. Vui lòng kiểm tra lại!";
+            showToast(`⚠️ ${msg}`);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleCancel = () => {
@@ -467,15 +545,23 @@ export default function CaregiverProfilePage() {
                         <button
                             type="button"
                             onClick={handleCancel}
-                            className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                            disabled={saving}
+                            className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                         >
                             Hủy bỏ
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                            disabled={saving}
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white text-xs font-semibold shadow-md transition-all cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
                         >
-                            Lưu thay đổi hồ sơ
+                            {saving && (
+                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                </svg>
+                            )}
+                            {saving ? "Đang lưu thay đổi..." : "Lưu thay đổi hồ sơ"}
                         </button>
                     </div>
                 )}

@@ -1,185 +1,246 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { RelativeDetailModal, RelativeFormModal } from "../components/RelativeModals";
+import { RelativeDetailModal, RelativeFormModal, DeleteConfirmModal } from "../components/RelativeModals";
 import Toast from "../../../components/Toast";
+import familyApi from "../../../api/familyApi";
+
+// ── Helpers ánh xạ dữ liệu Backend → UI ─────────────────────────────────────
+const GENDER_MAP = { 0: "Nam", 1: "Nữ", Male: "Nam", Female: "Nữ" };
+const BLOOD_MAP = {
+    0: "A+", 1: "A-", 2: "B+", 3: "B-",
+    4: "AB+", 5: "AB-", 6: "O+", 7: "O-",
+    A_positive: "A+", A_negative: "A-",
+    B_positive: "B+", B_negative: "B-",
+    AB_positive: "AB+", AB_negative: "AB-",
+    O_positive: "O+", O_negative: "O-",
+};
+const GENDER_TO_API = { "Nam": "Male", "Nữ": "Female" };
+const BLOOD_TO_API = {
+    "A+": "A_positive", "A-": "A_negative",
+    "B+": "B_positive", "B-": "B_negative",
+    "AB+": "AB_positive", "AB-": "AB_negative",
+    "O+": "O_positive", "O-": "O_negative",
+};
+
+function mapRecipient(r) {
+    const dob = r.dateOfBirth || r.birthDate || "";
+    let age = "—";
+    if (dob) {
+        const birth = new Date(dob);
+        if (!isNaN(birth)) age = new Date().getFullYear() - birth.getFullYear();
+    }
+    const genderLabel = GENDER_MAP[r.gender] ?? r.gender ?? "—";
+    return {
+        id: r.id,
+        name: r.fullName || r.name || "Không rõ",
+        relation: r.relationship || r.relation || "Người thân",
+        relationBadge: r.relationship || r.relation || "Người thân",
+        age,
+        birthDate: dob ? new Date(dob).toLocaleDateString("vi-VN") : "—",
+        birthDateRaw: dob,
+        gender: genderLabel,
+        bloodType: BLOOD_MAP[r.bloodType] ?? r.bloodType ?? "—",
+        phone: r.phone || r.phoneNumber || "",
+        healthCondition: r.medicalCondition || r.healthCondition || "Chưa cập nhật",
+        preExistingConditions: r.preExistingConditions || "",
+        allergies: r.allergies || "",
+        medicationsSummary: r.currentMedications || r.medicationsSummary || "Chưa ghi nhận đơn thuốc",
+        medications: r.medications || [],
+        medicalNote: r.notes || r.medicalNote || "",
+        assignedCaregiver: r.assignedNurseName || r.assignedCaregiver || "Đang phân công",
+        lastVisit: r.lastVisitDate
+            ? new Date(r.lastVisitDate).toLocaleDateString("vi-VN")
+            : "Chưa có ca chăm sóc",
+        nextAppointment: r.nextAppointmentDate
+            ? new Date(r.nextAppointmentDate).toLocaleDateString("vi-VN")
+            : "Chưa có lịch hẹn",
+        image:
+            r.avatarUrl ||
+            (genderLabel === "Nam"
+                ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300"
+                : "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300"),
+        statusBadges: [
+            { label: r.currentStatus || "Đang theo dõi", type: "teal", icon: "dot" },
+            { label: r.medicalCondition ? "Có hồ sơ y tế" : "Chưa có hồ sơ y tế", type: "slate", icon: "card" },
+        ],
+    };
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function SkeletonCard() {
+    return (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs animate-pulse flex flex-col gap-4">
+            <div className="flex items-center gap-3.5">
+                <div className="w-14 h-14 rounded-full bg-slate-200 shrink-0" />
+                <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 rounded w-3/5" />
+                    <div className="h-3 bg-slate-200 rounded w-2/5" />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <div className="h-3 bg-slate-200 rounded w-full" />
+                <div className="h-3 bg-slate-200 rounded w-4/5" />
+            </div>
+            <div className="h-16 bg-slate-100 rounded-xl" />
+            <div className="flex gap-3 pt-2">
+                <div className="flex-1 h-9 bg-slate-200 rounded-xl" />
+                <div className="flex-1 h-9 bg-slate-200 rounded-xl" />
+            </div>
+        </div>
+    );
+}
+
+// ── Empty State ───────────────────────────────────────────────────────────────
+function EmptyState({ onAdd }) {
+    return (
+        <div className="col-span-2 flex flex-col items-center justify-center py-20 gap-4 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center">
+                <svg className="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+            </div>
+            <div>
+                <p className="font-bold text-slate-800 text-base">Chưa có hồ sơ người thân nào</p>
+                <p className="text-slate-500 text-sm mt-1 max-w-xs">Thêm người thân để CareLink hỗ trợ quản lý sức khỏe và đặt lịch chăm sóc tại nhà.</p>
+            </div>
+            <button
+                type="button"
+                onClick={onAdd}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#00677c] to-[#008ba3] text-white rounded-xl text-sm font-semibold shadow-sm hover:-translate-y-0.5 hover:shadow transition-all cursor-pointer"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Thêm người thân đầu tiên
+            </button>
+        </div>
+    );
+}
+
+const BLANK_FORM = {
+    name: "", relation: "Mẹ", birthDate: "",
+    gender: "Nữ", bloodType: "O+", phone: "",
+    healthCondition: "", medicationsSummary: "", medicalNote: "",
+};
 
 export default function Relatives() {
     const [toast, setToast] = useState(null);
-    // Danh sách người thân mock data chuẩn y như hình ảnh thực tế của CareLink
-    const [relatives, setRelatives] = useState([
-        {
-            id: "rel-1",
-            name: "Bà Nguyễn Thị Lan",
-            relation: "Mẹ",
-            relationBadge: "Mẹ",
-            age: 75,
-            birthDate: "15/04/1951",
-            gender: "Nữ",
-            bloodType: "O+",
-            phone: "0908 123 456",
-            statusBadges: [
-                { label: "Đang được chăm sóc", type: "teal", icon: "dot" },
-                { label: "Đang theo dõi huyết áp", type: "slate", icon: "card" },
-            ],
-            healthCondition: "Cao huyết áp độ 2, suy giảm vận động nhẹ khớp gối.",
-            preExistingConditions: "Tăng huyết áp vô căn (10 năm), thoái hóa khớp gối",
-            allergies: "Dị ứng Penicillin, mẫn cảm với hải sản tôm cua",
-            medicationsSummary: "2 loại (Amlodipine 5mg, Glucosamine).",
-            medications: [
-                { name: "Amlodipine 5mg", dosage: "1 viên/ngày (08:00 sáng)" },
-                { name: "Glucosamine", dosage: "2 viên/ngày (Sau bữa ăn)" },
-            ],
-            assignedCaregiver: "Điều dưỡng Nguyễn Thùy Linh",
-            lastVisit: "Hôm qua, 16:30",
-            nextAppointment: "Thứ Bảy, 20/09 (08:00)",
-            medicalNote: "Hạn chế ăn mặn, cần hỗ trợ tập co duỗi khớp gối 20 phút mỗi buổi sáng.",
-            // Khôi phục ảnh cũ của Mẹ
-            image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300",
-        },
-        {
-            id: "rel-2",
-            name: "Ông Nguyễn Văn Bình",
-            relation: "Bố",
-            relationBadge: "Bố",
-            age: 82,
-            birthDate: "20/11/1944",
-            gender: "Nam",
-            bloodType: "A+",
-            phone: "0903 456 789",
-            statusBadges: [
-                { label: "Tình trạng ổn định", type: "teal", icon: "dot" },
-                { label: "Phục hồi vận động", type: "slate", icon: "walk" },
-            ],
-            healthCondition: "Ổn định sau phục hồi chức năng vận động.",
-            preExistingConditions: "Tiểu đường tuýp 2 nhẹ, phục hồi sau phẫu thuật khớp gối",
-            allergies: "Không có dị ứng thuốc",
-            medicationsSummary: "1 loại (Thuốc bổ trợ tuần hoàn não).",
-            medications: [
-                { name: "Thuốc bổ trợ tuần hoàn não", dosage: "1 viên/ngày (Sau bữa ăn sáng)" },
-            ],
-            assignedCaregiver: "Điều dưỡng Trần Văn An",
-            lastVisit: "15/09/2026",
-            nextAppointment: "Chủ Nhật, 21/09 (14:30)",
-            medicalNote: "Thường xuyên quên uống nước, cân nhắc nhờ vận động đi dạo nhẹ trong nhà.",
-            // Khôi phục ảnh cũ của Bố
-            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300",
-        },
-    ]);
+    const [relatives, setRelatives] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
 
-    // Trạng thái modal Xem hồ sơ chi tiết
+
+
+    // Modal states
     const [selectedRelative, setSelectedRelative] = useState(null);
-
-    // Trạng thái modal Thêm / Sửa người thân
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingRelative, setEditingRelative] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const [formData, setFormData] = useState({ ...BLANK_FORM });
 
-    // Form state (phân định rõ: Thông tin cá nhân do gia đình sửa, Thông tin y tế chỉ xem/gửi yêu cầu)
-    const [formData, setFormData] = useState({
-        name: "",
-        relation: "Mẹ",
-        birthDate: "15/04/1951",
-        gender: "Nữ",
-        bloodType: "O+",
-        phone: "",
-        healthCondition: "",
-        medicationsSummary: "",
-        assignedCaregiver: "Điều dưỡng Nguyễn Thùy Linh",
-        medicalNote: "",
-    });
+    // ── 44. GET /api/v1/recipients ──────────────────────────────────────────
+    const fetchRecipients = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await familyApi.getRecipients();
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.data) ? res.data
+                : Array.isArray(res?.items) ? res.items
+                : [];
+            setRelatives(list.map(mapRecipient));
+        } catch (err) {
+            console.error("Lỗi tải danh sách người thân:", err);
+            setToast({ type: "error", message: "Không thể tải danh sách người thân. Vui lòng thử lại." });
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    // Mở modal Thêm mới
+    useEffect(() => { fetchRecipients(); }, [fetchRecipients]);
+
+    // ── Mở modal Thêm mới ─────────────────────────────────────────────────
     const handleOpenAddModal = () => {
         setEditingRelative(null);
-        setFormData({
-            name: "",
-            relation: "Mẹ",
-            birthDate: "01/01/1955",
-            gender: "Nữ",
-            bloodType: "O+",
-            phone: "",
-            healthCondition: "Huyết áp ổn định, vận động bình thường (Đang chờ điều dưỡng xác nhận)",
-            medicationsSummary: "Chưa có đơn thuốc chỉ định",
-            assignedCaregiver: "Điều dưỡng CareLink sẽ phân công",
-            medicalNote: "Theo dõi dinh dưỡng và nhắc uống đủ nước mỗi ngày",
-        });
+        setFormData({ ...BLANK_FORM });
         setIsFormOpen(true);
     };
 
-    // Mở modal Chỉnh sửa
+    // ── Mở modal Chỉnh sửa ────────────────────────────────────────────────
     const handleOpenEditModal = (rel) => {
         setEditingRelative(rel);
         setFormData({
-            name: rel.name,
-            relation: rel.relation,
-            birthDate: rel.birthDate || "15/04/1951",
-            gender: rel.gender,
-            bloodType: rel.bloodType,
+            name: rel.name || "",
+            relation: rel.relation || "Khác",
+            birthDate: rel.birthDateRaw || "",
+            gender: rel.gender || "Nữ",
+            bloodType: rel.bloodType || "O+",
             phone: rel.phone || "",
-            healthCondition: rel.healthCondition,
-            medicationsSummary: rel.medicationsSummary,
-            assignedCaregiver: rel.assignedCaregiver,
-            medicalNote: rel.medicalNote,
+            healthCondition: rel.healthCondition || "",
+            medicationsSummary: rel.medicationsSummary || "",
+            medicalNote: rel.medicalNote || "",
         });
         setIsFormOpen(true);
     };
 
-    // Lưu form Thêm / Sửa (chỉ lưu các thông tin mà vai trò Gia đình được phép quản lý)
-    const handleSaveForm = (e) => {
+    // ── Build payload gửi Backend ──────────────────────────────────────────
+    const buildPayload = () => ({
+        fullName: formData.name.trim(),
+        relationship: formData.relation,
+        dateOfBirth: formData.birthDate ? new Date(formData.birthDate).toISOString() : null,
+        gender: GENDER_TO_API[formData.gender] ?? formData.gender,
+        bloodType: BLOOD_TO_API[formData.bloodType] ?? formData.bloodType,
+        phone: formData.phone.trim(),
+        notes: formData.medicalNote.trim(),
+    });
+
+    // ── 45. POST + 47. PUT recipients ─────────────────────────────────────
+    const handleSaveForm = async (e) => {
         e.preventDefault();
         if (!formData.name.trim()) {
             setToast({ type: "warning", message: "Vui lòng nhập họ và tên người thân!" });
             return;
         }
-
-        if (editingRelative) {
-            setRelatives((prev) =>
-                prev.map((r) =>
-                    r.id === editingRelative.id
-                        ? {
-                              ...r,
-                              name: formData.name,
-                              relation: formData.relation,
-                              relationBadge: formData.relation,
-                              gender: formData.gender,
-                              bloodType: formData.bloodType,
-                              phone: formData.phone,
-                              birthDate: formData.birthDate,
-                              medicalNote: formData.medicalNote, // Dặn dò của gia đình
-                          }
-                        : r
-                )
-            );
-            setToast({ type: "success", message: "Đã cập nhật hồ sơ người thân thành công!" });
-        } else {
-            const newRel = {
-                id: `rel-${Date.now()}`,
-                name: formData.name,
-                relation: formData.relation,
-                relationBadge: formData.relation,
-                gender: formData.gender,
-                bloodType: formData.bloodType,
-                phone: formData.phone,
-                birthDate: formData.birthDate,
-                medicalNote: formData.medicalNote,
-                healthCondition: "Chờ điều dưỡng thăm khám & cập nhật",
-                medicationsSummary: "Chưa ghi nhận đơn thuốc",
-                age: 70,
-                statusBadges: [
-                    { label: "Mới tạo hồ sơ", type: "teal", icon: "dot" },
-                    { label: "Theo dõi định kỳ", type: "slate", icon: "card" },
-                ],
-                lastVisit: "Chưa có ca chăm sóc",
-                nextAppointment: "Chưa có lịch hẹn mới",
-                image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300",
-                medications: [],
-                assignedCaregiver: "Đang phân công",
-            };
-            setRelatives((prev) => [...prev, newRel]);
-            setToast({ type: "success", message: "Đã thêm người thân mới vào danh sách!" });
+        setSubmitting(true);
+        try {
+            const payload = buildPayload();
+            if (editingRelative) {
+                await familyApi.updateRecipient(editingRelative.id, payload);
+                setToast({ type: "success", message: "Đã cập nhật hồ sơ người thân thành công!" });
+            } else {
+                await familyApi.createRecipient(payload);
+                setToast({ type: "success", message: "Đã thêm người thân mới vào danh sách!" });
+            }
+            setIsFormOpen(false);
+            await fetchRecipients();
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.response?.data?.title ||
+                (editingRelative ? "Cập nhật thất bại. Vui lòng thử lại." : "Thêm người thân thất bại. Vui lòng thử lại.");
+            setToast({ type: "error", message: msg });
+        } finally {
+            setSubmitting(false);
         }
-
-        setIsFormOpen(false);
     };
+
+    // ── 48. DELETE /api/v1/recipients/{id} ────────────────────────────────
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        try {
+            await familyApi.deleteRecipient(deleteTarget.id);
+            setToast({ type: "success", message: `Đã xóa hồ sơ "${deleteTarget.name}" khỏi danh sách.` });
+            setDeleteTarget(null);
+            await fetchRecipients();
+        } catch (err) {
+            const msg = err?.response?.data?.message || "Xóa hồ sơ thất bại. Vui lòng thử lại.";
+            setToast({ type: "error", message: msg });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const nextAppt = relatives.find(r => r.nextAppointment && r.nextAppointment !== "Chưa có lịch hẹn");
 
     return (
         <div className="p-4 sm:p-8 flex flex-col gap-6 max-w-6xl mx-auto font-sans antialiased text-[#102030]">
@@ -221,7 +282,7 @@ export default function Relatives() {
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
                             <span className="text-2xl font-black text-slate-900 leading-none">
-                                {String(relatives.length).padStart(2, "0")}
+                                {loading ? "—" : String(relatives.length).padStart(2, "0")}
                             </span>
                             <span className="text-xs text-slate-500 font-medium">thành viên</span>
                         </div>
@@ -240,10 +301,9 @@ export default function Relatives() {
                             CA CHĂM SÓC KẾ TIẾP
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="text-lg sm:text-xl font-bold text-slate-900 leading-none">
-                                Thứ Bảy
+                            <span className="text-base font-bold text-slate-900 leading-none">
+                                {loading ? "—" : nextAppt ? nextAppt.nextAppointment : "Chưa có lịch"}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">20/09 - 08:00</span>
                         </div>
                     </div>
                 </div>
@@ -261,7 +321,7 @@ export default function Relatives() {
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
                             <span className="text-2xl font-black text-teal-600 leading-none">
-                                100%
+                                {loading ? "—" : relatives.length > 0 ? "100%" : "0%"}
                             </span>
                             <span className="text-xs text-slate-500 font-medium">cập nhật định kỳ</span>
                         </div>
@@ -269,10 +329,14 @@ export default function Relatives() {
                 </div>
             </div>
 
-            {/* 2 Cột Thẻ Người Thân (chuẩn y xì hình ảnh thứ 2 của user) */}
+            {/* Danh sách thẻ người thân */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {relatives.map((rel) => {
-                    return (
+                {loading ? (
+                    <><SkeletonCard /><SkeletonCard /></>
+                ) : relatives.length === 0 ? (
+                    <EmptyState onAdd={handleOpenAddModal} />
+                ) : (
+                relatives.map((rel) => (
                         <div
                             key={rel.id}
                             className="bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-5"
@@ -421,8 +485,21 @@ export default function Relatives() {
                                 </div>
                             </div>
 
-                            {/* 2 Nút bấm hành động (Chỉnh sửa - Xem hồ sơ chi tiết) */}
-                            <div className="pt-2 flex items-center gap-3">
+                            {/* Nút hành động */}
+                            <div className="pt-2 flex items-center gap-2.5">
+                                {/* Xóa */}
+                                <button
+                                    type="button"
+                                    onClick={() => setDeleteTarget({ id: rel.id, name: rel.name })}
+                                    className="py-2.5 px-3 bg-white border border-red-200 hover:bg-red-50 text-red-500 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
+                                    title="Xóa hồ sơ"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                </button>
+
+                                {/* Chỉnh sửa */}
                                 <button
                                     type="button"
                                     onClick={() => handleOpenEditModal(rel)}
@@ -434,6 +511,7 @@ export default function Relatives() {
                                     <span>Chỉnh sửa</span>
                                 </button>
 
+                                {/* Xem chi tiết */}
                                 <button
                                     type="button"
                                     onClick={() => setSelectedRelative(rel)}
@@ -442,27 +520,24 @@ export default function Relatives() {
                                     <svg className="w-4 h-4 text-cyan-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                                     </svg>
-                                    <span>Xem hồ sơ chi tiết</span>
+                                    <span>Xem hồ sơ</span>
                                 </button>
                             </div>
                         </div>
-                    );
-                })}
+                    ))
+                )}
             </div>
 
-            {/* Modal Chi tiết thông tin hồ sơ người thân ("Xem hồ sơ chi tiết") */}
+            {/* Modal Chi tiết */}
             {selectedRelative && (
                 <RelativeDetailModal
                     selectedRelative={selectedRelative}
                     onClose={() => setSelectedRelative(null)}
-                    onEdit={(toEdit) => {
-                        setSelectedRelative(null);
-                        handleOpenEditModal(toEdit);
-                    }}
+                    onEdit={(toEdit) => { setSelectedRelative(null); handleOpenEditModal(toEdit); }}
                 />
             )}
 
-            {/* Modal Chỉnh sửa thông tin người thân (Chuẩn vai trò Gia Đình / Khách hàng) */}
+            {/* Modal Thêm / Sửa */}
             {isFormOpen && (
                 <RelativeFormModal
                     isOpen={isFormOpen}
@@ -471,10 +546,21 @@ export default function Relatives() {
                     setFormData={setFormData}
                     onClose={() => setIsFormOpen(false)}
                     onSave={handleSaveForm}
+                    submitting={submitting}
                 />
             )}
 
-            {/* Toast Thông báo */}
+            {/* Modal Xác nhận xóa */}
+            {deleteTarget && (
+                <DeleteConfirmModal
+                    name={deleteTarget.name}
+                    deleting={deleting}
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={() => setDeleteTarget(null)}
+                />
+            )}
+
+            {/* Toast */}
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
     );

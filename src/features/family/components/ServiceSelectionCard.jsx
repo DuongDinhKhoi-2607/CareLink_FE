@@ -11,6 +11,7 @@ export default function ServiceSelectionCard({
     features = [],
     isSelected,
     onClick,
+    onViewDetail,
 }) {
     const isSpecial = badgeType === "special";
 
@@ -130,7 +131,19 @@ export default function ServiceSelectionCard({
                     )}
                 </div>
 
-                <div className="shrink-0">
+                <div className="shrink-0 flex items-center gap-2">
+                    {onViewDetail && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onViewDetail();
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                        >
+                            <span>Xem chi tiết</span>
+                        </button>
+                    )}
                     <span
                         className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
                             isSelected

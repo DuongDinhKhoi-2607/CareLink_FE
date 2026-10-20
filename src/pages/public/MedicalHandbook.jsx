@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { categories, articles, faqs } from "../../data/handbookData";
+import React, { useState, useMemo, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { categories, articles as initialArticles, faqs } from "../../data/handbookData";
+import handbookApi from "../../api/handbookApi";
 
 // ─── Icon map cho danh mục (giữ SVG ở component, data thuần ở file riêng) ───
 const categoryIcons = {
@@ -100,25 +101,72 @@ const ReviewedBadge = ({ variant = "default" }) => {
 };
 
 export default function MedicalHandbook() {
+    const navigate = useNavigate();
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [activeArticleModal, setActiveArticleModal] = useState(null);
     const [openFaqIndex, setOpenFaqIndex] = useState(0);
     const [showDisclaimer, setShowDisclaimer] = useState(true);
 
+    const [articlesList, setArticlesList] = useState(initialArticles);
+    const [loading, setLoading] = useState(true);
+
+    // API 87: GET /api/v1/handbook - Lấy danh sách bài viết được công khai
+    useEffect(() => {
+        let isMounted = true;
+        handbookApi
+            .getPublishedArticles()
+            .then((res) => {
+                if (!isMounted) return;
+                const raw = Array.isArray(res)
+                    ? res
+                    : Array.isArray(res?.data)
+                    ? res.data
+                    : Array.isArray(res?.items)
+                    ? res.items
+                    : null;
+
+                if (raw && raw.length > 0) {
+                    // Không hiển thị bài chưa xuất bản trên trang công khai nếu Backend không cho phép
+                    const publishedOnly = raw.filter(
+                        (a) => a.status === "published" || a.isPublished === true || a.status === undefined
+                    );
+                    setArticlesList(publishedOnly);
+                } else {
+                    setArticlesList(initialArticles);
+                }
+            })
+            .catch((err) => {
+                console.warn("[CareLink] Tải bài viết cẩm nang công khai từ API thất bại, dùng fallback:", err);
+                if (isMounted) {
+                    setArticlesList(initialArticles);
+                }
+            })
+            .finally(() => {
+                if (isMounted) setLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const filteredArticles = useMemo(() => {
-        return articles.filter((article) => {
+        return articlesList.filter((article) => {
+            // Đảm bảo loại trừ bài nháp
+            if (article.status === "draft" || article.isPublished === false) return false;
+
             const matchesCategory =
                 selectedCategory === "all" || article.category === selectedCategory;
             const matchesSearch =
-                article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                article.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                article.categoryName.toLowerCase().includes(searchQuery.toLowerCase());
+                (article.title && article.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (article.summary && article.summary.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (article.categoryName && article.categoryName.toLowerCase().includes(searchQuery.toLowerCase()));
             return matchesCategory && matchesSearch;
         });
-    }, [selectedCategory, searchQuery]);
+    }, [articlesList, selectedCategory, searchQuery]);
 
-    const featuredArticle = articles.find((a) => a.featured);
+    const featuredArticle = filteredArticles.find((a) => a.featured) || filteredArticles[0];
 
     return (
         <div className="min-h-screen bg-[#f8fafc] text-slate-800 antialiased font-sans">
@@ -540,15 +588,28 @@ export default function MedicalHandbook() {
                                 {activeArticleModal.reviewed && <ReviewedBadge />}
                             </div>
 
-                            <button
-                                onClick={() => setActiveArticleModal(null)}
-                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs hover:rotate-90 duration-200"
-                                title="Đóng bài viết"
-                            >
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    to={`/handbook/${activeArticleModal.slug || activeArticleModal.id}`}
+                                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] text-xs font-bold transition-colors"
+                                    title="Xem toàn màn hình trên trang riêng biệt"
+                                >
+                                    <span>Mở trang đầy đủ</span>
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                    </svg>
+                                </Link>
+
+                                <button
+                                    onClick={() => setActiveArticleModal(null)}
+                                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs hover:rotate-90 duration-200"
+                                    title="Đóng bài viết"
+                                >
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Thân bài viết cuộn */}

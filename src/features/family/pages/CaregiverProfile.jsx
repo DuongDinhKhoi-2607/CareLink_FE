@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import familyApi from "../../../api/familyApi";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -121,6 +122,61 @@ export default function CaregiverProfile() {
         setContacted(true);
         navigate("/chat", { state: { caregiver } });
     };
+
+    // ── Trích xuất nurseId từ state hoặc params
+    const nurseId = caregiver?.id || caregiver?.nurseId || null;
+
+    // ── STATE: Đánh giá & Tổng quan
+    const [reviews, setReviews] = useState([]);
+    const [reviewSummary, setReviewSummary] = useState(null);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [reviewsPage, setReviewsPage] = useState(1);
+    const [reviewsHasMore, setReviewsHasMore] = useState(false);
+    const REVIEWS_PAGE_SIZE = 5;
+
+    // ── 70. GET /api/v1/nurses/{nurseId}/reviews
+    const fetchReviews = useCallback(async (page = 1) => {
+        if (!nurseId) return;
+        setReviewsLoading(true);
+        try {
+            const res = await familyApi.getNurseReviews(nurseId, {
+                PageNumber: page,
+                PageSize: REVIEWS_PAGE_SIZE,
+            });
+            const items = res?.items || res?.data?.items || (Array.isArray(res) ? res : []);
+            const totalCount = res?.totalCount || res?.data?.totalCount || items.length;
+            if (page === 1) {
+                setReviews(items);
+            } else {
+                setReviews((prev) => [...prev, ...items]);
+            }
+            setReviewsHasMore(page * REVIEWS_PAGE_SIZE < totalCount);
+            setReviewsPage(page);
+        } catch {
+            // Reviews không load được — hiển thị empty state
+        } finally {
+            setReviewsLoading(false);
+        }
+    }, [nurseId]);
+
+    // ── 71. GET /api/v1/nurses/{nurseId}/reviews/summary
+    const fetchReviewSummary = useCallback(async () => {
+        if (!nurseId) return;
+        try {
+            const res = await familyApi.getNurseRatingSummary(nurseId);
+            const data = res?.data || res;
+            if (data && typeof data === "object") {
+                setReviewSummary(data);
+            }
+        } catch {
+            // Summary không ảnh hưởng đến UI chính
+        }
+    }, [nurseId]);
+
+    useEffect(() => {
+        fetchReviews(1);
+        fetchReviewSummary();
+    }, [fetchReviews, fetchReviewSummary]);
 
     return (
         <div className="bg-[#f8fafc] py-8 font-sans antialiased text-[#102030]">

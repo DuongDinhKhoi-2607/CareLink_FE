@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import caregiverApi from "../../../api/caregiverApi";
 import {
@@ -19,26 +19,25 @@ import {
 /**
  * SubmitHealthRecordModal
  * 
- * Modal nhập Báo cáo sức khỏe & Sinh hiệu lâm sàng dành cho Điều dưỡng (Caregiver).
- * Tuân thủ đúng DTO của Backend CareLink: SubmitHealthRecordDto
- * - BloodPressureSystolic (40 - 300 mmHg)
- * - BloodPressureDiastolic (30 - 200 mmHg)
- * - HeartRate (20 - 250 bpm)
- * - Temperature (25.0 - 45.0 °C)
- * - BloodGlucose (10 - 1000 mg/dL)
- * - WoundStatus, MobilityStatus, MentalStatus, NurseNotes
+ * Modal nhập & chỉnh sửa Báo cáo sức khỏe lâm sàng dành cho Điều dưỡng (Caregiver).
+ * Hỗ trợ 2 phương thức theo chuẩn Backend:
+ * - 76. POST /api/v1/bookings/{id}/health-record (Tạo mới)
+ * - 77. PUT /api/v1/bookings/{id}/health-record (Cập nhật)
+ * - 78. GET /api/v1/bookings/{id}/health-record (Đọc dữ liệu hiện tại)
  */
 export default function SubmitHealthRecordModal({
     isOpen,
     onClose,
     booking,
     initialData = null,
+    isEdit = false,
     onSaveSuccess,
 }) {
     if (!isOpen || !booking) return null;
 
-    const patientName = booking.patient?.name || booking.family?.name || "Người nhận chăm sóc";
-    const patientCondition = booking.patient?.condition || booking.service?.type || "Chăm sóc phục hồi";
+    const patientName = booking.patient?.name || booking.family?.name || booking.patientName || "Người nhận chăm sóc";
+    const patientCondition = booking.patient?.condition || booking.service?.type || booking.serviceName || "Chăm sóc phục hồi";
+    const isEditMode = isEdit || Boolean(initialData || booking.hasHealthRecord || booking.healthRecord || booking.status === "completed");
 
     // Form state
     const [systolic, setSystolic] = useState(initialData?.bloodPressureSystolic || "");
@@ -53,7 +52,48 @@ export default function SubmitHealthRecordModal({
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingRecord, setIsLoadingRecord] = useState(false);
     const [apiError, setApiError] = useState(null);
+
+    // ── 78. GET /api/v1/bookings/{id}/health-record ── Tự động nạp dữ liệu cũ khi ở chế độ chỉnh sửa
+    useEffect(() => {
+        if (isOpen && booking?.id) {
+            if (initialData) {
+                setSystolic(initialData.bloodPressureSystolic || "");
+                setDiastolic(initialData.bloodPressureDiastolic || "");
+                setHeartRate(initialData.heartRate || "");
+                setTemperature(initialData.temperature || "36.8");
+                setBloodGlucose(initialData.bloodGlucose || "");
+                setWoundStatus(initialData.woundStatus || "Khô ráo, liền tốt");
+                setMobilityStatus(initialData.mobilityStatus || "Hỗ trợ nhẹ");
+                setMentalStatus(initialData.mentalStatus || "Tỉnh táo, hợp tác");
+                setNurseNotes(initialData.nurseNotes || "");
+            } else if (booking.hasHealthRecord || booking.healthRecord || booking.status === "completed") {
+                setIsLoadingRecord(true);
+                caregiverApi.getHealthRecord(booking.id)
+                    .then((res) => {
+                        const data = res?.data?.data || res?.data;
+                        if (data) {
+                            setSystolic(data.bloodPressureSystolic || "");
+                            setDiastolic(data.bloodPressureDiastolic || "");
+                            setHeartRate(data.heartRate || "");
+                            setTemperature(data.temperature || "36.8");
+                            setBloodGlucose(data.bloodGlucose || "");
+                            setWoundStatus(data.woundStatus || "Khô ráo, liền tốt");
+                            setMobilityStatus(data.mobilityStatus || "Hỗ trợ nhẹ");
+                            setMentalStatus(data.mentalStatus || "Tỉnh táo, hợp tác");
+                            setNurseNotes(data.nurseNotes || "");
+                        }
+                    })
+                    .catch((err) => {
+                        console.warn("Không thể tải bệnh án trước đó từ server:", err);
+                    })
+                    .finally(() => {
+                        setIsLoadingRecord(false);
+                    });
+            }
+        }
+    }, [isOpen, booking, initialData]);
 
     // Danh sách gợi ý nhanh
     const woundOptions = [
@@ -137,14 +177,22 @@ export default function SubmitHealthRecordModal({
         };
 
         try {
-            // 1. Gửi bệnh án lên Backend (POST /api/v1/bookings/{id}/health-record)
-            const createdRecord = await caregiverApi.submitHealthRecord(booking.id, healthRecordPayload);
+            let recordResult;
+            if (isEditMode) {
+                // ── 77. PUT /api/v1/bookings/{id}/health-record ── Cập nhật bệnh án
+                recordResult = await caregiverApi.updateHealthRecord(booking.id, healthRecordPayload);
+            } else {
+                // ── 76. POST /api/v1/bookings/{id}/health-record ── Tạo mới bệnh án
+                recordResult = await caregiverApi.submitHealthRecord(booking.id, healthRecordPayload);
 
-            // 2. Gọi hoàn thành ca chính thức (PUT /api/v1/bookings/{id}/finish)
-            await caregiverApi.finishBooking(booking.id);
+                // Nếu ca chưa hoàn thành thì hoàn tất ca
+                if (booking.status !== "completed") {
+                    await caregiverApi.finishBooking(booking.id);
+                }
+            }
 
             if (onSaveSuccess) {
-                onSaveSuccess(createdRecord || healthRecordPayload);
+                onSaveSuccess(recordResult?.data?.data || recordResult?.data || healthRecordPayload);
             }
             onClose();
         } catch (err) {
@@ -164,7 +212,7 @@ export default function SubmitHealthRecordModal({
             const msg =
                 err.response?.data?.detail ||
                 err.response?.data?.message ||
-                "Không thể lưu bệnh án hoặc hoàn thành ca chăm sóc. Vui lòng kiểm tra lại.";
+                "Không thể lưu bệnh án lúc này. Vui lòng kiểm tra lại.";
             setApiError(msg);
         } finally {
             setIsSubmitting(false);
@@ -193,7 +241,7 @@ export default function SubmitHealthRecordModal({
                                 Bệnh án lâm sàng bắt buộc
                             </div>
                             <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
-                                Ghi nhận Báo cáo sức khỏe sau ca
+                                {isEditMode ? "Cập nhật Báo cáo sức khỏe lâm sàng" : "Ghi nhận Báo cáo sức khỏe sau ca"}
                             </h2>
                             <p className="text-xs text-teal-100/90 mt-0.5">
                                 Ca #{booking.id} · Người chăm sóc: <strong>{patientName}</strong> ({patientCondition})
@@ -508,12 +556,12 @@ export default function SubmitHealthRecordModal({
                             {isSubmitting ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Đang lưu bệnh án...
+                                    {isEditMode ? "Đang lưu thay đổi..." : "Đang lưu bệnh án..."}
                                 </>
                             ) : (
                                 <>
                                     <CheckCircle2 className="w-4 h-4" />
-                                    Lưu Bệnh án & Hoàn thành ca
+                                    {isEditMode ? "Lưu thay đổi Bệnh án" : "Lưu Bệnh án & Hoàn thành ca"}
                                 </>
                             )}
                         </button>

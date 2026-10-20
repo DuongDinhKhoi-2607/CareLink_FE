@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useLocation, useNavigate, Link } from "react-router-dom";
 import Rating from "../../../components/Rating";
+import caregiverApi from "../../../api/caregiverApi";
 
 /* =========================================================
    REVIEW CRITERIA
@@ -448,6 +450,18 @@ function OverallRating({ ratings, averageRating, ratedCount }) {
 ========================================================= */
 
 export default function CaregiverReview() {
+    const [searchParams] = useSearchParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const bookingId = searchParams.get("bookingId") || location.state?.bookingId || null;
+    const [bookingInfo, setBookingInfo] = useState({
+        family: location.state?.family || "Nguyễn Thị Lan",
+        service: location.state?.service || "Chăm sóc người cao tuổi",
+        date: location.state?.date || "18/09/2026",
+        duration: location.state?.duration || "3 giờ",
+    });
+
     const [ratings, setRatings] = useState({
         respect: 0,
         safety: 0,
@@ -456,7 +470,28 @@ export default function CaregiverReview() {
     });
 
     const [note, setNote] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [apiError, setApiError] = useState("");
+    const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+
+    useEffect(() => {
+        if (bookingId && !location.state?.family) {
+            caregiverApi.getBookingDetail(bookingId)
+                .then((res) => {
+                    const data = res.data?.data || res.data;
+                    if (data) {
+                        setBookingInfo({
+                            family: data.customerName || data.patientName || "Gia đình",
+                            service: data.serviceName || "Dịch vụ chăm sóc",
+                            date: data.scheduledAt ? new Date(data.scheduledAt).toLocaleDateString("vi-VN") : "18/09/2026",
+                            duration: data.duration || "Theo ca",
+                        });
+                    }
+                })
+                .catch(() => {});
+        }
+    }, [bookingId, location.state]);
 
     const setRating = (id) => (value) => {
         setRatings((previous) => ({
@@ -477,14 +512,49 @@ export default function CaregiverReview() {
     const averageRating = totalRating / CRITERIA.length;
     const allRated = ratedCount === CRITERIA.length;
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         if (!allRated) return;
 
-        // Hiện tại giữ nguyên cơ chế demo của trang review.
-        // Khi tích hợp API thật, xử lý gửi đánh giá tại đây.
-        setSubmitted(true);
+        if (alreadyReviewed) {
+            setApiError("Bạn đã gửi đánh giá cho ca chăm sóc này rồi.");
+            return;
+        }
+
+        if (!bookingId) {
+            setApiError("Không tìm thấy mã ca chăm sóc (bookingId). Vui lòng chọn ca từ danh sách yêu cầu nhận ca.");
+            return;
+        }
+
+        setSubmitting(true);
+        setApiError("");
+
+        try {
+            const payload = {
+                rating: Math.round(averageRating),
+                overallRating: Math.round(averageRating),
+                comment: note.trim() || null,
+                criteriaRatings: ratings,
+            };
+
+            await caregiverApi.reviewCustomer(bookingId, payload);
+            setSubmitted(true);
+        } catch (err) {
+            if (err.response?.status === 409) {
+                setAlreadyReviewed(true);
+                setApiError("Bạn đã gửi đánh giá cho ca chăm sóc này rồi.");
+            } else {
+                setApiError(
+                    err.response?.data?.detail ||
+                    err.response?.data?.message ||
+                    err.response?.data?.title ||
+                    "Không thể gửi đánh giá lúc này. Vui lòng thử lại sau."
+                );
+            }
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const resetReview = () => {
@@ -496,6 +566,7 @@ export default function CaregiverReview() {
             payment: 0,
         });
         setNote("");
+        setApiError("");
     };
 
     /* ===================== SUCCESS STATE ===================== */
@@ -624,16 +695,31 @@ export default function CaregiverReview() {
                             </p>
                         </div>
 
-                        <span className="hidden rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 sm:inline-flex">
-                            Mã ca · CL-2026-0918
-                        </span>
+                        {bookingId ? (
+                            <span className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-[#00677c] sm:inline-flex">
+                                Mã ca · {bookingId}
+                            </span>
+                        ) : (
+                            <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 sm:inline-flex">
+                                Chưa liên kết ca chăm sóc
+                            </span>
+                        )}
                     </div>
 
+                    {!bookingId && (
+                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 flex items-center justify-between gap-3">
+                            <span>Vui lòng chọn ca đã hoàn thành từ danh sách để đánh giá chính xác.</span>
+                            <Link to="/caregiver/bookings" className="font-bold underline text-[#00677c] shrink-0">
+                                Xem danh sách ca &rarr;
+                            </Link>
+                        </div>
+                    )}
+
                     <SessionCard
-                        family="Nguyễn Thị Lan"
-                        service="Chăm sóc người cao tuổi"
-                        date="18/09/2026"
-                        duration="3 giờ"
+                        family={bookingInfo.family}
+                        service={bookingInfo.service}
+                        date={bookingInfo.date}
+                        duration={bookingInfo.duration}
                     />
                 </section>
 
@@ -781,22 +867,40 @@ export default function CaregiverReview() {
                             </div>
                         </div>
 
+                        {apiError && (
+                            <div className="w-full text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                                {apiError}
+                            </div>
+                        )}
+
                         <button
                             id="submit-review"
                             type="submit"
-                            disabled={!allRated}
+                            disabled={!allRated || submitting || alreadyReviewed}
                             className={`
                                 inline-flex w-full shrink-0 items-center justify-center gap-2
                                 rounded-xl px-6 py-3 text-sm font-bold
                                 transition-all duration-200 sm:w-auto
-                                ${allRated
-                                    ? "bg-[#00677c] text-white shadow-sm hover:-translate-y-0.5 hover:bg-[#005263] hover:shadow-md active:translate-y-0"
+                                ${allRated && !submitting && !alreadyReviewed
+                                    ? "bg-[#00677c] text-white shadow-sm hover:-translate-y-0.5 hover:bg-[#005263] hover:shadow-md active:translate-y-0 cursor-pointer"
                                     : "cursor-not-allowed bg-slate-100 text-slate-400"
                                 }
                             `}
                         >
-                            <CheckIcon className="h-4 w-4" />
-                            Gửi đánh giá
+                            {submitting ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Đang gửi...
+                                </span>
+                            ) : (
+                                <>
+                                    <CheckIcon className="h-4 w-4" />
+                                    {alreadyReviewed ? "Đã đánh giá" : "Gửi đánh giá"}
+                                </>
+                            )}
                         </button>
                     </div>
 

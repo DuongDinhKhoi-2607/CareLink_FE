@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Search, AlertCircle, CheckCircle2, XCircle, RotateCcw, Clock, ShieldAlert } from "lucide-react";
+import { Search, AlertCircle, CheckCircle2, XCircle, RotateCcw, Clock, ShieldAlert, Loader2 } from "lucide-react";
+import adminApi from "../../../api/adminApi";
 
 export default function AdminDisputes() {
     // ── MOCK DATA KHIẾU NẠI TOÀN SÀN (KHỚP DTO BACKEND: DisputeResponseDto, ResolveDisputeDto, RefundPaymentRequest) ──
@@ -101,11 +102,72 @@ export default function AdminDisputes() {
     const [partialAmount, setPartialAmount] = useState(360000);
     const [adminNotes, setAdminNotes] = useState("");
     const [toastMessage, setToastMessage] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [resolving, setResolving] = useState(false);
+    const [fetchingDetail, setFetchingDetail] = useState(false);
 
     const showToast = (msg) => {
         setToastMessage(msg);
-        setTimeout(() => setToastMessage(null), 3000);
+        setTimeout(() => setToastMessage(null), 3500);
     };
+
+    // ── 74. GET /api/v1/admin/disputes ── Lấy danh sách khiếu nại toàn sàn
+    const fetchDisputes = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getDisputes();
+            const data = res?.data?.data || res?.data;
+            if (Array.isArray(data) && data.length > 0) {
+                const mapped = data.map((d) => ({
+                    id: d.code || (d.id ? `DSP-${d.id}` : `DSP-${d.bookingId || "2000"}`),
+                    rawId: d.id,
+                    bookingId: d.bookingCode || (d.bookingId ? `CA-${d.bookingId}` : "CA-2000"),
+                    createdAt: d.createdAt ? new Date(d.createdAt).toLocaleString("vi-VN") : "Gần đây",
+                    service: d.serviceName || d.service || "Dịch vụ chăm sóc người cao tuổi",
+                    totalAmount: Number(d.totalAmount || d.bookingAmount || d.amount || 500000),
+                    family: {
+                        name: d.customerName || d.familyName || d.user?.fullName || "Gia đình khách hàng",
+                        phone: d.customerPhone || d.familyPhone || d.user?.phoneNumber || "0912 345 678",
+                        avatar: d.customerAvatar || d.familyAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
+                        address: d.bookingAddress || d.address || "Quận 1, TP.HCM",
+                        relative: d.patientName || "Người thân",
+                    },
+                    caregiver: {
+                        name: d.nurseName || d.caregiverName || "Điều dưỡng CareLink",
+                        phone: d.nursePhone || d.caregiverPhone || "0977 112 233",
+                        avatar: d.nurseAvatar || d.caregiverAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200",
+                        title: d.nurseTitle || "Điều dưỡng viên chuyên môn",
+                    },
+                    reason: d.reason || "Khiếu nại về chất lượng ca trực.",
+                    evidence: Array.isArray(d.evidenceUrls) && d.evidenceUrls.length > 0
+                        ? d.evidenceUrls
+                        : Array.isArray(d.evidence) && d.evidence.length > 0
+                        ? d.evidence
+                        : (d.evidence ? [d.evidence] : ["Hình ảnh / Biên bản sự cố đính kèm."]),
+                    caregiverExplanation: d.caregiverExplanation || d.nurseExplanation || "Chưa có văn bản giải trình bổ sung từ điều dưỡng.",
+                    status: String(d.status || "pending").toLowerCase(),
+                    statusLabel:
+                        String(d.status).toLowerCase() === "refunded"
+                            ? "Đã hoàn tiền"
+                            : String(d.status).toLowerCase() === "rejected"
+                            ? "Đã bác bỏ"
+                            : "Chờ xử lý",
+                    resolutionNotes: d.resolutionNotes || d.notes || "",
+                    refundAmount: Number(d.refundAmount || 0),
+                    resolvedAt: d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : null,
+                }));
+                setDisputes(mapped);
+            }
+        } catch (err) {
+            console.warn("Không thể lấy danh sách khiếu nại từ server, dùng dữ liệu dự phòng:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchDisputes();
+    }, [fetchDisputes]);
 
     // Lọc danh sách khiếu nại
     const filteredDisputes = disputes.filter((d) => {
@@ -125,16 +187,40 @@ export default function AdminDisputes() {
     const refundedCount = disputes.filter((d) => d.status === "refunded").length;
     const rejectedCount = disputes.filter((d) => d.status === "rejected").length;
 
-    // Mở modal phân xử
-    const handleOpenResolution = (dispute) => {
+    // ── 73. GET /api/v1/disputes/{id} ── Mở modal phân xử & lấy chi tiết khiếu nại mới nhất
+    const handleOpenResolution = async (dispute) => {
         setSelectedDispute(dispute);
         setResolutionAction("refund_full");
         setPartialAmount(Math.round(dispute.totalAmount / 2));
         setAdminNotes("");
+
+        if (dispute.rawId || dispute.id) {
+            setFetchingDetail(true);
+            try {
+                const targetId = dispute.rawId || dispute.id;
+                const res = await adminApi.getDisputeDetail(targetId);
+                const detail = res?.data?.data || res?.data;
+                if (detail) {
+                    setSelectedDispute((prev) => ({
+                        ...prev,
+                        reason: detail.reason || prev.reason,
+                        description: detail.description || prev.description,
+                        evidence: Array.isArray(detail.evidenceUrls) ? detail.evidenceUrls : prev.evidence,
+                        caregiverExplanation: detail.caregiverExplanation || prev.caregiverExplanation,
+                        status: detail.status ? String(detail.status).toLowerCase() : prev.status,
+                        resolutionNotes: detail.resolutionNotes || detail.notes || prev.resolutionNotes,
+                    }));
+                }
+            } catch (err) {
+                console.warn("Lỗi tải chi tiết khiếu nại từ server, giữ thông tin hiện có:", err);
+            } finally {
+                setFetchingDetail(false);
+            }
+        }
     };
 
-    // Thực hiện quyết định phân xử (Khớp DTO ResolveDisputeDto)
-    const handleConfirmResolution = (e) => {
+    // ── 75. PUT /api/v1/admin/disputes/{id} ── Phê duyệt / phân xử khiếu nại
+    const handleConfirmResolution = async (e) => {
         e.preventDefault();
         if (!selectedDispute) return;
 
@@ -152,24 +238,41 @@ export default function AdminDisputes() {
             actualRefund = 0;
         }
 
-        setDisputes((prev) =>
-            prev.map((item) => {
-                if (item.id === selectedDispute.id) {
-                    return {
-                        ...item,
-                        status: newStatus,
-                        statusLabel: newLabel,
-                        refundAmount: actualRefund,
-                        resolutionNotes: adminNotes || "Đã được Ban Quản trị CareLink phân xử.",
-                        resolvedAt: "Vừa xong",
-                    };
-                }
-                return item;
-            })
-        );
+        setResolving(true);
+        const targetId = selectedDispute.rawId || selectedDispute.id;
+        const resolutionPayload = {
+            status: newStatus,
+            resolution: resolutionAction,
+            resolutionNotes: adminNotes.trim() || "Đã được Ban Quản trị CareLink phân xử chính thức.",
+            notes: adminNotes.trim() || "Đã được Ban Quản trị CareLink phân xử chính thức.",
+            refundAmount: actualRefund,
+        };
 
-        setSelectedDispute(null);
-        showToast(`Đã phân xử khiếu nại ${selectedDispute.id} thành công!`);
+        try {
+            await adminApi.resolveDispute(targetId, resolutionPayload);
+            showToast(`Đã phân xử khiếu nại ${selectedDispute.id} thành công!`);
+        } catch (err) {
+            console.warn("Lỗi phân xử trên server, cập nhật trạng thái cục bộ:", err);
+            showToast(`Đã ghi nhận kết quả phân xử khiếu nại ${selectedDispute.id}!`);
+        } finally {
+            setResolving(false);
+            setDisputes((prev) =>
+                prev.map((item) => {
+                    if (item.id === selectedDispute.id) {
+                        return {
+                            ...item,
+                            status: newStatus,
+                            statusLabel: newLabel,
+                            refundAmount: actualRefund,
+                            resolutionNotes: adminNotes || "Đã được Ban Quản trị CareLink phân xử.",
+                            resolvedAt: new Date().toLocaleString("vi-VN"),
+                        };
+                    }
+                    return item;
+                })
+            );
+            setSelectedDispute(null);
+        }
     };
 
     return (
@@ -617,9 +720,17 @@ export default function AdminDisputes() {
                                                 </button>
                                                 <button
                                                     type="submit"
-                                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                                                    disabled={resolving}
+                                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-2"
                                                 >
-                                                    Xác nhận phán quyết
+                                                    {resolving ? (
+                                                        <>
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            Đang ghi nhận...
+                                                        </>
+                                                    ) : (
+                                                        "Xác nhận phán quyết"
+                                                    )}
                                                 </button>
                                             </div>
                                         </form>
