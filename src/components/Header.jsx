@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { NotificationDropdown } from "../features/shared/notifications";
-import authApi from "../api/authApi";
+import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 
 export default function Header() {
     const location = useLocation();
@@ -22,14 +22,29 @@ export default function Header() {
 
     // Lắng nghe thay đổi đường dẫn hoặc cập nhật từ tab khác
     useEffect(() => {
-        try {
-            const saved = localStorage.getItem("carelink_user");
-            setUser(saved ? JSON.parse(saved) : null);
-        } catch {
-            setUser(null);
+        const syncUser = () => {
+            try {
+                const saved = localStorage.getItem("carelink_user");
+                setUser(saved ? JSON.parse(saved) : null);
+            } catch {
+                setUser(null);
+            }
+        };
+
+        syncUser();
+        window.addEventListener("storage", syncUser);
+
+        // Nếu đã đăng nhập, đồng bộ dữ liệu mới nhất từ API /users/me
+        if (localStorage.getItem("carelink_token")) {
+            fetchAndSyncUserMe().then((updatedUser) => {
+                if (updatedUser) setUser(updatedUser);
+            });
         }
+
         setShowUserDropdown(false);
         setMobileMenuOpen(false);
+
+        return () => window.removeEventListener("storage", syncUser);
     }, [pathname]);
 
     // Xử lý đăng xuất (Thu hồi token trên Backend và xóa phiên cục bộ)
@@ -54,23 +69,27 @@ export default function Header() {
 
     // Tên và email hiển thị an toàn, thân thiện
     const getDisplayName = () => {
-        if (!user) return "Nguyễn Văn An";
-        if (typeof user.name === "string" && user.name.trim() && user.name !== "user" && user.name.toLowerCase() !== "family") {
+        if (!user) return "Khách hàng";
+        if (typeof user.name === "string" && user.name.trim() && user.name.toLowerCase() !== "user") {
             return user.name;
         }
-        if (user.role === "caregiver") return "Nguyên (Caregiver)";
+        if (typeof user.fullName === "string" && user.fullName.trim()) {
+            return user.fullName;
+        }
+        if (user.email) {
+            return user.email.split("@")[0];
+        }
+        if (user.role === "caregiver") return "Điều dưỡng CareLink";
         if (user.role === "admin") return "Ban Quản trị CareLink";
-        return "Nguyễn Văn An";
+        return "Khách hàng";
     };
 
     const getDisplayEmail = () => {
-        if (!user) return "nguyenvanan@carelink.vn";
-        if (typeof user.email === "string" && user.email.trim() && user.email !== "user@example.com" && user.email !== "family@carelink.vn") {
+        if (!user) return "";
+        if (typeof user.email === "string" && user.email.trim()) {
             return user.email;
         }
-        if (user.role === "caregiver") return "caregiver@carelink.vn";
-        if (user.role === "admin") return "admin@carelink.vn";
-        return "nguyenvanan@carelink.vn";
+        return "";
     };
 
     // Avatar an toàn có fallback chuẩn SVG hoạt hình không bao giờ bị lỗi
@@ -442,7 +461,7 @@ export default function Header() {
                                     />
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold text-[#002045]">
-                                            {user.name && user.name !== "user" ? user.name : (user.role === "caregiver" ? "Nguyên (Caregiver)" : user.role === "admin" ? "Ban Quản trị CareLink" : "Gia đình Bác An")}
+                                            {getDisplayName()}
                                         </span>
                                         <span className="text-[11px] text-teal-600 font-medium">
                                             {user.role === "caregiver" ? "Điều dưỡng" : user.role === "admin" ? "Administrator" : "Gia đình"}

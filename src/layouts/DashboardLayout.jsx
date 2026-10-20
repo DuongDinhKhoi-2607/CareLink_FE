@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
-import authApi from "../api/authApi";
+import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 
 // 6 tính năng cốt lõi của Bảng điều khiển Gia đình (Đã tách nút Về trang chủ ra khu vực riêng để tránh bấm nhầm)
 const navigationItems = [
@@ -90,6 +90,12 @@ export default function DashboardLayout() {
             }
         };
         window.addEventListener("storage", handleSync);
+
+        // Nạp và đồng bộ thông tin tài khoản Gia đình mới nhất từ API /users/me
+        fetchAndSyncUserMe().then((u) => {
+            if (u) setCurrentUser(u);
+        });
+
         return () => window.removeEventListener("storage", handleSync);
     }, []);
 

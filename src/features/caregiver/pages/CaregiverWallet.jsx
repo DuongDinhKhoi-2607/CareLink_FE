@@ -20,7 +20,7 @@ export default function CaregiverWallet() {
     const [loading, setLoading] = useState(true);
     const [submittingPayout, setSubmittingPayout] = useState(false);
 
-    // ── LỊCH SỬ BIẾN ĐỘNG SỐ DƯ (TRANSACTIONS - CỐ ĐỊNH PHÍ SÀN 50K/CA THEO NGHIỆP VỤ) ──
+    // ── LỊCH SỬ BIẾN ĐỘNG SỐ DƯ (TRANSACTIONS - CỐ ĐỊNH PHÍ SÀN 60K/CA THEO NGHIỆP VỤ) ──
     const [transactions, setTransactions] = useState([
         {
             id: "TX-109",
@@ -36,9 +36,9 @@ export default function CaregiverWallet() {
             date: "14/10/2026 18:00",
             title: "Phí dịch vụ nền tảng CareLink",
             type: "platform_fee",
-            amount: -50000,
+            amount: -60000,
             balanceAfter: 3830000,
-            note: "Phí sàn cố định 50.000 VNĐ / ca hoàn thành",
+            note: "Phí sàn cố định 60.000 VNĐ / ca hoàn thành",
         },
         {
             id: "TX-107",
@@ -63,9 +63,9 @@ export default function CaregiverWallet() {
             date: "13/10/2026 12:30",
             title: "Phí dịch vụ nền tảng CareLink",
             type: "platform_fee",
-            amount: -50000,
+            amount: -60000,
             balanceAfter: 5340000,
-            note: "Phí sàn cố định 50.000 VNĐ / ca hoàn thành",
+            note: "Phí sàn cố định 60.000 VNĐ / ca hoàn thành",
         },
     ]);
 
@@ -331,7 +331,7 @@ export default function CaregiverWallet() {
                         </h2>
                     </div>
                     <p className="text-xs text-slate-500 pt-2 border-t border-slate-100">
-                        Đã khấu trừ phí sàn 50.000đ/ca minh bạch theo từng ca trực
+                        Đã khấu trừ phí sàn 60.000đ/ca minh bạch theo từng ca trực
                     </p>
                 </div>
             </div>
@@ -345,9 +345,9 @@ export default function CaregiverWallet() {
                 </div>
                 <div className="text-xs text-slate-700 leading-relaxed">
                     <strong className="text-teal-900 font-bold block mb-0.5">
-                        Chính sách phí nền tảng CareLink: Cố định 50.000 VNĐ / ca trực hoàn thành
+                        Chính sách phí nền tảng CareLink: Cố định 60.000 VNĐ / ca trực hoàn thành
                     </strong>
-                    CareLink chỉ thu một mức phí vận hành duy nhất là 50.000đ khi ca trực hoàn tất thành công. Nền tảng không thu thêm bất kỳ tỷ lệ phần trăm nào trên tiền thù lao của điều dưỡng. Thu nhập của bạn được đảm bảo minh bạch 100%.
+                    CareLink chỉ thu một mức phí vận hành duy nhất là 60.000đ khi ca trực hoàn tất thành công. Nền tảng không thu thêm bất kỳ tỷ lệ phần trăm nào trên tiền thù lao của điều dưỡng. Thu nhập của bạn được đảm bảo minh bạch 100%.
                 </div>
             </div>
 

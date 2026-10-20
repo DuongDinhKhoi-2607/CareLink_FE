@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
     LayoutDashboard,
@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
-import authApi from "../api/authApi";
+import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 
 const adminNavItems = [
     {
@@ -100,6 +100,34 @@ export default function AdminLayout() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    // Dynamic Admin User from localStorage / API
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            const raw = localStorage.getItem("carelink_user");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    useEffect(() => {
+        const handleSync = () => {
+            try {
+                const raw = localStorage.getItem("carelink_user");
+                setCurrentUser(raw ? JSON.parse(raw) : null);
+            } catch {
+                setCurrentUser(null);
+            }
+        };
+        window.addEventListener("storage", handleSync);
+
+        fetchAndSyncUserMe().then((u) => {
+            if (u) setCurrentUser(u);
+        });
+
+        return () => window.removeEventListener("storage", handleSync);
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -183,11 +211,11 @@ export default function AdminLayout() {
                             title="Tài khoản quản trị viên"
                         >
                             <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 text-[#00677c] font-black text-xs flex items-center justify-center border border-teal-200 shadow-2xs group-hover:scale-105 transition-transform">
-                                AD
+                                {(currentUser?.name || currentUser?.fullName || currentUser?.email || "AD").charAt(0).toUpperCase()}
                             </div>
                             <div className="hidden sm:block text-left">
                                 <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                                    Ban Quản trị CareLink
+                                    {currentUser?.name || currentUser?.fullName || "Ban Quản trị CareLink"}
                                 </div>
                                 <div className="text-[10px] text-teal-700 font-medium flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -212,8 +240,8 @@ export default function AdminLayout() {
                                 <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
                                 <div className="absolute right-0 top-11 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl py-2 z-50">
                                     <div className="px-3.5 py-2 border-b border-slate-100">
-                                        <p className="text-xs font-bold text-slate-800">Ban Quản trị CareLink</p>
-                                        <p className="text-[11px] text-slate-400 truncate">admin@carelink.vn</p>
+                                        <p className="text-xs font-bold text-slate-800">{currentUser?.name || currentUser?.fullName || "Ban Quản trị CareLink"}</p>
+                                        <p className="text-[11px] text-slate-400 truncate">{currentUser?.email || "admin@carelink.vn"}</p>
                                         <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-[10px]">
                                             Vai trò: Administrator
                                         </span>

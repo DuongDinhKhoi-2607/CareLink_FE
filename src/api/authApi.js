@@ -73,4 +73,89 @@ export const authApi = {
     updateMe: (data) => axiosClient.put("/api/v1/users/me", data),
 };
 
+/**
+ * Chuẩn hóa DTO UserProfileResponse từ Backend (GET /api/v1/users/me)
+ * hỗ trợ đầy đủ cả 3 vai trò: Family (Customer), Caregiver (Nurse), Admin
+ */
+export const normalizeUserProfile = (data) => {
+    if (!data) return null;
+    const raw = data?.data || data?.user || data;
+    const beRole = String(raw.role || "").toLowerCase();
+    let role = "family";
+    if (beRole.includes("admin") || raw.roleId === 1) role = "admin";
+    else if (beRole.includes("nurse") || beRole.includes("caregiver") || raw.roleId === 3) role = "caregiver";
+    else role = "family";
+
+    const name =
+        raw.customerProfile?.fullName ||
+        raw.nurseProfile?.fullName ||
+        raw.fullName ||
+        raw.name ||
+        (raw.email ? raw.email.split("@")[0] : "Người dùng CareLink");
+
+    const phone =
+        raw.customerProfile?.phone ||
+        raw.nurseProfile?.phone ||
+        raw.phone ||
+        raw.phoneNumber ||
+        "";
+
+    const avatar =
+        raw.customerProfile?.avatarUrl ||
+        raw.nurseProfile?.avatarUrl ||
+        raw.avatarUrl ||
+        raw.avatar ||
+        (role === "caregiver"
+            ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
+            : role === "admin"
+            ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200"
+            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200");
+
+    const nurseStatus = raw.nurseProfile?.status ?? (raw.verificationStatus ?? null);
+
+    return {
+        id: raw.id || null,
+        email: raw.email || "",
+        name,
+        fullName: name,
+        phone,
+        phoneNumber: phone,
+        role,
+        avatar,
+        avatarUrl: avatar,
+        nurseStatus,
+        customerProfile: raw.customerProfile || null,
+        nurseProfile: raw.nurseProfile || null,
+    };
+};
+
+/**
+ * Tự động tải /api/v1/users/me và đồng bộ vào localStorage cho tất cả các Layouts / Header
+ */
+export const fetchAndSyncUserMe = async () => {
+    try {
+        const token = localStorage.getItem("carelink_token");
+        if (!token) return null;
+        const res = await authApi.getMe();
+        const normalized = normalizeUserProfile(res?.data || res);
+        if (normalized) {
+            let current = {};
+            try {
+                current = JSON.parse(localStorage.getItem("carelink_user") || "{}");
+            } catch {
+                current = {};
+            }
+            const merged = { ...current, ...normalized };
+            localStorage.setItem("carelink_user", JSON.stringify(merged));
+            window.dispatchEvent(new Event("storage"));
+            return merged;
+        }
+    } catch (err) {
+        // Token hết hạn hoặc offline: giữ nguyên user đã cache
+        console.warn("[CareLink] getMe sync info:", err?.response?.status || err.message);
+    }
+    return null;
+};
+
 export default authApi;
+

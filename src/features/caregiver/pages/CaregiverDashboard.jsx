@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { fetchAndSyncUserMe } from "../../../api/authApi";
 
 /* ─── Stat Card ─── */
 function StatCard({ icon, label, value, sub, color = "#00677c", trend }) {
@@ -110,6 +111,23 @@ function ActivityItem({ icon, text, time, color }) {
    CaregiverDashboard
 ═══════════════════════════════════════════ */
 export default function CaregiverDashboard() {
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            const raw = localStorage.getItem("carelink_user");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    useEffect(() => {
+        fetchAndSyncUserMe().then((u) => {
+            if (u) setCurrentUser(u);
+        });
+    }, []);
+
+    const displayName = currentUser?.name || currentUser?.fullName || "Điều dưỡng";
+
     const stats = [
         {
             icon: (
@@ -198,30 +216,74 @@ export default function CaregiverDashboard() {
         <div className="p-5 sm:p-8 max-w-7xl mx-auto animate-page-enter">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-2xl font-bold text-[#102030]">Xin chào, Nguyên 👋</h1>
-                <p className="text-sm text-slate-400 mt-1">Thứ Năm, 18 tháng 9 năm 2026</p>
+                <h1 className="text-2xl font-bold text-[#102030]">Xin chào, {displayName} 👋</h1>
+                <p className="text-sm text-slate-400 mt-1">
+                    {new Intl.DateTimeFormat("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date())}
+                </p>
             </div>
 
             {/* Verification Banner */}
-            <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                    <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+            {currentUser?.nurseStatus === 1 ? (
+                <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-emerald-800">Tài khoản đã được xác minh</p>
+                        <p className="text-xs text-emerald-600 mt-0.5">
+                            Hồ sơ năng lực của bạn đã đạt chuẩn. Bạn có thể sẵn sàng nhận lịch hẹn chăm sóc từ các gia đình.
+                        </p>
+                    </div>
+                    <Link
+                        to="/caregiver/verification"
+                        className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
+                    >
+                        Chi tiết hồ sơ
+                    </Link>
                 </div>
-                <div className="flex-1">
-                    <p className="text-sm font-bold text-amber-800">Tài khoản đang chờ xác minh</p>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                        Hồ sơ của bạn đang được đội ngũ CareLink xem xét. Thường mất 1–3 ngày làm việc.
-                    </p>
+            ) : currentUser?.nurseStatus === 2 ? (
+                <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-rose-800">Hồ sơ cần cập nhật / bổ sung</p>
+                        <p className="text-xs text-rose-600 mt-0.5">
+                            Hồ sơ xác minh điều dưỡng của bạn cần cập nhật lại thông tin hoặc chứng chỉ theo yêu cầu từ Quản trị viên.
+                        </p>
+                    </div>
+                    <Link
+                        to="/caregiver/verification"
+                        className="shrink-0 text-xs font-bold text-rose-700 bg-rose-100 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
+                    >
+                        Nộp lại hồ sơ
+                    </Link>
                 </div>
-                <Link
-                    to="/caregiver/verification"
-                    className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
-                >
-                    Xem hồ sơ
-                </Link>
-            </div>
+            ) : (
+                <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-amber-800">Tài khoản đang chờ xác minh</p>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                            Hồ sơ của bạn đang được đội ngũ CareLink xem xét. Thường mất 1–3 ngày làm việc.
+                        </p>
+                    </div>
+                    <Link
+                        to="/caregiver/verification"
+                        className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
+                    >
+                        Xem hồ sơ
+                    </Link>
+                </div>
+            )}
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">

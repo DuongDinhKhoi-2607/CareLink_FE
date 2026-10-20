@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Trash2, LogOut, X, Loader2, Camera, ShieldCheck, Mail, Phone, User } from "lucide-react";
 import familyApi from "../../../api/familyApi";
-import authApi from "../../../api/authApi";
+import authApi, { normalizeUserProfile } from "../../../api/authApi";
 
 const getAddressLabelBadge = (label) => {
     switch (label) {
@@ -153,19 +153,16 @@ export default function FamilyProfile() {
         setPersonalLoading(true);
         try {
             const res = await authApi.getMe();
-            const data = res?.data || res?.user || res;
-            if (data && typeof data === "object") {
+            const rawData = res?.data || res?.user || res;
+            if (rawData && typeof rawData === "object") {
+                const norm = normalizeUserProfile(rawData);
                 const fresh = {
-                    id: data.id || null,
-                    name: data.fullName || data.name || data.displayName || personalInfo.name,
-                    email: data.email || personalInfo.email,
-                    phone: data.phoneNumber || data.phone || personalInfo.phone,
-                    role: data.role
-                        ? (String(data.role).toLowerCase() === "customer" || String(data.role).toLowerCase() === "family"
-                            ? "Tài khoản Gia đình (Customer)"
-                            : String(data.role))
-                        : personalInfo.role,
-                    avatar: data.avatar || data.avatarUrl || personalInfo.avatar,
+                    id: norm.id || personalInfo.id,
+                    name: norm.name || personalInfo.name,
+                    email: norm.email || personalInfo.email,
+                    phone: norm.phone || personalInfo.phone,
+                    role: "Tài khoản Gia đình (Customer)",
+                    avatar: norm.avatar || personalInfo.avatar,
                 };
                 setPersonalInfo(fresh);
                 setPersonalDraft(fresh);
@@ -177,14 +174,8 @@ export default function FamilyProfile() {
                         "carelink_user",
                         JSON.stringify({
                             ...saved,
-                            id: fresh.id || saved.id,
-                            name: fresh.name,
-                            fullName: fresh.name,
-                            email: fresh.email,
-                            phone: fresh.phone,
-                            phoneNumber: fresh.phone,
-                            avatar: fresh.avatar,
-                            avatarUrl: fresh.avatar,
+                            ...norm,
+                            role: "family",
                         })
                     );
                     window.dispatchEvent(new Event("storage"));
@@ -198,7 +189,7 @@ export default function FamilyProfile() {
         } finally {
             setPersonalLoading(false);
         }
-    }, [personalInfo.name, personalInfo.email, personalInfo.phone, personalInfo.role, personalInfo.avatar]);
+    }, [personalInfo.id, personalInfo.name, personalInfo.email, personalInfo.phone, personalInfo.avatar]);
 
     useEffect(() => {
         fetchUserProfile();
@@ -211,21 +202,19 @@ export default function FamilyProfile() {
         try {
             const payload = {
                 fullName: personalDraft.name.trim(),
-                name: personalDraft.name.trim(),
-                phoneNumber: personalDraft.phone.trim(),
                 phone: personalDraft.phone.trim(),
-                avatar: personalDraft.avatar?.trim() || "",
-                avatarUrl: personalDraft.avatar?.trim() || "",
+                avatarUrl: personalDraft.avatar?.startsWith("http") ? personalDraft.avatar.trim() : null,
             };
 
             const res = await authApi.updateMe(payload);
-            const data = res?.data || res?.user || res;
+            const rawData = res?.data || res?.user || res;
+            const norm = normalizeUserProfile(rawData);
 
             const updated = {
                 ...personalDraft,
-                name: data?.fullName || data?.name || personalDraft.name.trim(),
-                phone: data?.phoneNumber || data?.phone || personalDraft.phone.trim(),
-                avatar: data?.avatar || data?.avatarUrl || personalDraft.avatar,
+                name: norm.name || personalDraft.name.trim(),
+                phone: norm.phone || personalDraft.phone.trim(),
+                avatar: norm.avatar || personalDraft.avatar,
             };
 
             setPersonalInfo(updated);

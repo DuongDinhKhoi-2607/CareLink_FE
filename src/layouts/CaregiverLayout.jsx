@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
-import authApi from "../api/authApi";
+import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 
 const navItems = [
     {
@@ -104,6 +104,14 @@ export default function CaregiverLayout() {
             }
         };
         window.addEventListener("storage", handleSync);
+
+        // Tải thông tin mới nhất từ API /users/me
+        fetchAndSyncUserMe().then((updatedUser) => {
+            if (updatedUser) {
+                setCurrentUser(updatedUser);
+            }
+        });
+
         return () => window.removeEventListener("storage", handleSync);
     }, []);
 
@@ -175,10 +183,22 @@ export default function CaregiverLayout() {
                 <div className="flex-1" />
 
                 {/* Verification badge */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-xs font-semibold text-amber-700 hidden sm:block">Đang xác minh</span>
-                </div>
+                {currentUser?.nurseStatus === 1 ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200" title="Tài khoản đã được duyệt">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-semibold text-emerald-700 hidden sm:block">Đã xác minh</span>
+                    </div>
+                ) : currentUser?.nurseStatus === 2 ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200" title="Hồ sơ cần cập nhật hoặc bổ sung">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span className="text-xs font-semibold text-rose-700 hidden sm:block">Cần bổ sung</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200" title="Đang chờ Quản trị viên duyệt">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="text-xs font-semibold text-amber-700 hidden sm:block">Đang xác minh</span>
+                    </div>
+                )}
 
                 {/* Notification Bell */}
                 <NotificationDropdown userRole="caregiver" align="right" />

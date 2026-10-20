@@ -1,191 +1,346 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 
-/* ─── Role card data ─── */
 const roles = [
     {
         id: "student",
-        badge: "Phù hợp với sinh viên",
-        badgeColor: "bg-[#dbeef4] text-[#00677c]",
+        eyebrow: "Dành cho người đang đi học",
+        title: "Sinh viên Y / Điều dưỡng",
+        description:
+            "Dành cho sinh viên ngành Y, Điều dưỡng đang theo học tại Đại học hoặc Cao đẳng và muốn nhận các ca chăm sóc phù hợp.",
+        theme: {
+            accent: "#087E8B",
+            dark: "#075C66",
+            soft: "#E8F6F7",
+            border: "#A8DADD",
+        },
         icon: (
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.5 9.2 12 4l9.5 5.2L12 14.4 2.5 9.2Z"
+                />
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6.5 11.5v4.1c3.5 2.5 7.5 2.5 11 0v-4.1M21.5 9.2v5"
+                />
             </svg>
         ),
-        title: "Sinh viên Y / Sinh viên Điều dưỡng",
-        desc: "Dành cho sinh viên đang theo học tại các trường Đại học hoặc Cao đẳng Y, Điều dưỡng và mong muốn nhận các ca chăm sóc bán thời gian.",
         checklist: [
-            "Xác minh CCCD",
+            "CCCD còn rõ thông tin",
             "Thẻ sinh viên còn hiệu lực",
-            "Thông tin học tập",
-            "Chứng chỉ bổ sung (nếu có)",
+            "Thông tin trường và ngành học",
+            "Chứng chỉ bổ sung nếu có",
         ],
-        btnLabel: "Tiếp tục với vai trò Sinh viên",
+        button: "Tiếp tục với vai trò Sinh viên",
     },
     {
         id: "nurse",
-        badge: "Phù hợp với điều dưỡng chuyên nghiệp",
-        badgeColor: "bg-[#dbeef4] text-[#00677c]",
+        eyebrow: "Dành cho người đã hành nghề",
+        title: "Điều dưỡng đã hành nghề",
+        description:
+            "Dành cho điều dưỡng đã tốt nghiệp, có hồ sơ chuyên môn và đang hoặc từng làm việc tại cơ sở y tế.",
+        theme: {
+            accent: "#6652A3",
+            dark: "#49377F",
+            soft: "#F1EDFA",
+            border: "#C9BDEB",
+        },
         icon: (
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <rect x="3.5" y="7" width="17" height="13.5" rx="2.5" />
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7M12 10v6m-3-3h6"
+                />
             </svg>
         ),
-        title: "Điều dưỡng đã hành nghề",
-        desc: "Dành cho điều dưỡng đã tốt nghiệp hoặc đang làm việc tại các bệnh viện, phòng khám hoặc cơ sở y tế.",
         checklist: [
-            "Xác minh CCCD",
-            "Chứng chỉ hành nghề",
-            "Bằng tốt nghiệp",
-            "Kinh nghiệm làm việc",
+            "CCCD còn rõ thông tin",
+            "Thông tin chứng chỉ hành nghề",
+            "Bằng tốt nghiệp chuyên môn",
+            "Thông tin kinh nghiệm làm việc",
         ],
-        btnLabel: "Tiếp tục với vai trò Điều dưỡng",
+        button: "Tiếp tục với vai trò Điều dưỡng",
     },
 ];
 
 const trustItems = [
     {
         icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.48-5.72A11.956 11.956 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"
+                />
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m8.5 12 2.2 2.2 4.8-4.8"
+                />
             </svg>
         ),
-        label: "Quy trình xác thực minh bạch",
+        label: "Quy trình xác thực rõ ràng",
     },
     {
         icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="12" r="9" />
+                <path strokeLinecap="round" d="M12 7v5l3.5 2" />
             </svg>
         ),
-        label: "Duyệt hồ sơ trong 24–48 giờ",
+        label: "Thời gian xét duyệt dự kiến 24–48 giờ",
     },
     {
         icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="5" y="10" width="14" height="11" rx="2" />
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 10V7a4 4 0 0 1 8 0v3"
+                />
             </svg>
         ),
-        label: "Bảo mật dữ liệu tiêu chuẩn HIPAA",
+        label: "Ưu tiên bảo mật thông tin",
     },
 ];
 
-/* ─── Component ─── */
 export default function ChooseRole() {
     const navigate = useNavigate();
-    const [hoveredRole, setHoveredRole] = useState(null);
 
     const handleChooseRole = (roleId) => {
         navigate(`/caregiver/verification?role=${roleId}`);
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#f4f8fa]">
-
-            {/* ══ HEADER CHUẨN CARELINK ══ */}
+        <div className="flex min-h-screen flex-col bg-[#F5F7FA] text-slate-800">
             <Header />
 
-            {/* ══ MAIN ══ */}
-            <main className="flex-1 w-full py-14">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-10">
+            <main className="flex-1 px-4 py-7 sm:px-6 sm:py-9">
+                <div className="mx-auto flex w-full max-w-5xl flex-col gap-7">
+                    {/* Heading */}
+                    <header className="mx-auto max-w-2xl text-center">
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            BẮT ĐẦU XÁC THỰC HỒ SƠ
+                        </div>
 
-                    {/* Page heading */}
-                    <div className="text-center flex flex-col gap-3 max-w-2xl mx-auto">
-                        <h1 className="text-4xl sm:text-5xl font-extrabold text-[#102030] tracking-tight">
-                            Chọn vai trò người chăm sóc
+                        <h1 className="text-2xl font-extrabold tracking-tight text-[#152536] sm:text-4xl">
+                            Bạn đang ở vai trò nào?
                         </h1>
-                        <p className="text-base text-slate-500 leading-relaxed">
-                            CareLink hỗ trợ nhiều nhóm người chăm sóc khác nhau. Vui lòng chọn vai trò phù hợp để hệ thống hiển thị quy trình xác thực chính xác.
+
+                        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+                            Chọn đúng nhóm để CareLink hướng dẫn bạn chuẩn bị giấy tờ
+                            và thông tin phù hợp.
                         </p>
-                    </div>
+                    </header>
 
                     {/* Role cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <section
+                        aria-label="Chọn vai trò"
+                        className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2"
+                    >
                         {roles.map((role) => (
-                            <div
+                            <article
                                 key={role.id}
-                                onMouseEnter={() => setHoveredRole(role.id)}
-                                onMouseLeave={() => setHoveredRole(null)}
-                                className={`relative bg-white rounded-2xl border p-7 flex flex-col gap-5 transition-all duration-300 ${
-                                    hoveredRole === role.id
-                                        ? "border-[#00677c]/40 shadow-lg shadow-[#00677c]/10 -translate-y-1"
-                                        : "border-slate-200 shadow-sm"
-                                }`}
+                                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_3px_12px_rgba(15,23,42,0.045)] transition-all duration-300 hover:-translate-y-1 hover:border-slate-400 hover:shadow-[0_12px_28px_rgba(15,23,42,0.09)]"
                             >
-                                {/* Badge */}
-                                <div className="absolute top-5 right-5">
-                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${role.badgeColor}`}>
-                                        {role.badge}
-                                    </span>
-                                </div>
+                                <div
+                                    className="h-1.5 w-full"
+                                    style={{ backgroundColor: role.theme.accent }}
+                                />
 
-                                {/* Icon */}
-                                <div className="w-13 h-13 w-12 h-12 rounded-xl bg-[#e8f4f8] text-[#00677c] flex items-center justify-center">
-                                    {role.icon}
-                                </div>
+                                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                                    <div className="flex items-start gap-3">
+                                        <div
+                                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border"
+                                            style={{
+                                                backgroundColor: role.theme.soft,
+                                                borderColor: role.theme.border,
+                                                color: role.theme.accent,
+                                            }}
+                                        >
+                                            <svg
+                                                className="h-6 w-6"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="1.7"
+                                            >
+                                                {role.id === "student" ? (
+                                                    <>
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M2.5 9.2 12 4l9.5 5.2L12 14.4 2.5 9.2Z"
+                                                        />
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M6.5 11.5v4.1c3.5 2.5 7.5 2.5 11 0v-4.1M21.5 9.2v5"
+                                                        />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <rect x="3.5" y="7" width="17" height="13.5" rx="2.5" />
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7M12 10v6m-3-3h6"
+                                                        />
+                                                    </>
+                                                )}
+                                            </svg>
+                                        </div>
 
-                                {/* Text */}
-                                <div className="flex flex-col gap-2">
-                                    <h2 className="text-xl font-bold text-[#102030] pr-24">{role.title}</h2>
-                                    <p className="text-sm text-slate-500 leading-relaxed">{role.desc}</p>
-                                </div>
-
-                                {/* Checklist */}
-                                <ul className="flex flex-col gap-2">
-                                    {role.checklist.map((item) => (
-                                        <li key={item} className="flex items-center gap-2.5 text-sm text-slate-600">
-                                            <span className="w-5 h-5 rounded-full bg-[#e8f4f8] flex items-center justify-center shrink-0">
-                                                <svg className="w-3 h-3 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                                </svg>
+                                        <div className="min-w-0 flex-1 pt-0.5">
+                                            <span
+                                                className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold sm:text-xs"
+                                                style={{
+                                                    color: role.theme.dark,
+                                                    backgroundColor: role.theme.soft,
+                                                    borderColor: role.theme.border,
+                                                }}
+                                            >
+                                                {role.eyebrow}
                                             </span>
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
 
-                                {/* CTA button */}
-                                <button
-                                    id={`btn-choose-role-${role.id}`}
-                                    onClick={() => handleChooseRole(role.id)}
-                                    className="w-full py-3.5 bg-[#00677c] text-white rounded-xl font-semibold text-sm mt-2 hover:bg-[#005264] transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-[#00677c]/30 hover:shadow-lg cursor-pointer"
-                                >
-                                    {role.btnLabel}
-                                </button>
-                            </div>
+                                            <h2 className="mt-2 text-lg font-extrabold leading-snug text-[#152536] sm:text-xl">
+                                                {role.title}
+                                            </h2>
+                                        </div>
+                                    </div>
+
+                                    <p className="mt-4 text-sm leading-6 text-slate-600">
+                                        {role.description}
+                                    </p>
+
+                                    <div className="my-5 h-px bg-slate-200" />
+
+                                    <p className="mb-3 text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                                        Hồ sơ cần chuẩn bị
+                                    </p>
+
+                                    <ul className="flex flex-1 flex-col gap-3">
+                                        {role.checklist.map((item) => (
+                                            <li
+                                                key={item}
+                                                className="flex items-start gap-2.5 text-sm text-slate-700"
+                                            >
+                                                <span
+                                                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                                                    style={{
+                                                        backgroundColor: role.theme.soft,
+                                                        color: role.theme.accent,
+                                                    }}
+                                                >
+                                                    <svg
+                                                        className="h-3.5 w-3.5"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2.5"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="m5 12 4 4L19 6"
+                                                        />
+                                                    </svg>
+                                                </span>
+                                                <span className="leading-5">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <button
+                                        id={`btn-choose-role-${role.id}`}
+                                        type="button"
+                                        onClick={() => handleChooseRole(role.id)}
+                                        className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-offset-2 active:translate-y-0"
+                                        style={{
+                                            backgroundColor: role.theme.accent,
+                                            "--tw-ring-color": `${role.theme.accent}35`,
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = role.theme.dark;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = role.theme.accent;
+                                        }}
+                                    >
+                                        {role.button}
+                                        <svg
+                                            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M5 12h14m-6-6 6 6-6 6"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </article>
                         ))}
-                    </div>
+                    </section>
 
-                    {/* Info box */}
-                    <div className="bg-[#eef5f8] border border-[#c8dfe8] rounded-2xl p-5 flex items-start gap-4 max-w-2xl mx-auto w-full">
-                        <div className="w-8 h-8 rounded-full bg-[#00677c]/15 flex items-center justify-center shrink-0 mt-0.5">
-                            <svg className="w-4 h-4 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    {/* Helpful note */}
+                    <section className="flex items-start gap-3 rounded-xl border border-slate-300 bg-white p-4 shadow-sm sm:p-5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                            <svg
+                                className="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <path strokeLinecap="round" d="M12 11v5m0-8h.01" />
                             </svg>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <p className="text-sm font-bold text-[#102030]">Vì sao cần chọn đúng vai trò?</p>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                Mỗi nhóm người chăm sóc có yêu cầu xác thực khác nhau. Việc lựa chọn đúng vai trò giúp CareLink rút ngắn thời gian xét duyệt và đảm bảo tính minh bạch cho các gia đình sử dụng dịch vụ.
+                        </span>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900">
+                                Chưa chắc nên chọn vai trò nào?
+                            </h3>
+                            <p className="mt-1 text-sm leading-5 text-slate-600">
+                                Nếu bạn vẫn đang theo học ngành Y hoặc Điều dưỡng, hãy chọn
+                                Sinh viên. Nếu đã tốt nghiệp và cần xác thực hồ sơ hành nghề,
+                                hãy chọn Điều dưỡng đã hành nghề.
                             </p>
                         </div>
-                    </div>
+                    </section>
 
-                    {/* Trust badges */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 pt-2">
+                    {/* Trust points */}
+                    <div className="grid grid-cols-1 gap-3 border-t border-slate-300 pt-5 sm:grid-cols-3 sm:gap-4">
                         {trustItems.map((item) => (
-                            <div key={item.label} className="flex items-center gap-2 text-slate-500">
-                                <span className="text-[#00677c]">{item.icon}</span>
-                                <span className="text-sm font-medium">{item.label}</span>
+                            <div
+                                key={item.label}
+                                className="flex items-center justify-center gap-2.5 text-center text-xs font-medium text-slate-600 sm:text-sm"
+                            >
+                                <span className="h-5 w-5 shrink-0 text-emerald-700">
+                                    {React.cloneElement(item.icon, {
+                                        className: "h-5 w-5",
+                                    })}
+                                </span>
+                                {item.label}
                             </div>
                         ))}
                     </div>
                 </div>
             </main>
 
-            {/* ══ SHARED FOOTER ══ */}
             <Footer />
         </div>
     );
