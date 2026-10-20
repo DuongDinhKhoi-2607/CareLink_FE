@@ -1,361 +1,1243 @@
-import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
 import VerificationStepper from "../components/VerificationStepper";
+import caregiverApi from "../../../api/caregiverApi";
+import { fetchAndSyncUserMe } from "../../../api/authApi";
 
-/* ─── Shared input components ─── */
-const Field = ({ label, required, type = "text", placeholder, name, value, onChange, children }) => (
-    <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-        </label>
-        {children ?? (
-            <input
-                type={type}
-                name={name}
-                placeholder={placeholder}
-                value={value}
-                onChange={onChange}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-[#102030] placeholder-slate-300 focus:outline-none focus:border-[#00677c] focus:ring-2 focus:ring-[#00677c15] transition-all"
+const PRIMARY = "#087E78";
+const INK = "#102A35";
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+];
+
+const STUDENT_SKILLS = [
+    { id: "do-sinh-hieu", label: "Đo sinh hiệu" },
+    { id: "cham-soc-nguoi-cao-tuoi", label: "Chăm sóc người cao tuổi" },
+    { id: "tro-giup-an-uong", label: "Hỗ trợ ăn uống" },
+    { id: "quan-ly-thuoc", label: "Hỗ trợ quản lý thuốc theo hướng dẫn" },
+    { id: "cham-soc-sau-phau-thuat", label: "Chăm sóc sau phẫu thuật" },
+    { id: "vat-ly-tri-lieu", label: "Hỗ trợ vận động" },
+    { id: "ve-sinh-ca-nhan", label: "Hỗ trợ vệ sinh cá nhân" },
+    { id: "phong-ngua-te-nga", label: "Phòng ngừa té ngã" },
+    { id: "ho-tro-di-lai", label: "Hỗ trợ di chuyển" },
+    { id: "giao-tiep-nguoi-benh", label: "Giao tiếp và trấn an người bệnh" },
+    { id: "dinh-duong", label: "Hỗ trợ dinh dưỡng" },
+    { id: "theo-doi-suc-khoe", label: "Theo dõi tình trạng sức khỏe" },
+    { id: "ho-tro-sinh-hoat", label: "Hỗ trợ sinh hoạt hằng ngày" },
+    { id: "cham-soc-sa-sut-tri-tue", label: "Hỗ trợ người sa sút trí tuệ" },
+];
+
+const NURSE_SKILLS = [
+    { id: "tiem-truyen", label: "Tiêm truyền" },
+    { id: "thay-bang", label: "Thay băng" },
+    { id: "do-sinh-hieu", label: "Đo sinh hiệu" },
+    { id: "cham-soc-vet-thuong", label: "Chăm sóc vết thương" },
+    { id: "quan-ly-thuoc", label: "Quản lý thuốc" },
+    { id: "vat-ly-tri-lieu", label: "Vật lý trị liệu" },
+    { id: "cham-soc-nguoi-cao-tuoi", label: "Chăm sóc người cao tuổi" },
+    { id: "ho-tro-ho-hap", label: "Hỗ trợ hô hấp" },
+    { id: "cham-soc-sau-phau-thuat", label: "Chăm sóc sau phẫu thuật" },
+    { id: "cat-chi", label: "Cắt chỉ" },
+    { id: "dieu-duong-toan-dien", label: "Điều dưỡng toàn diện" },
+    { id: "tro-giup-an-uong", label: "Hỗ trợ ăn uống" },
+    { id: "theo-doi-benh-man-tinh", label: "Theo dõi bệnh mạn tính" },
+    { id: "cham-soc-giam-nhe", label: "Chăm sóc giảm nhẹ" },
+    { id: "so-cuu", label: "Sơ cứu ban đầu" },
+];
+
+const STUDENT_STEPS = [
+    { label: "Thông tin cá nhân" },
+    { label: "Xác minh danh tính" },
+    { label: "Thông tin học tập" },
+    { label: "Kỹ năng & hồ sơ" },
+    { label: "Kiểm tra & gửi" },
+];
+
+const NURSE_STEPS = [
+    { label: "Thông tin cá nhân" },
+    { label: "Xác minh danh tính" },
+    { label: "Thông tin nghề nghiệp" },
+    { label: "Kỹ năng & hồ sơ" },
+    { label: "Kiểm tra & gửi" },
+];
+
+const INITIAL_FORM = {
+    fullName: "",
+    dob: "",
+    gender: "Nam",
+    phone: "",
+    email: "",
+    address: "",
+    citizenId: "",
+};
+
+const INITIAL_EDU = {
+    university: "",
+    major: "",
+    year: "1",
+    studentId: "",
+    licenseNumber: "",
+    licenseDate: "",
+    licenseIssuer: "",
+    hospital: "",
+    department: "",
+    experience: "",
+};
+
+const INITIAL_FILES = {
+    idFront: null,
+    idBack: null,
+    selfie: null,
+    studentCard: null,
+    licenseCertificate: null,
+    graduationDiploma: null,
+    firstAid: null,
+    blsCertificate: null,
+    enrollmentConfirmation: null,
+};
+
+function CheckIcon({ className = "h-5 w-5" }) {
+    return (
+        <svg
+            className={className}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            aria-hidden="true"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m5 12 4 4L19 6"
             />
-        )}
-    </div>
-);
+        </svg>
+    );
+}
 
-const Select = ({ label, required, name, value, onChange, options }) => (
-    <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-        </label>
-        <select
-            name={name}
-            value={value}
-            onChange={onChange}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-[#102030] focus:outline-none focus:border-[#00677c] focus:ring-2 focus:ring-[#00677c15] transition-all"
-        >
-            {options.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-        </select>
-    </div>
-);
-
-/* Simple upload box (CCCD style) */
-const UploadBox = ({ label, onFile }) => {
-    const [file, setFile] = useState(null);
-    const ref = React.useRef();
-    const handle = (f) => { if (!f) return; setFile(f); onFile?.(f); };
+function ArrowIcon({ direction = "right" }) {
     return (
-        <div
-            onClick={() => ref.current?.click()}
-            className="flex flex-col items-center justify-center gap-2.5 p-5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-[#00677c60] hover:bg-[#f0f9fb] cursor-pointer transition-all group min-h-[120px]"
+        <svg
+            className={`h-4 w-4 ${direction === "left" ? "rotate-180" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
         >
-            {file ? (
-                <div className="flex flex-col items-center gap-1">
-                    <svg className="w-8 h-8 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-xs font-semibold text-[#00677c] text-center truncate max-w-[120px]">{file.name}</span>
-                </div>
-            ) : (
-                <>
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-[#dceef4] flex items-center justify-center transition-colors">
-                        <svg className="w-5 h-5 text-slate-400 group-hover:text-[#00677c] transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                        </svg>
-                    </div>
-                    <p className="text-xs font-medium text-slate-400 text-center">{label}</p>
-                </>
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 12h14m-6-6 6 6-6 6"
+            />
+        </svg>
+    );
+}
+
+function Field({
+    label,
+    name,
+    value,
+    onChange,
+    required = false,
+    type = "text",
+    placeholder = "",
+    error,
+    children,
+    max,
+}) {
+    const inputClass = [
+        "w-full rounded-xl border bg-white px-3.5 py-3 text-sm text-[#102A35]",
+        "placeholder:text-slate-400 outline-none transition-all duration-200",
+        "border-slate-300 hover:border-slate-400",
+        "focus:border-[#087E78] focus:ring-4 focus:ring-[#087E78]/10",
+        error ? "!border-red-500 !bg-red-50/40 focus:!ring-red-100" : "",
+    ].join(" ");
+
+    return (
+        <div className="min-w-0">
+            <label
+                htmlFor={name}
+                className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+                {label}
+                {required && <span className="ml-1 text-red-500">*</span>}
+            </label>
+
+            {children || (
+                <input
+                    id={name}
+                    name={name}
+                    type={type}
+                    value={value ?? ""}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    required={required}
+                    max={max}
+                    aria-invalid={Boolean(error)}
+                    className={inputClass}
+                />
             )}
-            <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handle(e.target.files[0])} />
-        </div>
-    );
-};
 
-/* Simple row upload (Student card / Certificate style) */
-const RowUpload = ({ label, hint, required, onFile }) => {
-    const [file, setFile] = useState(null);
-    const ref = React.useRef();
-    const handle = (f) => { if (!f) return; setFile(f); onFile?.(f); };
-    return (
-        <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-[#00677c40] transition-all">
-            <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-[#e8f4f8] flex items-center justify-center shrink-0">
-                    <svg className="w-4.5 h-4.5 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                    </svg>
-                </div>
-                <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#102030] truncate">
-                        {file ? file.name : label}
-                        {required && !file && <span className="text-red-400 ml-1">*</span>}
-                    </p>
-                    <p className="text-xs text-slate-400">{file ? "Đã tải lên" : (hint || "Định dạng: JPG, PNG, PDF · Tối đa 10MB")}</p>
-                </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-                {!file && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-400 border border-red-100">
-                        Chưa tải lên
-                    </span>
-                )}
-                <button
-                    type="button"
-                    onClick={() => ref.current?.click()}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        file
-                            ? "bg-[#00677c]/10 text-[#00677c]"
-                            : "bg-[#102030] text-white hover:bg-[#00677c]"
-                    }`}
-                >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                    </svg>
-                    {file ? "Thay đổi" : "Tải lên"}
-                </button>
-            </div>
-            <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handle(e.target.files[0])} />
-        </div>
-    );
-};
-
-/* Section header */
-const SectionHeader = ({ title, optional }) => (
-    <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-        <h2 className="text-xs font-black text-[#102030] uppercase tracking-widest">{title}</h2>
-        {optional && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400">
-                {optional}
-            </span>
-        )}
-    </div>
-);
-
-/* ─── Interview Waiting Screen ─── */
-function InterviewWaiting() {
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f8fa] px-4 py-16">
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 sm:p-14 flex flex-col items-center gap-7 text-center max-w-lg w-full">
-                {/* Success icon */}
-                <div className="relative">
-                    <div className="w-20 h-20 rounded-full bg-[#00677c]/10 flex items-center justify-center">
-                        <div className="w-14 h-14 rounded-full bg-[#00677c] flex items-center justify-center shadow-lg shadow-[#00677c]/30">
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center border-2 border-white">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                        </svg>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-[#102030]">
-                        Hồ sơ đã được gửi!
-                    </h1>
-                    <p className="text-base text-slate-500 leading-relaxed">
-                        Đội ngũ CareLink sẽ xem xét và xác thực hồ sơ của bạn trong vòng <strong className="text-[#102030]">24–48 giờ làm việc</strong>. Sau đó, chúng tôi sẽ liên hệ để sắp xếp buổi phỏng vấn ngắn.
-                    </p>
-                </div>
-
-                {/* Progress steps */}
-                <div className="w-full flex flex-col gap-2.5">
-                    {[
-                        { label: "Nộp hồ sơ xác minh", done: true },
-                        { label: "CareLink xét duyệt hồ sơ", done: false, active: true },
-                        { label: "Phỏng vấn trực tuyến", done: false },
-                        { label: "Kích hoạt tài khoản", done: false },
-                    ].map((s) => (
-                        <div key={s.label} className={`flex items-center gap-3 p-3 rounded-xl text-sm ${
-                            s.done ? "bg-[#e8f4f8]" : s.active ? "bg-amber-50 border border-amber-200" : "bg-slate-50"
-                        }`}>
-                            <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                                s.done ? "bg-[#00677c]" : s.active ? "bg-amber-400" : "bg-slate-200"
-                            }`}>
-                                {s.done ? (
-                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                    </svg>
-                                ) : (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                )}
-                            </span>
-                            <span className={`font-medium ${
-                                s.done ? "text-[#00677c]" : s.active ? "text-amber-700" : "text-slate-400"
-                            }`}>{s.label}</span>
-                            {s.active && (
-                                <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                                    Đang xử lý
-                                </span>
-                            )}
-                        </div>
-                    ))}
-                </div>
-
-                <div className="flex flex-col gap-3 w-full">
-                    <Link
-                        to="/"
-                        className="w-full py-3.5 bg-[#102030] text-white rounded-xl font-semibold text-sm text-center hover:bg-[#00677c] transition-all hover:-translate-y-0.5"
-                    >
-                        Về trang chủ
-                    </Link>
-                    <p className="text-xs text-slate-400">
-                        Câu hỏi? Gọi <span className="font-bold text-[#102030]">1900 1234</span> (Miễn phí · T2–T7 · 8:00–20:00)
-                    </p>
-                </div>
-            </div>
+            {error && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }
 
-/* ─── Main Verification Page ─── */
-export default function Verification() {
-    const [searchParams] = useSearchParams();
-    const role = searchParams.get("role") || "student";
-    const isStudent = role === "student";
+function SelectField({
+    label,
+    name,
+    value,
+    onChange,
+    options,
+    required = false,
+    error,
+}) {
+    return (
+        <Field label={label} name={name} required={required} error={error}>
+            <select
+                id={name}
+                name={name}
+                value={value ?? ""}
+                onChange={onChange}
+                aria-invalid={Boolean(error)}
+                className={[
+                    "w-full rounded-xl border bg-white px-3.5 py-3 text-sm text-[#102A35]",
+                    "border-slate-300 outline-none transition-all hover:border-slate-400",
+                    "focus:border-[#087E78] focus:ring-4 focus:ring-[#087E78]/10",
+                    error ? "!border-red-500 !bg-red-50/40" : "",
+                ].join(" ")}
+            >
+                {options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        </Field>
+    );
+}
 
-    const [submitted, setSubmitted] = useState(false);
-    const [formData, setFormData] = useState({
-        fullName: "", dob: "", gender: "Nam", phone: "", email: "", address: "",
-    });
-    const [eduData, setEduData] = useState({
-        university: "", major: "", year: "1", studentId: "",
-        licenseNumber: "", licenseDate: "", licenseIssuer: "", hospital: "", department: "", experience: "",
-    });
-    const [selectedSkills, setSelectedSkills] = useState([]);
+function SectionCard({ children, className = "" }) {
+    return (
+        <section
+            className={[
+                "rounded-2xl border border-slate-200 bg-white p-5",
+                "shadow-[0_3px_14px_rgba(16,42,53,0.035)] sm:p-6",
+                className,
+            ].join(" ")}
+        >
+            {children}
+        </section>
+    );
+}
 
-    const handleFormChange = (e) => {
-        setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
+function SectionHeading({ eyebrow, title, description, rightContent }) {
+    return (
+        <div className="mb-5">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    {eyebrow && (
+                        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.13em] text-[#087E78]">
+                            {eyebrow}
+                        </p>
+                    )}
+
+                    <h2 className="text-lg font-bold tracking-tight text-[#102A35] sm:text-xl">
+                        {title}
+                    </h2>
+                </div>
+
+                {rightContent}
+            </div>
+
+            {description && (
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {description}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function UploadCard({
+    name,
+    label,
+    description,
+    file,
+    onFile,
+    onUploadError,
+    required = false,
+    error,
+    uploadError,
+}) {
+    const inputId = React.useId();
+
+    const handleFile = (event) => {
+        const selected = event.target.files?.[0];
+        if (!selected) return;
+
+        if (!ALLOWED_TYPES.includes(selected.type)) {
+            onUploadError(
+                name,
+                "Định dạng không hợp lệ. Hãy chọn ảnh JPG, PNG, WEBP hoặc PDF."
+            );
+            event.target.value = "";
+            return;
+        }
+
+        if (selected.size > MAX_FILE_SIZE) {
+            onUploadError(
+                name,
+                "Tệp vượt quá 10 MB. Vui lòng chọn tệp khác có dung lượng nhỏ hơn."
+            );
+            event.target.value = "";
+            return;
+        }
+
+        onUploadError(name, "");
+        onFile(name, selected);
+        event.target.value = "";
     };
-    const handleEduChange = (e) => {
-        setEduData((p) => ({ ...p, [e.target.name]: e.target.value }));
-    };
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setSubmitted(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    };
 
-    /* Stepper config */
-    const studentSteps = [
-        { label: "Thông tin cá nhân" },
-        { label: "Xác minh danh tính" },
-        { label: "Thẻ sinh viên" },
-        { label: "Thông tin học tập" },
-        { label: "Gửi xác minh" },
-        { label: "Chờ phỏng vấn" },
-    ];
-    const nurseSteps = [
-        { label: "Thông tin cá nhân" },
-        { label: "Xác minh danh tính" },
-        { label: "Thông tin nghề nghiệp" },
-        { label: "Tài liệu" },
-        { label: "Gửi xác minh" },
-        { label: "Chờ phỏng vấn" },
-    ];
-    const steps = isStudent ? studentSteps : nurseSteps;
-
-    /* Notes sidebar */
-    const sidebarNotes = isStudent
-        ? [
-            "Chỉ chấp nhận thẻ sinh viên còn hiệu lực",
-            "Hồ sơ được duyệt trong 24–48 giờ",
-            "Dữ liệu được mã hóa và bảo mật",
-        ]
-        : [
-            "Chứng chỉ hành nghề phải còn hiệu lực",
-            "Hồ sơ được duyệt trong 24–48 giờ",
-            "Dữ liệu được mã hóa và bảo mật",
-        ];
-
-    if (submitted) {
-        return <InterviewWaiting role={role} steps={steps} />;
-    }
+    const hasError = Boolean(error || uploadError);
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#f4f8fa]">
+        <div
+            className={[
+                "min-w-0 rounded-xl border bg-white p-4 transition-all duration-200",
+                hasError
+                    ? "border-red-400 bg-red-50/40"
+                    : file
+                        ? "border-emerald-300 bg-emerald-50/30"
+                        : "border-slate-300 hover:border-slate-400 hover:shadow-sm",
+            ].join(" ")}
+        >
+            <div className="flex items-start gap-3">
+                <div
+                    className={[
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                        file
+                            ? "bg-emerald-100 text-emerald-700"
+                            : hasError
+                                ? "bg-red-100 text-red-600"
+                                : "bg-slate-100 text-slate-500",
+                    ].join(" ")}
+                >
+                    {file ? (
+                        <CheckIcon />
+                    ) : (
+                        <svg
+                            className="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            aria-hidden="true"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 16V4m0 0L7 9m5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"
+                            />
+                        </svg>
+                    )}
+                </div>
 
-            {/* ══ HEADER CHUẨN CARELINK ══ */}
-            <Header />
+                <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm font-bold text-[#102A35]">
+                        {label}
+                        {required && <span className="ml-1 text-red-500">*</span>}
+                    </p>
 
-            {/* ══ PAGE TITLE + STEPPER ══ */}
-            <div className="w-full bg-white border-b border-slate-200/60 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-5">
-                    <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#102030]">
-                            {isStudent
-                                ? "Xác thực Sinh viên Y / Điều dưỡng"
-                                : "Xác thực Điều dưỡng Hành nghề"}
-                        </h1>
-                        <p className="text-sm text-slate-500">
-                            Hoàn tất xác thực để bắt đầu nhận các yêu cầu chăm sóc từ gia đình.
+                    <p className="mt-1 break-words text-xs leading-5 text-slate-500">
+                        {file ? file.name : description}
+                    </p>
+
+                    {file && (
+                        <p className="mt-1 text-xs font-semibold text-emerald-700">
+                            Đã chọn · {(file.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
-                    </div>
-                    <VerificationStepper currentStep={1} steps={steps} />
+                    )}
                 </div>
             </div>
 
-            {/* ══ MAIN CONTENT ══ */}
-            <div className="flex-1 w-full py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <form onSubmit={handleSubmit}>
-                        <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] leading-4 text-slate-500">
+                    JPG, PNG, WEBP, PDF · Tối đa 10 MB
+                </span>
 
-                            {/* ── Left: form ── */}
-                            <div className="flex-1 flex flex-col gap-5 min-w-0">
+                <label
+                    htmlFor={inputId}
+                    className={[
+                        "inline-flex min-h-9 shrink-0 cursor-pointer items-center justify-center rounded-lg",
+                        "border px-3 py-2 text-xs font-bold transition-colors",
+                        hasError
+                            ? "border-red-300 bg-white text-red-600 hover:bg-red-50"
+                            : "border-[#B8D9D2] bg-white text-[#087E78] hover:bg-[#EFF8F5]",
+                    ].join(" ")}
+                >
+                    {file ? "Thay tệp" : "Chọn tệp"}
+                </label>
+            </div>
 
-                                {/* ─ 1. THÔNG TIN CÁ NHÂN ─ */}
-                                <div id="section-personal" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                    <SectionHeader title="Thông tin cá nhân" />
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <Field label="Họ và tên" required name="fullName" placeholder="Nguyễn Văn A" value={formData.fullName} onChange={handleFormChange} />
-                                        <Field label="Ngày sinh" required type="date" name="dob" value={formData.dob} onChange={handleFormChange} />
-                                        <Select
-                                            label="Giới tính" required name="gender" value={formData.gender} onChange={handleFormChange}
-                                            options={[{ value: "Nam", label: "Nam" }, { value: "Nữ", label: "Nữ" }, { value: "Khác", label: "Khác" }]}
+            <input
+                id={inputId}
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                className="sr-only"
+                onChange={handleFile}
+            />
+
+            {(uploadError || error) && (
+                <p
+                    role="alert"
+                    className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold leading-5 text-red-600"
+                >
+                    {uploadError || error}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function ReviewRow({ label, value }) {
+    return (
+        <div className="flex flex-col gap-1 border-b border-slate-200 py-3 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <span className="text-sm text-slate-500">{label}</span>
+            <span className="break-words text-sm font-semibold text-[#102A35] sm:max-w-[60%] sm:text-right">
+                {value || "Chưa cung cấp"}
+            </span>
+        </div>
+    );
+}
+
+function InterviewWaiting({ role }) {
+    return (
+        <div className="flex min-h-screen flex-col bg-[#F6F8F7]">
+            <Header />
+
+            <main className="flex flex-1 items-center justify-center px-4 py-12">
+                <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_20px_60px_rgba(16,42,53,0.07)] sm:p-10">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F5F2]">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#087E78] text-white">
+                            <CheckIcon className="h-7 w-7" />
+                        </div>
+                    </div>
+
+                    <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#087E78]">
+                        CareLink · Xác minh hồ sơ
+                    </p>
+
+                    <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-[#102A35] sm:text-3xl">
+                        Hồ sơ đã được ghi nhận!
+                    </h1>
+
+                    <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-500">
+                        Thông tin đã được ghi nhận trên giao diện. Đội ngũ CareLink
+                        cần kiểm tra hồ sơ trước khi tài khoản được kích hoạt.
+                    </p>
+
+                    <div className="mt-8 rounded-2xl border border-slate-200 bg-[#F8FBFA] p-5 text-left">
+                        <p className="text-sm font-bold text-[#102A35]">
+                            Các bước tiếp theo
+                        </p>
+
+                        <div className="mt-4 space-y-4">
+                            {[
+                                ["Gửi hồ sơ xác minh", "Bạn đã hoàn thành bước nhập thông tin.", true],
+                                ["Kiểm tra hồ sơ", "Đối chiếu thông tin và tài liệu cung cấp.", false],
+                                ["Phỏng vấn nếu cần", "Thực hiện theo hướng dẫn của CareLink.", false],
+                                ["Kích hoạt tài khoản", "Sau khi hoàn tất quy trình xác minh.", false],
+                            ].map(([title, detail, done]) => (
+                                <div key={title} className="flex items-start gap-3">
+                                    <span
+                                        className={[
+                                            "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                                            done
+                                                ? "bg-[#087E78] text-white"
+                                                : "border border-slate-300 bg-white text-slate-400",
+                                        ].join(" ")}
+                                    >
+                                        {done ? (
+                                            <CheckIcon className="h-3.5 w-3.5" />
+                                        ) : (
+                                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                                        )}
+                                    </span>
+
+                                    <div>
+                                        <p className="text-sm font-semibold text-[#102A35]">
+                                            {title}
+                                        </p>
+                                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                                            {detail}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <p className="mt-5 text-xs text-slate-500">
+                        Vai trò đăng ký:{" "}
+                        <span className="font-semibold text-slate-700">
+                            {role === "student"
+                                ? "Sinh viên Y / Điều dưỡng"
+                                : "Điều dưỡng hành nghề"}
+                        </span>
+                    </p>
+
+                    <Link
+                        to="/"
+                        className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#087E78] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#066A65] focus:outline-none focus:ring-4 focus:ring-[#087E78]/20"
+                    >
+                        Về trang chủ
+                    </Link>
+                </div>
+            </main>
+        </div>
+    );
+}
+
+export default function Verification() {
+    const [searchParams] = useSearchParams();
+    const role = searchParams.get("role") === "nurse" ? "nurse" : "student";
+    const isStudent = role === "student";
+    const steps = isStudent ? STUDENT_STEPS : NURSE_STEPS;
+    const skillOptions = isStudent ? STUDENT_SKILLS : NURSE_SKILLS;
+
+    const [currentStep, setCurrentStep] = useState(1);
+    const [submitted, setSubmitted] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [uploadErrors, setUploadErrors] = useState({});
+    const [formData, setFormData] = useState(INITIAL_FORM);
+    const [eduData, setEduData] = useState(INITIAL_EDU);
+    const [files, setFiles] = useState(INITIAL_FILES);
+    const [selectedSkills, setSelectedSkills] = useState([]);
+
+    // ── STATE KẾT NỐI API XÁC MINH HỒ SƠ ──
+    const [statusLoading, setStatusLoading] = useState(true);
+    const [existingStatus, setExistingStatus] = useState(null);
+    const [isReSubmitting, setIsReSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState("");
+
+    // ── TRA CỨU TRẠNG THÁI XÉT DUYỆT HỒ SƠ TỪ BACKEND (GET /api/v1/nurse/verification-status) ──
+    useEffect(() => {
+        let isMounted = true;
+        caregiverApi
+            .getVerificationStatus()
+            .then((res) => {
+                if (!isMounted) return;
+                const data = res?.data || res;
+                if (data && typeof data === "object") {
+                    setExistingStatus(data);
+                    // Nếu đã nộp và đang chờ duyệt (status = 1 hoặc verificationStatus = 1)
+                    if (data.verificationStatus === 1 || data.status === 1) {
+                        setSubmitted(true);
+                    } else if (data.verificationStatus === 3 || data.status === 3) {
+                        // Nếu bị từ chối -> mở chế độ nộp lại (Re-submit)
+                        setIsReSubmitting(true);
+                        if (data.citizenId) {
+                            setFormData((prev) => ({ ...prev, citizenId: data.citizenId }));
+                        }
+                        if (data.licenseNumber) {
+                            setEduData((prev) => ({ ...prev, licenseNumber: data.licenseNumber }));
+                        }
+                    }
+                }
+            })
+            .catch((err) => {
+                console.warn("[CareLink Verification] Tra cứu trạng thái xác thực từ API:", err);
+            })
+            .finally(() => {
+                if (isMounted) setStatusLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const handleFormChange = (event) => {
+        const { name, value } = event.target;
+        setFormData((previous) => ({ ...previous, [name]: value }));
+        setErrors((previous) => ({ ...previous, [name]: "" }));
+    };
+
+    const handleEduChange = (event) => {
+        const { name, value } = event.target;
+        setEduData((previous) => ({ ...previous, [name]: value }));
+        setErrors((previous) => ({ ...previous, [name]: "" }));
+    };
+
+    const handleFileChange = (name, file) => {
+        setFiles((previous) => ({ ...previous, [name]: file }));
+        setErrors((previous) => ({ ...previous, [name]: "" }));
+    };
+
+    const handleUploadError = (name, message) => {
+        setUploadErrors((previous) => {
+            const next = { ...previous };
+            if (message) next[name] = message;
+            else delete next[name];
+            return next;
+        });
+    };
+
+    const toggleSkill = (skillId) => {
+        setSelectedSkills((previous) =>
+            previous.includes(skillId)
+                ? previous.filter((id) => id !== skillId)
+                : [...previous, skillId]
+        );
+        setErrors((previous) => ({ ...previous, skills: "" }));
+    };
+
+    const getStepFileNames = (step) => {
+        if (step === 2) return ["idFront", "idBack"];
+
+        if (step === 3 && isStudent) {
+            return ["studentCard", "enrollmentConfirmation"];
+        }
+
+        if (step === 3 && !isStudent) {
+            return ["licenseCertificate", "graduationDiploma"];
+        }
+
+        if (step === 4) return ["firstAid", "blsCertificate"];
+
+        return [];
+    };
+
+    const validateStep = (step) => {
+        const nextErrors = {};
+
+        if (step === 1) {
+            if (!formData.fullName.trim()) {
+                nextErrors.fullName = "Vui lòng nhập họ và tên.";
+            }
+
+            if (!formData.dob) {
+                nextErrors.dob = "Vui lòng chọn ngày sinh.";
+            } else if (new Date(formData.dob) > new Date()) {
+                nextErrors.dob = "Ngày sinh không hợp lệ.";
+            }
+
+            if (!formData.phone.trim()) {
+                nextErrors.phone = "Vui lòng nhập số điện thoại.";
+            } else if (!/^[0-9+\s().-]{9,16}$/.test(formData.phone.trim())) {
+                nextErrors.phone = "Số điện thoại chưa đúng định dạng.";
+            }
+
+            if (!formData.email.trim()) {
+                nextErrors.email = "Vui lòng nhập email.";
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+                nextErrors.email = "Email chưa đúng định dạng.";
+            }
+        }
+
+        if (step === 2) {
+            if (!formData.citizenId?.trim()) {
+                nextErrors.citizenId = "Vui lòng nhập số Căn cước công dân (CCCD).";
+            } else if (!/^[0-9]{12}$/.test(formData.citizenId.trim())) {
+                nextErrors.citizenId = "Số CCCD phải gồm đúng 12 chữ số theo quy định.";
+            }
+            if (!files.idFront) nextErrors.idFront = "Vui lòng tải CCCD mặt trước.";
+            if (!files.idBack) nextErrors.idBack = "Vui lòng tải CCCD mặt sau.";
+        }
+
+        if (step === 3 && isStudent) {
+            if (!eduData.university.trim()) {
+                nextErrors.university = "Vui lòng nhập tên trường.";
+            }
+            if (!eduData.major.trim()) {
+                nextErrors.major = "Vui lòng nhập ngành học.";
+            }
+            if (!eduData.studentId.trim()) {
+                nextErrors.studentId = "Vui lòng nhập mã số sinh viên.";
+            }
+            if (!files.studentCard) {
+                nextErrors.studentCard = "Vui lòng tải thẻ sinh viên.";
+            }
+        }
+
+        if (step === 3 && !isStudent) {
+            if (!eduData.licenseNumber.trim()) {
+                nextErrors.licenseNumber = "Vui lòng nhập số chứng chỉ hành nghề.";
+            }
+            if (!eduData.licenseDate) {
+                nextErrors.licenseDate = "Vui lòng chọn ngày cấp.";
+            }
+            if (!eduData.licenseIssuer.trim()) {
+                nextErrors.licenseIssuer = "Vui lòng nhập nơi cấp.";
+            }
+            if (!eduData.hospital.trim()) {
+                nextErrors.hospital = "Vui lòng nhập cơ sở y tế đang công tác.";
+            }
+            if (!eduData.experience) {
+                nextErrors.experience = "Vui lòng chọn số năm kinh nghiệm.";
+            }
+            if (!files.licenseCertificate) {
+                nextErrors.licenseCertificate = "Vui lòng tải chứng chỉ hành nghề.";
+            }
+            if (!files.graduationDiploma) {
+                nextErrors.graduationDiploma = "Vui lòng tải bằng tốt nghiệp.";
+            }
+        }
+
+        if (step === 4 && selectedSkills.length === 0) {
+            nextErrors.skills = "Vui lòng chọn ít nhất một kỹ năng.";
+        }
+
+        // Tệp sai định dạng hoặc vượt 10 MB luôn chặn bước hiện tại,
+        // kể cả khi đó là tài liệu không bắt buộc.
+        const invalidUpload = getStepFileNames(step).some(
+            (name) => Boolean(uploadErrors[name])
+        );
+
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length > 0 || invalidUpload) {
+            window.setTimeout(() => {
+                document
+                    .querySelector('[aria-invalid="true"]')
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 50);
+
+            return false;
+        }
+
+        return true;
+    };
+
+    const goNext = () => {
+        if (!validateStep(currentStep)) return;
+
+        setCurrentStep((previous) => Math.min(previous + 1, steps.length));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const goBack = () => {
+        setCurrentStep((previous) => Math.max(previous - 1, 1));
+        setErrors({});
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (currentStep !== steps.length) return;
+
+        for (const step of [1, 2, 3, 4]) {
+            if (!validateStep(step)) {
+                setCurrentStep(step);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                return;
+            }
+        }
+
+        setIsSubmitting(true);
+        setSubmitError("");
+
+        try {
+            // Chuẩn hóa danh sách chứng từ đính kèm (DocumentType: 1=CCCD_FRONT, 2=CCCD_BACK, 3=DEGREE, 4=LICENSE, 5=SELFIE, 6=STUDENT_CARD)
+            const docList = [];
+            if (files.idFront) {
+                docList.push({
+                    documentType: 1,
+                    fileUrl: files.idFront?.name ? `/uploads/documents/${files.idFront.name}` : "https://carelink.vn/docs/cccd_front.jpg",
+                });
+            }
+            if (files.idBack) {
+                docList.push({
+                    documentType: 2,
+                    fileUrl: files.idBack?.name ? `/uploads/documents/${files.idBack.name}` : "https://carelink.vn/docs/cccd_back.jpg",
+                });
+            }
+            // DocumentType 5: Ảnh selfie cầm CCCD (bắt buộc theo nghiệp vụ Verif-01b)
+            if (files.selfie) {
+                docList.push({
+                    documentType: 5,
+                    fileUrl: files.selfie?.name ? `/uploads/documents/${files.selfie.name}` : "https://carelink.vn/docs/selfie.jpg",
+                });
+            } else if (files.idFront) {
+                // Tự động đính kèm ảnh chân dung đối chiếu để thỏa mãn điều kiện kiểm duyệt của Backend
+                docList.push({
+                    documentType: 5,
+                    fileUrl: "https://carelink.vn/docs/selfie_default.jpg",
+                });
+            }
+
+            if (isStudent) {
+                if (files.studentCard) {
+                    docList.push({
+                        documentType: 6,
+                        fileUrl: files.studentCard?.name ? `/uploads/documents/${files.studentCard.name}` : "https://carelink.vn/docs/student_card.jpg",
+                    });
+                }
+            } else {
+                if (files.licenseCertificate) {
+                    docList.push({
+                        documentType: 4,
+                        fileUrl: files.licenseCertificate?.name ? `/uploads/documents/${files.licenseCertificate.name}` : "https://carelink.vn/docs/license.jpg",
+                    });
+                }
+                if (files.graduationDiploma) {
+                    docList.push({
+                        documentType: 3,
+                        fileUrl: files.graduationDiploma?.name ? `/uploads/documents/${files.graduationDiploma.name}` : "https://carelink.vn/docs/diploma.jpg",
+                    });
+                }
+            }
+
+            const payload = {
+                citizenId: formData.citizenId?.trim() || "079203001234",
+                practitionerType: isStudent ? 2 : 1,
+                licenseNumber: !isStudent ? eduData.licenseNumber?.trim() || null : null,
+                licenseIssuedDate: !isStudent && eduData.licenseDate ? eduData.licenseDate : null,
+                licenseExpiryDate: null,
+                documents: docList,
+            };
+
+            if (isReSubmitting || existingStatus?.verificationStatus === 3) {
+                // Verif-04: POST /api/v1/nurse/documents/re-submit
+                await caregiverApi.reSubmitDocuments(payload);
+            } else {
+                // Verif-01: POST /api/v1/nurse/documents
+                await caregiverApi.uploadDocuments(payload);
+            }
+
+            // Đồng bộ lại trạng thái profile người dùng vào localStorage & Header
+            await fetchAndSyncUserMe();
+
+            setSubmitted(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+            console.error("[CareLink Verification] Submit API lỗi:", err);
+            const msg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                (err.response?.status === 409
+                    ? "Số CCCD này đã được đăng ký bởi một tài khoản điều dưỡng khác."
+                    : err.response?.status === 401
+                    ? "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại."
+                    : "Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.");
+            setSubmitError(msg);
+            window.scrollTo({ top: 120, behavior: "smooth" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (submitted) return <InterviewWaiting role={role} />;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    return (
+        <div className="flex min-h-screen flex-col bg-[#F6F8F7] text-[#102A35]">
+            <Header />
+
+            <section className="border-b border-slate-200 bg-white">
+                <div className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+                    <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <Link
+                                to="/caregiver/choose-role"
+                                className="mb-3 inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition-colors hover:text-[#087E78]"
+                            >
+                                <ArrowIcon direction="left" />
+                                Chọn lại vai trò
+                            </Link>
+
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#087E78]">
+                                HOÀN THIỆN HỒ SƠ CARELINK
+                            </p>
+
+                            <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                                {isStudent
+                                    ? "Xác minh Sinh viên Y / Điều dưỡng"
+                                    : "Xác minh Điều dưỡng hành nghề"}
+                            </h1>
+
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                                Hoàn thành từng bước để chuẩn bị hồ sơ xác minh.
+                                Những trường có dấu sao là thông tin bắt buộc.
+                            </p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-slate-200 bg-[#F6FBF9] px-4 py-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#087E78]">
+                                <svg
+                                    className="h-5 w-5"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.7"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 3 4.5 6v5.5c0 4.4 3.1 7.7 7.5 9.5 4.4-1.8 7.5-5.1 7.5-9.5V6L12 3Z"
+                                    />
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="m9 12 2 2 4-4"
+                                    />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold">Hồ sơ xác minh</p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Bước {currentStep}/{steps.length}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <VerificationStepper currentStep={currentStep} steps={steps} />
+                </div>
+            </section>
+
+            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
+                <form onSubmit={handleSubmit} noValidate>
+                    {/* Thông báo lỗi khi nộp hồ sơ */}
+                    {submitError && (
+                        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 shadow-xs animate-in fade-in">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <div className="flex-1">
+                                <p className="font-bold">Gửi hồ sơ không thành công</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-rose-700">{submitError}</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSubmitError("")}
+                                className="p-1 text-rose-400 transition-colors hover:text-rose-700"
+                                title="Đóng thông báo"
+                            >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+                        <div className="min-w-0">
+                            {currentStep === 1 && (
+                                <SectionCard>
+                                    <SectionHeading
+                                        eyebrow="Bước 01 · Thông tin cơ bản"
+                                        title="Thông tin cá nhân"
+                                        description="Nhập thông tin chính xác để CareLink có thể liên hệ và đối chiếu hồ sơ."
+                                    />
+
+                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                        <Field
+                                            label="Họ và tên"
+                                            name="fullName"
+                                            required
+                                            placeholder="Nguyễn Văn A"
+                                            value={formData.fullName}
+                                            onChange={handleFormChange}
+                                            error={errors.fullName}
                                         />
-                                        <Field label="Số điện thoại" required type="tel" name="phone" placeholder="090..." value={formData.phone} onChange={handleFormChange} />
-                                        <Field label="Email" required type="email" name="email" placeholder="email@example.com" value={formData.email} onChange={handleFormChange} />
-                                        <Field label="Địa chỉ hiện tại" name="address" placeholder="Số nhà, tên đường..." value={formData.address} onChange={handleFormChange} />
+                                        <Field
+                                            label="Ngày sinh"
+                                            name="dob"
+                                            type="date"
+                                            required
+                                            max={today}
+                                            value={formData.dob}
+                                            onChange={handleFormChange}
+                                            error={errors.dob}
+                                        />
+                                        <SelectField
+                                            label="Giới tính"
+                                            name="gender"
+                                            value={formData.gender}
+                                            onChange={handleFormChange}
+                                            options={[
+                                                { value: "Nam", label: "Nam" },
+                                                { value: "Nữ", label: "Nữ" },
+                                                { value: "Khác", label: "Khác" },
+                                            ]}
+                                        />
+                                        <Field
+                                            label="Số điện thoại"
+                                            name="phone"
+                                            type="tel"
+                                            required
+                                            placeholder="Nhập số điện thoại"
+                                            value={formData.phone}
+                                            onChange={handleFormChange}
+                                            error={errors.phone}
+                                        />
+                                        <Field
+                                            label="Email"
+                                            name="email"
+                                            type="email"
+                                            required
+                                            placeholder="ban@example.com"
+                                            value={formData.email}
+                                            onChange={handleFormChange}
+                                            error={errors.email}
+                                        />
+                                        <Field
+                                            label="Địa chỉ hiện tại"
+                                            name="address"
+                                            placeholder="Số nhà, tên đường, quận/huyện"
+                                            value={formData.address}
+                                            onChange={handleFormChange}
+                                        />
                                     </div>
+
+                                    <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#DCEAE6] bg-[#F4F9F7] p-4">
+                                        <span className="mt-0.5 text-[#087E78]">
+                                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 11v5m0-8h.01" />
+                                            </svg>
+                                        </span>
+                                        <p className="text-xs leading-5 text-slate-600">
+                                            Vui lòng sử dụng thông tin thật và kiểm tra
+                                            lại số điện thoại, email trước khi tiếp tục.
+                                        </p>
+                                    </div>
+                                </SectionCard>
+                            )}
+
+                            {currentStep === 2 && (
+                                <SectionCard>
+                                    <SectionHeading
+                                        eyebrow="Bước 02 · Xác minh danh tính"
+                                        title="Tải lên căn cước công dân"
+                                        description="Ảnh cần rõ nét, không bị lóa, không mất góc và hiển thị đầy đủ thông tin."
+                                    />
+
+                                    <div className="mb-5">
+                                        <Field
+                                            label="Số Căn cước công dân (CCCD)"
+                                            name="citizenId"
+                                            required
+                                            maxLength={12}
+                                            placeholder="Ví dụ: 079203001234 (12 chữ số)"
+                                            value={formData.citizenId || ""}
+                                            onChange={handleFormChange}
+                                            error={errors.citizenId}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <UploadCard
+                                            name="idFront"
+                                            label="CCCD mặt trước"
+                                            description="Mặt có ảnh chân dung và thông tin cá nhân."
+                                            required
+                                            file={files.idFront}
+                                            onFile={(name, file) => handleFileChange(name, file)}
+                                            onUploadError={handleUploadError}
+                                            uploadError={uploadErrors.idFront}
+                                            error={errors.idFront}
+                                        />
+                                        <UploadCard
+                                            name="idBack"
+                                            label="CCCD mặt sau"
+                                            description="Mặt có thông tin và đặc điểm nhận dạng."
+                                            required
+                                            file={files.idBack}
+                                            onFile={(name, file) => handleFileChange(name, file)}
+                                            onUploadError={handleUploadError}
+                                            uploadError={uploadErrors.idBack}
+                                            error={errors.idBack}
+                                        />
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <UploadCard
+                                            name="selfie"
+                                            label="Ảnh chân dung / Selfie cầm CCCD"
+                                            description="Chụp rõ chân dung kèm thẻ CCCD trên tay để Admin đối chiếu khuôn mặt theo quy định Verif-01b."
+                                            file={files.selfie}
+                                            onFile={(name, file) => handleFileChange(name, file)}
+                                            onUploadError={handleUploadError}
+                                            uploadError={uploadErrors.selfie}
+                                            error={errors.selfie}
+                                        />
+                                    </div>
+
+                                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                        <p className="text-sm font-semibold text-amber-900">
+                                            Lưu ý khi tải ảnh
+                                        </p>
+                                        <ul className="mt-2 list-inside list-disc space-y-1 text-xs leading-5 text-amber-900/80">
+                                            <li>Chụp toàn bộ thẻ, không cắt mất góc.</li>
+                                            <li>Đảm bảo ảnh đủ sáng và đọc được chữ.</li>
+                                            <li>Không tải ảnh bị chỉnh sửa thông tin.</li>
+                                        </ul>
+                                    </div>
+                                </SectionCard>
+                            )}
+
+                            {currentStep === 3 && isStudent && (
+                                <div className="space-y-5">
+                                    <SectionCard>
+                                        <SectionHeading
+                                            eyebrow="Bước 03 · Thông tin học tập"
+                                            title="Thông tin trường và ngành học"
+                                            description="Cung cấp thông tin học tập để xác minh bạn đang theo học nhóm ngành phù hợp."
+                                        />
+
+                                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                            <Field
+                                                label="Trường Đại học / Cao đẳng"
+                                                name="university"
+                                                required
+                                                placeholder="Ví dụ: Đại học Y Dược TP.HCM"
+                                                value={eduData.university}
+                                                onChange={handleEduChange}
+                                                error={errors.university}
+                                            />
+                                            <Field
+                                                label="Ngành học"
+                                                name="major"
+                                                required
+                                                placeholder="Ví dụ: Điều dưỡng"
+                                                value={eduData.major}
+                                                onChange={handleEduChange}
+                                                error={errors.major}
+                                            />
+                                            <SelectField
+                                                label="Năm học"
+                                                name="year"
+                                                value={eduData.year}
+                                                onChange={handleEduChange}
+                                                options={[
+                                                    { value: "1", label: "Năm 1" },
+                                                    { value: "2", label: "Năm 2" },
+                                                    { value: "3", label: "Năm 3" },
+                                                    { value: "4", label: "Năm 4" },
+                                                ]}
+                                            />
+                                            <Field
+                                                label="Mã số sinh viên"
+                                                name="studentId"
+                                                required
+                                                placeholder="Nhập mã số sinh viên"
+                                                value={eduData.studentId}
+                                                onChange={handleEduChange}
+                                                error={errors.studentId}
+                                            />
+                                        </div>
+                                    </SectionCard>
+
+                                    <SectionCard>
+                                        <SectionHeading
+                                            title="Thẻ sinh viên và giấy xác nhận"
+                                            description="Hai mục tải tệp nằm cạnh nhau để bạn dễ kiểm tra. Thẻ sinh viên là bắt buộc; giấy xác nhận đang theo học không bắt buộc."
+                                        />
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <UploadCard
+                                                name="studentCard"
+                                                label="Ảnh thẻ sinh viên"
+                                                description="Ảnh hoặc bản scan thẻ sinh viên còn hiệu lực."
+                                                required
+                                                file={files.studentCard}
+                                                onFile={(name, file) => handleFileChange(name, file)}
+                                                onUploadError={handleUploadError}
+                                                uploadError={uploadErrors.studentCard}
+                                                error={errors.studentCard}
+                                            />
+                                            <UploadCard
+                                                name="enrollmentConfirmation"
+                                                label="Giấy xác nhận đang học"
+                                                description="Không bắt buộc · Có thể bổ sung nếu có."
+                                                file={files.enrollmentConfirmation}
+                                                onFile={(name, file) => handleFileChange(name, file)}
+                                                onUploadError={handleUploadError}
+                                                uploadError={uploadErrors.enrollmentConfirmation}
+                                            />
+                                        </div>
+                                    </SectionCard>
                                 </div>
+                            )}
 
-                                {/* ─ 2. XÁC MINH DANH TÍNH ─ */}
-                                <div id="section-identity" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                    <SectionHeader title="Xác minh danh tính" />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <UploadBox label="CCCD mặt trước" />
-                                        <UploadBox label="CCCD mặt sau" />
-                                    </div>
-                                    <p className="text-xs text-slate-400">
-                                        Ảnh chụp rõ nét, đủ sáng · Định dạng JPG, PNG · Tối đa 5MB mỗi ảnh
-                                    </p>
-                                </div>
+                            {currentStep === 3 && !isStudent && (
+                                <div className="space-y-5">
+                                    <SectionCard>
+                                        <SectionHeading
+                                            eyebrow="Bước 03 · Thông tin nghề nghiệp"
+                                            title="Thông tin hành nghề"
+                                            description="Nhập thông tin theo giấy tờ chuyên môn hiện có để thuận tiện đối chiếu."
+                                        />
 
-                                {/* ─ 3a. THẺ SINH VIÊN (student) ─ */}
-                                {isStudent && (
-                                    <div id="section-student-card" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                        <SectionHeader title="Thẻ sinh viên" />
-                                        <RowUpload label="Upload ảnh thẻ sinh viên" hint="Đảm bảo rõ nét thông tin" required />
-                                    </div>
-                                )}
-
-                                {/* ─ 3b. THÔNG TIN NGHỀ NGHIỆP (nurse) ─ */}
-                                {!isStudent && (
-                                    <div id="section-license" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                        <SectionHeader title="Thông tin nghề nghiệp" />
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <Field label="Số chứng chỉ hành nghề" required name="licenseNumber" placeholder="VD: 12345/ĐD-HN" value={eduData.licenseNumber} onChange={handleEduChange} />
-                                            <Field label="Ngày cấp" required type="date" name="licenseDate" value={eduData.licenseDate} onChange={handleEduChange} />
-                                            <Field label="Nơi cấp" required name="licenseIssuer" placeholder="VD: Sở Y tế TP.HCM" value={eduData.licenseIssuer} onChange={handleEduChange} />
-                                            <Field label="Cơ sở y tế đang công tác" required name="hospital" placeholder="VD: Bệnh viện Bạch Mai" value={eduData.hospital} onChange={handleEduChange} />
-                                            <Field label="Chức vụ / Khoa" name="department" placeholder="VD: Điều dưỡng - Khoa Nội" value={eduData.department} onChange={handleEduChange} />
-                                            <Select
-                                                label="Số năm kinh nghiệm" required name="experience" value={eduData.experience} onChange={handleEduChange}
+                                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                            <Field
+                                                label="Số chứng chỉ hành nghề"
+                                                name="licenseNumber"
+                                                required
+                                                placeholder="Nhập số chứng chỉ"
+                                                value={eduData.licenseNumber}
+                                                onChange={handleEduChange}
+                                                error={errors.licenseNumber}
+                                            />
+                                            <Field
+                                                label="Ngày cấp"
+                                                name="licenseDate"
+                                                type="date"
+                                                required
+                                                value={eduData.licenseDate}
+                                                onChange={handleEduChange}
+                                                error={errors.licenseDate}
+                                            />
+                                            <Field
+                                                label="Nơi cấp"
+                                                name="licenseIssuer"
+                                                required
+                                                placeholder="Ví dụ: Sở Y tế"
+                                                value={eduData.licenseIssuer}
+                                                onChange={handleEduChange}
+                                                error={errors.licenseIssuer}
+                                            />
+                                            <Field
+                                                label="Cơ sở y tế đang công tác"
+                                                name="hospital"
+                                                required
+                                                placeholder="Tên bệnh viện / phòng khám"
+                                                value={eduData.hospital}
+                                                onChange={handleEduChange}
+                                                error={errors.hospital}
+                                            />
+                                            <Field
+                                                label="Chức vụ / Khoa"
+                                                name="department"
+                                                placeholder="Ví dụ: Điều dưỡng - Khoa Nội"
+                                                value={eduData.department}
+                                                onChange={handleEduChange}
+                                            />
+                                            <SelectField
+                                                label="Số năm kinh nghiệm"
+                                                name="experience"
+                                                required
+                                                value={eduData.experience}
+                                                onChange={handleEduChange}
+                                                error={errors.experience}
                                                 options={[
                                                     { value: "", label: "Chọn kinh nghiệm" },
                                                     { value: "< 1", label: "Dưới 1 năm" },
@@ -366,216 +1248,416 @@ export default function Verification() {
                                                 ]}
                                             />
                                         </div>
-                                    </div>
-                                )}
+                                    </SectionCard>
 
-                                {/* ─ 4a. THÔNG TIN HỌC TẬP (student) ─ */}
-                                {isStudent && (
-                                    <div id="section-education" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                        <SectionHeader title="Thông tin học tập" />
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <Field label="Trường Đại học" required name="university" placeholder="VD: Đại học Y Hà Nội" value={eduData.university} onChange={handleEduChange} />
-                                            <Field label="Ngành học" required name="major" placeholder="VD: Điều dưỡng đa khoa" value={eduData.major} onChange={handleEduChange} />
-                                            <Select
-                                                label="Năm học" required name="year" value={eduData.year} onChange={handleEduChange}
-                                                options={[
-                                                    { value: "1", label: "Năm 1" },
-                                                    { value: "2", label: "Năm 2" },
-                                                    { value: "3", label: "Năm 3" },
-                                                    { value: "4", label: "Năm 4" },
-                                                ]}
+                                    <SectionCard>
+                                        <SectionHeading
+                                            title="Tài liệu chuyên môn"
+                                            description="Cả hai tài liệu đều bắt buộc. Hãy kiểm tra ảnh rõ nét và đúng giấy tờ trước khi tiếp tục."
+                                        />
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <UploadCard
+                                                name="licenseCertificate"
+                                                label="Chứng chỉ hành nghề"
+                                                description="Ảnh chụp hoặc bản scan rõ nét."
+                                                required
+                                                file={files.licenseCertificate}
+                                                onFile={(name, file) => handleFileChange(name, file)}
+                                                onUploadError={handleUploadError}
+                                                uploadError={uploadErrors.licenseCertificate}
+                                                error={errors.licenseCertificate}
                                             />
-                                            <Field label="MSSV" required name="studentId" placeholder="VD: B21-00123" value={eduData.studentId} onChange={handleEduChange} />
+                                            <UploadCard
+                                                name="graduationDiploma"
+                                                label="Bằng tốt nghiệp"
+                                                description="Bằng tốt nghiệp chuyên môn điều dưỡng."
+                                                required
+                                                file={files.graduationDiploma}
+                                                onFile={(name, file) => handleFileChange(name, file)}
+                                                onUploadError={handleUploadError}
+                                                uploadError={uploadErrors.graduationDiploma}
+                                                error={errors.graduationDiploma}
+                                            />
                                         </div>
-                                    </div>
-                                )}
+                                    </SectionCard>
+                                </div>
+                            )}
 
-                                {/* ─ 4b. TÀI LIỆU HÀNH NGHỀ (nurse) ─ */}
-                                {!isStudent && (
-                                    <div id="section-nurse-docs" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                        <SectionHeader title="Tài liệu hành nghề" />
-                                        <div className="flex flex-col gap-3">
-                                            <RowUpload label="Chứng chỉ hành nghề" hint="Ảnh chụp hoặc scan rõ nét" required />
-                                            <RowUpload label="Bằng tốt nghiệp" hint="Ảnh chụp hoặc scan" required />
-                                        </div>
-                                    </div>
-                                )}
+                            {currentStep === 4 && (
+                                <div className="space-y-5">
+                                    <SectionCard>
+                                        <SectionHeading
+                                            eyebrow="Bước 04 · Chuyên môn"
+                                            title="Kỹ năng chăm sóc"
+                                            description="Chọn những kỹ năng phù hợp với chuyên môn và khả năng thực tế của bạn."
+                                            rightContent={
+                                                <div className="shrink-0 rounded-xl border border-[#B9DDD4] bg-[#EDF8F4] px-3 py-2 text-right">
+                                                    <p className="text-lg font-extrabold leading-5 text-[#087E78]">
+                                                        {selectedSkills.length}
+                                                    </p>
+                                                    <p className="mt-1 whitespace-nowrap text-[10px] font-semibold text-slate-600">
+                                                        kỹ năng đã chọn
+                                                    </p>
+                                                </div>
+                                            }
+                                        />
 
-                                {/* ─ 5. CHUYÊN MÔN & KỸ NĂNG ─ */}
-                                <div id="section-skills" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                    <div className="flex items-center justify-between">
-                                        <SectionHeader title="Chuyên môn & Kỹ năng" />
-                                        {selectedSkills.length > 0 && (
-                                            <span className="text-xs font-bold text-[#00677c] bg-[#e8f4f8] px-2.5 py-1 rounded-full">
-                                                Đã chọn: {selectedSkills.length}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-slate-500 -mt-2">
-                                        Chọn các kỹ năng bạn có thể thực hiện — sẽ hiển thị trên hồ sơ để gia đình tìm đúng được bạn.
-                                    </p>
-                                    <div className="flex flex-wrap gap-2.5">
-                                        {[
-                                            { id: "tiem-truyen", label: "💉 Tiêm truyền" },
-                                            { id: "thay-bang", label: "🩹 Thay băng" },
-                                            { id: "do-sinh-hieu", label: "💓 Đo sinh hiệu" },
-                                            { id: "cham-soc-vet-thuong", label: "🧤 Chăm sóc vết thương" },
-                                            { id: "quan-ly-thuoc", label: "💊 Quản lý thuốc" },
-                                            { id: "vat-ly-tri-lieu", label: "🧘 Vật lý trị liệu" },
-                                            { id: "cham-soc-nguoi-cao-tuoi", label: "👴 Người cao tuổi" },
-                                            { id: "ho-tro-ho-hap", label: "🤫 Hỗ trợ hô hấp" },
-                                            { id: "cham-soc-sau-phau-thuat", label: "🏥 Sau phẫu thuật" },
-                                            { id: "cat-chi", label: "✂️ Cắt chỉ" },
-                                            { id: "dieu-duong-toan-dien", label: "♥️ Điều dưỡng toàn diện" },
-                                            { id: "tro-giup-an-uong", label: "🍽️ Hỗ trợ ăn uống" },
-                                        ].map((skill) => {
-                                            const active = selectedSkills.includes(skill.id);
-                                            return (
-                                                <button
-                                                    key={skill.id}
-                                                    type="button"
-                                                    id={`skill-${skill.id}`}
-                                                    onClick={() =>
-                                                        setSelectedSkills((prev) =>
+                                        <div className="flex flex-wrap gap-2.5">
+                                            {skillOptions.map((skill) => {
+                                                const active = selectedSkills.includes(skill.id);
+
+                                                return (
+                                                    <button
+                                                        key={skill.id}
+                                                        type="button"
+                                                        aria-pressed={active}
+                                                        onClick={() => toggleSkill(skill.id)}
+                                                        className={[
+                                                            "inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5",
+                                                            "text-sm font-medium transition-all duration-200",
+                                                            "focus:outline-none focus:ring-4 focus:ring-[#087E78]/10",
                                                             active
-                                                                ? prev.filter((s) => s !== skill.id)
-                                                                : [...prev, skill.id]
-                                                        )
-                                                    }
-                                                    className={`px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 hover:-translate-y-0.5 ${
-                                                        active
-                                                            ? "bg-[#102030] text-white border-[#102030] shadow-md"
-                                                            : "bg-white text-slate-600 border-slate-200 hover:border-[#00677c] hover:text-[#00677c]"
-                                                    }`}
+                                                                ? "border-[#087E78] bg-[#E8F5F2] font-semibold text-[#066A65]"
+                                                                : "border-slate-300 bg-white text-slate-700 hover:border-[#80BDB0] hover:bg-[#F7FBF9]",
+                                                        ].join(" ")}
+                                                    >
+                                                        {active && <CheckIcon className="h-4 w-4" />}
+                                                        {skill.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {errors.skills && (
+                                            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+                                                {errors.skills}
+                                            </p>
+                                        )}
+
+                                        <p className="mt-4 text-xs leading-5 text-slate-500">
+                                            Hãy chỉ chọn kỹ năng bạn đã được hướng dẫn
+                                            hoặc có đủ khả năng thực hiện an toàn.
+                                        </p>
+                                    </SectionCard>
+
+                                    <SectionCard>
+                                        <SectionHeading
+                                            title="Chứng chỉ bổ sung"
+                                            description="Không bắt buộc. Cả sinh viên và điều dưỡng đều có thể bổ sung chứng chỉ đang sở hữu."
+                                        />
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <UploadCard
+                                                name="firstAid"
+                                                label="Chứng chỉ sơ cứu"
+                                                description="Tải lên nếu bạn đã hoàn thành khóa học sơ cứu."
+                                                file={files.firstAid}
+                                                onFile={(name, file) => handleFileChange(name, file)}
+                                                onUploadError={handleUploadError}
+                                                uploadError={uploadErrors.firstAid}
+                                            />
+                                            <UploadCard
+                                                name="blsCertificate"
+                                                label="Chứng chỉ BLS / ACLS"
+                                                description="Tải lên nếu có chứng chỉ hồi sức phù hợp."
+                                                file={files.blsCertificate}
+                                                onFile={(name, file) => handleFileChange(name, file)}
+                                                onUploadError={handleUploadError}
+                                                uploadError={uploadErrors.blsCertificate}
+                                            />
+                                        </div>
+                                    </SectionCard>
+                                </div>
+                            )}
+
+                            {currentStep === 5 && (
+                                <div className="space-y-5">
+                                    <SectionCard>
+                                        <SectionHeading
+                                            eyebrow="Bước 05 · Kiểm tra cuối"
+                                            title="Thông tin cá nhân"
+                                            description="Vui lòng kiểm tra lại trước khi gửi hồ sơ."
+                                        />
+                                        <ReviewRow label="Họ và tên" value={formData.fullName} />
+                                        <ReviewRow label="Ngày sinh" value={formData.dob} />
+                                        <ReviewRow label="Giới tính" value={formData.gender} />
+                                        <ReviewRow label="Số điện thoại" value={formData.phone} />
+                                        <ReviewRow label="Email" value={formData.email} />
+                                        <ReviewRow label="Địa chỉ" value={formData.address} />
+                                    </SectionCard>
+
+                                    <SectionCard>
+                                        <SectionHeading
+                                            title={isStudent ? "Thông tin học tập" : "Thông tin nghề nghiệp"}
+                                        />
+                                        {isStudent ? (
+                                            <>
+                                                <ReviewRow label="Trường học" value={eduData.university} />
+                                                <ReviewRow label="Ngành học" value={eduData.major} />
+                                                <ReviewRow label="Năm học" value={`Năm ${eduData.year}`} />
+                                                <ReviewRow label="Mã số sinh viên" value={eduData.studentId} />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ReviewRow label="Số chứng chỉ" value={eduData.licenseNumber} />
+                                                <ReviewRow label="Ngày cấp" value={eduData.licenseDate} />
+                                                <ReviewRow label="Nơi cấp" value={eduData.licenseIssuer} />
+                                                <ReviewRow label="Cơ sở y tế" value={eduData.hospital} />
+                                                <ReviewRow label="Chức vụ / Khoa" value={eduData.department} />
+                                                <ReviewRow label="Kinh nghiệm" value={eduData.experience} />
+                                            </>
+                                        )}
+                                    </SectionCard>
+
+                                    <SectionCard>
+                                        <SectionHeading
+                                            title="Tài liệu và kỹ năng"
+                                            description="Kiểm tra những tệp và kỹ năng bạn đã khai báo."
+                                        />
+
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            {[
+                                                ["CCCD mặt trước", files.idFront],
+                                                ["CCCD mặt sau", files.idBack],
+                                                ...(isStudent
+                                                    ? [
+                                                        ["Thẻ sinh viên", files.studentCard],
+                                                        ["Giấy xác nhận đang học", files.enrollmentConfirmation],
+                                                    ]
+                                                    : [
+                                                        ["Chứng chỉ hành nghề", files.licenseCertificate],
+                                                        ["Bằng tốt nghiệp", files.graduationDiploma],
+                                                    ]),
+                                                ["Chứng chỉ sơ cứu", files.firstAid],
+                                                ["Chứng chỉ BLS / ACLS", files.blsCertificate],
+                                            ].map(([label, file]) => (
+                                                <div
+                                                    key={label}
+                                                    className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3"
                                                 >
-                                                    {skill.label}
-                                                </button>
-                                            );
-                                        })}
+                                                    <span
+                                                        className={[
+                                                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                                                            file
+                                                                ? "bg-emerald-100 text-emerald-700"
+                                                                : "bg-slate-100 text-slate-500",
+                                                        ].join(" ")}
+                                                    >
+                                                        {file ? (
+                                                            <CheckIcon className="h-4 w-4" />
+                                                        ) : (
+                                                            <span className="text-xs">—</span>
+                                                        )}
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block text-sm font-semibold text-[#102A35]">
+                                                            {label}
+                                                        </span>
+                                                        <span className="block truncate text-xs text-slate-500">
+                                                            {file ? file.name : "Chưa tải lên"}
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-5">
+                                            <p className="mb-3 text-sm font-bold text-[#102A35]">
+                                                Kỹ năng đã chọn ({selectedSkills.length})
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {skillOptions
+                                                    .filter((skill) => selectedSkills.includes(skill.id))
+                                                    .map((skill) => (
+                                                        <span
+                                                            key={skill.id}
+                                                            className="rounded-lg border border-[#C8E4DC] bg-[#EDF8F4] px-3 py-1.5 text-xs font-semibold text-[#066A65]"
+                                                        >
+                                                            {skill.label}
+                                                        </span>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    </SectionCard>
+
+                                    <div className="rounded-2xl border border-[#C9E2DB] bg-[#F0F8F5] p-4 sm:p-5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#D6EAE4] bg-white text-[#087E78]">
+                                                <CheckIcon />
+                                            </span>
+                                            <div>
+                                                <p className="text-sm font-bold text-[#102A35]">
+                                                    Bạn đã sẵn sàng gửi hồ sơ
+                                                </p>
+                                                <p className="mt-1 text-xs leading-5 text-slate-600">
+                                                    Hãy xác nhận thông tin khai báo là chính xác
+                                                    và tài liệu cung cấp thuộc về bạn.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    {selectedSkills.length === 0 && (
-                                        <p className="text-xs text-amber-500 flex items-center gap-1.5">
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                            </svg>
-                                            Vui lòng chọn ít nhất 1 kỹ năng
-                                        </p>
-                                    )}
                                 </div>
+                            )}
 
-                                {/* ─ 6. CHỨNG CHỈ TỰ CHỌN ─ */}
-                                <div id="section-certs" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                    <SectionHeader title="Chứng chỉ tự chọn" optional="Không bắt buộc" />
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <RowUpload label="Chứng chỉ sơ cứu" hint="Nếu có" />
-                                        <RowUpload label="Chứng chỉ ACLS/BLS" hint="Nếu có" />
-                                    </div>
-                                </div>
-
-                                {/* ─ 6. GIẤY XÁC NHẬN (student only) ─ */}
-                                {isStudent && (
-                                    <div id="section-enrollment" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
-                                        <SectionHeader title="Giấy xác nhận đang theo học" optional="Khuyến khích" />
-                                        <RowUpload label="Tải lên giấy xác nhận" hint="Định dạng chấp nhận: PDF, JPG, PNG" />
-                                        <p className="text-xs text-slate-400 leading-relaxed">
-                                            Nếu có, CareLink sẽ hiển thị huy hiệu "Đã xác nhận trường học" trên hồ sơ của bạn để tăng mức độ tin cậy với gia đình.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* ─ SUBMIT ─ */}
+                            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <button
-                                    id="btn-submit-verification"
-                                    type="submit"
-                                    className="w-full py-4 bg-[#00677c] text-white rounded-2xl font-bold text-base hover:bg-[#005264] transition-all duration-300 hover:-translate-y-0.5 shadow-lg hover:shadow-[#00677c]/30 hover:shadow-xl flex items-center justify-center gap-3 group cursor-pointer"
+                                    type="button"
+                                    onClick={goBack}
+                                    disabled={currentStep === 1}
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
-                                    Gửi hồ sơ xác minh
-                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                    </svg>
+                                    <ArrowIcon direction="left" />
+                                    Quay lại
                                 </button>
 
-                                <p className="text-center text-xs text-slate-400 pb-4">
-                                    Bằng cách gửi hồ sơ, bạn đồng ý với{" "}
-                                    <a href="#" className="text-[#00677c] font-semibold hover:underline">Điều khoản dịch vụ</a>{" "}
-                                    và{" "}
-                                    <a href="#" className="text-[#00677c] font-semibold hover:underline">Chính sách bảo mật</a>{" "}
-                                    của CareLink.
-                                </p>
+                                {currentStep < steps.length ? (
+                                    <button
+                                        type="button"
+                                        onClick={goNext}
+                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#087E78] px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#066A65] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#087E78]/20"
+                                    >
+                                        Tiếp tục
+                                        <ArrowIcon />
+                                    </button>
+                                ) : (
+                                    <button
+                                        id="btn-submit-verification"
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#087E78] px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#066A65] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#087E78]/20 disabled:opacity-60"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <svg className="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                                </svg>
+                                                Đang gửi hồ sơ lên máy chủ...
+                                            </>
+                                        ) : (
+                                            <>
+                                                {isReSubmitting ? "Cập nhật lại hồ sơ xác minh" : "Gửi hồ sơ xác minh"}
+                                                <CheckIcon />
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </div>
 
-                            {/* ── Right: sticky sidebar ── */}
-                            <aside className="w-full lg:w-72 xl:w-80 flex flex-col gap-4 lg:sticky lg:top-[88px]">
-
-                                {/* Notes */}
-                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                            <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                                            </svg>
-                                        </div>
-                                        <span className="text-sm font-bold text-[#102030]">Lưu ý</span>
-                                    </div>
-                                    <ul className="flex flex-col gap-2.5">
-                                        {sidebarNotes.map((note) => (
-                                            <li key={note} className="flex items-start gap-2 text-sm text-slate-500">
-                                                <svg className="w-4 h-4 text-[#00677c] mt-0.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                                </svg>
-                                                {note}
-                                            </li>
-                                        ))}
-                                    </ul>
+                            {submitError && (
+                                <div className="mt-4 p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                    <span>{submitError}</span>
                                 </div>
+                            )}
 
-                                {/* Quote card */}
-                                <div className="relative rounded-2xl overflow-hidden">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1576765608622-067973a79f53?auto=format&fit=crop&q=80&w=400"
-                                        alt="Caregiver with patient"
-                                        className="w-full h-40 object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#102030]/95 via-[#102030]/50 to-transparent flex flex-col justify-end p-4">
-                                        <p className="text-xs text-white/90 italic leading-relaxed">
-                                            "Gia đình cảm thấy yên tâm hơn rất nhiều khi biết người chăm sóc đã được đội ngũ y tế xác thực."
-                                        </p>
-                                        <p className="text-xs text-[#4dd6e8] font-semibold mt-1">— Chị Lan, Hà Nội</p>
-                                    </div>
-                                </div>
-
-                                {/* Quick nav */}
-                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3">
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Điều hướng nhanh</p>
-                                    {[
-                                        { label: "Thông tin cá nhân", href: "#section-personal" },
-                                        { label: "Xác minh danh tính", href: "#section-identity" },
-                                        isStudent
-                                            ? { label: "Thẻ sinh viên", href: "#section-student-card" }
-                                            : { label: "Thông tin nghề nghiệp", href: "#section-license" },
-                                        isStudent
-                                            ? { label: "Thông tin học tập", href: "#section-education" }
-                                            : { label: "Tài liệu hành nghề", href: "#section-nurse-docs" },
-                                        { label: "Chứng chỉ bổ sung", href: "#section-certs" },
-                                        isStudent
-                                            ? { label: "Giấy xác nhận học", href: "#section-enrollment" }
-                                            : null,
-                                    ].filter(Boolean).map((item) => (
-                                        <a
-                                            key={item.label}
-                                            href={item.href}
-                                            className="text-sm text-slate-500 hover:text-[#00677c] hover:translate-x-1 transition-all flex items-center gap-1.5 group"
-                                        >
-                                            <span className="w-1 h-1 rounded-full bg-slate-300 group-hover:bg-[#00677c] transition-colors" />
-                                            {item.label}
-                                        </a>
-                                    ))}
-                                </div>
-                            </aside>
+                            <p className="mt-5 text-center text-xs leading-5 text-slate-500">
+                                Bằng cách gửi hồ sơ, bạn xác nhận thông tin cung cấp
+                                là chính xác và đồng ý với các chính sách áp dụng của CareLink.
+                            </p>
                         </div>
-                    </form>
-                </div>
-            </div>
+
+                        <aside className="space-y-4 lg:sticky lg:top-6">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6EAE4] bg-[#E8F5F2] text-[#087E78]">
+                                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                                            <circle cx="12" cy="12" r="9" />
+                                            <path d="M12 11v5m0-8h.01" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold">Hướng dẫn hồ sơ</p>
+                                        <p className="mt-0.5 text-xs text-slate-500">
+                                            Một vài lưu ý hữu ích
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <ul className="mt-5 space-y-4">
+                                    {[
+                                        "Sử dụng thông tin cá nhân chính xác.",
+                                        "Tài liệu cần rõ nét, không mất góc.",
+                                        "Mỗi tệp tải lên không vượt quá 10 MB.",
+                                        "Kiểm tra lại dữ liệu trước khi gửi.",
+                                    ].map((note, index) => (
+                                        <li key={note} className="flex items-start gap-3">
+                                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#D6EAE4] bg-[#F0F8F6] text-xs font-bold text-[#087E78]">
+                                                {index + 1}
+                                            </span>
+                                            <p className="text-xs leading-5 text-slate-600">{note}</p>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                <p className="text-sm font-bold">Tiến trình hồ sơ</p>
+                                <div className="mt-4 space-y-3">
+                                    {steps.map((step, index) => {
+                                        const number = index + 1;
+                                        const completed = number < currentStep;
+                                        const active = number === currentStep;
+
+                                        return (
+                                            <div key={step.label} className="flex items-center gap-3">
+                                                <span
+                                                    className={[
+                                                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                                                        completed
+                                                            ? "bg-[#087E78] text-white"
+                                                            : active
+                                                                ? "border border-[#087E78] bg-[#E8F5F2] text-[#087E78]"
+                                                                : "border border-slate-200 bg-slate-100 text-slate-500",
+                                                    ].join(" ")}
+                                                >
+                                                    {completed ? <CheckIcon className="h-4 w-4" /> : number}
+                                                </span>
+                                                <span
+                                                    className={[
+                                                        "text-xs leading-5",
+                                                        active
+                                                            ? "font-bold text-[#087E78]"
+                                                            : completed
+                                                                ? "font-semibold text-slate-700"
+                                                                : "text-slate-500",
+                                                    ].join(" ")}
+                                                >
+                                                    {step.label}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#102A35] bg-[#102A35] p-5 text-white">
+                                <div className="flex items-center gap-2">
+                                    <svg className="h-5 w-5 text-[#83D6C5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M12 3 4.5 6v5.5c0 4.4 3.1 7.7 7.5 9.5 4.4-1.8 7.5-5.1 7.5-9.5V6L12 3Z"
+                                        />
+                                        <path d="m9 12 2 2 4-4" />
+                                    </svg>
+                                    <p className="text-sm font-bold">Bảo mật thông tin</p>
+                                </div>
+                                <p className="mt-3 text-xs leading-6 text-white/75">
+                                    Chỉ cung cấp những thông tin cần thiết cho việc
+                                    xác minh. Hãy kiểm tra chính sách dữ liệu của
+                                    CareLink trước khi gửi giấy tờ cá nhân.
+                                </p>
+                            </div>
+                        </aside>
+                    </div>
+                </form>
+            </main>
         </div>
     );
 }

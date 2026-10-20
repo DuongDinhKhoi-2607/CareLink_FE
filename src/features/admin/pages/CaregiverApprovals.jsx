@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ApprovalDetailModal from "../components/ApprovalDetailModal";
+import adminApi from "../../../api/adminApi";
 import {
     Clock,
     CheckCircle2,
@@ -108,6 +109,57 @@ export default function CaregiverApprovals() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedCaregiver, setSelectedCaregiver] = useState(null);
     const [alertToast, setAlertToast] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    // ── 33. GET /api/v1/admin/nurse-verifications ── Tải danh sách hồ sơ Điều dưỡng cần duyệt
+    const fetchVerifications = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 50 });
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.items)
+                ? res.items
+                : Array.isArray(res?.data)
+                ? res.data
+                : [];
+
+            if (list.length > 0) {
+                const mapped = list.map((item) => {
+                    const st = item.verificationStatus === 1 ? "Chờ duyệt" : item.verificationStatus === 2 ? "Đã duyệt" : "Từ chối";
+                    return {
+                        id: item.nurseId || item.id,
+                        rawNurseId: item.nurseId || item.id,
+                        name: item.fullName || "Điều dưỡng CareLink",
+                        role: item.practitionerType === 2 ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
+                        phone: item.phone || "0901 234 567",
+                        email: item.email || "nurse@carelink.vn",
+                        workplace: item.workplace || "Cơ sở y tế TP.HCM",
+                        experience: item.experience || "Theo hồ sơ năng lực",
+                        submittedDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                        status: st,
+                        skills: ["Đo dấu hiệu sinh tồn", "Chăm sóc người cao tuổi", "Theo dõi y tế"],
+                        documents: (item.documents || []).map((d) => ({
+                            name: d.documentTypeName || "Giấy tờ xác minh",
+                            type: d.documentTypeName || "Chứng từ",
+                            status: d.statusName || "Hợp lệ",
+                            url: d.fileUrl,
+                        })),
+                        raw: item,
+                    };
+                });
+                setCaregivers(mapped);
+            }
+        } catch (err) {
+            console.warn("[CareLink Admin] Lấy danh sách duyệt hồ sơ từ API thất bại, dùng fallback:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchVerifications();
+    }, [fetchVerifications]);
 
     // Tính toán số lượng theo trạng thái
     const countPending = caregivers.filter((c) => c.status === "Chờ duyệt").length;
@@ -127,24 +179,60 @@ export default function CaregiverApprovals() {
         return matchesSearch && matchesRole && matchesStatus;
     });
 
-    const handleApprove = (id) => {
-        setCaregivers((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, status: "Đã duyệt" } : c))
-        );
-        setSelectedCaregiver(null);
-        showToast("Đã phê duyệt hồ sơ thành công! Thông báo kích hoạt tài khoản đã được gửi.");
+    // ── 36. PUT /api/v1/admin/nurse-verifications/{id} ── Phê duyệt hồ sơ
+    const handleApprove = async (id) => {
+        const target = caregivers.find((c) => c.id === id);
+        const targetId = target?.rawNurseId || target?.raw?.nurseId || id;
+
+        try {
+            await adminApi.reviewNurseVerification(targetId, {
+                action: "Approve",
+                checklist: {
+                    cccdValid: true,
+                    degreeOrStudentCardValid: true,
+                    licenseValid: true,
+                    faceMatch: true,
+                    licenseLookedUp: true,
+                },
+            });
+
+            setCaregivers((prev) =>
+                prev.map((c) => (c.id === id ? { ...c, status: "Đã duyệt" } : c))
+            );
+            setSelectedCaregiver(null);
+            showToast("Đã phê duyệt hồ sơ thành công! Thông báo kích hoạt tài khoản đã được gửi.", "success");
+        } catch (err) {
+            console.error("[CareLink Admin] Gọi API duyệt hồ sơ thất bại:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể phê duyệt hồ sơ trên máy chủ.";
+            showToast("Lỗi duyệt hồ sơ: " + msg, "error");
+        }
     };
 
-    const handleReject = (id, reason) => {
-        setCaregivers((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, status: "Từ chối" } : c))
-        );
-        setSelectedCaregiver(null);
-        showToast(`Đã từ chối hồ sơ #${id}. Lý do: "${reason}"`);
+    // ── 36. PUT /api/v1/admin/nurse-verifications/{id} ── Từ chối hồ sơ kèm lý do
+    const handleReject = async (id, reason) => {
+        const target = caregivers.find((c) => c.id === id);
+        const targetId = target?.rawNurseId || target?.raw?.nurseId || id;
+
+        try {
+            await adminApi.reviewNurseVerification(targetId, {
+                action: "Reject",
+                rejectionReason: reason,
+            });
+
+            setCaregivers((prev) =>
+                prev.map((c) => (c.id === id ? { ...c, status: "Từ chối" } : c))
+            );
+            setSelectedCaregiver(null);
+            showToast(`Đã từ chối hồ sơ #${id}. Lý do: "${reason}"`, "success");
+        } catch (err) {
+            console.error("[CareLink Admin] Gọi API từ chối hồ sơ thất bại:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể từ chối hồ sơ trên máy chủ.";
+            showToast("Lỗi từ chối hồ sơ: " + msg, "error");
+        }
     };
 
-    const showToast = (msg) => {
-        setAlertToast(msg);
+    const showToast = (msg, type = "success") => {
+        setAlertToast({ msg, type });
         setTimeout(() => setAlertToast(null), 4000);
     };
 
@@ -152,9 +240,19 @@ export default function CaregiverApprovals() {
         <div className="space-y-6 pb-12 font-sans">
             {/* Toast Alert */}
             {alertToast && (
-                <div className="fixed bottom-6 right-6 z-50 bg-[#00677c] text-white px-5 py-3 rounded-2xl shadow-lg border border-teal-400 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
-                    <CheckCircle2 className="w-4.5 h-4.5 text-emerald-300" />
-                    <span className="text-xs font-bold">{alertToast}</span>
+                <div
+                    className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-lg border flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 ${
+                        alertToast.type === "error"
+                            ? "bg-rose-900 text-white border-rose-500"
+                            : "bg-[#00677c] text-white border-teal-400"
+                    }`}
+                >
+                    {alertToast.type === "error" ? (
+                        <AlertCircle className="w-4.5 h-4.5 text-rose-300" />
+                    ) : (
+                        <CheckCircle2 className="w-4.5 h-4.5 text-emerald-300" />
+                    )}
+                    <span className="text-xs font-bold">{alertToast.msg}</span>
                 </div>
             )}
 

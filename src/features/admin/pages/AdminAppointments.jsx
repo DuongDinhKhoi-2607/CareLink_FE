@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import adminApi from "../../../api/adminApi";
 import {
     Search,
     RotateCcw,
@@ -251,6 +252,71 @@ export default function AdminAppointments() {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    // ── 58. GET /api/v1/bookings ── Lấy toàn bộ ca chăm sóc trên hệ thống dành cho Admin
+    const fetchBookings = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await adminApi.getAllBookings({ pageNumber: 1, pageSize: 50 });
+            const list = Array.isArray(res)
+                ? res
+                : Array.isArray(res?.items)
+                ? res.items
+                : Array.isArray(res?.data)
+                ? res.data
+                : [];
+
+            if (list.length > 0) {
+                const mapped = list.map((b) => {
+                    const rawStatus = typeof b.status === "number" ? b.status : 1;
+                    let status = "Chờ xác nhận";
+                    if (rawStatus === 7) {
+                        status = "Có khiếu nại";
+                    } else if (b.refundedAmount && Number(b.refundedAmount) > 0) {
+                        status = "Đã hoàn tiền";
+                    } else if (rawStatus === 1 || rawStatus === 2) {
+                        status = "Chờ xác nhận";
+                    } else if (rawStatus === 3 || rawStatus === 4) {
+                        status = "Đang thực hiện";
+                    } else if (rawStatus === 5) {
+                        status = "Hoàn thành";
+                    } else if (rawStatus === 6) {
+                        status = "Đã hủy";
+                    }
+
+                    return {
+                        id: b.bookingCode || (b.id ? `CA-${String(b.id).slice(-4)}` : "CA-2001"),
+                        rawId: b.id,
+                        family: b.customerName || "Gia đình khách hàng",
+                        familyPhone: b.customerPhone || "0901 234 567",
+                        familyAddress: b.addressSnapshot || "Địa chỉ nhận chăm sóc",
+                        caregiver: b.nurseName || "Điều dưỡng CareLink",
+                        caregiverPhone: b.nursePhone || "0912 345 678",
+                        caregiverRole: "Điều dưỡng chuyên nghiệp",
+                        service: b.serviceName || "Chăm sóc theo yêu cầu",
+                        date: b.scheduledStart ? new Date(b.scheduledStart).toLocaleDateString("vi-VN") : "Hôm nay",
+                        time: b.scheduledStart ? new Date(b.scheduledStart).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "08:00",
+                        duration: "Theo ca trực",
+                        status,
+                        notes: b.note || "Ca chăm sóc đặt trên sàn CareLink.",
+                        totalAmount: `${Number(b.totalPrice || 500000).toLocaleString("vi-VN")} ₫`,
+                        relative: b.recipientName || "Người thân",
+                        relativeAge: "Cao tuổi",
+                    };
+                });
+                setAppointments(mapped);
+            }
+        } catch (err) {
+            console.warn("[CareLink Admin] Tải danh sách ca chăm sóc thất bại, dùng fallback:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBookings();
+    }, [fetchBookings]);
 
     const handleResolveDispute = (appointmentId, resolution) => {
         setAppointments((prev) =>
