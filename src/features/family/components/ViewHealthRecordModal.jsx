@@ -54,9 +54,13 @@ export default function ViewHealthRecordModal({
                 setFetchError(null);
                 familyApi.getBookingHealthRecord(booking.id)
                     .then((res) => {
-                        const data = res?.data?.data || res?.data;
-                        if (data) {
+                        const data = res?.data?.data || res?.data || res;
+                        if (data && (data.id || data.heartRate || data.bloodPressureSystolic || data.temperature || data.nurseNotes)) {
                             setHealthRecord(data);
+                        } else if (booking?.healthRecord) {
+                            setHealthRecord(booking.healthRecord);
+                        } else {
+                            setFetchError("Chưa có hồ sơ sức khỏe lâm sàng được ghi nhận cho ca này.");
                         }
                     })
                     .catch((err) => {
@@ -75,10 +79,18 @@ export default function ViewHealthRecordModal({
         }
     }, [isOpen, booking, propHealthRecord]);
 
+    const formatRecordTime = (val) => {
+        if (!val) return "Gần đây";
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return val;
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${pad(d.getHours())}:${pad(d.getMinutes())} - ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+    };
+
     const patientName = booking?.patient?.name || booking?.recipient || booking?.relative || "Người nhận chăm sóc";
     const patientCondition = booking?.patient?.condition || booking?.service || "Chăm sóc phục hồi";
     const caregiverName = booking?.caregiver?.name || booking?.caregiver || "Điều dưỡng phụ trách";
-    const recordTime = healthRecord.createdAt || booking?.date || "Gần đây";
+    const recordTime = formatRecordTime(healthRecord?.createdAt || booking?.date);
 
     // Phân loại nhanh huyết áp
     const getBpStatus = (sys, dia) => {

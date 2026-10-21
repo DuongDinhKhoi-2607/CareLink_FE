@@ -139,8 +139,8 @@ export function RelativeFormModal({
                             <h3 className="text-lg font-bold text-slate-900">
                                 {editingRelative ? "Chỉnh sửa hồ sơ người thân" : "Thêm người thân mới"}
                             </h3>
-                            <span className="px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 text-[11px] font-semibold">
-                                Chuẩn API CareLink
+                            <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[11px] font-semibold border border-teal-200/60">
+                                Hồ sơ y tế bảo mật
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
@@ -237,7 +237,7 @@ export function RelativeFormModal({
 
                         <div>
                             <label className="block text-slate-700 font-semibold mb-1">
-                                Tiền sử bệnh lý & Chẩn đoán hiện tại (Medical History)
+                                Tiền sử bệnh lý & Chẩn đoán hiện tại
                             </label>
                             <textarea
                                 rows={3}
@@ -250,7 +250,7 @@ export function RelativeFormModal({
 
                         <div>
                             <label className="block text-slate-700 font-semibold mb-1">
-                                Ghi chú đặc biệt & Dặn dò điều dưỡng (Special Notes)
+                                Ghi chú đặc biệt & Dặn dò điều dưỡng
                             </label>
                             <textarea
                                 rows={2}

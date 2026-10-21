@@ -4,12 +4,9 @@ import familyApi from "../../../api/familyApi";
 import { Loader2 } from "lucide-react";
 
 export default function HealthReports() {
-    const [selectedRelativeId, setSelectedRelativeId] = useState("lan");
+    const [selectedRelativeId, setSelectedRelativeId] = useState("");
     const [timeRange, setTimeRange] = useState("week"); // 'week' | 'month'
-    const [recipientsList, setRecipientsList] = useState([
-        { id: "lan", name: "Bà Nguyễn Thị Lan", relation: "Mẹ (75 tuổi)" },
-        { id: "binh", name: "Ông Nguyễn Văn Bình", relation: "Bố (82 tuổi)" },
-    ]);
+    const [recipientsList, setRecipientsList] = useState([]);
     const [apiReportData, setApiReportData] = useState(null);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
@@ -35,7 +32,7 @@ export default function HealthReports() {
 
     // 2. ── 79. GET /api/v1/recipients/{id}/health-history ── Lấy lịch sử sức khỏe của người nhận chăm sóc
     const fetchHealthHistory = useCallback(async (recipientId) => {
-        if (!recipientId || recipientId === "lan" || recipientId === "binh") return;
+        if (!recipientId) return;
         setIsLoadingHistory(true);
         try {
             const res = await familyApi.getRecipientHealthHistory(recipientId);
@@ -249,10 +246,9 @@ export default function HealthReports() {
         },
     };
 
-    const isMockId = selectedRelativeId === "lan" || selectedRelativeId === "binh";
     const selectedRecipient = recipientsList.find((r) => r.id === selectedRelativeId);
-    const hasData = Boolean(apiReportData || (isMockId && reportsData[selectedRelativeId]));
-    const currentReport = apiReportData || (isMockId ? reportsData[selectedRelativeId] : null);
+    const hasData = Boolean(apiReportData);
+    const currentReport = apiReportData;
     const currentChartData = currentReport?.chartData ? (currentReport.chartData[timeRange] || currentReport.chartData.week || []) : [];
 
     return (
