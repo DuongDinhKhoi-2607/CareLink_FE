@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import familyApi from "../../../api/familyApi";
 import { Loader2 } from "lucide-react";
 
@@ -248,8 +249,11 @@ export default function HealthReports() {
         },
     };
 
-    const currentReport = apiReportData || reportsData[selectedRelativeId] || reportsData.lan;
-    const currentChartData = currentReport.chartData ? (currentReport.chartData[timeRange] || currentReport.chartData.week || []) : [];
+    const isMockId = selectedRelativeId === "lan" || selectedRelativeId === "binh";
+    const selectedRecipient = recipientsList.find((r) => r.id === selectedRelativeId);
+    const hasData = Boolean(apiReportData || (isMockId && reportsData[selectedRelativeId]));
+    const currentReport = apiReportData || (isMockId ? reportsData[selectedRelativeId] : null);
+    const currentChartData = currentReport?.chartData ? (currentReport.chartData[timeRange] || currentReport.chartData.week || []) : [];
 
     return (
         <div className="p-6 sm:p-10 flex flex-col gap-8 max-w-7xl mx-auto">
@@ -295,8 +299,75 @@ export default function HealthReports() {
                 </div>
             </header>
 
-            {/* Khu vực Tổng quan: 4 Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {!hasData ? (
+                <div className="w-full min-h-[520px] flex items-center justify-center py-8 sm:py-12">
+                    <div className="w-full max-w-2xl bg-white rounded-3xl border border-teal-100/90 shadow-[0_25px_60px_-15px_rgba(0,103,124,0.12)] p-8 sm:p-12 text-center relative overflow-hidden flex flex-col items-center backdrop-blur-sm">
+                        {/* Viền gradient tinh tế trên đỉnh thẻ */}
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#00677c] via-teal-400 to-emerald-400" />
+
+                        {/* Icon huy hiệu sinh hiệu y tế */}
+                        <div className="relative mb-5">
+                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200/60 flex items-center justify-center text-[#00677c] shadow-inner">
+                                <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 12h2.25l1.5-3 2.25 6 1.5-3H18" />
+                                </svg>
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+                            </span>
+                        </div>
+
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-teal-50 text-[#00677c] border border-teal-200/80 mb-3">
+                            Hồ sơ sẵn sàng theo dõi
+                        </span>
+
+                        <h3 className="text-xl sm:text-2xl font-bold text-[#002045] tracking-tight">
+                            Chưa có dữ liệu sinh hiệu cho {selectedRecipient?.name || "người thân"}
+                        </h3>
+
+                        <p className="text-sm text-slate-500 max-w-lg mt-2.5 mb-6 leading-relaxed">
+                            Hồ sơ của <strong>{selectedRecipient?.name}</strong> đã được bảo mật an toàn. Khi điều dưỡng hoàn tất ca chăm sóc tại nhà, các chỉ số lâm sàng (Huyết áp, Nhịp tim, Thân nhiệt) sẽ được đồng bộ trực tiếp lên biểu đồ này.
+                        </p>
+
+                        {/* 3 tính năng theo dõi nổi bật */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg mb-8">
+                            <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-2.5 text-left">
+                                <span className="text-lg">🩺</span>
+                                <span className="text-xs font-semibold text-slate-700">Đo sinh hiệu chuẩn y khoa</span>
+                            </div>
+                            <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-2.5 text-left">
+                                <span className="text-lg">📊</span>
+                                <span className="text-xs font-semibold text-slate-700">Biểu đồ biến thiên 7 ngày</span>
+                            </div>
+                            <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-2.5 text-left">
+                                <span className="text-lg">📝</span>
+                                <span className="text-xs font-semibold text-slate-700">Nhật ký từ điều dưỡng</span>
+                            </div>
+                        </div>
+
+                        {/* Các nút hành động chính */}
+                        <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
+                            <Link
+                                to="/caregivers"
+                                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-sm hover:shadow hover:-translate-y-0.5 text-center"
+                            >
+                                Đặt lịch chăm sóc ngay
+                            </Link>
+                            <Link
+                                to="/dashboard/appointments"
+                                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-all border border-slate-200 shadow-2xs text-center"
+                            >
+                                Xem lịch hẹn đã đặt
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {/* Khu vực Tổng quan: 4 Summary Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {/* Card 1: Huyết áp gần nhất */}
                 <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-3">
                     <div className="flex items-center justify-between">
@@ -591,20 +662,22 @@ export default function HealthReports() {
                 </div>
             </div>
 
-            {/* Lưu ý sức khỏe quan trọng */}
-            <div className="bg-teal-50/80 border border-teal-200/80 rounded-2xl p-5 sm:p-6 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
+                {/* Lưu ý sức khỏe quan trọng */}
+                <div className="bg-teal-50/80 border border-teal-200/80 rounded-2xl p-5 sm:p-6 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-[#002045]">Lưu ý sức khỏe quan trọng từ Điều dưỡng</h4>
+                        <p className="text-xs sm:text-sm text-slate-700 mt-1 leading-relaxed">
+                            {currentReport?.notes || "Duy trì theo dõi chế độ dinh dưỡng và vận động phù hợp theo hướng dẫn của bác sĩ điều trị."}
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h4 className="text-sm font-bold text-[#002045]">Lưu ý sức khỏe quan trọng từ Điều dưỡng</h4>
-                    <p className="text-xs sm:text-sm text-slate-700 mt-1 leading-relaxed">
-                        {currentReport.notes}
-                    </p>
-                </div>
-            </div>
+            </>
+            )}
         </div>
     );
 }

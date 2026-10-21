@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import adminApi from "../../../api/adminApi";
 import {
     Search,
     RotateCcw,
@@ -13,6 +14,7 @@ import {
     ShieldCheck,
     ShieldOff,
     AlertCircle,
+    Loader2,
 } from "lucide-react";
 
 // ── MOCK DATA ──────────────────────────────────────────────────────────────────
@@ -288,6 +290,73 @@ export default function UserManagement() {
     const [activeTab, setActiveTab] = useState("family");
     const [searchQuery, setSearchQuery] = useState("");
     const [toast, setToast] = useState(null);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadRealUsers = async () => {
+            setLoadingUsers(true);
+            try {
+                const [nursesRes, bookingsRes] = await Promise.all([
+                    adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 50 }).catch(() => null),
+                    adminApi.getAllBookings({ pageNumber: 1, pageSize: 50 }).catch(() => null),
+                ]);
+
+                if (!isMounted) return;
+
+                const nurseItems = nursesRes?.items || (Array.isArray(nursesRes) ? nursesRes : null);
+                if (nurseItems && nurseItems.length > 0) {
+                    const realCaregivers = nurseItems.map((n) => ({
+                        id: n.nurseId ? `CG-${n.nurseId.slice(0, 6).toUpperCase()}` : "CG-NEW",
+                        rawId: n.nurseId || n.id,
+                        name: n.fullName || "Điều dưỡng CareLink",
+                        email: n.email || "nurse@carelink.vn",
+                        phone: n.phone || "0900 000 000",
+                        joinDate: n.createdAt ? new Date(n.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                        status: n.verificationStatus === 3 ? "Bị từ chối" : "Hoạt động",
+                        role: n.practitionerType === 2 ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
+                        completedShifts: 0,
+                        rating: "5.0",
+                    }));
+                    setCaregivers(realCaregivers);
+                }
+
+                const bookingItems = bookingsRes?.items || (Array.isArray(bookingsRes) ? bookingsRes : null);
+                if (bookingItems && bookingItems.length > 0) {
+                    const mapByCustomer = new Map();
+                    bookingItems.forEach((b) => {
+                        const cName = b.customerName || "Gia đình khách hàng";
+                        if (!mapByCustomer.has(cName)) {
+                            mapByCustomer.set(cName, {
+                                id: b.id ? `FAM-${b.id.slice(0, 6).toUpperCase()}` : "FAM-NEW",
+                                rawId: b.customerId,
+                                name: cName,
+                                email: "customer@carelink.vn",
+                                phone: "0901 000 000",
+                                joinDate: b.createdAt ? new Date(b.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                                status: "Hoạt động",
+                                totalBookings: 1,
+                                location: b.addressSnapshot || "TP.HCM",
+                            });
+                        } else {
+                            mapByCustomer.get(cName).totalBookings += 1;
+                        }
+                    });
+                    if (mapByCustomer.size > 0) {
+                        setFamilies(Array.from(mapByCustomer.values()));
+                    }
+                }
+            } catch (err) {
+                console.warn("[CareLink Admin] Tải danh sách người dùng thất bại, duy trì dữ liệu hiện có:", err);
+            } finally {
+                if (isMounted) setLoadingUsers(false);
+            }
+        };
+        loadRealUsers();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const showToast = (msg, type = "unlock") => {
         setToast({ msg, type });

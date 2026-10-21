@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { fetchAndSyncUserMe } from "../../../api/authApi";
+import caregiverApi from "../../../api/caregiverApi";
 
 /* ─── Stat Card ─── */
 function StatCard({ icon, label, value, sub, color = "#00677c", trend }) {
@@ -27,22 +28,22 @@ function StatCard({ icon, label, value, sub, color = "#00677c", trend }) {
 }
 
 /* ─── Booking Request Card ─── */
-function BookingCard({ family, service, date, time, status = "pending" }) {
-    const [localStatus, setLocalStatus] = useState(status);
-
+function BookingCard({ id, family, service, date, time, status = "pending", onAccept, onReject, isProcessing }) {
     const statusMap = {
         pending: { label: "Chờ xác nhận", bg: "bg-amber-50", text: "text-amber-600", dot: "bg-amber-400" },
         accepted: { label: "Đã chấp nhận", bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-500" },
         rejected: { label: "Đã từ chối", bg: "bg-red-50", text: "text-red-500", dot: "bg-red-400" },
+        in_progress: { label: "Đang diễn ra", bg: "bg-teal-50", text: "text-teal-600", dot: "bg-teal-500 animate-ping" },
+        completed: { label: "Đã hoàn thành", bg: "bg-slate-100", text: "text-slate-600", dot: "bg-slate-400" },
     };
-    const s = statusMap[localStatus];
+    const s = statusMap[status] || statusMap.pending;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col gap-3">
             <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white font-bold text-sm shrink-0">
-                        {family[0]}
+                        {family ? family[0] : "K"}
                     </div>
                     <div>
                         <p className="text-sm font-bold text-[#102030]">{family}</p>
@@ -70,19 +71,21 @@ function BookingCard({ family, service, date, time, status = "pending" }) {
                 </span>
             </div>
 
-            {localStatus === "pending" && (
+            {status === "pending" && onAccept && (
                 <div className="flex gap-2 pt-1">
                     <button
-                        id={`accept-${family.replace(/\s/g, "-")}`}
-                        onClick={() => setLocalStatus("accepted")}
-                        className="flex-1 py-2 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005263] transition-all shadow-sm hover:shadow-md"
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={() => onAccept(id)}
+                        className="flex-1 py-2 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005263] transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                     >
                         ✓ Chấp nhận
                     </button>
                     <button
-                        id={`reject-${family.replace(/\s/g, "-")}`}
-                        onClick={() => setLocalStatus("rejected")}
-                        className="flex-1 py-2 rounded-xl bg-red-50 text-red-500 text-xs font-bold border border-red-100 hover:bg-red-100 transition-all"
+                        type="button"
+                        disabled={isProcessing}
+                        onClick={() => onReject(id)}
+                        className="flex-1 py-2 rounded-xl bg-red-50 text-red-500 text-xs font-bold border border-red-100 hover:bg-red-100 transition-all cursor-pointer disabled:opacity-50"
                     >
                         ✕ Từ chối
                     </button>
@@ -119,14 +122,71 @@ export default function CaregiverDashboard() {
             return null;
         }
     });
+    const [bookingsList, setBookingsList] = useState([]);
+    const [wallet, setWallet] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    useEffect(() => {
+    const loadData = useCallback(() => {
         fetchAndSyncUserMe().then((u) => {
             if (u) setCurrentUser(u);
         });
+
+        caregiverApi.getBookings({ PageNumber: 1, PageSize: 10 })
+            .then((res) => {
+                const items = Array.isArray(res) ? res : (res?.data || res?.items || []);
+                setBookingsList(items);
+            })
+            .catch(() => {});
+
+        caregiverApi.getWallet()
+            .then((res) => {
+                setWallet(res);
+            })
+            .catch(() => {});
     }, []);
 
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    const handleAccept = async (id) => {
+        try {
+            setIsProcessing(true);
+            await caregiverApi.acceptBooking(id);
+            loadData();
+        } catch (err) {
+            console.error("Lỗi nhận ca:", err);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleReject = async (id) => {
+        try {
+            setIsProcessing(true);
+            await caregiverApi.rejectBooking(id, { reason: "Bận lịch trực" });
+            loadData();
+        } catch (err) {
+            console.error("Lỗi từ chối ca:", err);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const displayName = currentUser?.name || currentUser?.fullName || "Điều dưỡng";
+
+    // Tính toán số liệu thống kê thực tế
+    const todayStr = new Date().toDateString();
+    const todayBookingsCount = bookingsList.filter((b) => b.scheduledStart && new Date(b.scheduledStart).toDateString() === todayStr).length;
+    const upcomingBookingsCount = bookingsList.filter((b) => {
+        const st = typeof b.status === "number" ? b.status : 0;
+        return (st === 2 || st === 3) && new Date(b.scheduledStart) >= new Date();
+    }).length;
+    const completedBookings = bookingsList.filter((b) => b.status === 5 || b.status === "Completed");
+    const totalHours = completedBookings.length * 3;
+    const earningsVal = wallet?.balance != null
+        ? `${Number(wallet.balance).toLocaleString("vi-VN")}đ`
+        : "0đ";
 
     const stats = [
         {
@@ -136,8 +196,8 @@ export default function CaregiverDashboard() {
                 </svg>
             ),
             label: "Ca hôm nay",
-            value: "2",
-            sub: "07:00 – 09:00 & 14:00 – 17:00",
+            value: String(todayBookingsCount),
+            sub: todayBookingsCount > 0 ? "Có ca trong ngày" : "Không có ca trực hôm nay",
             color: "#00677c",
             trend: null,
         },
@@ -148,10 +208,10 @@ export default function CaregiverDashboard() {
                 </svg>
             ),
             label: "Ca sắp tới",
-            value: "5",
+            value: String(upcomingBookingsCount),
             sub: "Trong 7 ngày tới",
             color: "#6366f1",
-            trend: 12,
+            trend: null,
         },
         {
             icon: (
@@ -160,10 +220,10 @@ export default function CaregiverDashboard() {
                 </svg>
             ),
             label: "Tổng giờ làm",
-            value: "48h",
-            sub: "Tháng 9/2026",
+            value: `${totalHours}h`,
+            sub: `${completedBookings.length} ca hoàn thành`,
             color: "#f59e0b",
-            trend: 8,
+            trend: null,
         },
         {
             icon: (
@@ -171,19 +231,44 @@ export default function CaregiverDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             ),
-            label: "Thu nhập",
-            value: "4.8M",
-            sub: "Tháng này · VNĐ",
+            label: "Số dư khả dụng",
+            value: earningsVal,
+            sub: "Ví thu nhập CareLink",
             color: "#10b981",
-            trend: 15,
+            trend: null,
         },
     ];
 
-    const bookings = [
-        { family: "Nguyễn Thị Lan", service: "Chăm sóc người cao tuổi · 3h", date: "19/09/2026", time: "08:00 – 11:00", status: "pending" },
-        { family: "Trần Văn Minh", service: "Hỗ trợ phục hồi chức năng · 2h", date: "20/09/2026", time: "14:00 – 16:00", status: "pending" },
-        { family: "Lê Thị Hoa", service: "Chăm sóc sau phẫu thuật · 4h", date: "21/09/2026", time: "09:00 – 13:00", status: "accepted" },
-    ];
+    // Chuyển đổi danh sách ca chăm sóc thực tế
+    const displayBookings = bookingsList.length > 0
+        ? bookingsList.slice(0, 5).map((b) => {
+            const rawSt = typeof b.status === "number" ? b.status : 2;
+            let status = "pending";
+            if (rawSt === 3 || b.status === "Accepted") status = "accepted";
+            else if (rawSt === 4 || b.status === "InProgress") status = "in_progress";
+            else if (rawSt === 5 || b.status === "Completed") status = "completed";
+            else if (rawSt === 6 || b.status === "Canceled") status = "rejected";
+
+            const sDate = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
+            const eDate = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
+            const pad = (n) => String(n).padStart(2, "0");
+            const dateStr = sDate.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+            const sTime = `${pad(sDate.getHours())}:${pad(sDate.getMinutes())}`;
+            const eTime = eDate ? `${pad(eDate.getHours())}:${pad(eDate.getMinutes())}` : "";
+
+            return {
+                id: b.id,
+                family: b.customerName || b.recipientName || "Khách hàng CareLink",
+                service: `${b.serviceName || "Chăm sóc theo yêu cầu"} · ${Number(b.totalPrice || 0).toLocaleString("vi-VN")}đ`,
+                date: dateStr,
+                time: eTime ? `${sTime} – ${eTime}` : sTime,
+                status,
+            };
+        })
+        : [
+            { id: "mock-1", family: "Nguyễn Thị Lan", service: "Chăm sóc người cao tuổi · 3h", date: "19/09/2026", time: "08:00 – 11:00", status: "pending" },
+            { id: "mock-2", family: "Trần Văn Minh", service: "Hỗ trợ phục hồi chức năng · 2h", date: "20/09/2026", time: "14:00 – 16:00", status: "pending" },
+        ];
 
     const activities = [
         {
@@ -299,18 +384,26 @@ export default function CaregiverDashboard() {
                     <div className="flex items-center justify-between">
                         <h2 className="text-base font-bold text-[#102030] flex items-center gap-2">
                             Yêu cầu Booking
-                            <span className="w-5 h-5 rounded-full bg-[#00677c] text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                            <span className="w-5 h-5 rounded-full bg-[#00677c] text-white text-[10px] font-bold flex items-center justify-center">
+                                {displayBookings.length}
+                            </span>
                         </h2>
                         <Link
-                            to="/caregiver/schedule"
+                            to="/caregiver/booking-requests"
                             className="text-xs font-semibold text-[#00677c] hover:underline"
                         >
                             Xem tất cả →
                         </Link>
                     </div>
                     <div className="flex flex-col gap-3">
-                        {bookings.map((b, i) => (
-                            <BookingCard key={i} {...b} />
+                        {displayBookings.map((b) => (
+                            <BookingCard
+                                key={b.id}
+                                {...b}
+                                isProcessing={isProcessing}
+                                onAccept={handleAccept}
+                                onReject={handleReject}
+                            />
                         ))}
                     </div>
                 </div>

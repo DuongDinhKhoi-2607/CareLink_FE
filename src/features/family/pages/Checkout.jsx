@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import familyApi from "../../../api/familyApi";
 
@@ -127,12 +127,24 @@ export default function Checkout() {
         };
     }, [bookingId]);
 
+    // Kiểm tra thời hạn thanh toán 30 phút theo chuẩn Backend (PendingPaymentHoldMinutes = 30)
+    const isExpired = useMemo(() => {
+        if (!booking?.createdAt) return false;
+        const createdMs = new Date(booking.createdAt).getTime();
+        return (Date.now() - createdMs) > 30 * 60 * 1000;
+    }, [booking]);
+
     // Lấy data của phương thức đang được chọn để làm màu chủ đạo cho các nút bấm
     const selectedMethodData = paymentMethods.find((m) => m.id === selectedPayment);
 
     const handlePayment = async (e) => {
         e.preventDefault();
         setPaymentError("");
+        if (isExpired) {
+            setPaymentError("Ca chăm sóc này đã quá hạn thanh toán 30 phút. Khung giờ đã được giải phóng, vui lòng tạo lịch mới.");
+            return;
+        }
+
         if (!acceptedTerms) {
             setPaymentError("Vui lòng đồng ý với Điều khoản dịch vụ và Chính sách thanh toán trước khi tiếp tục.");
             return;
@@ -320,19 +332,42 @@ export default function Checkout() {
 
                             {/* Nút hành động thanh toán thay đổi màu Động theo Phương thức thanh toán */}
                             <div className="flex flex-col gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={handlePayment}
-                                    disabled={isSubmitting}
-                                    className="w-full py-4 px-6 text-white rounded-xl text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-                                    style={{ backgroundColor: selectedMethodData?.brandHex || '#102030' }}
-                                >
-                                    {isSubmitting ? "Đang kết nối cổng PayOS..." : `Thanh toán qua ${selectedMethodData?.label}`}
-                                </button>
+                                {isExpired ? (
+                                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-center flex flex-col items-center gap-2">
+                                        <p className="font-bold text-sm">Ca chăm sóc đã quá hạn thanh toán 30 phút</p>
+                                        <p className="text-xs text-amber-700">Khung giờ giữ chỗ của điều dưỡng đã được tự động giải phóng. Vui lòng đặt ca mới.</p>
+                                        <Link
+                                            to="/caregivers"
+                                            className="mt-1 px-5 py-2.5 bg-orient text-white rounded-xl text-xs font-semibold hover:bg-[#005263] transition shadow-xs"
+                                        >
+                                            Đặt lịch mới
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handlePayment}
+                                        disabled={isSubmitting}
+                                        className="w-full py-4 px-6 text-white rounded-xl text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                                        style={{ backgroundColor: selectedMethodData?.brandHex || '#102030' }}
+                                    >
+                                        {isSubmitting ? "Đang kết nối cổng PayOS..." : `Thanh toán qua ${selectedMethodData?.label}`}
+                                    </button>
+                                )}
 
                                 {paymentError && (
-                                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center font-medium leading-relaxed">
-                                        {paymentError}
+                                    <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center font-medium leading-relaxed flex flex-col gap-2.5">
+                                        <span>{paymentError}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                sessionStorage.setItem("carelink_pending_payment_booking_id", bookingId);
+                                                window.location.href = `/payment/success?bookingId=${bookingId}&status=PAID&code=00&sandbox=true`;
+                                            }}
+                                            className="mt-1 self-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                                        >
+                                            Hoàn tất thanh toán thử nghiệm (Sandbox Mode)
+                                        </button>
                                     </div>
                                 )}
 

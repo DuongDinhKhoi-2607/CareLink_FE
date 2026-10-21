@@ -17,14 +17,16 @@ import caregiverApi from "../../../api/caregiverApi";
 
 // Adapter chuyển đổi dữ liệu BookingResponse từ Backend sang DTO hiển thị của Điều dưỡng
 const mapBackendToCaregiverBooking = (b) => {
-    const rawStatus = typeof b.status === "number" ? b.status : 2;
+    const sStr = String(b.status || "").toLowerCase();
     let status = "pending";
-    if (rawStatus === 2) status = "pending"; // PendingAcceptance
-    else if (rawStatus === 3) status = "accepted"; // Accepted
-    else if (rawStatus === 4) status = "in_progress"; // InProgress
-    else if (rawStatus === 5) status = "completed"; // Completed
-    else if (rawStatus === 6) status = "rejected"; // Canceled
+    if (sStr === "2" || sStr === "pendingacceptance" || sStr === "pending") status = "pending";
+    else if (sStr === "3" || sStr === "accepted") status = "accepted";
+    else if (sStr === "4" || sStr === "inprogress" || sStr === "in_progress") status = "in_progress";
+    else if (sStr === "5" || sStr === "completed") status = "completed";
+    else if (sStr === "6" || sStr === "canceled" || sStr === "rejected") status = "rejected";
+    else if (sStr === "1" || sStr === "pendingpayment") status = "pending";
 
+    const pad = (n) => String(n).padStart(2, "0");
     const startDate = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
     const endDate = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
     const formattedDate = startDate.toLocaleDateString("vi-VN", {
@@ -32,8 +34,8 @@ const mapBackendToCaregiverBooking = (b) => {
         month: "2-digit",
         year: "numeric"
     });
-    const startTime = startDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-    const endTime = endDate ? endDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
+    const startTime = `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}`;
+    const endTime = endDate ? `${pad(endDate.getHours())}:${pad(endDate.getMinutes())}` : "";
     const timeStr = endTime ? `${startTime} – ${endTime}` : startTime;
 
     return {
@@ -70,168 +72,6 @@ const mapBackendToCaregiverBooking = (b) => {
     };
 };
 
-/* ─── Mock booking data — sẽ thay bằng API ─── */
-const MOCK_BOOKINGS = [
-    {
-        id: "BK-20261013-001",
-        status: "pending",
-        requestedAt: "13/10/2026 · 08:32",
-        source: "chat",
-        family: {
-            name: "Nguyễn Thị Lan (Mẹ anh An)",
-            phone: "0901 234 567",
-            address: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP.HCM",
-            rating: 4.9,
-            totalSessions: 12,
-        },
-        patient: {
-            name: "Bà Nguyễn Thị Lan",
-            age: 75,
-            gender: "Nữ",
-            condition: "Hậu phẫu phục hồi khớp gối",
-            mobility: "Cần hỗ trợ tập đi lại",
-            allergies: "Không có",
-            notes: "Ca đã thống nhất qua Chat. Bác vừa mổ khớp gối, cần hỗ trợ tập co duỗi nhẹ và đo huyết áp buổi sáng.",
-        },
-        service: {
-            type: "Chăm sóc phục hồi sau phẫu thuật",
-            date: "14/10/2026",
-            time: "08:00 – 10:00",
-            duration: "2 giờ",
-            fee: "350.000 VNĐ",
-            tasks: ["Hỗ trợ tập co duỗi nhẹ", "Đo huyết áp & sinh hiệu", "Theo dõi vết mổ", "Hỗ trợ vận động"],
-        },
-    },
-    {
-        id: "BK-20261013-002",
-        status: "in_progress",
-        requestedAt: "13/10/2026 · 10:15",
-        source: "direct",
-        family: {
-            name: "Trần Văn Minh",
-            phone: "0912 345 678",
-            address: "88 Lê Lợi, Quận 3, TP.HCM",
-            rating: 4.5,
-            totalSessions: 5,
-        },
-        patient: {
-            name: "Trần Thị Bình",
-            age: 65,
-            gender: "Nữ",
-            condition: "Hậu phẫu thay khớp háng",
-            mobility: "Không tự đứng dậy được",
-            allergies: "Không có",
-            notes: "Vừa phẫu thuật 2 tuần trước. Cần chú ý vết thương, thay băng theo quy trình vô trùng.",
-        },
-        service: {
-            type: "Chăm sóc sau phẫu thuật",
-            date: "15/10/2026",
-            time: "14:00 – 18:00",
-            duration: "4 giờ",
-            fee: "520.000 VNĐ",
-            tasks: ["Thay băng vết thương", "Hỗ trợ tập đứng", "Theo dõi dấu hiệu nhiễm trùng", "Chuẩn bị bữa ăn"],
-        },
-    },
-    {
-        id: "BK-20260918-003",
-        status: "pending",
-        requestedAt: "18/09/2026 · 14:50",
-        family: {
-            name: "Phạm Ngọc Anh",
-            phone: "0933 456 789",
-            address: "201 Đinh Tiên Hoàng, Quận Bình Thạnh, TP.HCM",
-            rating: 5.0,
-            totalSessions: 28,
-        },
-        patient: {
-            name: "Bé Phạm Quốc Hùng",
-            age: 0.25, // 3 months
-            gender: "Nam",
-            condition: "Trẻ sơ sinh 3 tháng tuổi, khỏe mạnh",
-            mobility: "Bình thường",
-            allergies: "Không có",
-            notes: "Gia đình cần hỗ trợ ban đêm để bố mẹ được nghỉ ngơi. Em bé bú sữa mẹ kết hợp sữa công thức.",
-        },
-        service: {
-            type: "Chăm sóc trẻ sơ sinh",
-            date: "22/09/2026",
-            time: "22:00 – 06:00",
-            duration: "8 giờ",
-            fee: "800.000 VNĐ",
-            tasks: ["Trông coi và dỗ ngủ", "Cho bú đúng giờ", "Thay tã", "Theo dõi nhiệt độ"],
-        },
-    },
-    {
-        id: "BK-20260917-004",
-        status: "completed",
-        requestedAt: "17/09/2026 · 09:00",
-        family: {
-            name: "Lê Thị Hoa",
-            phone: "0944 567 890",
-            address: "45 Võ Văn Tần, Quận 3, TP.HCM",
-            rating: 4.9,
-            totalSessions: 20,
-        },
-        patient: {
-            name: "Lê Văn Dũng",
-            age: 82,
-            gender: "Nam",
-            condition: "Tiểu đường tuýp 2, cao huyết áp",
-            mobility: "Đi lại chậm, cần hỗ trợ",
-            allergies: "Sulfa",
-            notes: "Cần tiêm insulin mỗi buổi sáng theo chỉ định. Đo đường huyết trước và sau bữa ăn.",
-        },
-        service: {
-            type: "Chăm sóc bệnh mãn tính",
-            date: "19/09/2026",
-            time: "06:00 – 09:00",
-            duration: "3 giờ",
-            fee: "360.000 VNĐ",
-            tasks: ["Tiêm insulin", "Đo đường huyết & huyết áp", "Chuẩn bị bữa ăn phù hợp", "Hỗ trợ vệ sinh sáng"],
-        },
-        healthRecord: {
-            bloodPressureSystolic: 125,
-            bloodPressureDiastolic: 80,
-            heartRate: 74,
-            temperature: 36.8,
-            bloodGlucose: 110,
-            woundStatus: "Khô ráo, liền tốt",
-            mobilityStatus: "Tập đi lại chậm với khung hỗ trợ",
-            mentalStatus: "Tỉnh táo, hợp tác tích cực",
-            nurseNotes: "Đã tiêm insulin đúng liều chỉ định 12UI, đo đường huyết 110 mg/dL trước ăn. Bác Dũng ăn ngon miệng, đã uống thuốc huyết áp lúc 07:00.",
-            createdAt: "19/09/2026 · 09:15",
-        },
-    },
-    {
-        id: "BK-20260916-005",
-        status: "rejected",
-        requestedAt: "16/09/2026 · 16:20",
-        family: {
-            name: "Hoàng Minh Tuấn",
-            phone: "0955 678 901",
-            address: "99 Cách Mạng Tháng 8, Quận 10, TP.HCM",
-            rating: 3.9,
-            totalSessions: 2,
-        },
-        patient: {
-            name: "Hoàng Thị Mai",
-            age: 71,
-            gender: "Nữ",
-            condition: "Alzheimer giai đoạn đầu",
-            mobility: "Đi lại bình thường nhưng dễ lạc đường",
-            allergies: "Không có",
-            notes: "Cần canh chừng để bệnh nhân không tự ra ngoài một mình.",
-        },
-        service: {
-            type: "Chăm sóc người cao tuổi",
-            date: "18/09/2026",
-            time: "08:00 – 12:00",
-            duration: "4 giờ",
-            fee: "480.000 VNĐ",
-            tasks: ["Giám sát và trò chuyện", "Hỗ trợ vệ sinh", "Chuẩn bị bữa ăn", "Ghi nhật ký triệu chứng"],
-        },
-    },
-];
 
 /* ─── Helpers ─── */
 const STATUS_MAP = {
@@ -596,23 +436,15 @@ export default function CaregiverBookingRequests() {
             const res = await caregiverApi.getBookings({ PageNumber: 1, PageSize: 50 });
             const items = res?.items || (Array.isArray(res) ? res : []);
             setBookings(items.map(mapBackendToCaregiverBooking));
-            setIsUsingFallback(false);
         } catch (err) {
             console.warn("[CareLink] Tải danh sách ca chăm sóc thất bại:", err);
             const status = err.response?.status;
             if (status === 401 || status === 403) {
                 setApiError("Phiên đăng nhập đã hết hạn hoặc bạn không có quyền xem danh sách nhận ca.");
-                setBookings([]);
-                setIsUsingFallback(false);
-            } else if (!err.response || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK") {
-                // Tự động hiển thị dữ liệu mẫu chuẩn hóa khi mất mạng / offline
-                setIsUsingFallback(true);
-                setBookings(MOCK_BOOKINGS);
             } else {
                 setApiError(err.response?.data?.detail || err.response?.data?.message || "Không thể tải danh sách ca chăm sóc.");
-                setBookings([]);
-                setIsUsingFallback(false);
             }
+            setBookings([]);
         } finally {
             setIsLoading(false);
         }
@@ -803,9 +635,14 @@ export default function CaregiverBookingRequests() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </div>
-                    <div>
-                        <p className="text-base font-bold text-slate-400">Không có yêu cầu nào</p>
-                        <p className="text-sm text-slate-300 mt-1">Chưa có booking trong danh mục này.</p>
+                    <div className="max-w-md">
+                        <p className="text-base font-bold text-slate-700">Không có yêu cầu nào</p>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Chưa có ca chăm sóc nào trong danh mục này.
+                        </p>
+                        <div className="mt-3.5 p-3 rounded-xl bg-teal-50 border border-teal-100 text-[11px] text-teal-800 leading-relaxed text-left">
+                            💡 <strong>Quy trình CareLink:</strong> Khi bạn bấm "Đồng ý nhận ca" trong Chat, hệ thống tạo Booking ở trạng thái <em>Chờ thanh toán (30 phút)</em>. Sau khi khách hàng hoàn tất chuyển khoản PayOS, ca sẽ được kích hoạt và xuất hiện ngay tại đây.
+                        </div>
                     </div>
                 </div>
             ) : (

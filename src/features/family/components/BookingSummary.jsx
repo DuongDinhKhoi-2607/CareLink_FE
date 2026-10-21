@@ -24,6 +24,10 @@ export default function BookingSummary({
     });
 
     const handleOpenEdit = () => {
+        if (onConfirmBooking) {
+            onConfirmBooking();
+            return;
+        }
         setEditForm({
             scheduledDate: bookingInfo?.scheduledDate || "Ngày mai, 14/10/2026",
             scheduledTime: bookingInfo?.scheduledTime || "08:00 – 10:00 (2 giờ)",
@@ -273,7 +277,7 @@ export default function BookingSummary({
                         {/* 3. Trạng thái ĐIỀU DƯỠNG ĐÃ ĐỒNG Ý: Mở nút Thanh toán */}
                         {status === "caregiver_accepted" && (
                             <Link
-                                to="/checkout"
+                                to={bookingInfo?.bookingId ? `/checkout?bookingId=${bookingInfo.bookingId}` : "/checkout"}
                                 state={{ bookingId: bookingInfo?.bookingId || bookingInfo?.id, booking: bookingInfo }}
                                 className="group flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-3.5 text-white shadow-md shadow-emerald-700/20 transition-all hover:from-emerald-700 hover:to-teal-800 hover:shadow-lg active:scale-[0.99] cursor-pointer"
                             >

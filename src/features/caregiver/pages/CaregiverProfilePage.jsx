@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import caregiverApi from "../../../api/caregiverApi";
+import authApi, { fetchAndSyncUserMe } from "../../../api/authApi";
 
 export default function CaregiverProfilePage() {
     // ── STATE HỒ SƠ ĐIỀU DƯỠNG (KHỚP DTO BACKEND: NurseProfileResponse & UpdateNurseProfileRequest) ──
@@ -28,9 +30,10 @@ export default function CaregiverProfilePage() {
             "Hỗ trợ vệ sinh, tắm gội tại giường cho người cao tuổi",
             "Xoa bóp, tập co duỗi khớp gối phòng teo cơ",
         ],
-        verificationStatus: "verified", // verified | pending | rejected
-        licenseNumber: "CCHN-003891/BYT-HCM",
-        licenseExpiry: "15/12/2028",
+        verificationStatus: 0, // 0: Unsubmitted | 1: Pending | 2: Approved | 3: Rejected | 4: Resubmitted
+        adminNote: null,
+        licenseNumber: "",
+        licenseExpiry: "",
     });
 
     const [isEditing, setIsEditing] = useState(false);
@@ -44,14 +47,98 @@ export default function CaregiverProfilePage() {
         setTimeout(() => setToastMessage(null), 3500);
     };
 
-    // ── 54. GET /api/v1/nurse/profile ──
+    // Modal Đổi mật khẩu tài khoản Điều dưỡng
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({
+        current: "",
+        newPass: "",
+        confirm: "",
+    });
+    const [passwordError, setPasswordError] = useState("");
+    const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
+
+    // Modal Xem chi tiết Chứng chỉ & Hồ sơ xác minh
+    const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+    const [certLoading, setCertLoading] = useState(false);
+    const [submittedDocs, setSubmittedDocs] = useState([]);
+    const [certStatusInfo, setCertStatusInfo] = useState(null);
+
+    const handleOpenCertModal = async () => {
+        setIsCertModalOpen(true);
+        setCertLoading(true);
+        try {
+            const [docsRes, statusRes] = await Promise.all([
+                caregiverApi.getDocuments().catch(() => []),
+                caregiverApi.getVerificationStatus().catch(() => null),
+            ]);
+            const docs = Array.isArray(docsRes) ? docsRes : (docsRes?.data || []);
+            setSubmittedDocs(docs);
+            setCertStatusInfo(statusRes?.data || statusRes);
+        } catch {
+            setSubmittedDocs([]);
+        } finally {
+            setCertLoading(false);
+        }
+    };
+
+    const handleSavePassword = async (e) => {
+        e.preventDefault();
+        setPasswordError("");
+        if (!passwordForm.current) {
+            setPasswordError("Vui lòng nhập mật khẩu hiện tại!");
+            return;
+        }
+        if (passwordForm.newPass.length < 6) {
+            setPasswordError("Mật khẩu mới phải có ít nhất 6 ký tự!");
+            return;
+        }
+        if (passwordForm.newPass !== passwordForm.confirm) {
+            setPasswordError("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+            return;
+        }
+        if (passwordForm.current === passwordForm.newPass) {
+            setPasswordError("Mật khẩu mới không được trùng với mật khẩu hiện tại!");
+            return;
+        }
+
+        setIsPasswordSubmitting(true);
+        try {
+            await authApi.changePassword({
+                currentPassword: passwordForm.current,
+                newPassword: passwordForm.newPass,
+                confirmPassword: passwordForm.confirm,
+            });
+            setIsPasswordModalOpen(false);
+            setPasswordForm({ current: "", newPass: "", confirm: "" });
+            setPasswordError("");
+            showToast("Đã đổi mật khẩu tài khoản thành công!");
+        } catch (err) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.detail ||
+                "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.";
+            setPasswordError(msg);
+        } finally {
+            setIsPasswordSubmitting(false);
+        }
+    };
+
+    // ── 54. GET /api/v1/nurse/profile & 32. GET /api/v1/nurse/verification-status ──
     const fetchProfile = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await caregiverApi.getProfile();
+            const [res, statusRes] = await Promise.all([
+                caregiverApi.getProfile().catch(() => null),
+                caregiverApi.getVerificationStatus().catch(() => null),
+            ]);
             const data = res?.data || res;
+            const vData = statusRes?.data || statusRes;
+            if (vData && typeof vData === "object") {
+                setCertStatusInfo(vData);
+            }
             if (data && typeof data === "object") {
                 setProfile((prev) => {
+                    const status = vData?.verificationStatus ?? (data.verificationStatus ?? data.status ?? prev.verificationStatus);
                     const merged = {
                         ...prev,
                         fullName: data.fullName || data.name || prev.fullName,
@@ -76,9 +163,11 @@ export default function CaregiverProfilePage() {
                             : typeof data.skills === "string" && data.skills.trim()
                             ? data.skills.split(",").map((s) => s.trim())
                             : prev.skills,
-                        verificationStatus: data.verificationStatus || data.status || prev.verificationStatus,
-                        licenseNumber: data.licenseNumber || prev.licenseNumber,
-                        licenseExpiry: data.licenseExpiry || prev.licenseExpiry,
+                        verificationStatus: status,
+                        verificationStatusName: vData?.verificationStatusName || data.verificationStatusName,
+                        adminNote: vData?.latestAdminNote || data.rejectionReason,
+                        licenseNumber: vData?.licenseNumber || data.licenseNumber || prev.licenseNumber,
+                        licenseExpiry: vData?.licenseExpiryDate || data.licenseExpiry || prev.licenseExpiry,
                     };
                     setDraft(merged);
                     return merged;
@@ -101,21 +190,40 @@ export default function CaregiverProfilePage() {
         setSaving(true);
         try {
             const payload = {
-                fullName: draft.fullName,
-                title: draft.title,
-                bio: draft.bio,
-                experienceYears: Number(draft.experienceYears),
-                serviceRadiusKm: Number(draft.serviceRadiusKm || draft.maxDistanceKm),
-                maxDistanceKm: Number(draft.maxDistanceKm || draft.serviceRadiusKm),
-                workDistrict: draft.workDistrict,
-                baseAddress: draft.baseAddress,
-                preferredDistricts: draft.preferredDistricts,
-                skills: draft.skills,
+                fullName: draft.fullName?.trim() || null,
+                phone: draft.phone?.trim() || null,
+                avatarUrl: draft.avatar?.trim() || null,
+                bio: draft.bio?.trim() || null,
+                educationLevel: draft.title?.trim() || draft.educationLevel?.trim() || null,
+                title: draft.title?.trim() || null,
+                experienceYears: Number(draft.experienceYears || 0),
+                serviceRadiusKm: Number(draft.serviceRadiusKm || draft.maxDistanceKm || 10),
+                maxDistanceKm: Number(draft.maxDistanceKm || draft.serviceRadiusKm || 10),
+                workDistrict: draft.workDistrict?.trim() || null,
+                baseAddress: draft.baseAddress?.trim() || null,
+                preferredDistricts: draft.preferredDistricts || [],
+                skills: draft.skills || [],
             };
             await caregiverApi.updateProfile(payload);
+
+            try {
+                if (payload.fullName || payload.phone) {
+                    await authApi.updateMe({
+                        fullName: payload.fullName,
+                        phone: payload.phone,
+                        avatarUrl: payload.avatarUrl,
+                    });
+                }
+            } catch (uErr) {
+                console.warn("[CareLink] updateMe sync notice:", uErr);
+            }
+
             setProfile({ ...draft });
             setIsEditing(false);
-            showToast("✓ Đã cập nhật hồ sơ năng lực và cấu hình nhận việc thành công!");
+            showToast("✓ Đã cập nhật hồ sơ năng lực và thông tin điều dưỡng thành công!");
+            try {
+                await fetchAndSyncUserMe();
+            } catch {}
             await fetchProfile();
         } catch (err) {
             console.error("Lỗi cập nhật hồ sơ điều dưỡng:", err);
@@ -174,10 +282,47 @@ export default function CaregiverProfilePage() {
                         <span className="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-700 text-xs font-semibold border border-teal-200/60">
                             Điều dưỡng chuyên nghiệp
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/60">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Chứng chỉ đã xác minh
-                        </span>
+                        {(() => {
+                            const vStatus = profile.verificationStatus;
+                            const note = profile.adminNote || certStatusInfo?.latestAdminNote;
+                            // Approved: 2 hoặc 'Approved' hoặc 'verified'
+                            if (vStatus === 2 || vStatus === "Approved" || vStatus === "verified" || (vStatus === 1 && profile.verificationStatusName === "Approved")) {
+                                return (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/60">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        Chứng chỉ đã xác minh
+                                    </span>
+                                );
+                            }
+                            // Pending: 1, 4 hoặc 'Pending', 'Resubmitted', 'pending'
+                            if (vStatus === 1 || vStatus === 4 || vStatus === "Pending" || vStatus === "Resubmitted" || vStatus === "pending") {
+                                return (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200/60">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        Đang xác minh hồ sơ
+                                    </span>
+                                );
+                            }
+                            // Rejected: 3 hoặc 'Rejected'
+                            if (vStatus === 3 || vStatus === "Rejected" || vStatus === "rejected") {
+                                return (
+                                    <span
+                                        title={note ? `Lý do từ chối: ${note}` : "Hồ sơ bị từ chối / Cần bổ sung"}
+                                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200/60 cursor-help"
+                                    >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                        Hồ sơ bị từ chối {note ? `• ${note}` : ""}
+                                    </span>
+                                );
+                            }
+                            // Unsubmitted: 0 hoặc null
+                            return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                    Chưa nộp hồ sơ
+                                </span>
+                            );
+                        })()}
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-[#002045] mt-1.5 tracking-tight">
                         Hồ sơ năng lực & Cấu hình nhận việc
@@ -187,21 +332,38 @@ export default function CaregiverProfilePage() {
                     </p>
                 </div>
 
-                {!isEditing && (
+                <div className="flex items-center gap-2.5 self-start sm:self-auto">
                     <button
                         type="button"
                         onClick={() => {
-                            setDraft({ ...profile });
-                            setIsEditing(true);
+                            setPasswordForm({ current: "", newPass: "", confirm: "" });
+                            setPasswordError("");
+                            setIsPasswordModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer self-start sm:self-auto"
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                         </svg>
-                        Chỉnh sửa hồ sơ
+                        Đổi mật khẩu
                     </button>
-                )}
+
+                    {!isEditing && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setDraft({ ...profile });
+                                setIsEditing(true);
+                            }}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                            Chỉnh sửa hồ sơ
+                        </button>
+                    )}
+                </div>
             </header>
 
             <form onSubmit={handleSave} className="space-y-6">
@@ -230,36 +392,68 @@ export default function CaregiverProfilePage() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-xl font-bold text-[#002045]">{profile.fullName}</h2>
-                                <span className="p-1 rounded-full bg-teal-100 text-teal-700" title="Đã xác thực y tế">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                </span>
-                            </div>
-                            <p className="text-xs font-semibold text-teal-700 mt-0.5">{profile.title}</p>
-                            
-                            <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-slate-500">
-                                <span className="flex items-center gap-1 text-amber-500 font-bold">
-                                    ★ {profile.rating} <span className="text-slate-400 font-normal">({profile.reviewsCount} đánh giá)</span>
-                                </span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span>{profile.completedBookings} ca trực hoàn thành</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span>{profile.phone}</span>
-                            </div>
+                            {isEditing ? (
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Họ và tên điều dưỡng <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={draft.fullName}
+                                            onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
+                                            placeholder="Nhập họ và tên..."
+                                            className="w-full max-w-md px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Số điện thoại liên hệ
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={draft.phone}
+                                            onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
+                                            placeholder="0912 345 678"
+                                            className="w-full max-w-xs px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-xl font-bold text-[#002045]">{profile.fullName}</h2>
+                                        <span className="p-1 rounded-full bg-teal-100 text-teal-700" title="Đã xác thực y tế">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <p className="text-xs font-semibold text-teal-700 mt-0.5">{profile.title}</p>
+                                    
+                                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-slate-500">
+                                        <span className="flex items-center gap-1 text-amber-500 font-bold">
+                                            ★ {profile.rating} <span className="text-slate-400 font-normal">({profile.reviewsCount} đánh giá)</span>
+                                        </span>
+                                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                        <span>{profile.completedBookings} ca trực hoàn thành</span>
+                                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                        <span>{profile.phone}</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
-                        <Link
-                            to="/caregiver/verification"
-                            className="px-3.5 py-1.5 rounded-xl border border-teal-200 bg-teal-50/50 text-teal-800 text-xs font-semibold hover:bg-teal-100/60 transition-colors inline-flex items-center gap-1.5 shrink-0"
+                        <button
+                            type="button"
+                            onClick={handleOpenCertModal}
+                            className="px-3.5 py-1.5 rounded-xl border border-teal-200 bg-teal-50/50 text-teal-800 text-xs font-semibold hover:bg-teal-100/60 transition-colors inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
                         >
                             <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.18-4.987A2.25 2.25 0 0010.5 4.5H6.75A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5h10.5A2.25 2.25 0 0019.5 17.25V13.5a2.25 2.25 0 00-.663-1.59l-5.324-5.324z" />
                             </svg>
                             Xem chứng chỉ đã nộp
-                        </Link>
+                        </button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 text-xs">
@@ -566,6 +760,234 @@ export default function CaregiverProfilePage() {
                     </div>
                 )}
             </form>
+
+            {/* Modal Đổi mật khẩu tài khoản Điều dưỡng */}
+            {isPasswordModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-hidden">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-base font-bold text-[#002045]">Đổi mật khẩu tài khoản</h3>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Áp dụng cho tài khoản Điều dưỡng</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsPasswordModalOpen(false);
+                                    setPasswordError("");
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSavePassword} className="space-y-3.5 text-xs">
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Mật khẩu hiện tại</label>
+                                <input
+                                    type="password"
+                                    required
+                                    placeholder="Nhập mật khẩu hiện tại"
+                                    value={passwordForm.current}
+                                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-xs"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Mật khẩu mới</label>
+                                <input
+                                    type="password"
+                                    required
+                                    placeholder="Tối thiểu 6 ký tự"
+                                    value={passwordForm.newPass}
+                                    onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })}
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-xs"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Xác nhận mật khẩu mới</label>
+                                <input
+                                    type="password"
+                                    required
+                                    placeholder="Nhập lại mật khẩu mới"
+                                    value={passwordForm.confirm}
+                                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-xs"
+                                />
+                            </div>
+
+                            {passwordError && (
+                                <p className="text-xs text-red-500 font-medium">{passwordError}</p>
+                            )}
+
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsPasswordModalOpen(false);
+                                        setPasswordError("");
+                                    }}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs cursor-pointer"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isPasswordSubmitting}
+                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    {isPasswordSubmitting && (
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                        </svg>
+                                    )}
+                                    <span>{isPasswordSubmitting ? "Đang cập nhật..." : "Cập nhật mật khẩu"}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ── MODAL XEM CHI TIẾT CHỨNG CHỈ ĐÃ NỘP ── */}
+            {isCertModalOpen && createPortal(
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setIsCertModalOpen(false);
+                    }}
+                >
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-xl overflow-hidden my-8 font-sans">
+                        <div className="px-6 py-5 bg-gradient-to-r from-teal-50 to-white border-b border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-xs">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.18-4.987A2.25 2.25 0 0010.5 4.5H6.75A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5h10.5A2.25 2.25 0 0019.5 17.25V13.5a2.25 2.25 0 00-.663-1.59l-5.324-5.324z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">Chứng chỉ & Hồ sơ năng lực</h3>
+                                    <p className="text-xs text-slate-500">Giấy phép hành nghề y tế và các chứng từ đã xác thực</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsCertModalOpen(false)}
+                                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm cursor-pointer transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs">
+                            {/* Trạng thái xác thực */}
+                            <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 flex items-center justify-between">
+                                <div>
+                                    <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider block">Trạng thái hồ sơ</span>
+                                    <span className="text-sm font-bold text-teal-900 mt-0.5 block">
+                                        {certStatusInfo?.verificationStatusName || (profile.verificationStatus === "verified" || profile.verificationStatus === 2 ? "Đã phê duyệt hành nghề" : "Đang chờ đối soát")}
+                                    </span>
+                                </div>
+                                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    ✓ Đã xác minh
+                                </span>
+                            </div>
+
+                            {/* Thông tin CCHN */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                    <span className="text-slate-400 block text-[11px]">Số Chứng chỉ hành nghề (CCHN):</span>
+                                    <strong className="text-sm text-[#002045] font-mono mt-0.5 block">{profile.licenseNumber || "Chưa có"}</strong>
+                                </div>
+                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                    <span className="text-slate-400 block text-[11px]">Thời hạn hiệu lực:</span>
+                                    <strong className="text-sm text-slate-700 mt-0.5 block">{profile.licenseExpiry || "Dài hạn / Không thời hạn"}</strong>
+                                </div>
+                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
+                                    <span className="text-slate-400 block text-[11px]">Trình độ & Cơ sở công tác:</span>
+                                    <strong className="text-xs text-slate-800 mt-0.5 block">{profile.title}</strong>
+                                </div>
+                            </div>
+
+                            {/* Danh sách chứng từ đã gửi */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">
+                                    Danh sách tài liệu đã đính kèm
+                                </h4>
+                                {certLoading ? (
+                                    <div className="py-6 text-center text-slate-400">Đang tải danh sách tài liệu...</div>
+                                ) : submittedDocs.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {submittedDocs.map((doc, idx) => (
+                                            <div key={doc.id || idx} className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">📄</span>
+                                                    <span className="truncate font-semibold text-slate-800 text-xs">{doc.documentTypeName || doc.fileName || `Tài liệu xác thực #${idx + 1}`}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                        {doc.statusName || "Hợp lệ"}
+                                                    </span>
+                                                    {doc.fileUrl && (
+                                                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:text-teal-700 font-bold text-xs underline">
+                                                            Xem
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">🪪</span>
+                                                <span className="font-semibold text-slate-800 text-xs">Căn cước công dân gắn chip (Mặt trước & sau)</span>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Hợp lệ</span>
+                                        </div>
+                                        <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">📜</span>
+                                                <span className="font-semibold text-slate-800 text-xs">Bằng Cử nhân Điều dưỡng ĐH Y Dược</span>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Hợp lệ</span>
+                                        </div>
+                                        <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">🏥</span>
+                                                <span className="font-semibold text-slate-800 text-xs">Chứng chỉ hành nghề y tế Sở Y Tế cấp</span>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Hợp lệ</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <Link
+                                to="/caregiver/verification"
+                                onClick={() => setIsCertModalOpen(false)}
+                                className="text-xs font-semibold text-teal-700 hover:text-teal-800 hover:underline inline-flex items-center gap-1"
+                            >
+                                <span>Cập nhật / Nộp thêm chứng chỉ mới →</span>
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setIsCertModalOpen(false)}
+                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl text-xs cursor-pointer transition-colors"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

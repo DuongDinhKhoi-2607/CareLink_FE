@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
     getDemoChatState,
@@ -33,43 +33,8 @@ import conversationApi from "../../../api/conversationApi";
 // Những hội thoại này chưa có lịch sử chat riêng.
 // ============================================================
 
-const mockOtherConversations = [
-    {
-        id: "conv-2",
-        name: "Chị Lê Thảo Quyên",
-        patient: "Bé Bo · 8 tháng",
-        lastMessage:
-            "Dạ em cảm ơn chị, lịch sáng thứ Năm tuần tới em sẽ đến đúng 8h30 ạ.",
-        time: "Hôm qua",
-        status: "accepted",
-        statusText: "Đã xác nhận ca",
-        avatar:
-            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
-    },
-    {
-        id: "conv-3",
-        name: "Bác Trần Minh Tuấn",
-        patient: "Bác Tuấn · 68 tuổi",
-        lastMessage:
-            "Bác ơi, kết quả đo đường huyết chiều nay của bác ổn định rồi nhé ạ.",
-        time: "3 ngày trước",
-        status: "idle",
-        statusText: "Đang trao đổi",
-        avatar:
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
-    },
-    {
-        id: "conv-4",
-        name: "Bộ phận CSKH CareLink",
-        patient: "Hỗ trợ chuyên môn",
-        lastMessage:
-            "Hồ sơ xác thực chứng chỉ hành nghề của bạn đã được phê duyệt.",
-        time: "5 ngày trước",
-        status: "system",
-        statusText: "Thông báo hệ thống",
-        avatar: null,
-    },
-];
+// Danh sách hội thoại rỗng mặc định khi chưa có dữ liệu từ Backend API
+const mockOtherConversations = [];
 
 // Các câu trả lời nhanh dành cho điều dưỡng.
 const quickReplies = [
@@ -102,47 +67,63 @@ const rejectionReasons = [
 // CÁC HÀM HỖ TRỢ GIAO DIỆN
 // ============================================================
 
-const isChatLocked = (status) =>
-    status === "closed" || status === "caregiver_rejected";
+// Kênh trò chuyện CareLink là kênh mở liên tục giữa Khách hàng và Điều dưỡng,
+// cho phép tiếp tục kết nối trao đổi hoặc đàm phán đặt các ca mới trong tương lai.
+const isChatLocked = () => false;
 
 const getStatusConfig = (status) => {
     switch (status) {
         case "family_confirmed":
             return {
                 label: "Chờ xác nhận",
-                shortLabel: "Chờ bạn duyệt",
+                shortLabel: "Chờ bạn duyệt ca",
                 icon: AlertCircle,
                 className:
-                    "bg-amber-50 text-amber-700 border-amber-200",
+                    "bg-amber-100 text-amber-900 border-amber-300 font-bold shadow-xs",
                 dotClassName: "bg-amber-500",
             };
 
         case "caregiver_accepted":
+        case "accepted":
             return {
                 label: "Đã nhận ca",
-                shortLabel: "Đã đồng ý nhận ca",
+                shortLabel: "Đã xác nhận ca",
                 icon: CheckCircle2,
                 className:
-                    "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    "bg-emerald-100 text-emerald-900 border-emerald-300 font-bold shadow-xs",
                 dotClassName: "bg-emerald-500",
             };
 
         case "caregiver_rejected":
+        case "rejected":
             return {
                 label: "Đã từ chối",
-                shortLabel: "Đã từ chối nhận ca",
+                shortLabel: "Đã từ chối ca",
                 icon: XCircle,
-                className: "bg-rose-50 text-rose-700 border-rose-200",
+                className:
+                    "bg-rose-100 text-rose-900 border-rose-300 font-bold shadow-xs",
                 dotClassName: "bg-rose-500",
             };
 
         case "closed":
+        case "completed":
             return {
                 label: "Đã kết thúc",
-                shortLabel: "Cuộc trao đổi đã dừng",
+                shortLabel: "Đã hoàn thành ca",
                 icon: CircleX,
-                className: "bg-slate-100 text-slate-600 border-slate-200",
-                dotClassName: "bg-slate-400",
+                className:
+                    "bg-slate-100 text-slate-800 border-slate-300 font-semibold shadow-xs",
+                dotClassName: "bg-slate-500",
+            };
+
+        case "system":
+            return {
+                label: "Hệ thống",
+                shortLabel: "Thông báo hệ thống",
+                icon: Info,
+                className:
+                    "bg-purple-100 text-purple-900 border-purple-300 font-semibold shadow-xs",
+                dotClassName: "bg-purple-500",
             };
 
         default:
@@ -150,7 +131,8 @@ const getStatusConfig = (status) => {
                 label: "Đang trao đổi",
                 shortLabel: "Đang trao đổi nhu cầu",
                 icon: MessageCircle,
-                className: "bg-sky-50 text-sky-700 border-sky-200",
+                className:
+                    "bg-sky-100 text-sky-900 border-sky-300 font-semibold shadow-xs",
                 dotClassName: "bg-sky-500",
             };
     }
@@ -370,6 +352,13 @@ export default function CaregiverMessages() {
 
     const [showResetModal, setShowResetModal] = useState(false);
 
+    // Quản lý danh sách hội thoại thực từ Backend API
+    const [realConversations, setRealConversations] = useState([]);
+    const realConversationsRef = useRef([]);
+    const [isUsingRealApi, setIsUsingRealApi] = useState(false);
+    const [activeConvId, setActiveConvId] = useState(null);
+    const activeConvIdRef = useRef(null);
+
     const messagesContainerRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -378,75 +367,197 @@ export default function CaregiverMessages() {
 
     const statusConfig = getStatusConfig(demoState.status);
 
-    // Lắng nghe cập nhật từ trang Family và các tab cùng nguồn.
+    // Lắng nghe cập nhật từ trang Family và các tab cùng nguồn (CHỈ khi ở chế độ demo thuần).
     useEffect(() => {
         const unsubscribe = subscribeDemoChat((updated) => {
+            if (isUsingRealApi) return; // Không cho demo state ghi đè khi đang nối API thật
             setDemoState(updated);
         });
 
         return unsubscribe;
-    }, []);
+    }, [isUsingRealApi]);
 
-    // Tải danh sách hội thoại từ Backend nếu người dùng đã đăng nhập tài khoản Điều dưỡng
-    useEffect(() => {
-        let isMounted = true;
-        conversationApi
-            .getConversations({ PageNumber: 1, PageSize: 50 })
-            .then(async (res) => {
-                if (!isMounted) return;
-                const items = res?.items || (Array.isArray(res) ? res : []);
-                if (items.length > 0) {
-                    const firstConv = items[0];
-                    try {
-                        const [proposals, messagesRes] = await Promise.all([
-                            conversationApi.getProposals(firstConv.id).catch(() => []),
-                            conversationApi.getMessages(firstConv.id, { PageNumber: 1, PageSize: 50 }).catch(() => [])
-                        ]);
+    // Tải chi tiết tin nhắn và đề xuất ca của một hội thoại
+    const loadConversationDetails = useCallback(async (convId, convItem = null) => {
+        if (!convId) return;
+        try {
+            const [proposals, messagesRes] = await Promise.all([
+                conversationApi.getProposals(convId).catch(() => []),
+                conversationApi.getMessages(convId, { PageNumber: 1, PageSize: 50 }).catch(() => [])
+            ]);
 
-                        const proposalList = Array.isArray(proposals) ? proposals : (proposals?.data || []);
-                        const pendingProposal = proposalList.find((p) => p.status === 1 || p.status === "Pending");
+            const proposalList = Array.isArray(proposals) ? proposals : (proposals?.data || []);
+            const pendingProposal = proposalList.find((p) => p.status === 1 || p.status === "Pending");
+            const latestProposal = proposalList[proposalList.length - 1];
+            const targetProposal = pendingProposal || latestProposal;
 
-                        const msgItems = messagesRes?.items || (Array.isArray(messagesRes) ? messagesRes : []);
-                        const realMessages = msgItems.length > 0 ? msgItems.map((m) => ({
-                            id: m.id,
-                            sender: m.isMine ? "caregiver" : "family",
-                            text: m.content,
-                            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-                            type: m.type === 2 ? "proposal_card" : "text",
-                            proposalId: m.proposalId,
-                            bookingId: m.bookingId,
-                        })) : null;
+            const pad = (n) => String(n).padStart(2, "0");
 
-                        if (isMounted) {
-                            setDemoState((prev) => ({
-                                ...prev,
-                                activeConversationId: firstConv.id,
-                                ...(realMessages ? { messages: realMessages } : {}),
-                                ...(pendingProposal ? {
-                                    status: "family_confirmed",
-                                    activeProposalId: pendingProposal.id,
-                                    bookingInfo: {
-                                        ...prev.bookingInfo,
-                                        serviceName: pendingProposal.serviceName || prev.bookingInfo.serviceName,
-                                        recipientName: pendingProposal.recipientName || prev.bookingInfo.recipientName,
-                                        address: pendingProposal.addressSnapshot || prev.bookingInfo.address,
-                                        fee: pendingProposal.totalPrice ? Number(pendingProposal.totalPrice).toLocaleString("vi-VN") + " VNĐ" : prev.bookingInfo.fee,
-                                    }
-                                } : {})
-                            }));
-                        }
-                    } catch {
-                        // ignore loading errors silently
+            let formattedDate = "";
+            let formattedTime = "";
+            if (targetProposal?.scheduledStart) {
+                const sDate = new Date(targetProposal.scheduledStart);
+                const eDate = targetProposal.scheduledEnd ? new Date(targetProposal.scheduledEnd) : null;
+                formattedDate = sDate.toLocaleDateString("vi-VN", {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                });
+                const sTime = `${pad(sDate.getHours())}:${pad(sDate.getMinutes())}`;
+                const eTime = eDate ? `${pad(eDate.getHours())}:${pad(eDate.getMinutes())}` : "";
+                const durMin = targetProposal.serviceDurationMinutes ? ` (${targetProposal.serviceDurationMinutes} phút)` : "";
+                formattedTime = eTime ? `${sTime} – ${eTime}${durMin}` : sTime;
+            }
+
+            const msgItems = messagesRes?.items || (Array.isArray(messagesRes) ? messagesRes : []);
+            const realMessages = msgItems.length > 0 ? msgItems.map((m) => {
+                const mDate = new Date(m.createdAt);
+                return {
+                    id: m.id,
+                    sender: m.isMine ? "caregiver" : "family",
+                    text: m.content,
+                    time: `${pad(mDate.getHours())}:${pad(mDate.getMinutes())}`,
+                    type: m.type === 2 ? "proposal_card" : "text",
+                    proposalId: m.proposalId,
+                    bookingId: m.bookingId,
+                };
+            }) : [];
+
+            setDemoState((prev) => {
+                const targetConv = convItem || realConversationsRef.current.find((c) => c.id === convId);
+                const activeName = targetConv?.name || targetConv?.otherPartyName || prev.activeConvName || "Khách hàng";
+                const activeAvatar = targetConv?.avatar || targetConv?.otherPartyAvatar || prev.activeConvAvatar || null;
+
+                const isProposalPending = pendingProposal && (pendingProposal.status === 1 || pendingProposal.status === "Pending");
+                const isProposalAccepted = latestProposal && (latestProposal.status === 2 || latestProposal.status === "Accepted" || latestProposal.status === 6 || latestProposal.status === "BookedAndPaid");
+                const isProposalRejected = latestProposal && (latestProposal.status === 3 || latestProposal.status === "Rejected");
+
+                const computedStatus = isProposalPending
+                    ? "family_confirmed"
+                    : isProposalAccepted
+                    ? "caregiver_accepted"
+                    : isProposalRejected
+                    ? "caregiver_rejected"
+                    : "idle";
+
+                return {
+                    ...prev,
+                    activeConversationId: convId,
+                    activeConvName: activeName,
+                    activeConvAvatar: activeAvatar,
+                    messages: realMessages.length > 0 ? realMessages : (prev.activeConversationId === convId ? prev.messages : []),
+                    status: computedStatus,
+                    activeProposalId: pendingProposal?.id || latestProposal?.id || null,
+                    bookingInfo: targetProposal ? {
+                        customerName: activeName,
+                        serviceName: targetProposal.serviceName || "Chăm sóc sức khỏe",
+                        recipientName: targetProposal.recipientName || "Người nhận chăm sóc",
+                        recipientAge: "",
+                        relation: "",
+                        condition: targetProposal.notes || "Chăm sóc theo nhu cầu gia đình",
+                        scheduledDate: formattedDate || "Đang thỏa thuận",
+                        scheduledTime: formattedTime || "Đang thỏa thuận",
+                        address: targetProposal.addressSnapshot || "Địa chỉ gia đình",
+                        fee: targetProposal.totalPrice ? Number(targetProposal.totalPrice).toLocaleString("vi-VN") + " VNĐ" : "Thỏa thuận",
+                    } : {
+                        customerName: activeName,
+                        serviceName: "Chưa có đề xuất ca",
+                        recipientName: "Người nhận chăm sóc",
+                        recipientAge: "",
+                        relation: "",
+                        condition: "Hai bên đang trao đổi nhu cầu chăm sóc",
+                        scheduledDate: "Đang thỏa thuận",
+                        scheduledTime: "Đang thỏa thuận",
+                        address: "Địa chỉ gia đình",
+                        fee: "Thỏa thuận",
                     }
-                }
-            })
-            .catch(() => {
-                // Fallback gracefully to demo chat store
+                };
             });
-        return () => {
-            isMounted = false;
-        };
+        } catch {
+            // ignore loading error
+        }
     }, []);
+
+    // Tải danh sách hội thoại từ Backend
+    const fetchConversations = useCallback(async (isInitial = false) => {
+        try {
+            const res = await conversationApi.getConversations({ PageNumber: 1, PageSize: 50 });
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            if (items.length > 0) {
+                const pad = (n) => String(n).padStart(2, "0");
+                const mappedList = items.map((c) => {
+                    const lastMsg = c.lastMessageContent || "";
+                    let cStatus = "idle";
+                    let cStatusText = "Đang trao đổi";
+                    if (lastMsg.includes("từ chối") || lastMsg.includes("từ chối đề xuất") || lastMsg.includes("từ chối nhận ca")) {
+                        cStatus = "caregiver_rejected";
+                        cStatusText = "Đã từ chối ca";
+                    } else if (lastMsg.includes("chấp thuận") || lastMsg.includes("chấp thuận đề xuất") || lastMsg.includes("đã được tạo ở trạng thái") || lastMsg.includes("xác nhận")) {
+                        cStatus = "caregiver_accepted";
+                        cStatusText = "Đã nhận ca";
+                    } else if (lastMsg.includes("gửi đề xuất") || lastMsg.includes("đề xuất ca chăm sóc")) {
+                        cStatus = "family_confirmed";
+                        cStatusText = "Chờ bạn duyệt ca";
+                    }
+
+                    const mTime = c.lastMessageAt ? new Date(c.lastMessageAt) : null;
+                    const timeStr = mTime ? `${pad(mTime.getHours())}:${pad(mTime.getMinutes())}` : "";
+
+                    return {
+                        id: c.id,
+                        name: c.otherPartyName || c.customerName || "Khách hàng",
+                        patient: "Trao đổi kế hoạch chăm sóc",
+                        lastMessage: c.lastMessageContent || "Chưa có tin nhắn mới",
+                        time: timeStr,
+                        status: cStatus,
+                        statusText: cStatusText,
+                        avatar: c.otherPartyAvatar || c.customerAvatar || null,
+                        primary: false,
+                        isReal: true,
+                    };
+                });
+
+                setRealConversations(mappedList);
+                realConversationsRef.current = mappedList;
+                setIsUsingRealApi(true);
+
+                const currentActive = activeConvIdRef.current;
+                const activeExists = currentActive && mappedList.some((item) => item.id === currentActive);
+
+                if (!activeExists && mappedList.length > 0) {
+                    const firstItem = mappedList[0];
+                    setActiveConvId(firstItem.id);
+                    activeConvIdRef.current = firstItem.id;
+                    loadConversationDetails(firstItem.id, firstItem);
+                }
+            } else {
+                setIsUsingRealApi(true);
+                setRealConversations([]);
+                realConversationsRef.current = [];
+                if (isInitial) {
+                    setActiveConvId(null);
+                    activeConvIdRef.current = null;
+                }
+            }
+        } catch {
+            setIsUsingRealApi(true);
+            setRealConversations([]);
+            realConversationsRef.current = [];
+        }
+    }, [loadConversationDetails]);
+
+    useEffect(() => {
+        fetchConversations(true);
+        const interval = setInterval(() => {
+            fetchConversations(false);
+            const currentId = activeConvIdRef.current;
+            if (currentId) {
+                loadConversationDetails(currentId);
+            }
+        }, 3500);
+        return () => clearInterval(interval);
+    }, [fetchConversations, loadConversationDetails]);
 
     // Tự cuộn xuống tin nhắn mới nhất.
     useEffect(() => {
@@ -464,25 +575,14 @@ export default function CaregiverMessages() {
     const filteredConversations = useMemo(() => {
         const query = searchQuery.trim().toLocaleLowerCase("vi");
 
-        const primaryConversation = {
-            id: "primary",
-            name: "Anh Nguyễn Văn An",
-            patient: `${booking.recipientName} · ${booking.recipientAge}`,
-            lastMessage:
-                demoState.messages[demoState.messages.length - 1]?.text ||
-                "Chưa có tin nhắn",
-            time:
-                demoState.messages[demoState.messages.length - 1]?.time ||
-                "",
-            status: demoState.status,
-            statusText: statusConfig.shortLabel,
-            primary: true,
-        };
-
-        const conversations = [
-            primaryConversation,
-            ...mockOtherConversations,
-        ];
+        let conversations = realConversations.map((c) => ({
+            ...c,
+            primary: c.id === activeConvId,
+            status: c.id === activeConvId ? demoState.status : c.status,
+            statusText: c.id === activeConvId ? statusConfig.shortLabel : c.statusText,
+            lastMessage: c.id === activeConvId && demoState.messages.length > 0 ? demoState.messages[demoState.messages.length - 1]?.text : c.lastMessage,
+            time: c.id === activeConvId && demoState.messages.length > 0 ? demoState.messages[demoState.messages.length - 1]?.time : c.time,
+        }));
 
         if (!query) return conversations;
 
@@ -499,9 +599,9 @@ export default function CaregiverMessages() {
             return searchableText.includes(query);
         });
     }, [
+        realConversations,
+        activeConvId,
         searchQuery,
-        booking.recipientName,
-        booking.recipientAge,
         demoState.messages,
         demoState.status,
         statusConfig.shortLabel,
@@ -515,27 +615,36 @@ export default function CaregiverMessages() {
 
         if (!trimmed || locked) return;
 
-        addDemoMessage("caregiver", trimmed);
+        const nowTime = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
-        const newCaregiverMsg = {
-            id: Date.now(),
-            sender: "caregiver",
-            text: trimmed,
-            time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-            type: "text",
-        };
+        if (isUsingRealApi && demoState.activeConversationId) {
+            const newCaregiverMsg = {
+                id: Date.now(),
+                sender: "caregiver",
+                text: trimmed,
+                time: nowTime,
+                type: "text",
+            };
 
-        setDemoState((prev) => ({
-            ...prev,
-            messages: [...prev.messages, newCaregiverMsg],
-        }));
+            setDemoState((prev) => ({
+                ...prev,
+                messages: [...prev.messages, newCaregiverMsg],
+            }));
 
-        if (demoState.activeConversationId) {
             try {
-                await conversationApi.sendMessage(demoState.activeConversationId, { content: trimmed });
+                const res = await conversationApi.sendMessage(demoState.activeConversationId, { content: trimmed });
+                if (res?.id) {
+                    setDemoState((prev) => ({
+                        ...prev,
+                        messages: prev.messages.map((m) => m.id === newCaregiverMsg.id ? { ...m, id: res.id } : m),
+                    }));
+                }
             } catch (err) {
                 console.warn("[CareLink] Gửi tin nhắn thực tế thất bại:", err);
             }
+        } else {
+            // Chế độ demo: addDemoMessage sẽ kích hoạt subscribeDemoChat tự cập nhật demoState một lần duy nhất
+            addDemoMessage("caregiver", trimmed);
         }
 
         setInputText("");
@@ -585,7 +694,10 @@ export default function CaregiverMessages() {
                 }
             } catch (err) {
                 console.error("[CareLink] Lỗi khi chấp thuận đề xuất ca:", err);
-                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi nhận ca.";
+                let msg = err.response?.data?.detail || err.response?.data?.message || "Không thể chấp nhận ca lúc này.";
+                if (msg.toLowerCase().includes("lịch rảnh")) {
+                    msg = "Bạn chưa có lịch rảnh vào khung giờ này. Vui lòng vào tab 'Lịch làm việc' bấm 'Bật rảnh cả tuần' hoặc thêm giờ rảnh rồi nhấn 'Lưu & Đồng bộ lịch tuần' trước khi nhận ca!";
+                }
                 showToast(msg);
                 return;
             }
@@ -678,22 +790,31 @@ export default function CaregiverMessages() {
                                 Trao đổi riêng tư
                             </span>
 
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                                <MessageCircle className="h-3.5 w-3.5" />
-                                Bản trình diễn
-                            </span>
+                            {isUsingRealApi ? (
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Máy chủ trực tuyến
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    Bản trình diễn
+                                </span>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowResetModal(true)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                        >
-                            <RotateCcw className="h-4 w-4" />
-                            Làm mới demo
-                        </button>
+                        {!isUsingRealApi && (
+                            <button
+                                type="button"
+                                onClick={() => setShowResetModal(true)}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                                Làm mới demo
+                            </button>
+                        )}
 
                         <Link
                             to="/caregiver/bookings"
@@ -822,15 +943,15 @@ export default function CaregiverMessages() {
                                             key={conversation.id}
                                             type="button"
                                             onClick={() => {
-                                                if (isPrimary) {
-                                                    setMobileSection("chat");
-                                                }
+                                                setActiveConvId(conversation.id);
+                                                activeConvIdRef.current = conversation.id;
+                                                loadConversationDetails(conversation.id, conversation);
+                                                setMobileSection("chat");
                                             }}
-                                            disabled={!isPrimary}
-                                            className={`relative w-full p-4 text-left transition ${
+                                            className={`relative w-full p-4 text-left transition cursor-pointer ${
                                                 isPrimary
                                                     ? "bg-[#f0f8fa]/80 hover:bg-[#e8f4f7]"
-                                                    : "cursor-default bg-white hover:bg-slate-50/70"
+                                                    : "bg-white hover:bg-slate-50"
                                             }`}
                                         >
                                             {isPrimary && (
@@ -839,11 +960,7 @@ export default function CaregiverMessages() {
 
                                             <div className="flex items-start gap-3">
                                                 <Avatar
-                                                    name={
-                                                        isPrimary
-                                                            ? "Nguyễn Văn An"
-                                                            : conversation.name
-                                                    }
+                                                    name={conversation.name}
                                                     image={conversation.avatar}
                                                     online={isPrimary}
                                                     size="md"
@@ -858,9 +975,7 @@ export default function CaregiverMessages() {
                                                                     : "font-semibold text-slate-700"
                                                             }`}
                                                         >
-                                                            {isPrimary
-                                                                ? "Anh Nguyễn Văn An"
-                                                                : conversation.name}
+                                                            {conversation.name}
                                                         </p>
 
                                                         <span className="shrink-0 pt-0.5 text-[10px] text-slate-400">
@@ -877,22 +992,10 @@ export default function CaregiverMessages() {
                                                     </p>
 
                                                     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                                                        {isPrimary ? (
-                                                            <StatusBadge
-                                                                status={demoState.status}
-                                                                compact
-                                                            />
-                                                        ) : (
-                                                            <>
-                                                                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-medium text-slate-500">
-                                                                    {conversation.statusText}
-                                                                </span>
-
-                                                                <span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-medium text-slate-400">
-                                                                    Mẫu
-                                                                </span>
-                                                            </>
-                                                        )}
+                                                        <StatusBadge
+                                                            status={isPrimary ? demoState.status : conversation.status}
+                                                            compact
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
@@ -905,52 +1008,74 @@ export default function CaregiverMessages() {
                         <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
                             <p className="flex items-center gap-2 text-[10px] leading-relaxed text-slate-500">
                                 <Info className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                                Các hội thoại phụ là dữ liệu minh họa cho giao diện demo.
+                                {isUsingRealApi
+                                    ? "Đang hiển thị danh sách hội thoại thực từ hệ thống CareLink."
+                                    : "Các hội thoại phụ là dữ liệu minh họa cho giao diện demo."}
                             </p>
                         </div>
                     </aside>
 
-                    {/* CỘT 2: KHUNG CHAT CHÍNH (Đã bóc tách thành CaregiverChatThread) */}
-                    <CaregiverChatThread
-                        demoState={demoState}
-                        booking={booking}
-                        locked={locked}
-                        inputText={inputText}
-                        setInputText={setInputText}
-                        inputRef={inputRef}
-                        messagesContainerRef={messagesContainerRef}
-                        quickRepliesOpen={quickRepliesOpen}
-                        setQuickRepliesOpen={setQuickRepliesOpen}
-                        handleSendMessage={handleSendMessage}
-                        handleQuickReply={handleQuickReply}
-                        mobileSection={mobileSection}
-                        setMobileSection={setMobileSection}
-                        quickReplies={quickReplies}
-                        Avatar={Avatar}
-                        StatusBadge={StatusBadge}
-                        SystemMessage={SystemMessage}
-                    />
+                    {isUsingRealApi && realConversations.length === 0 ? (
+                        <div
+                            className={`${
+                                mobileSection === "list" ? "hidden lg:flex" : "flex"
+                            } min-h-[500px] flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-sm lg:col-span-8 xl:col-span-9`}
+                        >
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#edf7f9] text-[#087487]">
+                                <MessageSquare className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-800">
+                                Chưa có cuộc hội thoại nào
+                            </h3>
+                            <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-500">
+                                Hộp thư của bạn hiện đang trống. Khi có gia đình hoặc người thân liên hệ đặt lịch chăm sóc, tin nhắn sẽ hiển thị tại đây.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* CỘT 2: KHUNG CHAT CHÍNH (Đã bóc tách thành CaregiverChatThread) */}
+                            <CaregiverChatThread
+                                demoState={demoState}
+                                booking={booking}
+                                locked={locked}
+                                inputText={inputText}
+                                setInputText={setInputText}
+                                inputRef={inputRef}
+                                messagesContainerRef={messagesContainerRef}
+                                quickRepliesOpen={quickRepliesOpen}
+                                setQuickRepliesOpen={setQuickRepliesOpen}
+                                handleSendMessage={handleSendMessage}
+                                handleQuickReply={handleQuickReply}
+                                mobileSection={mobileSection}
+                                setMobileSection={setMobileSection}
+                                quickReplies={quickReplies}
+                                Avatar={Avatar}
+                                StatusBadge={StatusBadge}
+                                SystemMessage={SystemMessage}
+                            />
 
-                    {/* CỘT 3: CHI TIẾT CA CHĂM SÓC & MODAL TỪ CHỐI (Đã bóc tách thành CaregiverBookingDetailPanel) */}
-                    <CaregiverBookingDetailPanel
-                        demoState={demoState}
-                        booking={booking}
-                        handleAcceptRequest={handleAcceptRequest}
-                        handleOpenRejectModal={handleOpenRejectModal}
-                        showRejectModal={showRejectModal}
-                        setShowRejectModal={setShowRejectModal}
-                        rejectReason={rejectReason}
-                        setRejectReason={setRejectReason}
-                        customReason={customReason}
-                        setCustomReason={setCustomReason}
-                        rejectError={rejectError}
-                        setRejectError={setRejectError}
-                        handleConfirmReject={handleConfirmReject}
-                        rejectionReasons={rejectionReasons}
-                        mobileSection={mobileSection}
-                        StatusBadge={StatusBadge}
-                        DetailItem={DetailItem}
-                    />
+                            {/* CỘT 3: CHI TIẾT CA CHĂM SÓC & MODAL TỪ CHỐI (Đã bóc tách thành CaregiverBookingDetailPanel) */}
+                            <CaregiverBookingDetailPanel
+                                demoState={demoState}
+                                booking={booking}
+                                handleAcceptRequest={handleAcceptRequest}
+                                handleOpenRejectModal={handleOpenRejectModal}
+                                showRejectModal={showRejectModal}
+                                setShowRejectModal={setShowRejectModal}
+                                rejectReason={rejectReason}
+                                setRejectReason={setRejectReason}
+                                customReason={customReason}
+                                setCustomReason={setCustomReason}
+                                rejectError={rejectError}
+                                setRejectError={setRejectError}
+                                handleConfirmReject={handleConfirmReject}
+                                rejectionReasons={rejectionReasons}
+                                mobileSection={mobileSection}
+                                StatusBadge={StatusBadge}
+                                DetailItem={DetailItem}
+                            />
+                        </>
+                    )}
                 </div>
 
                 {/* MODAL XÁC NHẬN RESET DEMO */}

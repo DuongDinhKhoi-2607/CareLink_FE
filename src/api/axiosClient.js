@@ -3,13 +3,14 @@ import axios from "axios";
 // Cấu hình hạ tầng HTTP Axios dùng chung cho toàn bộ dự án CareLink
 const RENDER_BACKEND_URL = "https://carelink-be.onrender.com";
 const LOCAL_HTTPS_URL = "https://localhost:7183";
+const LOCAL_ALT_HTTPS = "https://localhost:7023";
 const LOCAL_HTTP_URL = "http://localhost:5024";
 
 // 1. Xác định URL khởi đầu thông minh:
 // - Hỗ trợ query ?api=local hoặc ?api=render để dev/test luân phiên ngay trên browser
 // - Ưu tiên biến môi trường VITE_API_URL (nếu có trong .env / .env.local)
 // - Khi deploy Production (Vercel): mặc định Render Backend
-// - Khi chạy Development (npm run dev): mặc định cổng 7183 (Visual Studio tím)
+// - Khi chạy Development (npm run dev): mặc định cổng 7183 / 7023 (Visual Studio tím)
 const getInitialBaseURL = () => {
     try {
         if (typeof window !== "undefined" && window.location) {
@@ -19,39 +20,63 @@ const getInitialBaseURL = () => {
                 localStorage.setItem("carelink_api_mode", "local");
                 return LOCAL_HTTPS_URL;
             }
+            if (queryApi === "7023") {
+                localStorage.setItem("carelink_api_mode", "7023");
+                return LOCAL_ALT_HTTPS;
+            }
+            if (queryApi === "5024") {
+                localStorage.setItem("carelink_api_mode", "5024");
+                return LOCAL_HTTP_URL;
+            }
             if (queryApi === "render" || queryApi === "cloud") {
                 localStorage.setItem("carelink_api_mode", "render");
                 return RENDER_BACKEND_URL;
             }
+            // Trên localhost dev, ưu tiên cổng Visual Studio (7183)
+            const isLocalHostDomain = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+            if (isLocalHostDomain && !import.meta.env.PROD) {
+                const saved = localStorage.getItem("carelink_api_mode");
+                if (saved === "7023") return LOCAL_ALT_HTTPS;
+                if (saved === "render") return RENDER_BACKEND_URL;
+                return LOCAL_HTTPS_URL;
+            }
             const savedMode = localStorage.getItem("carelink_api_mode");
             if (savedMode === "render") return RENDER_BACKEND_URL;
+            if (savedMode === "7023") return LOCAL_ALT_HTTPS;
             if (savedMode === "local") return LOCAL_HTTPS_URL;
         }
-    } catch {}
+    } catch { }
 
     if (import.meta.env.VITE_API_URL) {
         return import.meta.env.VITE_API_URL;
     }
 
-    return import.meta.env.PROD ? RENDER_BACKEND_URL : LOCAL_HTTPS_URL;
+    return import.meta.env.PROD ? RENDER_BACKEND_URL : LOCAL_HTTP_URL;
 };
 
 const PRIMARY_URL = getInitialBaseURL();
+const isInitialLocal = PRIMARY_URL.includes("localhost") || PRIMARY_URL.includes("127.0.0.1");
 
 const axiosClient = axios.create({
     baseURL: PRIMARY_URL,
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: 45000,
+    timeout: isInitialLocal ? 3000 : 25000,
 });
 
-// 1. Request Interceptor: Tự động gắn Bearer Token từ localStorage vào header
+// 1. Request Interceptor: Tự động gắn Bearer Token & tinh chỉnh timeout tối ưu
 axiosClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem("carelink_token");
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        // Tinh chỉnh timeout: Localhost chỉ cần 2.5s - 3s để failover tức thì nếu chưa bật BE; Render cho 25s phòng cold start
+        const targetBase = config.baseURL || axiosClient.defaults.baseURL || PRIMARY_URL;
+        const isTargetLocal = targetBase.includes("localhost") || targetBase.includes("127.0.0.1");
+        if (!config._customTimeoutSet) {
+            config.timeout = isTargetLocal ? 3000 : 25000;
         }
         return config;
     },
@@ -85,13 +110,13 @@ axiosClient.interceptors.response.use(
         const isLocalhost = currentBase.includes("localhost") || currentBase.includes("127.0.0.1");
 
         const isTimeout = error.code === "ECONNABORTED" || error.message?.includes("timeout");
-        const isConnectionRefused = (error.code === "ERR_NETWORK" || error.code === "ECONNREFUSED") && !error.response && !isTimeout;
+        const isConnectionRefused = (error.code === "ERR_NETWORK" || error.code === "ECONNREFUSED") && !error.response;
+        const shouldFallbackLocal = isLocalhost && !error.response && (isConnectionRefused || isTimeout);
         const method = (originalRequest?.method || "get").toLowerCase();
         const isSafeIdempotent = ["get", "head", "options"].includes(method);
 
         if (
-            isLocalhost &&
-            isConnectionRefused &&
+            shouldFallbackLocal &&
             originalRequest &&
             (originalRequest._localFallbackAttempts || 0) < 2
         ) {
@@ -104,11 +129,13 @@ axiosClient.interceptors.response.use(
                 nextTarget = RENDER_BACKEND_URL;
             }
 
-            console.info(`[CareLink API] ${currentBase} không hoạt động, tự động chuyển kết nối sang ${nextTarget}`);
+            console.info(`[CareLink API] ${currentBase} không phản hồi (${isTimeout ? "Timeout" : "Mất kết nối"}), tự động chuyển sang ${nextTarget}`);
             axiosClient.defaults.baseURL = nextTarget;
             originalRequest.baseURL = nextTarget;
+            originalRequest.timeout = nextTarget.includes("localhost") ? 3000 : 25000;
+            originalRequest._customTimeoutSet = true;
 
-            if (isSafeIdempotent || isConnectionRefused) {
+            if (isSafeIdempotent || isConnectionRefused || isTimeout) {
                 return axiosClient(originalRequest);
             }
         }

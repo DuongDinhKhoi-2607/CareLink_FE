@@ -423,21 +423,48 @@ export default function FamilyProfile() {
         }
     };
 
-    const handleSavePassword = (e) => {
+    const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
+
+    const handleSavePassword = async (e) => {
         e.preventDefault();
         setPasswordError("");
-        if (passwordForm.newPass.length < 8) {
-            setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự!");
+        if (!passwordForm.current) {
+            setPasswordError("Vui lòng nhập mật khẩu hiện tại!");
+            return;
+        }
+        if (passwordForm.newPass.length < 6) {
+            setPasswordError("Mật khẩu mới phải có ít nhất 6 ký tự!");
             return;
         }
         if (passwordForm.newPass !== passwordForm.confirm) {
             setPasswordError("Mật khẩu mới và xác nhận mật khẩu không khớp!");
             return;
         }
-        setIsPasswordModalOpen(false);
-        setPasswordForm({ current: "", newPass: "", confirm: "" });
-        setPasswordError("");
-        showSuccessToast("Đã đổi mật khẩu tài khoản thành công!");
+        if (passwordForm.current === passwordForm.newPass) {
+            setPasswordError("Mật khẩu mới không được trùng với mật khẩu hiện tại!");
+            return;
+        }
+
+        setIsPasswordSubmitting(true);
+        try {
+            await authApi.changePassword({
+                currentPassword: passwordForm.current,
+                newPassword: passwordForm.newPass,
+                confirmPassword: passwordForm.confirm,
+            });
+            setIsPasswordModalOpen(false);
+            setPasswordForm({ current: "", newPass: "", confirm: "" });
+            setPasswordError("");
+            showSuccessToast("Đã đổi mật khẩu tài khoản thành công!");
+        } catch (err) {
+            const msg =
+                err.response?.data?.message ||
+                err.response?.data?.detail ||
+                "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.";
+            setPasswordError(msg);
+        } finally {
+            setIsPasswordSubmitting(false);
+        }
     };
 
     const handleLogoutAllDevices = () => {
@@ -1257,9 +1284,11 @@ export default function FamilyProfile() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs shadow-xs"
+                                    disabled={isPasswordSubmitting}
+                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs shadow-xs disabled:opacity-50 flex items-center gap-1.5"
                                 >
-                                    Cập nhật mật khẩu
+                                    {isPasswordSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                    <span>{isPasswordSubmitting ? "Đang cập nhật..." : "Cập nhật mật khẩu"}</span>
                                 </button>
                             </div>
                         </form>

@@ -1,68 +1,53 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { RelativeDetailModal, RelativeFormModal, DeleteConfirmModal } from "../components/RelativeModals";
 import Toast from "../../../components/Toast";
 import familyApi from "../../../api/familyApi";
 
 // ── Helpers ánh xạ dữ liệu Backend → UI ─────────────────────────────────────
-const GENDER_MAP = { 0: "Nam", 1: "Nữ", Male: "Nam", Female: "Nữ" };
-const BLOOD_MAP = {
-    0: "A+", 1: "A-", 2: "B+", 3: "B-",
-    4: "AB+", 5: "AB-", 6: "O+", 7: "O-",
-    A_positive: "A+", A_negative: "A-",
-    B_positive: "B+", B_negative: "B-",
-    AB_positive: "AB+", AB_negative: "AB-",
-    O_positive: "O+", O_negative: "O-",
+const GENDER_MAP = {
+    1: "Nam",
+    2: "Nữ",
+    3: "Khác",
+    0: "Khác",
+    Male: "Nam",
+    Female: "Nữ",
 };
-const GENDER_TO_API = { "Nam": "Male", "Nữ": "Female" };
-const BLOOD_TO_API = {
-    "A+": "A_positive", "A-": "A_negative",
-    "B+": "B_positive", "B-": "B_negative",
-    "AB+": "AB_positive", "AB-": "AB_negative",
-    "O+": "O_positive", "O-": "O_negative",
+
+const GENDER_TO_INT = {
+    "Nam": 1,
+    "Nữ": 2,
+    "Khác": 3,
+    "Male": 1,
+    "Female": 2,
+    "Other": 3,
+    1: 1,
+    2: 2,
+    3: 3,
 };
 
 function mapRecipient(r) {
-    const dob = r.dateOfBirth || r.birthDate || "";
+    const dob = r.dateOfBirth || "";
     let age = "—";
     if (dob) {
         const birth = new Date(dob);
         if (!isNaN(birth)) age = new Date().getFullYear() - birth.getFullYear();
     }
-    const genderLabel = GENDER_MAP[r.gender] ?? r.gender ?? "—";
+    const genderLabel = GENDER_MAP[r.gender] ?? r.genderName ?? "—";
     return {
         id: r.id,
-        name: r.fullName || r.name || "Không rõ",
-        relation: r.relationship || r.relation || "Người thân",
-        relationBadge: r.relationship || r.relation || "Người thân",
-        age,
+        name: r.fullName || "Không rõ",
         birthDate: dob ? new Date(dob).toLocaleDateString("vi-VN") : "—",
         birthDateRaw: dob,
+        age,
         gender: genderLabel,
-        bloodType: BLOOD_MAP[r.bloodType] ?? r.bloodType ?? "—",
-        phone: r.phone || r.phoneNumber || "",
-        healthCondition: r.medicalCondition || r.healthCondition || "Chưa cập nhật",
-        preExistingConditions: r.preExistingConditions || "",
-        allergies: r.allergies || "",
-        medicationsSummary: r.currentMedications || r.medicationsSummary || "Chưa ghi nhận đơn thuốc",
-        medications: r.medications || [],
-        medicalNote: r.notes || r.medicalNote || "",
-        assignedCaregiver: r.assignedNurseName || r.assignedCaregiver || "Đang phân công",
-        lastVisit: r.lastVisitDate
-            ? new Date(r.lastVisitDate).toLocaleDateString("vi-VN")
-            : "Chưa có ca chăm sóc",
-        nextAppointment: r.nextAppointmentDate
-            ? new Date(r.nextAppointmentDate).toLocaleDateString("vi-VN")
-            : "Chưa có lịch hẹn",
+        address: r.address || "",
+        medicalHistory: r.medicalHistory || "",
+        specialNotes: r.specialNotes || "",
+        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "—",
         image:
-            r.avatarUrl ||
-            (genderLabel === "Nam"
+            genderLabel === "Nam"
                 ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300"
-                : "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300"),
-        statusBadges: [
-            { label: r.currentStatus || "Đang theo dõi", type: "teal", icon: "dot" },
-            { label: r.medicalCondition ? "Có hồ sơ y tế" : "Chưa có hồ sơ y tế", type: "slate", icon: "card" },
-        ],
+                : "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300",
     };
 }
 
@@ -93,7 +78,7 @@ function SkeletonCard() {
 // ── Empty State ───────────────────────────────────────────────────────────────
 function EmptyState({ onAdd }) {
     return (
-        <div className="col-span-2 flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <div className="col-span-1 lg:col-span-2 flex flex-col items-center justify-center py-20 gap-4 text-center">
             <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center">
                 <svg className="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -101,7 +86,9 @@ function EmptyState({ onAdd }) {
             </div>
             <div>
                 <p className="font-bold text-slate-800 text-base">Chưa có hồ sơ người thân nào</p>
-                <p className="text-slate-500 text-sm mt-1 max-w-xs">Thêm người thân để CareLink hỗ trợ quản lý sức khỏe và đặt lịch chăm sóc tại nhà.</p>
+                <p className="text-slate-500 text-sm mt-1 max-w-xs">
+                    Thêm người thân để CareLink quản lý hồ sơ sức khỏe và dễ dàng đặt lịch chăm sóc tại nhà.
+                </p>
             </div>
             <button
                 type="button"
@@ -118,9 +105,12 @@ function EmptyState({ onAdd }) {
 }
 
 const BLANK_FORM = {
-    name: "", relation: "Mẹ", birthDate: "",
-    gender: "Nữ", bloodType: "O+", phone: "",
-    healthCondition: "", medicationsSummary: "", medicalNote: "",
+    name: "",
+    birthDate: "",
+    gender: "Nữ",
+    address: "",
+    medicalHistory: "",
+    specialNotes: "",
 };
 
 export default function Relatives() {
@@ -128,8 +118,6 @@ export default function Relatives() {
     const [relatives, setRelatives] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-
-
 
     // Modal states
     const [selectedRelative, setSelectedRelative] = useState(null);
@@ -139,7 +127,7 @@ export default function Relatives() {
     const [deleting, setDeleting] = useState(false);
     const [formData, setFormData] = useState({ ...BLANK_FORM });
 
-    // ── 44. GET /api/v1/recipients ──────────────────────────────────────────
+    // ── GET /api/v1/recipients ──────────────────────────────────────────
     const fetchRecipients = useCallback(async () => {
         setLoading(true);
         try {
@@ -158,7 +146,9 @@ export default function Relatives() {
         }
     }, []);
 
-    useEffect(() => { fetchRecipients(); }, [fetchRecipients]);
+    useEffect(() => {
+        fetchRecipients();
+    }, [fetchRecipients]);
 
     // ── Mở modal Thêm mới ─────────────────────────────────────────────────
     const handleOpenAddModal = () => {
@@ -172,30 +162,40 @@ export default function Relatives() {
         setEditingRelative(rel);
         setFormData({
             name: rel.name || "",
-            relation: rel.relation || "Khác",
             birthDate: rel.birthDateRaw || "",
             gender: rel.gender || "Nữ",
-            bloodType: rel.bloodType || "O+",
-            phone: rel.phone || "",
-            healthCondition: rel.healthCondition || "",
-            medicationsSummary: rel.medicationsSummary || "",
-            medicalNote: rel.medicalNote || "",
+            address: rel.address || "",
+            medicalHistory: rel.medicalHistory || "",
+            specialNotes: rel.specialNotes || "",
         });
         setIsFormOpen(true);
     };
 
-    // ── Build payload gửi Backend ──────────────────────────────────────────
-    const buildPayload = () => ({
-        fullName: formData.name.trim(),
-        relationship: formData.relation,
-        dateOfBirth: formData.birthDate ? new Date(formData.birthDate).toISOString() : null,
-        gender: GENDER_TO_API[formData.gender] ?? formData.gender,
-        bloodType: BLOOD_TO_API[formData.bloodType] ?? formData.bloodType,
-        phone: formData.phone.trim(),
-        notes: formData.medicalNote.trim(),
-    });
+    // ── Build payload gửi Backend (Khớp 100% CreateCareRecipientRequest) ─────
+    const buildPayload = () => {
+        let dob = null;
+        if (formData.birthDate) {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(formData.birthDate)) {
+                dob = formData.birthDate;
+            } else {
+                const parsed = new Date(formData.birthDate);
+                if (!isNaN(parsed.getTime())) {
+                    dob = parsed.toISOString().split("T")[0];
+                }
+            }
+        }
 
-    // ── 45. POST + 47. PUT recipients ─────────────────────────────────────
+        return {
+            fullName: formData.name.trim(),
+            dateOfBirth: dob,
+            gender: GENDER_TO_INT[formData.gender] ?? 1,
+            address: formData.address?.trim() || null,
+            medicalHistory: formData.medicalHistory?.trim() || null,
+            specialNotes: formData.specialNotes?.trim() || null,
+        };
+    };
+
+    // ── POST /api/v1/recipients & PUT /api/v1/recipients/{id} ──────────────
     const handleSaveForm = async (e) => {
         e.preventDefault();
         if (!formData.name.trim()) {
@@ -215,15 +215,18 @@ export default function Relatives() {
             setIsFormOpen(false);
             await fetchRecipients();
         } catch (err) {
-            const msg = err?.response?.data?.message || err?.response?.data?.title ||
-                (editingRelative ? "Cập nhật thất bại. Vui lòng thử lại." : "Thêm người thân thất bại. Vui lòng thử lại.");
+            const msg =
+                err?.response?.data?.detail ||
+                err?.response?.data?.message ||
+                err?.response?.data?.title ||
+                (editingRelative ? "Cập nhật hồ sơ thất bại. Vui lòng thử lại." : "Thêm người thân thất bại. Vui lòng kiểm tra lại thông tin.");
             setToast({ type: "error", message: msg });
         } finally {
             setSubmitting(false);
         }
     };
 
-    // ── 48. DELETE /api/v1/recipients/{id} ────────────────────────────────
+    // ── DELETE /api/v1/recipients/{id} ────────────────────────────────────
     const handleDeleteConfirm = async () => {
         if (!deleteTarget) return;
         setDeleting(true);
@@ -233,14 +236,12 @@ export default function Relatives() {
             setDeleteTarget(null);
             await fetchRecipients();
         } catch (err) {
-            const msg = err?.response?.data?.message || "Xóa hồ sơ thất bại. Vui lòng thử lại.";
+            const msg = err?.response?.data?.detail || err?.response?.data?.message || "Xóa hồ sơ thất bại. Vui lòng thử lại.";
             setToast({ type: "error", message: msg });
         } finally {
             setDeleting(false);
         }
     };
-
-    const nextAppt = relatives.find(r => r.nextAppointment && r.nextAppointment !== "Chưa có lịch hẹn");
 
     return (
         <div className="p-4 sm:p-8 flex flex-col gap-6 max-w-6xl mx-auto font-sans antialiased text-[#102030]">
@@ -251,7 +252,7 @@ export default function Relatives() {
                         Hồ sơ người thân
                     </h1>
                     <p className="text-sm text-slate-500 mt-1">
-                        Quản lý chỉ số y tế và tình trạng sức khỏe của từng thành viên trong gia đình.
+                        Quản lý thông tin hành chính, địa chỉ và tiền sử y tế của người nhận chăm sóc.
                     </p>
                 </div>
 
@@ -267,9 +268,8 @@ export default function Relatives() {
                 </button>
             </header>
 
-            {/* 3 Thẻ Tóm tắt / Chỉ số ở trên đầu (Tổng số người thân, Ca chăm sóc kế tiếp, Chỉ số theo dõi) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Thẻ 1: Tổng số người thân */}
+            {/* Thẻ Thống kê tổng số người thân */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -278,53 +278,35 @@ export default function Relatives() {
                     </div>
                     <div>
                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                            TỔNG SỐ NGƯỜI THÂN
+                            TỔNG SỐ NGƯỜI THÂN ĐÃ ĐĂNG KÝ
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
                             <span className="text-2xl font-black text-slate-900 leading-none">
-                                {loading ? "—" : String(relatives.length).padStart(2, "0")}
+                                {loading ? "—" : relatives.length}
                             </span>
                             <span className="text-xs text-slate-500 font-medium">thành viên</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Thẻ 2: Ca chăm sóc kế tiếp */}
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
                     <div>
                         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                            CA CHĂM SÓC KẾ TIẾP
+                            TRẠNG THÁI BẢO MẬT HỒ SƠ
                         </span>
                         <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="text-base font-bold text-slate-900 leading-none">
-                                {loading ? "—" : nextAppt ? nextAppt.nextAppointment : "Chưa có lịch"}
+                            <span className="text-base font-bold text-slate-800 leading-none">
+                                Đã sẵn sàng kết nối điều dưỡng
                             </span>
                         </div>
-                    </div>
-                </div>
-
-                {/* Thẻ 3: Chỉ số theo dõi */}
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                        </svg>
-                    </div>
-                    <div>
-                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                            CHỈ SỐ THEO DÕI
-                        </span>
-                        <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="text-2xl font-black text-teal-600 leading-none">
-                                {loading ? "—" : relatives.length > 0 ? "100%" : "0%"}
-                            </span>
-                            <span className="text-xs text-slate-500 font-medium">cập nhật định kỳ</span>
-                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1">
+                            Tiền sử bệnh án &amp; chỉ dẫn chăm sóc được lưu trữ bảo mật
+                        </p>
                     </div>
                 </div>
             </div>
@@ -332,17 +314,20 @@ export default function Relatives() {
             {/* Danh sách thẻ người thân */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {loading ? (
-                    <><SkeletonCard /><SkeletonCard /></>
+                    <>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                    </>
                 ) : relatives.length === 0 ? (
                     <EmptyState onAdd={handleOpenAddModal} />
                 ) : (
-                relatives.map((rel) => (
+                    relatives.map((rel) => (
                         <div
                             key={rel.id}
                             className="bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-5"
                         >
                             <div className="space-y-4">
-                                {/* Header Card: Avatar + Tên + Badge Mẹ/Bố + 3 chấm menu */}
+                                {/* Header Card: Avatar + Tên + Badge Giới tính */}
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3.5">
                                         <img
@@ -360,59 +345,48 @@ export default function Relatives() {
                                                     {rel.name}
                                                 </h2>
                                                 <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 text-xs font-semibold">
-                                                    {rel.relationBadge}
+                                                    {rel.gender}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-slate-500 mt-1 font-medium">
-                                                {rel.age} tuổi • Giới tính: {rel.gender} • Nhóm máu:{" "}
-                                                <strong className="text-slate-700 font-bold">{rel.bloodType}</strong>
+                                                {rel.age !== "—" ? `${rel.age} tuổi • ` : ""}
+                                                Ngày sinh: {rel.birthDate}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Nút menu 3 chấm */}
+                                    {/* Nút xóa nhanh */}
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenEditModal(rel)}
-                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-                                        title="Tùy chọn chỉnh sửa"
+                                        onClick={() => setDeleteTarget({ id: rel.id, name: rel.name })}
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        title="Xóa hồ sơ người thân"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                                         </svg>
                                     </button>
                                 </div>
 
-                                {/* Hàng Badges trạng thái */}
-                                <div className="flex flex-wrap items-center gap-2 pt-1">
-                                    {rel.statusBadges.map((b, i) => (
-                                        <span
-                                            key={i}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                                                b.type === "teal"
-                                                    ? "bg-[#e2f4f2] text-[#007469]"
-                                                    : "bg-slate-100 text-slate-700"
-                                            }`}
-                                        >
-                                            {b.icon === "dot" && <span className="w-2 h-2 rounded-full bg-teal-600" />}
-                                            {b.icon === "card" && (
-                                                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                                                </svg>
-                                            )}
-                                            {b.icon === "walk" && (
-                                                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                                </svg>
-                                            )}
-                                            <span>{b.label}</span>
-                                        </span>
-                                    ))}
-                                </div>
-
-                                {/* Khung Thông tin chi tiết sức khỏe (bg-slate-50/80) */}
+                                {/* Khung Thông tin chi tiết sức khỏe */}
                                 <div className="bg-[#f8fafc] border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-2.5 text-xs text-slate-700">
-                                    {/* Tình trạng sức khỏe */}
+                                    {/* Địa chỉ */}
+                                    <div className="flex items-start gap-2">
+                                        <span className="shrink-0 text-teal-600 mt-0.5">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                                            </svg>
+                                        </span>
+                                        <p className="leading-relaxed">
+                                            <span className="text-slate-500 font-medium">Địa chỉ:</span>{" "}
+                                            <span className="text-slate-900 font-semibold">
+                                                {rel.address || "Chưa thiết lập địa chỉ"}
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                    {/* Tiền sử bệnh lý */}
                                     <div className="flex items-start gap-2">
                                         <span className="shrink-0 text-teal-600 mt-0.5">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -420,85 +394,31 @@ export default function Relatives() {
                                             </svg>
                                         </span>
                                         <p className="leading-relaxed">
-                                            <span className="text-slate-500 font-medium">Tình trạng sức khỏe:</span>{" "}
-                                            <span className="text-slate-900 font-semibold">{rel.healthCondition}</span>
-                                        </p>
-                                    </div>
-
-                                    {/* Thuốc đang dùng */}
-                                    <div className="flex items-start gap-2">
-                                        <span className="shrink-0 text-teal-600 mt-0.5">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                            </svg>
-                                        </span>
-                                        <p className="leading-relaxed">
-                                            <span className="text-slate-500 font-medium">Thuốc đang dùng:</span>{" "}
-                                            <span className="text-slate-900 font-semibold">{rel.medicationsSummary}</span>
-                                        </p>
-                                    </div>
-
-                                    {/* Phụ trách chính */}
-                                    <div className="flex items-start gap-2">
-                                        <span className="shrink-0 text-teal-600 mt-0.5">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                            </svg>
-                                        </span>
-                                        <p className="leading-relaxed">
-                                            <span className="text-slate-500 font-medium">Phụ trách chính:</span>{" "}
-                                            <strong className="text-slate-900 font-bold">{rel.assignedCaregiver}</strong>
-                                        </p>
-                                    </div>
-
-                                    {/* 2 Cột thời gian: Ca gần nhất & Lịch hẹn kế tiếp */}
-                                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-200/70">
-                                        <div>
-                                            <span className="text-[11px] text-slate-400 block font-medium">
-                                                Ca chăm sóc gần nhất:
+                                            <span className="text-slate-500 font-medium">Tiền sử bệnh lý:</span>{" "}
+                                            <span className="text-slate-900 font-semibold">
+                                                {rel.medicalHistory || "Chưa ghi nhận"}
                                             </span>
-                                            <span className="text-xs font-semibold text-slate-800 mt-0.5 block">
-                                                {rel.lastVisit}
+                                        </p>
+                                    </div>
+
+                                    {/* Ghi chú chăm sóc */}
+                                    {rel.specialNotes && (
+                                        <div className="flex items-start gap-2 pt-2 border-t border-slate-200/70">
+                                            <span className="shrink-0 text-amber-600 mt-0.5">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                                </svg>
                                             </span>
+                                            <p className="leading-relaxed text-amber-900 font-medium">
+                                                {rel.specialNotes}
+                                            </p>
                                         </div>
-                                        <div>
-                                            <span className="text-[11px] text-slate-400 block font-medium">
-                                                Lịch hẹn kế tiếp:
-                                            </span>
-                                            <span className="text-xs font-bold text-[#00829d] mt-0.5 block">
-                                                {rel.nextAppointment}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Khung Ghi chú y tế */}
-                                <div className="bg-[#f0f9ff]/70 border-l-3 border-[#009bb9] p-3 rounded-r-xl flex items-start gap-2 text-xs text-slate-700">
-                                    <span className="text-[#009bb9] shrink-0 mt-0.5">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                                        </svg>
-                                    </span>
-                                    <p className="leading-relaxed">
-                                        <strong className="text-slate-800 font-semibold">Ghi chú y tế:</strong> {rel.medicalNote}
-                                    </p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Nút hành động */}
                             <div className="pt-2 flex items-center gap-2.5">
-                                {/* Xóa */}
-                                <button
-                                    type="button"
-                                    onClick={() => setDeleteTarget({ id: rel.id, name: rel.name })}
-                                    className="py-2.5 px-3 bg-white border border-red-200 hover:bg-red-50 text-red-500 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
-                                    title="Xóa hồ sơ"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                    </svg>
-                                </button>
-
                                 {/* Chỉnh sửa */}
                                 <button
                                     type="button"

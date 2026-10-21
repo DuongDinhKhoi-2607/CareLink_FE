@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, X, Loader2, Calendar, Clock, User, ShieldAlert } from "lucide-react";
 
 const QUICK_REASONS = [
@@ -71,9 +72,9 @@ export default function CancelBookingModal({
         }
     };
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isSubmitting) onClose();
             }}
@@ -223,6 +224,7 @@ export default function CancelBookingModal({
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

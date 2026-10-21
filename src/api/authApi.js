@@ -66,6 +66,14 @@ export const authApi = {
             newPassword,
         }),
 
+    // 7b. Đổi mật khẩu tài khoản (Yêu cầu đăng nhập - Dùng chung cho Customer, Nurse, Admin)
+    changePassword: ({ currentPassword, newPassword, confirmPassword }) =>
+        axiosClient.post("/api/v1/auth/change-password", {
+            currentPassword,
+            newPassword,
+            confirmPassword,
+        }),
+
     // 8. Lấy thông tin cá nhân & profile của người dùng hiện tại (Customer hoặc Nurse)
     getMe: () => axiosClient.get("/api/v1/users/me"),
 

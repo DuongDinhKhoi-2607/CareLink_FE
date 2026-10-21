@@ -9,7 +9,7 @@ import {
     ArrowRight,
     ArrowLeft,
 } from "lucide-react";
-import authApi, { GOOGLE_CLIENT_ID } from "../../api/authApi";
+import authApi, { GOOGLE_CLIENT_ID, fetchAndSyncUserMe } from "../../api/authApi";
 import Toast from "../../components/Toast";
 
 export default function Login() {
@@ -151,27 +151,49 @@ export default function Login() {
 
             // Backend trả về: { accessToken, refreshToken, user: { id, email, role, isActive } }
             if (res && res.accessToken) {
-                const beRole = String(res.user?.role || "").toLowerCase();
-                let targetRole = "family";
-                let targetName = res.user?.email?.split("@")[0] || "Khách hàng CareLink";
-                let avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+                localStorage.setItem("carelink_token", res.accessToken);
+                if (res.refreshToken) {
+                    localStorage.setItem("carelink_refresh_token", res.refreshToken);
+                }
 
-                if (beRole.includes("admin")) {
-                    targetRole = "admin";
-                    targetName = "Ban Quản trị CareLink";
-                    avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80";
-                } else if (beRole.includes("nurse") || beRole.includes("caregiver")) {
-                    targetRole = "caregiver";
-                    targetName = "Điều dưỡng " + (res.user?.email?.split("@")[0] || "CareLink");
-                    avatar = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                // Gọi ngay GET /api/v1/users/me để lấy chính xác họ tên và thông tin profile đã lưu
+                let syncedUser = null;
+                try {
+                    syncedUser = await fetchAndSyncUserMe();
+                } catch (e) {
+                    console.warn("[CareLink Auth] sync /users/me failed, falling back:", e);
+                }
+
+                const beRole = String(res.user?.role || "").toLowerCase();
+                let targetRole = syncedUser?.role || "family";
+                let targetName = syncedUser?.fullName || syncedUser?.name || res.user?.fullName;
+                let avatar = syncedUser?.avatar || syncedUser?.avatarUrl;
+
+                if (!targetName) {
+                    if (beRole.includes("admin")) {
+                        targetRole = "admin";
+                        targetName = "Ban Quản trị CareLink";
+                        avatar = avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80";
+                    } else if (beRole.includes("nurse") || beRole.includes("caregiver")) {
+                        targetRole = "caregiver";
+                        targetName = "Điều dưỡng CareLink";
+                        avatar = avatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                    } else {
+                        targetRole = "family";
+                        targetName = "Khách hàng CareLink";
+                        avatar = avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+                    }
                 }
 
                 const userObj = {
-                    id: res.user?.id,
+                    id: syncedUser?.id || res.user?.id,
                     name: targetName,
+                    fullName: targetName,
                     email: res.user?.email,
                     role: targetRole,
                     avatar,
+                    avatarUrl: avatar,
+                    phone: syncedUser?.phone || "",
                 };
 
                 handleLoginSuccess(userObj, res.accessToken, res.refreshToken);
@@ -228,24 +250,44 @@ export default function Login() {
             });
 
             const data = res?.data || res;
+            if (data?.accessToken) {
+                localStorage.setItem("carelink_token", data.accessToken);
+                if (data.refreshToken) {
+                    localStorage.setItem("carelink_refresh_token", data.refreshToken);
+                }
+            }
+
+            let syncedGoogleUser = null;
+            try {
+                syncedGoogleUser = await fetchAndSyncUserMe();
+            } catch (e) {
+                console.warn("[CareLink Auth] sync Google /users/me failed:", e);
+            }
+
             const beRole = String(data.user?.role || "").toLowerCase();
-            let targetRole = "family";
+            let targetRole = syncedGoogleUser?.role || "family";
             if (beRole.includes("admin")) {
                 targetRole = "admin";
             } else if (beRole.includes("nurse") || beRole.includes("caregiver")) {
                 targetRole = "caregiver";
             }
 
+            const targetName = syncedGoogleUser?.fullName || syncedGoogleUser?.name || (data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google");
+            const avatar = syncedGoogleUser?.avatar || (targetRole === "caregiver"
+                ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
+                : targetRole === "admin"
+                ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
+                : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80");
+
             const userObj = {
-                id: data.user?.id,
-                name: data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google",
+                id: syncedGoogleUser?.id || data.user?.id,
+                name: targetName,
+                fullName: targetName,
                 email: data.user?.email || "google.user@carelink.vn",
                 role: targetRole,
-                avatar: targetRole === "caregiver"
-                    ? "/images/caregiver_avatar.svg"
-                    : targetRole === "admin"
-                    ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
-                    : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                avatar,
+                avatarUrl: avatar,
+                phone: syncedGoogleUser?.phone || "",
             };
 
             handleLoginSuccess(userObj, data.accessToken, data.refreshToken);

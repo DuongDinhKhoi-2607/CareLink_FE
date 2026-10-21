@@ -126,7 +126,14 @@ export default function CaregiverApprovals() {
 
             if (list.length > 0) {
                 const mapped = list.map((item) => {
-                    const st = item.verificationStatus === 1 ? "Chờ duyệt" : item.verificationStatus === 2 ? "Đã duyệt" : "Từ chối";
+                    const st =
+                        item.verificationStatus === 1 || item.verificationStatus === 4
+                            ? "Chờ duyệt"
+                            : item.verificationStatus === 2
+                            ? "Đã duyệt"
+                            : item.verificationStatus === 3
+                            ? "Từ chối"
+                            : "Chưa nộp hồ sơ";
                     return {
                         id: item.nurseId || item.id,
                         rawNurseId: item.nurseId || item.id,
@@ -370,6 +377,7 @@ export default function CaregiverApprovals() {
                         <option value="Chờ duyệt">Chờ duyệt</option>
                         <option value="Đã duyệt">Đã duyệt</option>
                         <option value="Từ chối">Từ chối</option>
+                        <option value="Chưa nộp hồ sơ">Chưa nộp hồ sơ</option>
                     </select>
 
                     {(searchQuery || roleFilter !== "all" || statusFilter !== "all") && (
@@ -453,7 +461,9 @@ export default function CaregiverApprovals() {
                                                         ? "bg-amber-50 text-amber-700 border-amber-200"
                                                         : c.status === "Đã duyệt"
                                                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                        : "bg-rose-50 text-rose-700 border-rose-200"
+                                                        : c.status === "Từ chối"
+                                                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                        : "bg-slate-100 text-slate-600 border-slate-200"
                                                 }`}
                                             >
                                                 <span
@@ -462,7 +472,9 @@ export default function CaregiverApprovals() {
                                                             ? "bg-amber-500"
                                                             : c.status === "Đã duyệt"
                                                             ? "bg-emerald-500"
-                                                            : "bg-rose-500"
+                                                            : c.status === "Từ chối"
+                                                            ? "bg-rose-500"
+                                                            : "bg-slate-400"
                                                     }`}
                                                 ></span>
                                                 {c.status}

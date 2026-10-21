@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
+import caregiverApi from "../api/caregiverApi";
 
 const navItems = [
     {
@@ -48,7 +49,7 @@ const navItems = [
     {
         path: "/caregiver/bookings",
         label: "Yêu cầu nhận ca",
-        badge: 3,
+        badge: null,
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -114,6 +115,44 @@ export default function CaregiverLayout() {
 
         return () => window.removeEventListener("storage", handleSync);
     }, []);
+
+    // Số lượng yêu cầu nhận ca đang chờ duyệt (status = 2 / PendingAcceptance)
+    const [pendingCount, setPendingCount] = useState(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchPendingCount = async () => {
+            try {
+                const res = await caregiverApi.getBookings({ PageNumber: 1, PageSize: 50 });
+                const items = res?.items || (Array.isArray(res) ? res : []);
+                const count = items.filter(
+                    (b) => b.status === 2 || b.status === "PendingAcceptance"
+                ).length;
+                if (isMounted) {
+                    setPendingCount(count > 0 ? count : null);
+                }
+            } catch {
+                if (isMounted) setPendingCount(null);
+            }
+        };
+
+        fetchPendingCount();
+        const interval = setInterval(fetchPendingCount, 15000);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, []);
+
+    // Danh sách menu động kèm số lượng badge chuẩn
+    const currentNavItems = useMemo(() => {
+        return navItems.map((item) => {
+            if (item.path === "/caregiver/bookings") {
+                return { ...item, badge: pendingCount };
+            }
+            return item;
+        });
+    }, [pendingCount]);
 
     // Lưu trạng thái thu gọn vào localStorage để khi chuyển route (Dashboard, Đánh giá...) vẫn giữ nguyên
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -328,7 +367,7 @@ export default function CaregiverLayout() {
 
                     {/* Nav items */}
                     <nav className="flex flex-col gap-1.5 p-3 flex-1">
-                        {navItems.map((item) => {
+                        {currentNavItems.map((item) => {
                             const active = isActive(item.path);
                             return (
                                 <Link
@@ -413,7 +452,7 @@ export default function CaregiverLayout() {
                             {/* Nav items */}
                             <nav className="flex flex-col gap-1 p-4 pt-6 flex-1 overflow-y-auto">
                                 <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-2">Navigation</p>
-                                {navItems.map((item) => {
+                                {currentNavItems.map((item) => {
                                     const active = isActive(item.path);
                                     return (
                                         <Link

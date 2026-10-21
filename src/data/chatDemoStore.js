@@ -1,65 +1,40 @@
-// Quản lý trạng thái trao đổi Demo 2 chiều giữa Family và Caregiver
+// Quản lý trạng thái trao đổi giữa Family và Caregiver
 // Dữ liệu lưu trong localStorage để đồng bộ tức thì giữa màn hình Family và Caregiver
 
-const STORAGE_KEY = "carelink_chat_demo_state_v2";
+const STORAGE_KEY = "carelink_chat_demo_state_v3";
 const EVENT_NAME = "carelink_chat_demo_update";
 
 const DEFAULT_STATE = {
     // Trạng thái thỏa thuận đặt lịch:
     // 'idle': Đang trao đổi tự do, chưa ai bấm xác nhận
-    // 'family_confirmed': Family đã bấm "Gửi yêu cầu đặt lịch", đang chờ Caregiver duyệt
-    // 'caregiver_accepted': Caregiver đã bấm "Đồng ý nhận ca", Family được mở khóa sang /checkout
-    // 'caregiver_rejected': Caregiver từ chối yêu cầu
-    // 'closed': Family bấm dừng trao đổi
+    // 'family_confirmed': Family đã gửi đề xuất ca chăm sóc, đang chờ Caregiver duyệt
+    // 'caregiver_accepted': Caregiver đã chấp thuận ca, Family chuyển sang thanh toán
+    // 'caregiver_rejected': Caregiver từ chối đề xuất
+    // 'closed': Kết thúc trao đổi
     status: "idle",
     rejectReason: "",
     updatedAt: new Date().toISOString(),
 
-    // Dữ liệu chi tiết ca chăm sóc dự kiến
+    // Dữ liệu chi tiết ca chăm sóc
     bookingInfo: {
-        recipientName: "Bà Nguyễn Thị Lan",
-        recipientAge: "75 tuổi",
-        relation: "Mẹ anh An",
-        condition: "Hậu phẫu khớp gối giai đoạn hồi phục, cần đo huyết áp & hỗ trợ vận động nhẹ",
-        serviceName: "Chăm sóc phục hồi sau phẫu thuật",
-        scheduledDate: "Ngày mai, 14/10/2026",
-        scheduledTime: "08:00 – 10:00 (2 giờ)",
-        duration: "2 giờ",
-        address: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP. HCM",
-        fee: "360.000 VNĐ",
-        familyContact: "Anh Nguyễn Văn An (0901 234 567)",
-        caregiverName: "Nguyễn Thùy Linh",
-        caregiverRole: "Cử nhân Y4 • Đại học Y Dược TP.HCM",
+        recipientName: "Người nhận chăm sóc",
+        recipientAge: "",
+        relation: "",
+        condition: "Chăm sóc theo nhu cầu gia đình và đề xuất ca",
+        serviceName: "Dịch vụ chăm sóc",
+        scheduledDate: "Đang thỏa thuận",
+        scheduledTime: "Đang thỏa thuận",
+        duration: "Theo ca",
+        address: "Địa chỉ gia đình",
+        fee: "Thỏa thuận",
+        familyContact: "Gia đình khách hàng",
+        caregiverName: "Điều dưỡng CareLink",
+        caregiverRole: "Điều dưỡng chuyên nghiệp",
         caregiverAvatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
     },
 
     // Lịch sử tin nhắn trao đổi
-    messages: [
-        {
-            id: 1,
-            sender: "family", // 'family' | 'caregiver' | 'system'
-            text: "Chào em Linh, mẹ anh năm nay 75 tuổi, vừa mổ khớp gối về. Anh muốn tìm điều dưỡng hỗ trợ tập co duỗi nhẹ và đo huyết áp buổi sáng.",
-            time: "08:15",
-        },
-        {
-            id: 2,
-            sender: "caregiver",
-            text: "Dạ em chào anh An ạ! Em có kinh nghiệm thực tập khoa Ngoại chấn thương chỉnh hình BV Chợ Rẫy, em có thể hỗ trợ bác bài tập phục hồi tại giường rất tốt ạ.",
-            time: "08:18",
-        },
-        {
-            id: 3,
-            sender: "family",
-            text: "Tốt quá! Sáng mai từ 08:00 đến 10:00 em có tiện qua nhà anh ở Bình Thạnh được không?",
-            time: "08:20",
-        },
-        {
-            id: 4,
-            sender: "caregiver",
-            text: "Dạ sáng mai khung giờ 08:00 – 10:00 em đang trống lịch và ở ngay gần khu vực Bình Thạnh luôn anh nhé. Anh có thể gửi yêu cầu đặt lịch để em xác nhận nhận ca ạ!",
-            time: "08:22",
-        },
-    ],
+    messages: [],
 };
 
 export const getDemoChatState = () => {
@@ -99,7 +74,7 @@ export const setDemoStatus = (status, rejectReason = "") => {
                 id: Date.now(),
                 sender: "system",
                 systemType: "confirm",
-                text: "Gia đình đã gửi yêu cầu đặt lịch chăm sóc (08:00 – 10:00 ngày mai). Đang chờ Điều dưỡng xác nhận nhận ca.",
+                text: "Gia đình đã gửi đề xuất ca chăm sóc. Đang chờ Điều dưỡng xem xét và xác nhận nhận ca.",
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -121,7 +96,7 @@ export const setDemoStatus = (status, rejectReason = "") => {
                 id: Date.now(),
                 sender: "system",
                 systemType: "accept",
-                text: "Điều dưỡng Nguyễn Thùy Linh đã đồng ý nhận ca! Gia đình vui lòng tiến hành thanh toán để hoàn tất đặt lịch.",
+                text: "Điều dưỡng đã đồng ý nhận ca! Gia đình vui lòng tiến hành thanh toán để xác nhận ca chăm sóc.",
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];
@@ -132,7 +107,7 @@ export const setDemoStatus = (status, rejectReason = "") => {
                 id: Date.now(),
                 sender: "system",
                 systemType: "reject",
-                text: `Điều dưỡng từ chối yêu cầu: "${rejectReason || "Bận đột xuất vào khung giờ này"}". Cuộc trao đổi đã kết thúc.`,
+                text: `Điều dưỡng từ chối yêu cầu: "${rejectReason || "Bận đột xuất vào khung giờ này"}".`,
                 time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
             },
         ];

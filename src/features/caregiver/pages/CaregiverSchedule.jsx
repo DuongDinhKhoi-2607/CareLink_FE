@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import caregiverApi from "../../../api/caregiverApi";
 
-/* ─── Constants ─── */
+/* ─── Constants & Helpers ─── */
 const DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-const DATES = ["13/10", "14/10", "15/10", "16/10", "17/10", "18/10", "19/10"];
 const TIME_SLOTS = [
     "06:00 – 08:00",
     "08:00 – 10:00",
     "10:00 – 12:00",
-    "13:00 – 15:00",
-    "15:00 – 17:00",
-    "17:00 – 19:00",
-    "19:00 – 21:00",
+    "12:00 – 14:00",
+    "14:00 – 16:00",
+    "16:00 – 18:00",
+    "18:00 – 20:00",
+    "20:00 – 22:00",
 ];
 
-/* Mocked initial slot states: key = "dayIndex-slotIndex", value = "available"|"booked"|"off" */
+// Chuyển đổi chỉ số ngày Frontend (0=T2..6=CN) sang chuẩn Backend DayOfWeek (0=CN, 1=T2..6=T7)
+const feIndexToBeDay = (d) => (d === 6 ? 0 : d + 1);
+const beDayToFeIndex = (beDay) => (beDay === 0 ? 6 : beDay - 1);
+
+/* Khởi tạo toàn bộ slot là "off" cho đến khi API getAvailability trả về dữ liệu */
 const initSlots = () => {
     const map = {};
     DAYS.forEach((_, d) => {
         TIME_SLOTS.forEach((_, t) => {
-            const r = Math.random();
-            map[`${d}-${t}`] = r < 0.15 ? "booked" : r < 0.45 ? "available" : "off";
+            map[`${d}-${t}`] = "off";
         });
     });
     return map;
@@ -154,6 +157,7 @@ function LegendItem({ color, label }) {
    CaregiverSchedule (API 56, 57, 58, 59)
 ═══════════════════════════════════════════ */
 export default function CaregiverSchedule() {
+    const [weekOffset, setWeekOffset] = useState(0);
     const [slots, setSlots] = useState(initSlots);
     const [slotMeta, setSlotMeta] = useState({}); // Lưu { [key]: { id, ... } }
     const [loading, setLoading] = useState(false);
@@ -165,13 +169,82 @@ export default function CaregiverSchedule() {
         timeSlotIndex: 0,
     });
 
-    const [requests] = useState([
-        { id: 1, family: "Nguyễn Thị Lan (Mẹ anh An)", service: "Chăm sóc phục hồi sau phẫu thuật · 2h", date: "14/10/2026", time: "08:00 – 10:00", note: "Ca đã thống nhất qua Chat. Bác An vừa mổ khớp gối.", source: "chat" },
-        { id: 2, family: "Trần Văn Minh", service: "Phục hồi chức năng vận động · 2h", date: "15/10/2026", time: "14:00 – 16:00", note: null, source: "direct" },
-        { id: 3, family: "Phạm Ngọc Anh", service: "Chăm sóc trẻ sơ sinh ban đêm · 4h", date: "16/10/2026", time: "06:00 – 10:00", note: "Em bé 3 tháng tuổi, gia đình cần người thay ca ban đêm.", source: "direct" },
-    ]);
-    const [responded, setResponded] = useState({ 1: "accepted" });
+    // Tính toán ngày thực tế của tuần đang chọn
+    const weekData = useMemo(() => {
+        const now = new Date();
+        const currentDay = now.getDay(); // 0 = CN, 1 = T2
+        const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
+        monday.setHours(0, 0, 0, 0);
+
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            const day = String(d.getDate()).padStart(2, "0");
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const year = d.getFullYear();
+            const isToday = d.toDateString() === now.toDateString();
+            days.push({
+                dayName: DAYS[i],
+                dateLabel: `${day}/${month}`,
+                fullDateStr: `${day}/${month}/${year}`,
+                isToday,
+            });
+        }
+
+        const startLabel = days[0].dateLabel;
+        const endLabel = days[6].dateLabel;
+        const year = monday.getFullYear();
+        let weekTag = "";
+        if (weekOffset === 0) weekTag = " (Tuần này)";
+        else if (weekOffset === 1) weekTag = " (Tuần sau)";
+        else if (weekOffset === -1) weekTag = " (Tuần trước)";
+        else if (weekOffset > 1) weekTag = ` (+${weekOffset} tuần)`;
+        else weekTag = ` (${weekOffset} tuần)`;
+
+        const title = `Tuần ${startLabel} – ${endLabel}/${year}${weekTag}`;
+        return { days, title };
+    }, [weekOffset]);
+
+    // Danh sách yêu cầu nhận ca thực tế từ GET /api/v1/bookings
+    const [requests, setRequests] = useState([]);
+    const [responded, setResponded] = useState({});
     const [globalAvailable, setGlobalAvailable] = useState(true);
+
+    const fetchRequests = useCallback(async () => {
+        try {
+            const res = await caregiverApi.getBookings({ PageNumber: 1, PageSize: 20 });
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            // Chỉ lấy các ca đang chờ điều dưỡng xác nhận (status = 2 / PendingAcceptance)
+            const pendingItems = items.filter((b) => b.status === 2 || b.status === "PendingAcceptance");
+            setRequests(
+                pendingItems.map((b) => {
+                    const start = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
+                    const end = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
+                    return {
+                        id: b.id,
+                        family: b.customerName || "Gia đình khách hàng",
+                        service: b.serviceName || "Chăm sóc tại nhà",
+                        date: start.toLocaleDateString("vi-VN"),
+                        time: end
+                            ? `${start.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
+                            : start.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                        note: b.notes || null,
+                        source: "direct",
+                    };
+                })
+            );
+        } catch {
+            setRequests([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
 
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -201,44 +274,52 @@ export default function CaregiverSchedule() {
                 setGlobalAvailable(Boolean(data.isAvailable));
             }
 
-            if (items.length > 0) {
-                const newSlots = {};
-                const newMeta = {};
+            const newSlots = {};
+            const newMeta = {};
 
-                // Khởi tạo toàn bộ slot là "off"
-                DAYS.forEach((_, d) => {
-                    TIME_SLOTS.forEach((_, t) => {
-                        newSlots[`${d}-${t}`] = "off";
-                    });
+            // Khởi tạo toàn bộ slot là "off"
+            DAYS.forEach((_, d) => {
+                TIME_SLOTS.forEach((_, t) => {
+                    newSlots[`${d}-${t}`] = "off";
                 });
+            });
 
+            if (items.length > 0) {
                 items.forEach((item) => {
-                    let d = -1;
-                    if (typeof item.dayOfWeek === "number") {
-                        // 1 = Monday .. 7 = Sunday
-                        d = item.dayOfWeek >= 1 && item.dayOfWeek <= 7 ? item.dayOfWeek - 1 : item.dayOfWeek;
+                    let dayIndices = [];
+                    if (item.dayOfWeek === null || item.dayOfWeek === undefined) {
+                        // null / undefined nghĩa là rảnh TẤT CẢ các ngày trong tuần
+                        dayIndices = [0, 1, 2, 3, 4, 5, 6];
+                    } else if (typeof item.dayOfWeek === "number") {
+                        dayIndices = [beDayToFeIndex(item.dayOfWeek)];
                     } else if (typeof item.dayOfWeek === "string") {
                         const idx = DAYS.findIndex(
                             (day) => day.toLowerCase() === item.dayOfWeek.toLowerCase()
                         );
-                        if (idx !== -1) d = idx;
+                        if (idx !== -1) dayIndices = [idx];
                     }
 
-                    // Khớp khung giờ qua startTime
-                    const itemStart = (item.startTime || "").slice(0, 5);
-                    const t = TIME_SLOTS.findIndex((slot) => slot.startsWith(itemStart));
+                    const itemStart = (item.startTime || "").slice(0, 5); // "HH:mm"
+                    const itemEnd = (item.endTime || "").slice(0, 5);     // "HH:mm"
 
-                    if (d >= 0 && d < 7 && t >= 0 && t < TIME_SLOTS.length) {
-                        const key = `${d}-${t}`;
-                        newSlots[key] =
-                            item.isBooked || item.status === "booked" ? "booked" : "available";
-                        newMeta[key] = { id: item.id, ...item };
-                    }
+                    dayIndices.forEach((d) => {
+                        if (d >= 0 && d < 7) {
+                            TIME_SLOTS.forEach((slotStr, t) => {
+                                const [slotStart, slotEnd] = slotStr.split("–").map((s) => s.trim());
+                                // Đánh dấu rảnh nếu ô slot nằm trong dải thời gian rảnh của server
+                                if (itemStart <= slotStart && itemEnd >= slotEnd) {
+                                    const key = `${d}-${t}`;
+                                    newSlots[key] = item.isBooked || item.status === "booked" ? "booked" : "available";
+                                    newMeta[key] = { id: item.id, ...item };
+                                }
+                            });
+                        }
+                    });
                 });
-
-                setSlots(newSlots);
-                setSlotMeta(newMeta);
             }
+
+            setSlots(newSlots);
+            setSlotMeta(newMeta);
         } catch (err) {
             console.warn("Lỗi tải lịch rảnh từ server:", err);
         } finally {
@@ -261,11 +342,10 @@ export default function CaregiverSchedule() {
 
         try {
             const payload = {
-                dayOfWeek: d + 1,
-                dayName: DAYS[d],
+                dayOfWeek: feIndexToBeDay(d),
                 startTime: start.length === 5 ? `${start}:00` : start,
                 endTime: end.length === 5 ? `${end}:00` : end,
-                isAvailable: true,
+                isActive: true,
             };
             const res = await caregiverApi.addAvailability(payload);
             const created = res?.data || res;
@@ -275,7 +355,7 @@ export default function CaregiverSchedule() {
             showToast(`✓ Đã thêm khung giờ rảnh: ${DAYS[d]} (${slotStr})`);
         } catch (err) {
             console.error("Lỗi thêm khung giờ rảnh:", err);
-            showToast(`Đã bật khung giờ: ${DAYS[d]} (${slotStr}). Nhấn "Đồng bộ" để lưu toàn bộ!`);
+            showToast(`Đã bật khung giờ: ${DAYS[d]} (${slotStr}). Nhấn "Lưu & Đồng bộ lịch tuần" để lưu!`);
         }
     };
 
@@ -316,49 +396,103 @@ export default function CaregiverSchedule() {
     };
 
     // ── 58. PUT /api/v1/nurse/availability (Cập nhật / Đồng bộ toàn bộ lịch rảnh) ────
-    // Đặc biệt kiểm tra: Thu thập ĐỦ toàn bộ slot đang active để tránh ghi đè làm mất lịch của các ngày khác
+    // Tự động HỢP NHẤT các khung giờ liền kề (Contiguous Slot Merging) để bao trùm mọi ca nhận
     const handleSyncSchedule = async () => {
         setSyncing(true);
         try {
-            const activeSlots = [];
+            const schedules = [];
             DAYS.forEach((_, d) => {
+                const activeInDay = [];
                 TIME_SLOTS.forEach((slotStr, t) => {
                     const key = `${d}-${t}`;
                     if (slots[key] === "available") {
                         const [start, end] = slotStr.split("–").map((s) => s.trim());
-                        activeSlots.push({
-                            id: slotMeta[key]?.id,
-                            dayOfWeek: d + 1,
-                            dayName: DAYS[d],
-                            startTime: start.length === 5 ? `${start}:00` : start,
-                            endTime: end.length === 5 ? `${end}:00` : end,
-                            isAvailable: true,
+                        activeInDay.push({
+                            start: start.length === 5 ? `${start}:00` : start,
+                            end: end.length === 5 ? `${end}:00` : end,
                         });
                     }
                 });
+
+                if (activeInDay.length > 0) {
+                    // Sắp xếp theo startTime
+                    activeInDay.sort((a, b) => a.start.localeCompare(b.start));
+
+                    // Hợp nhất các khung giờ liền nhau: ví dụ 08:00-10:00 & 10:00-12:00 -> 08:00-12:00
+                    const merged = [activeInDay[0]];
+                    for (let i = 1; i < activeInDay.length; i++) {
+                        const curr = activeInDay[i];
+                        const last = merged[merged.length - 1];
+                        if (curr.start <= last.end) {
+                            if (curr.end > last.end) {
+                                last.end = curr.end;
+                            }
+                        } else {
+                            merged.push(curr);
+                        }
+                    }
+
+                    const beDay = feIndexToBeDay(d);
+                    merged.forEach((m) => {
+                        schedules.push({
+                            dayOfWeek: beDay,
+                            startTime: m.start,
+                            endTime: m.end,
+                            isActive: true,
+                        });
+                    });
+                }
             });
 
-            // Gửi dữ liệu đồng bộ đầy đủ (an toàn tuyệt đối không ghi đè mất lịch)
-            try {
-                await caregiverApi.setAvailability(activeSlots);
-            } catch {
-                // Nếu BE yêu cầu bọc object
-                await caregiverApi.setAvailability({
-                    isAvailable: globalAvailable,
-                    availabilities: activeSlots,
-                    slots: activeSlots,
-                });
-            }
+            // Gửi chuẩn DTO SetNurseAvailabilityRequest: { schedules: [...] }
+            await caregiverApi.setAvailability({ schedules });
 
-            showToast(`✓ Đã đồng bộ toàn bộ lịch tuần (${activeSlots.length} khung giờ rảnh) thành công!`);
+            showToast(`✓ Đã lưu thành công ${schedules.length} dải lịch rảnh vào cơ sở dữ liệu!`);
             await fetchAvailability();
         } catch (err) {
             console.error("Lỗi đồng bộ lịch rảnh:", err);
-            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể đồng bộ lịch rảnh. Vui lòng thử lại!";
+            const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.response?.data?.title || "Không thể đồng bộ lịch rảnh. Vui lòng thử lại!";
             showToast(`⚠️ ${msg}`);
         } finally {
             setSyncing(false);
         }
+    };
+
+    // ── Quick Presets (Thao tác nhanh 1 chạm) ──
+    const handleSetAllWeekAvailable = () => {
+        const newSlots = {};
+        DAYS.forEach((_, d) => {
+            TIME_SLOTS.forEach((_, t) => {
+                newSlots[`${d}-${t}`] = "available";
+            });
+        });
+        setSlots(newSlots);
+        showToast("✓ Đã bật rảnh cả tuần (06:00 – 22:00). Nhấn 'Lưu & Đồng bộ lịch tuần' để hoàn tất!");
+    };
+
+    const handleSetTodayAvailable = () => {
+        const now = new Date();
+        const currentDay = now.getDay(); // 0=CN, 1=T2...
+        const feDay = beDayToFeIndex(currentDay);
+        setSlots((prev) => {
+            const next = { ...prev };
+            TIME_SLOTS.forEach((_, t) => {
+                next[`${feDay}-${t}`] = "available";
+            });
+            return next;
+        });
+        showToast(`✓ Đã bật rảnh cả ngày hôm nay (${DAYS[feDay]}). Nhấn 'Lưu & Đồng bộ lịch tuần' để lưu!`);
+    };
+
+    const handleClearAllSlots = () => {
+        const newSlots = {};
+        DAYS.forEach((_, d) => {
+            TIME_SLOTS.forEach((_, t) => {
+                newSlots[`${d}-${t}`] = "off";
+            });
+        });
+        setSlots(newSlots);
+        showToast("Đã dọn trống lịch. Nhấn 'Lưu & Đồng bộ lịch tuần' nếu muốn làm sạch hệ thống!");
     };
 
     // Modal submit: Thêm khung giờ rảnh rõ ràng
@@ -368,8 +502,27 @@ export default function CaregiverSchedule() {
         await handleAddSlot(newSlotForm.dayIndex, newSlotForm.timeSlotIndex);
     };
 
-    const handleAccept = (id) => setResponded((p) => ({ ...p, [id]: "accepted" }));
-    const handleReject = (id) => setResponded((p) => ({ ...p, [id]: "rejected" }));
+    const handleAccept = async (id) => {
+        try {
+            await caregiverApi.acceptBooking(id);
+            setResponded((p) => ({ ...p, [id]: "accepted" }));
+            showToast("✓ Đã tiếp nhận ca chăm sóc thành công!");
+            fetchRequests();
+        } catch (err) {
+            showToast(err.response?.data?.detail || "Không thể tiếp nhận ca.");
+        }
+    };
+
+    const handleReject = async (id) => {
+        try {
+            await caregiverApi.rejectBooking(id, { reason: "Bận lịch làm việc" });
+            setResponded((p) => ({ ...p, [id]: "rejected" }));
+            showToast("Đã từ chối nhận ca.");
+            fetchRequests();
+        } catch (err) {
+            showToast(err.response?.data?.detail || "Không thể từ chối ca.");
+        }
+    };
 
     const pendingRequests = requests.filter((r) => !responded[r.id]);
     const doneRequests = requests.filter((r) => responded[r.id]);
@@ -398,7 +551,36 @@ export default function CaregiverSchedule() {
                         </span>
                     </div>
                     <h1 className="text-2xl font-bold text-[#102030]">Lịch làm việc & Nhận ca</h1>
-                    <p className="text-sm text-slate-400 mt-0.5">Tuần 13 – 19 tháng 10 năm 2026 (Chạm vào ô để bật/tắt giờ rảnh)</p>
+                    <p className="text-sm text-slate-500 mt-0.5 font-medium">{weekData.title} · (Chạm vào ô để bật/tắt giờ rảnh)</p>
+
+                    {/* Quick Presets Bar */}
+                    <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Cài nhanh:</span>
+                        <button
+                            type="button"
+                            onClick={handleSetAllWeekAvailable}
+                            className="px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold transition-all border border-teal-200/80 cursor-pointer shadow-2xs"
+                            title="Bật rảnh toàn bộ các ngày từ Thứ 2 đến Chủ nhật"
+                        >
+                            ⚡ Bật rảnh cả tuần (06:00 – 22:00)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSetTodayAvailable}
+                            className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200/80 cursor-pointer shadow-2xs"
+                            title="Bật rảnh toàn bộ khung giờ cho ngày hôm nay"
+                        >
+                            📅 Bật rảnh hôm nay
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleClearAllSlots}
+                            className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition-all cursor-pointer"
+                            title="Tắt toàn bộ để cài lại"
+                        >
+                            Dọn trống
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -414,7 +596,7 @@ export default function CaregiverSchedule() {
                         Thêm khung giờ
                     </button>
 
-                    {/* Nút Đồng bộ / Lưu lịch rảnh (API 58 PUT) */}
+                    {/* Nút Đồng bộ / Lưu lịch rảnh */}
                     <button
                         type="button"
                         disabled={syncing}
@@ -432,7 +614,7 @@ export default function CaregiverSchedule() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                             </svg>
                         )}
-                        <span>{syncing ? "Đang đồng bộ..." : "Đồng bộ lịch tuần (PUT)"}</span>
+                        <span>{syncing ? "Đang lưu..." : "Lưu & Đồng bộ lịch tuần"}</span>
                     </button>
 
                     {/* Global availability toggle */}
@@ -468,8 +650,47 @@ export default function CaregiverSchedule() {
                 <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col">
                     {/* Calendar header bar */}
                     <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-3">
                             <h2 className="text-sm font-bold text-[#102030]">Lịch theo tuần</h2>
+                            
+                            {/* Nút điều hướng tuần */}
+                            <div className="flex items-center gap-1 bg-slate-100/80 p-0.5 rounded-xl border border-slate-200/80">
+                                <button
+                                    type="button"
+                                    onClick={() => setWeekOffset((w) => w - 1)}
+                                    className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-[#00677c] hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                    title="Xem tuần trước"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                    </svg>
+                                    Tuần trước
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setWeekOffset(0)}
+                                    className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                        weekOffset === 0
+                                            ? "bg-[#00677c] text-white shadow-2xs"
+                                            : "text-slate-600 hover:text-[#00677c] hover:bg-white"
+                                    }`}
+                                    title="Quay về tuần hiện tại"
+                                >
+                                    Tuần này
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setWeekOffset((w) => w + 1)}
+                                    className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-[#00677c] hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                    title="Xem tuần sau"
+                                >
+                                    Tuần sau
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </button>
+                            </div>
+
                             {loading && (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
                                     <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -493,11 +714,17 @@ export default function CaregiverSchedule() {
                             {/* Day headers */}
                             <div className="grid mb-2" style={{ gridTemplateColumns: "85px repeat(7, 1fr)" }}>
                                 <div />
-                                {DAYS.map((d, i) => (
-                                    <div key={d} className="flex flex-col items-center gap-0.5 pb-1">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{d}</span>
-                                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${i === 1 ? "bg-[#00677c] text-white" : "text-[#102030]"}`}>
-                                            {DATES[i]}
+                                {weekData.days.map((item) => (
+                                    <div key={item.dayName} className="flex flex-col items-center gap-0.5 pb-1">
+                                        <span className={`text-[10px] font-bold uppercase ${item.isToday ? "text-[#00677c]" : "text-slate-400"}`}>
+                                            {item.dayName}
+                                        </span>
+                                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full transition-all ${
+                                            item.isToday
+                                                ? "bg-[#00677c] text-white shadow-2xs ring-2 ring-teal-200"
+                                                : "text-[#102030]"
+                                        }`}>
+                                            {item.dateLabel}
                                         </span>
                                     </div>
                                 ))}
@@ -606,7 +833,7 @@ export default function CaregiverSchedule() {
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                             <div>
                                 <h3 className="text-base font-bold text-[#002045]">Thêm khung giờ rảnh</h3>
-                                <p className="text-xs text-slate-500">Gọi POST /api/v1/nurse/availability</p>
+                                <p className="text-xs text-slate-500">Thêm khung giờ định kỳ sẵn sàng nhận ca</p>
                             </div>
                             <button
                                 type="button"
@@ -629,7 +856,7 @@ export default function CaregiverSchedule() {
                                 >
                                     {DAYS.map((d, i) => (
                                         <option key={d} value={i}>
-                                            {d} — Ngày {DATES[i]}
+                                            {d} — Ngày {weekData.days[i]?.dateLabel || ""}
                                         </option>
                                     ))}
                                 </select>

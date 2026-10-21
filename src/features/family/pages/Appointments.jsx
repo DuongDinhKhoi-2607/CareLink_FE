@@ -1,5 +1,24 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import {
+    Calendar,
+    Clock,
+    MapPin,
+    User,
+    Phone,
+    CheckCircle2,
+    AlertTriangle,
+    ShieldCheck,
+    CreditCard,
+    MessageSquare,
+    X,
+    Stethoscope,
+    Loader2,
+    Sparkles,
+    AlertCircle,
+    Award
+} from "lucide-react";
 import ViewHealthRecordModal from "../components/ViewHealthRecordModal";
 import CreateDisputeModal from "../components/CreateDisputeModal";
 import CancelBookingModal from "../components/CancelBookingModal";
@@ -9,6 +28,9 @@ import familyApi from "../../../api/familyApi";
 // Adapter chuyển đổi BookingResponse từ Backend sang cấu trúc hiển thị của giao diện Family
 const mapBookingToAppointment = (b) => {
     const rawStatus = typeof b.status === "number" ? b.status : 1;
+    const createdAtMs = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    const isPaymentExpired = rawStatus === 1 && createdAtMs > 0 && (Date.now() - createdAtMs) > 30 * 60 * 1000;
+
     let tab = "upcoming";
     let statusLabel = "ĐÃ TIẾP NHẬN";
     let statusBadge = "bg-[#e2f4f2] text-[#007469]";
@@ -17,12 +39,21 @@ const mapBookingToAppointment = (b) => {
     let statusStr = "confirmed";
 
     if (rawStatus === 1) { // PendingPayment
-        tab = "upcoming";
-        statusLabel = "CHỜ THANH TOÁN";
-        statusBadge = "bg-amber-50 text-amber-700 border border-amber-200";
-        dotColor = "bg-amber-500";
-        canCancel = true;
-        statusStr = "pending_payment";
+        if (isPaymentExpired) {
+            tab = "cancelled";
+            statusLabel = "HẾT HẠN GIỮ CHỖ (30P)";
+            statusBadge = "bg-rose-50 text-rose-700 border border-rose-200";
+            dotColor = "bg-rose-500";
+            canCancel = false;
+            statusStr = "expired";
+        } else {
+            tab = "upcoming";
+            statusLabel = "CHỜ THANH TOÁN";
+            statusBadge = "bg-amber-50 text-amber-700 border border-amber-200";
+            dotColor = "bg-amber-500";
+            canCancel = true;
+            statusStr = "pending_payment";
+        }
     } else if (rawStatus === 2) { // PendingAcceptance
         tab = "upcoming";
         statusLabel = "CHỜ ĐIỀU DƯỠNG NHẬN";
@@ -87,10 +118,19 @@ const mapBookingToAppointment = (b) => {
         caregiver: {
             name: b.nurseName || "Điều dưỡng CareLink",
             role: "Điều dưỡng chuyên môn CareLink",
-            avatar: b.nurseAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+            avatar: (b.nurseAvatarUrl && !b.nurseAvatarUrl.includes("unsplash"))
+                ? b.nurseAvatarUrl
+                : (b.nurseAvatar && !b.nurseAvatar.includes("unsplash"))
+                ? b.nurseAvatar
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(b.nurseName || "Điều dưỡng")}&background=00677c&color=fff&size=160&bold=true`,
             verified: true,
-            phone: "0903 888 999",
+            phone: b.nursePhone || "0903 888 999",
         },
+        customerName: b.customerName || "Gia đình",
+        customerAvatar: (b.customerAvatarUrl && !b.customerAvatarUrl.includes("unsplash"))
+            ? b.customerAvatarUrl
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(b.customerName || "Khách hàng")}&background=087487&color=fff&size=160&bold=true`,
+        customerPhone: b.customerPhone || "",
         service: b.serviceName || "Chăm sóc theo yêu cầu",
         serviceCategory: "health_care",
         recipient: b.recipientName || "Người thân",
@@ -104,7 +144,8 @@ const mapBookingToAppointment = (b) => {
         statusBadge,
         dotColor,
         canCancel,
-        canPay: rawStatus === 1,
+        canPay: rawStatus === 1 && !isPaymentExpired,
+        isPaymentExpired,
         price: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + "đ" : "0đ",
         tasks: ["Đo huyết áp & sinh hiệu", "Theo dõi sức khỏe theo đơn", "Ghi nhật ký thể trạng"],
         // reviewed: backend trả về true nếu khách đã gửi review cho ca này
@@ -280,11 +321,31 @@ export default function Appointments() {
     const [monthFilter, setMonthFilter] = useState("09/2026");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedAppointment, setSelectedAppointment] = useState(null); // Cho modal xem chi tiết
+    const [detailData, setDetailData] = useState(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
     const [viewingHealthRecord, setViewingHealthRecord] = useState(null); // Cho modal xem báo cáo sức khỏe
     const [disputingAppointment, setDisputingAppointment] = useState(null); // Cho modal khiếu nại
     const [viewingDispute, setViewingDispute] = useState(null); // Cho modal xem tiến độ khiếu nại
     const [cancellingAppointment, setCancellingAppointment] = useState(null); // Cho modal xác nhận hủy ca
     const [toastMessage, setToastMessage] = useState(null);
+
+    // Mở modal xem chi tiết và nạp dữ liệu chi tiết ca mới nhất từ Backend (GET /api/v1/bookings/{id})
+    const handleOpenDetailModal = async (apt) => {
+        setSelectedAppointment(apt);
+        setDetailData(null);
+        setLoadingDetail(true);
+        try {
+            const id = apt.rawId || apt.id;
+            const res = await familyApi.getBookingDetail(id);
+            if (res) {
+                setDetailData(res);
+            }
+        } catch (err) {
+            console.warn("[CareLink] Lỗi tải chi tiết ca hẹn:", err);
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
 
     // Trạng thái dữ liệu thực từ Backend API
     const [appointments, setAppointments] = useState([]);
@@ -393,6 +454,17 @@ export default function Appointments() {
         }
     };
 
+    // Callback xử lý khi tạo khiếu nại thành công từ CreateDisputeModal
+    const handleDisputeSuccess = (disputeDto) => {
+        setDisputingAppointment(null);
+        setToastMessage({
+            type: "success",
+            title: "Đã gửi khiếu nại thành công",
+            message: `Khiếu nại #${disputeDto?.code || disputeDto?.id || "mới"} đã được tiếp nhận và chuyển tới Ban Quản trị để đối soát.`,
+        });
+        fetchAppointments();
+    };
+
     // Lọc theo Tab, Tìm kiếm, Dịch vụ, Trạng thái
     const filteredAppointments = appointments.filter((apt) => {
         if (apt.tab !== activeTab) return false;
@@ -400,9 +472,9 @@ export default function Appointments() {
         // Lọc theo từ khóa tìm kiếm điều dưỡng / người nhận
         if (searchQuery.trim() !== "") {
             const q = searchQuery.toLowerCase();
-            const matchName = apt.caregiver.name.toLowerCase().includes(q);
-            const matchService = apt.service.toLowerCase().includes(q);
-            const matchRecipient = apt.recipient.toLowerCase().includes(q);
+            const matchName = apt.caregiver?.name?.toLowerCase().includes(q) ?? false;
+            const matchService = apt.service?.toLowerCase().includes(q) ?? false;
+            const matchRecipient = apt.recipient?.toLowerCase().includes(q) ?? false;
             if (!matchName && !matchService && !matchRecipient) return false;
         }
 
@@ -798,7 +870,7 @@ export default function Appointments() {
 
                                     {/* Bên phải: Nằm chung hàng ngang dưới gạch phân cách */}
                                     <div className="flex items-center gap-2.5 sm:self-center shrink-0">
-                                        {/* Nút Thanh toán ngay nếu ca đang chờ thanh toán */}
+                                        {/* Nút Thanh toán ngay nếu ca đang chờ thanh toán và còn hạn */}
                                         {apt.canPay && (
                                             <Link
                                                 to="/checkout"
@@ -810,6 +882,24 @@ export default function Appointments() {
                                                 </svg>
                                                 <span>Thanh toán ngay</span>
                                             </Link>
+                                        )}
+
+                                        {/* Trạng thái hết hạn 30p */}
+                                        {apt.isPaymentExpired && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-3 py-1.5 bg-rose-50 text-rose-700 font-semibold rounded-xl text-xs border border-rose-200 flex items-center gap-1.5">
+                                                    <svg className="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span>Đã hết hạn giữ chỗ (30p)</span>
+                                                </span>
+                                                <Link
+                                                    to="/caregivers"
+                                                    className="px-3 py-1.5 bg-orient text-white hover:bg-[#005263] font-semibold rounded-xl text-xs transition-colors shadow-2xs"
+                                                >
+                                                    Đặt lại ca mới
+                                                </Link>
+                                            </div>
                                         )}
 
                                         {/* Nút Hủy ca (nếu được phép) */}
@@ -908,7 +998,7 @@ export default function Appointments() {
                                         {/* Nút Xem chi tiết */}
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedAppointment(apt)}
+                                            onClick={() => handleOpenDetailModal(apt)}
                                             className="px-4.5 py-2 bg-white border border-slate-800 hover:bg-slate-900 hover:text-white text-slate-800 font-bold rounded-xl text-xs sm:text-sm transition-all shadow-2xs cursor-pointer"
                                         >
                                             Xem chi tiết
@@ -942,84 +1032,190 @@ export default function Appointments() {
             )}
 
             {/* Modal xem chi tiết lịch hẹn */}
-            {selectedAppointment && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-page-enter">
-                    <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">Chi tiết ca chăm sóc</h3>
-                                <p className="text-xs text-slate-500">Mã ca hẹn: #{selectedAppointment.id}</p>
+            {selectedAppointment && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+                    onClick={() => setSelectedAppointment(null)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="appointment-detail-title"
+                >
+                    <div
+                        className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col my-auto max-h-[92vh] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 via-teal-50/20 to-slate-50 shrink-0">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-2xl bg-teal-50 text-[#00677c] flex items-center justify-center border border-teal-100/80 shrink-0 shadow-2xs">
+                                    <Stethoscope className="w-5 h-5 text-[#00677c]" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 id="appointment-detail-title" className="text-base sm:text-lg font-bold text-slate-900">
+                                            Chi tiết ca chăm sóc
+                                        </h3>
+                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${selectedAppointment.statusBadge}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${selectedAppointment.dotColor}`} />
+                                            {selectedAppointment.statusLabel}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 font-mono mt-0.5">
+                                        Mã ca hẹn: #{selectedAppointment.id}
+                                    </p>
+                                </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedAppointment(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center transition-colors cursor-pointer"
+                                aria-label="Đóng"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
-                        <div className="space-y-3 text-xs">
-                            <div className="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
-                                <img
-                                    src={selectedAppointment.caregiver.avatar}
-                                    alt={selectedAppointment.caregiver.name}
-                                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
-                                />
-                                <div>
-                                    <h4 className="font-bold text-slate-900 text-sm">{selectedAppointment.caregiver.name}</h4>
-                                    <p className="text-teal-700 font-medium text-[11px]">{selectedAppointment.service}</p>
-                                    <p className="text-slate-500 text-[11px]">SĐT liên hệ: {selectedAppointment.caregiver.phone}</p>
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-4 overflow-y-auto text-xs sm:text-sm">
+                            {/* Card Thông tin Điều dưỡng phụ trách */}
+                            <div className="p-4 bg-gradient-to-r from-teal-50/50 via-slate-50 to-white rounded-2xl border border-teal-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3.5 min-w-0">
+                                    <img
+                                        src={
+                                            (detailData?.nurseAvatarUrl && !detailData.nurseAvatarUrl.includes("unsplash"))
+                                                ? detailData.nurseAvatarUrl
+                                                : selectedAppointment.caregiver.avatar
+                                        }
+                                        alt={detailData?.nurseName || selectedAppointment.caregiver.name}
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            const name = detailData?.nurseName || selectedAppointment.caregiver.name || "Điều dưỡng";
+                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=00677c&color=fff&size=160&bold=true`;
+                                        }}
+                                        className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-sm shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-bold text-slate-900 text-sm sm:text-base truncate">
+                                                {detailData?.nurseName || selectedAppointment.caregiver.name}
+                                            </h4>
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/60 shrink-0">
+                                                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                                Đã xác thực CCHN
+                                            </span>
+                                        </div>
+                                        <p className="text-[#00829d] font-semibold text-xs mt-0.5">
+                                            {detailData?.serviceName || selectedAppointment.service}
+                                        </p>
+                                        <p className="text-slate-500 text-xs flex items-center gap-1.5 mt-1">
+                                            <Phone className="w-3 h-3 text-slate-400" />
+                                            <span>SĐT liên hệ: <strong>{detailData?.nursePhone || selectedAppointment.caregiver.phone || "0903 888 999"}</strong></span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <Link
+                                    to="/dashboard/messages"
+                                    onClick={() => setSelectedAppointment(null)}
+                                    className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors shadow-2xs flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-center"
+                                >
+                                    <MessageSquare className="w-3.5 h-3.5 text-[#00677c]" />
+                                    <span>Nhắn tin</span>
+                                </Link>
+                            </div>
+
+                            {/* Grid 2 cột: Người nhận chăm sóc & Chi phí + Thời gian & Địa điểm */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
+                                {/* Thẻ Người nhận chăm sóc */}
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+                                        <User className="w-4 h-4 text-slate-400" />
+                                        <span>Người nhận chăm sóc:</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-slate-900">
+                                        {detailData?.recipientName || selectedAppointment.recipient}
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                        Đối tượng: <span className="font-medium text-slate-700">{selectedAppointment.recipientRelation || "Người nhận chăm sóc"}</span>
+                                    </div>
+                                </div>
+
+                                {/* Thẻ Chi phí dịch vụ */}
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+                                        <CreditCard className="w-4 h-4 text-slate-400" />
+                                        <span>Chi phí dịch vụ:</span>
+                                    </div>
+                                    <div className="text-base font-extrabold text-[#00677c]">
+                                        {detailData?.totalPrice ? Number(detailData.totalPrice).toLocaleString("vi-VN") + "đ" : selectedAppointment.price}
+                                    </div>
+                                    <div className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Thanh toán đảm bảo CareLink PayOS</span>
+                                    </div>
+                                </div>
+
+                                {/* Thẻ Thời gian & Lịch hẹn */}
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+                                        <Calendar className="w-4 h-4 text-slate-400" />
+                                        <span>Thời gian ca trực:</span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-bold text-slate-800">
+                                        {selectedAppointment.date}
+                                    </div>
+                                    <div className="text-xs text-slate-600 flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>Khung giờ: <strong>{selectedAppointment.time}</strong></span>
+                                    </div>
+                                </div>
+
+                                {/* Thẻ Địa chỉ chăm sóc */}
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+                                        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                                        <span>Địa chỉ ca chăm sóc:</span>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
+                                        {detailData?.addressSnapshot || selectedAppointment.location}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-slate-700">
-                                <div className="p-2.5 bg-slate-50/80 rounded-xl">
-                                    <span className="text-slate-400 block text-[11px]">Người nhận chăm sóc:</span>
-                                    <strong className="text-slate-900 font-semibold">{selectedAppointment.recipient}</strong> ({selectedAppointment.recipientRelation})
-                                </div>
-                                <div className="p-2.5 bg-slate-50/80 rounded-xl">
-                                    <span className="text-slate-400 block text-[11px]">Chi phí dịch vụ:</span>
-                                    <span className="text-sm font-bold text-slate-900">{selectedAppointment.price}</span>
-                                    <span className="text-[10px] text-emerald-600 block">✓ Đã thanh toán đảm bảo</span>
-                                </div>
-                                <div className="p-2.5 bg-slate-50/80 rounded-xl col-span-2">
-                                    <span className="text-slate-400 block text-[11px]">Thời gian & Địa điểm:</span>
-                                    <span className="font-semibold text-slate-800">{selectedAppointment.date} ({selectedAppointment.time})</span>
-                                    <p className="text-slate-600 mt-0.5">{selectedAppointment.location}</p>
-                                </div>
-                            </div>
-
+                            {/* Nhiệm vụ chuyên môn trong ca */}
                             {selectedAppointment.tasks && (
-                                <div className="p-3 bg-slate-50/80 rounded-xl">
-                                    <span className="text-slate-500 font-semibold block text-[11px] mb-1.5">Nhiệm vụ trong ca chăm sóc:</span>
-                                    <ul className="list-disc list-inside space-y-1 text-slate-700">
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60">
+                                    <span className="text-slate-700 font-bold block text-xs mb-2">
+                                        Nhiệm vụ & Quy trình trong ca:
+                                    </span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                         {selectedAppointment.tasks.map((task, idx) => (
-                                            <li key={idx}>{task}</li>
+                                            <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200/50 text-xs text-slate-700">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                                                <span className="truncate">{task}</span>
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Báo cáo sức khỏe lâm sàng cho ca đã hoàn tất */}
                             {selectedAppointment.tab === "completed" && selectedAppointment.healthRecord && (
-                                <div className="p-3.5 bg-teal-50/70 border border-teal-200/80 rounded-xl space-y-2">
+                                <div className="p-4 bg-teal-50/80 border border-teal-200 rounded-2xl space-y-2.5">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 font-bold text-teal-900 text-xs">
-                                            <span className="w-2 h-2 rounded-full bg-teal-500" />
-                                            Báo cáo sức khỏe lâm sàng
+                                        <div className="flex items-center gap-2 font-bold text-teal-900 text-xs sm:text-sm">
+                                            <Stethoscope className="w-4 h-4 text-teal-600" />
+                                            <span>Báo cáo sức khỏe lâm sàng sau ca</span>
                                         </div>
-                                        <span className="text-[10px] text-teal-700 font-medium">
-                                            Đã cập nhật sinh hiệu
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-bold">
+                                            Đã ghi nhận sinh hiệu
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs text-slate-700 pt-1">
-                                        <div className="flex items-center gap-3">
-                                            <span>HA: <strong>{selectedAppointment.healthRecord.bloodPressureSystolic}/{selectedAppointment.healthRecord.bloodPressureDiastolic} mmHg</strong></span>
-                                            <span>Mạch: <strong>{selectedAppointment.healthRecord.heartRate} bpm</strong></span>
-                                            <span>Nhiệt độ: <strong>{selectedAppointment.healthRecord.temperature}°C</strong></span>
+                                    <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700 pt-1">
+                                        <div className="flex items-center gap-4">
+                                            <span>Huyết áp: <strong className="text-slate-900 font-bold">{selectedAppointment.healthRecord.bloodPressureSystolic}/{selectedAppointment.healthRecord.bloodPressureDiastolic} mmHg</strong></span>
+                                            <span>Mạch: <strong className="text-slate-900 font-bold">{selectedAppointment.healthRecord.heartRate} bpm</strong></span>
+                                            <span>Nhiệt độ: <strong className="text-slate-900 font-bold">{selectedAppointment.healthRecord.temperature}°C</strong></span>
                                         </div>
                                         <button
                                             type="button"
@@ -1028,9 +1224,9 @@ export default function Appointments() {
                                                 setSelectedAppointment(null);
                                                 setViewingHealthRecord(currentApt);
                                             }}
-                                            className="px-2.5 py-1 bg-[#00677c] hover:bg-[#005566] text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                                            className="px-3 py-1.5 bg-[#00677c] hover:bg-[#005566] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shadow-xs"
                                         >
-                                            Xem chi tiết
+                                            Xem bệnh án đầy đủ
                                         </button>
                                     </div>
                                 </div>
@@ -1038,32 +1234,41 @@ export default function Appointments() {
 
                             {/* Đánh giá ca chăm sóc cho ca đã hoàn tất */}
                             {selectedAppointment.tab === "completed" && (
-                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <div className="p-4 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-slate-800 text-[11px]">
+                                        <span className="font-bold text-slate-800 text-xs">
                                             Đánh giá chất lượng dịch vụ
                                         </span>
                                         {selectedAppointment.reviewed ? (
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                                ⭐ {selectedAppointment.rating}/5 sao · Đã gửi
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                                                ⭐ {selectedAppointment.reviewRating ? `${selectedAppointment.reviewRating}/5` : "5/5"} sao · Đã gửi
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] text-slate-400">Chưa đánh giá</span>
+                                            <span className="text-xs text-slate-400">Chưa đánh giá</span>
                                         )}
                                     </div>
 
                                     {selectedAppointment.reviewed ? (
-                                        <p className="text-slate-600 italic text-[11px] leading-relaxed bg-white p-2.5 rounded-lg border border-slate-100">
-                                            "{selectedAppointment.reviewComment}"
+                                        <p className="text-slate-600 italic text-xs leading-relaxed bg-white p-3 rounded-xl border border-slate-100">
+                                            "{selectedAppointment.reviewComment || "Ca chăm sóc diễn ra chu đáo và tận tâm."}"
                                         </p>
                                     ) : (
                                         <div className="flex items-center justify-between pt-1">
-                                            <span className="text-[11px] text-slate-500">
-                                                Chia sẻ phản hồi của bạn về ca trực
+                                            <span className="text-xs text-slate-500">
+                                                Gửi phản hồi để nâng cao chất lượng dịch vụ
                                             </span>
                                             <Link
-                                                to="/review"
-                                                className="px-3 py-1 bg-[#00677c] text-white font-semibold text-[11px] rounded-lg hover:bg-[#005566] transition-colors"
+                                                to={`/review?bookingId=${selectedAppointment.id}`}
+                                                state={{
+                                                    bookingId: selectedAppointment.id,
+                                                    nurseId: selectedAppointment.nurseId,
+                                                    nurseName: selectedAppointment.caregiver.name,
+                                                    nurseAvatar: selectedAppointment.caregiver.avatar,
+                                                    serviceName: selectedAppointment.service,
+                                                    bookingDate: selectedAppointment.date,
+                                                    booking: selectedAppointment,
+                                                }}
+                                                className="px-3.5 py-1.5 bg-[#00677c] text-white font-bold text-xs rounded-xl hover:bg-[#005566] transition-colors shadow-xs"
                                             >
                                                 Đánh giá ngay
                                             </Link>
@@ -1097,23 +1302,55 @@ export default function Appointments() {
                             )}
                         </div>
 
-                        <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                            <button
-                                type="button"
-                                onClick={() => setSelectedAppointment(null)}
-                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
-                            >
-                                Đóng
-                            </button>
-                            <Link
-                                to="/dashboard/messages"
-                                className="px-4 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs"
-                            >
-                                Nhắn tin điều dưỡng
-                            </Link>
+                        {/* Modal Footer */}
+                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                            <div>
+                                {selectedAppointment.canCancel && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const currentApt = selectedAppointment;
+                                            setSelectedAppointment(null);
+                                            setCancellingAppointment(currentApt);
+                                        }}
+                                        className="text-rose-600 hover:text-rose-700 hover:underline font-semibold text-xs cursor-pointer"
+                                    >
+                                        Hủy ca chăm sóc này
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedAppointment(null)}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-colors cursor-pointer"
+                                >
+                                    Đóng
+                                </button>
+                                {selectedAppointment.canPay && (
+                                    <Link
+                                        to="/checkout"
+                                        state={{ bookingId: selectedAppointment.id, booking: selectedAppointment }}
+                                        className="px-4.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
+                                    >
+                                        <CreditCard className="w-4 h-4" />
+                                        <span>Thanh toán ngay</span>
+                                    </Link>
+                                )}
+                                <Link
+                                    to="/dashboard/messages"
+                                    onClick={() => setSelectedAppointment(null)}
+                                    className="px-4.5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
+                                >
+                                    <MessageSquare className="w-4 h-4" />
+                                    <span>Nhắn tin điều dưỡng</span>
+                                </Link>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal Xem Báo cáo sức khỏe lâm sàng */}
@@ -1134,7 +1371,7 @@ export default function Appointments() {
             />
 
             {/* Modal Xem chi tiết trạng thái khiếu nại (API 73: GET /api/v1/disputes/{id}) */}
-            {viewingDispute && (
+            {viewingDispute && createPortal(
                 <div
                     className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 overflow-hidden"
                     style={{ background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)" }}
@@ -1198,7 +1435,8 @@ export default function Appointments() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal Xác nhận Hủy ca chăm sóc chuẩn UI/UX */}

@@ -36,6 +36,14 @@ export default function CaregiverChatThread({
     StatusBadge,
     SystemMessage,
 }) {
+    const currentUser = React.useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem("carelink_user") || "{}");
+        } catch {
+            return {};
+        }
+    }, []);
+
     return (
         <main
             className={`${
@@ -46,7 +54,8 @@ export default function CaregiverChatThread({
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:px-5">
                 <div className="flex min-w-0 items-center gap-3">
                     <Avatar
-                        name="Nguyễn Văn An"
+                        name={demoState.activeConvName || booking.customerName || "Khách hàng"}
+                        image={demoState.activeConvAvatar}
                         size="lg"
                         online={true}
                     />
@@ -54,7 +63,7 @@ export default function CaregiverChatThread({
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="truncate text-sm font-bold text-slate-900 sm:text-base">
-                                Anh Nguyễn Văn An
+                                {demoState.activeConvName || booking.customerName || "Khách hàng"}
                             </h2>
 
                             <span className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 sm:inline-flex">
@@ -64,7 +73,7 @@ export default function CaregiverChatThread({
                         </div>
 
                         <p className="mt-1 truncate text-[11px] text-slate-500">
-                            Người bệnh: {booking.recipientName}
+                            Người bệnh: {booking.recipientName || "Người nhận chăm sóc"}
                         </p>
                     </div>
                 </div>
@@ -161,7 +170,8 @@ export default function CaregiverChatThread({
                                 >
                                     {!isCaregiver && (
                                         <Avatar
-                                            name="Nguyễn Văn An"
+                                            name={demoState.activeConvName || booking.customerName || "Khách hàng"}
+                                            image={demoState.activeConvAvatar}
                                             size="sm"
                                         />
                                     )}
@@ -181,8 +191,8 @@ export default function CaregiverChatThread({
                                             }`}
                                         >
                                             {isCaregiver
-                                                ? "Bạn · Điều dưỡng Linh"
-                                                : "Anh Nguyễn Văn An"}
+                                                ? (currentUser?.name || currentUser?.fullName ? `Bạn · ${currentUser.name || currentUser.fullName}` : "Bạn")
+                                                : (demoState.activeConvName || booking.customerName || "Khách hàng")}
                                         </div>
 
                                         <div

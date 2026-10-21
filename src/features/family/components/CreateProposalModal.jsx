@@ -146,7 +146,7 @@ export default function CreateProposalModal({
             .then(([servRes, recRes, addrRes]) => {
                 if (!isMounted) return;
 
-                // 1. Dịch vụ
+                // 1. Gói Dịch vụ từ Backend
                 let servList = [];
                 if (servRes.status === "fulfilled") {
                     servList = Array.isArray(servRes.value)
@@ -159,28 +159,22 @@ export default function CreateProposalModal({
                 setServices(servList);
                 setServiceId(servList[0]?.id || "");
 
-                // 2. Người nhận chăm sóc
+                // 2. Người nhận chăm sóc (Tôn trọng dữ liệu thật từ DB, không gán fake UUID khi rỗng)
                 let recList = [];
                 if (recRes.status === "fulfilled") {
                     recList = Array.isArray(recRes.value)
                         ? recRes.value
                         : recRes.value?.items || [];
                 }
-                if (!recList || recList.length === 0) {
-                    recList = FALLBACK_RECIPIENTS;
-                }
                 setRecipients(recList);
                 setRecipientId(recList[0]?.id || "");
 
-                // 3. Sổ địa chỉ
+                // 3. Sổ địa chỉ (Nếu rỗng thì gửi addressId: null để Backend dùng địa chỉ người thân)
                 let addrList = [];
                 if (addrRes.status === "fulfilled") {
                     addrList = Array.isArray(addrRes.value)
                         ? addrRes.value
                         : addrRes.value?.items || [];
-                }
-                if (!addrList || addrList.length === 0) {
-                    addrList = FALLBACK_ADDRESSES;
                 }
                 setAddresses(addrList);
                 const defaultAddr = addrList.find((a) => a.isDefault) || addrList[0];
@@ -189,11 +183,11 @@ export default function CreateProposalModal({
             .catch(() => {
                 if (!isMounted) return;
                 setServices(FALLBACK_SERVICES);
-                setServiceId(FALLBACK_SERVICES[0].id);
-                setRecipients(FALLBACK_RECIPIENTS);
-                setRecipientId(FALLBACK_RECIPIENTS[0].id);
-                setAddresses(FALLBACK_ADDRESSES);
-                setAddressId(FALLBACK_ADDRESSES[0].id);
+                setServiceId(FALLBACK_SERVICES[0]?.id || "");
+                setRecipients([]);
+                setRecipientId("");
+                setAddresses([]);
+                setAddressId("");
             })
             .finally(() => {
                 if (isMounted) setIsLoadingData(false);
@@ -229,8 +223,14 @@ export default function CreateProposalModal({
             return;
         }
 
-        // Tạo chuỗi thời gian ISO
-        const startDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
+        // Xử lý chuẩn xác giờ 24h từ input HH:mm
+        const [hoursStr, minutesStr] = scheduledTime.split(":");
+        const hours = parseInt(hoursStr, 10);
+        const minutes = parseInt(minutesStr, 10);
+
+        const startDateTime = new Date(`${scheduledDate}T00:00:00`);
+        startDateTime.setHours(hours, minutes, 0, 0);
+
         const now = new Date();
         const minLeadTime = new Date(now.getTime() + 30 * 60 * 1000); // Tối thiểu trước 30 phút
 
@@ -386,6 +386,7 @@ export default function CreateProposalModal({
                                         onChange={(e) => setAddressId(e.target.value)}
                                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
                                     >
+                                        <option value="">-- Sử dụng địa chỉ mặc định của người thân --</option>
                                         {addresses.map((a) => (
                                             <option key={a.id} value={a.id}>
                                                 [{a.label}] {a.fullAddress} {a.isDefault ? "★ Mặc định" : ""}
@@ -445,23 +446,40 @@ export default function CreateProposalModal({
                             </div>
 
                             {/* 6. Hộp tóm tắt thỏa thuận & chi phí Authoritative từ Backend */}
-                            <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 space-y-2">
+                            <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 space-y-2.5">
                                 <div className="flex items-center justify-between text-xs text-slate-700 font-medium">
                                     <span>Thời lượng ca:</span>
                                     <span className="font-bold text-teal-800">
                                         {selectedService?.durationMinutes || 60} phút
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between text-xs text-slate-700 font-medium">
-                                    <span>Chi phí dự kiến (Đã gồm VAT & phí nền tảng):</span>
-                                    <span className="text-sm font-extrabold text-[#00677c]">
+                                <div className="flex items-center justify-between text-xs text-slate-600">
+                                    <span>Thù lao điều dưỡng:</span>
+                                    <span className="font-semibold text-slate-800">
+                                        {selectedService?.basePrice
+                                            ? Math.max(0, Number(selectedService.basePrice) - 60000).toLocaleString("vi-VN") + " VNĐ"
+                                            : "0 VNĐ"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs text-slate-600">
+                                    <span className="flex items-center gap-1">
+                                        Phí nền tảng CareLink:
+                                        <span className="text-[10px] text-slate-400 font-normal">(Bảo hiểm ca & vận hành)</span>
+                                    </span>
+                                    <span className="font-semibold text-teal-700">
+                                        + 60.000 VNĐ
+                                    </span>
+                                </div>
+                                <div className="pt-2 border-t border-teal-200/60 flex items-center justify-between text-xs font-bold text-slate-800">
+                                    <span>Tổng chi phí trọn gói (Đã gồm VAT & phí sàn):</span>
+                                    <span className="text-sm sm:text-base font-extrabold text-[#00677c]">
                                         {selectedService?.basePrice
                                             ? Number(selectedService.basePrice).toLocaleString("vi-VN") + " VNĐ"
                                             : "0 VNĐ"}
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-teal-700/90 italic pt-1 border-t border-teal-100">
-                                    * Sau khi điều dưỡng chấp nhận, ca sẽ được tạo ở trạng thái Chờ thanh toán với thời hạn giữ chỗ 30 phút.
+                                <p className="text-[11px] text-teal-700/90 italic pt-1">
+                                    * Phí sàn 60.000 VNĐ được phân bổ theo chính sách CareLink (ADR-002). Sau khi điều dưỡng chấp nhận, ca sẽ được tạo ở trạng thái Chờ thanh toán với thời hạn giữ chỗ 30 phút.
                                 </p>
                             </div>
                         </form>

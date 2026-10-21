@@ -95,12 +95,11 @@ export default function CaregiverBookingDetailPanel({
                                         {booking.recipientName}
                                     </p>
 
-                                    <p className="mt-1 text-xs text-slate-500">
-                                        {booking.recipientAge}
-                                        {booking.relation
-                                            ? ` · ${booking.relation}`
-                                            : ""}
-                                    </p>
+                                    {(booking.recipientAge || booking.relation) ? (
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            {[booking.recipientAge, booking.relation].filter(Boolean).join(" · ")}
+                                        </p>
+                                    ) : null}
                                 </div>
                             </div>
 
@@ -114,7 +113,7 @@ export default function CaregiverBookingDetailPanel({
                                 </div>
 
                                 <p className="text-xs leading-[1.8] text-slate-600">
-                                    {booking.condition}
+                                    {booking.condition || "Chưa có ghi chú tình trạng sức khỏe"}
                                 </p>
                             </div>
                         </section>
@@ -178,7 +177,7 @@ export default function CaregiverBookingDetailPanel({
                                     </p>
 
                                     <p className="mt-1.5 text-[11px] leading-relaxed text-emerald-700">
-                                        Theo thông tin ca demo
+                                        Tổng chi phí dịch vụ từ khách
                                     </p>
                                 </div>
 
@@ -190,6 +189,11 @@ export default function CaregiverBookingDetailPanel({
                             <p className="mt-3 text-xl font-extrabold tracking-tight text-emerald-800">
                                 {booking.fee}
                             </p>
+                            {booking.fee && booking.fee !== "Thỏa thuận" && (
+                                <p className="mt-1 text-[10px] text-emerald-600 font-medium">
+                                    (Khấu trừ phí nền tảng CareLink 60.000đ khi hoàn tất ca theo ADR-002)
+                                </p>
+                            )}
                         </section>
                     </div>
 
@@ -291,12 +295,12 @@ export default function CaregiverBookingDetailPanel({
                                     <CircleX className="h-4 w-4 shrink-0 text-slate-500" />
 
                                     <p className="text-xs font-bold text-slate-700">
-                                        Cuộc trao đổi đã kết thúc
+                                        Ca chăm sóc đã kết thúc
                                     </p>
                                 </div>
 
-                                <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                                    Yêu cầu này đã được đóng và không thể tiếp tục nhắn tin.
+                                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                                    Ca chăm sóc này đã hoàn tất. Bạn và gia đình vẫn có thể tiếp tục nhắn tin trao đổi hoặc lên lịch cho ca tiếp theo.
                                 </p>
                             </div>
                         )}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 // ══════════════════════════════════════════════════════════════════════
 // 1. MODAL CHI TIẾT HỒ SƠ Y TẾ NGƯỜI THÂN ("Xem hồ sơ chi tiết")
@@ -7,8 +7,8 @@ import { Link } from "react-router-dom";
 export function RelativeDetailModal({ selectedRelative, onClose, onEdit }) {
     if (!selectedRelative) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-page-enter">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-start justify-between pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3.5">
@@ -19,12 +19,11 @@ export function RelativeDetailModal({ selectedRelative, onClose, onEdit }) {
                         />
                         <div>
                             <h3 className="text-xl font-bold text-slate-900">
-                                Hồ sơ y tế: {selectedRelative.name}
+                                Hồ sơ người thân: {selectedRelative.name}
                             </h3>
                             <p className="text-xs text-slate-500 mt-0.5">
-                                Quan hệ: <strong className="text-slate-700 font-semibold">{selectedRelative.relation}</strong> •{" "}
-                                {selectedRelative.age} tuổi • Giới tính: {selectedRelative.gender} • Nhóm máu:{" "}
-                                <strong className="text-teal-700 font-bold">{selectedRelative.bloodType}</strong>
+                                {selectedRelative.age !== "—" ? `${selectedRelative.age} tuổi • ` : ""}
+                                Giới tính: <strong className="text-slate-700 font-semibold">{selectedRelative.gender}</strong>
                             </p>
                         </div>
                     </div>
@@ -42,72 +41,56 @@ export function RelativeDetailModal({ selectedRelative, onClose, onEdit }) {
 
                 {/* Nội dung chi tiết */}
                 <div className="space-y-4 text-xs">
-                    {/* 1. Thông tin cá nhân & Liên hệ */}
+                    {/* 1. Thông tin cá nhân & Địa chỉ */}
                     <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100">
                         <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-teal-600" />
-                            1. Thông tin hành chính & liên hệ
+                            1. Thông tin hành chính & Nơi chăm sóc
                         </h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-700">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
                             <div>
                                 <span className="text-slate-400 block text-[11px]">Họ và tên:</span>
                                 <span className="font-bold text-slate-900">{selectedRelative.name}</span>
                             </div>
                             <div>
                                 <span className="text-slate-400 block text-[11px]">Ngày sinh:</span>
-                                <span>{selectedRelative.birthDate}</span>
+                                <span>{selectedRelative.birthDate || "Chưa cập nhật"}</span>
                             </div>
                             <div>
-                                <span className="text-slate-400 block text-[11px]">Nhóm máu:</span>
-                                <span className="font-bold text-teal-700">{selectedRelative.bloodType}</span>
+                                <span className="text-slate-400 block text-[11px]">Giới tính:</span>
+                                <span>{selectedRelative.gender}</span>
                             </div>
-                            <div>
-                                <span className="text-slate-400 block text-[11px]">Số điện thoại:</span>
-                                <span>{selectedRelative.phone || "0908 123 456"}</span>
+                            <div className="sm:col-span-3 pt-1 border-t border-slate-200/60">
+                                <span className="text-slate-400 block text-[11px]">Địa chỉ nhận chăm sóc:</span>
+                                <span className="font-semibold text-slate-800">
+                                    {selectedRelative.address || "Chưa thiết lập địa chỉ"}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Bệnh học & Thuốc men */}
+                    {/* 2. Tiền sử bệnh lý & Tình trạng sức khỏe */}
                     <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 space-y-3">
                         <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-teal-600" />
-                            2. Tình trạng bệnh & Phác đồ dùng thuốc
+                            2. Tiền sử bệnh lý & Tình trạng sức khỏe
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
-                            <div className="sm:col-span-2">
-                                <span className="text-slate-400 block text-[11px]">Chẩn đoán y tế:</span>
-                                <span className="font-semibold text-slate-800">{selectedRelative.healthCondition}</span>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <span className="text-slate-400 block text-[11px]">Thuốc đang dùng:</span>
-                                <span className="font-semibold text-slate-800">{selectedRelative.medicationsSummary}</span>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <span className="text-slate-400 block text-[11px]">Ghi chú chăm sóc:</span>
-                                <p className="text-slate-700 italic bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/60 text-[11px]">
-                                    "{selectedRelative.medicalNote}"
-                                </p>
-                            </div>
+                        <div className="text-slate-700">
+                            <p className="font-semibold text-slate-800 bg-white p-3 rounded-xl border border-slate-200/80 leading-relaxed text-xs">
+                                {selectedRelative.medicalHistory || "Chưa ghi nhận tiền sử bệnh lý."}
+                            </p>
                         </div>
                     </div>
 
-                    {/* 3. Phụ trách chuyên môn */}
-                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100">
-                        <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    {/* 3. Ghi chú & Dặn dò điều dưỡng */}
+                    <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 space-y-2">
+                        <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-teal-600" />
-                            3. Điều dưỡng CareLink phụ trách
+                            3. Ghi chú đặc biệt cho Điều dưỡng
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
-                            <div>
-                                <span className="text-slate-400 block text-[11px]">Điều dưỡng phụ trách:</span>
-                                <strong className="text-slate-900">{selectedRelative.assignedCaregiver}</strong>
-                            </div>
-                            <div>
-                                <span className="text-slate-400 block text-[11px]">Ca chăm sóc gần nhất:</span>
-                                <span>{selectedRelative.lastVisit}</span>
-                            </div>
-                        </div>
+                        <p className="text-slate-700 italic bg-amber-50/80 p-3 rounded-xl border border-amber-200/70 text-xs leading-relaxed">
+                            {selectedRelative.specialNotes || "Không có ghi chú đặc biệt."}
+                        </p>
                     </div>
                 </div>
 
@@ -124,16 +107,17 @@ export function RelativeDetailModal({ selectedRelative, onClose, onEdit }) {
                         onClick={() => onEdit(selectedRelative)}
                         className="px-4 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
                     >
-                        Chỉnh sửa thông tin
+                        Chỉnh sửa hồ sơ
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 2. MODAL THÊM / CHỈNH SỬA THÔNG TIN NGƯỜI THÂN
+// 2. MODAL THÊM / CHỈNH SỬA THÔNG TIN NGƯỜI THÂN (Khớp 100% Swagger API)
 // ══════════════════════════════════════════════════════════════════════
 export function RelativeFormModal({
     isOpen,
@@ -146,21 +130,21 @@ export function RelativeFormModal({
 }) {
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-page-enter">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div>
                         <div className="flex items-center gap-2">
                             <h3 className="text-lg font-bold text-slate-900">
-                                {editingRelative ? "Chỉnh sửa thông tin người thân" : "Thêm người thân mới"}
+                                {editingRelative ? "Chỉnh sửa hồ sơ người thân" : "Thêm người thân mới"}
                             </h3>
                             <span className="px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 text-[11px] font-semibold">
-                                Vai trò: Gia đình
+                                Chuẩn API CareLink
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Gia đình quản lý thông tin hành chính, liên hệ và ghi chú dặn dò sinh hoạt.
+                            Cập nhật thông tin hành chính, địa chỉ và tiền sử y tế để điều dưỡng chăm sóc chu đáo nhất.
                         </p>
                     </div>
                     <button
@@ -175,44 +159,29 @@ export function RelativeFormModal({
                 </div>
 
                 <form onSubmit={onSave} className="space-y-4 text-xs">
-                    {/* KHỐI 1: THÔNG TIN GIA ĐÌNH CÓ TOÀN QUYỀN CHỈNH SỬA */}
+                    {/* KHỐI 1: THÔNG TIN HÀNH CHÍNH */}
                     <div className="space-y-3">
-                        <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block border-b border-slate-100 pb-1 flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-1 flex items-center gap-1.5">
                             <svg className="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                             </svg>
-                            Thông tin hành chính & Gia đình
+                            1. Thông tin người nhận chăm sóc
                         </span>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
+                            <div className="sm:col-span-2">
                                 <label className="block text-slate-700 font-semibold mb-1">
                                     Họ và tên người thân <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     required
+                                    maxLength={100}
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="Ví dụ: Bà Nguyễn Thị Lan"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800 text-xs"
                                 />
-                            </div>
-
-                            <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Mối quan hệ</label>
-                                <select
-                                    value={formData.relation}
-                                    onChange={(e) => setFormData({ ...formData, relation: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 cursor-pointer text-slate-800"
-                                >
-                                    <option value="Mẹ">Mẹ</option>
-                                    <option value="Bố">Bố</option>
-                                    <option value="Ông">Ông</option>
-                                    <option value="Bà">Bà</option>
-                                    <option value="Vợ/Chồng">Vợ/Chồng</option>
-                                    <option value="Khác">Người thân khác</option>
-                                </select>
                             </div>
 
                             <div>
@@ -220,94 +189,76 @@ export function RelativeFormModal({
                                 <select
                                     value={formData.gender}
                                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 cursor-pointer text-slate-800"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 cursor-pointer text-slate-800 text-xs"
                                 >
                                     <option value="Nữ">Nữ</option>
                                     <option value="Nam">Nam</option>
+                                    <option value="Khác">Khác</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Nhóm máu</label>
-                                <select
-                                    value={formData.bloodType}
-                                    onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 cursor-pointer text-slate-800"
-                                >
-                                    <option value="O+">O+</option>
-                                    <option value="A+">A+</option>
-                                    <option value="B+">B+</option>
-                                    <option value="AB+">AB+</option>
-                                    <option value="O-">O-</option>
-                                </select>
+                                <label className="block text-slate-700 font-semibold mb-1">Ngày sinh</label>
+                                <input
+                                    type="date"
+                                    value={formData.birthDate || ""}
+                                    onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800 text-xs"
+                                />
                             </div>
 
                             <div className="sm:col-span-2">
-                                <label className="block text-slate-700 font-semibold mb-1">Số điện thoại liên hệ</label>
+                                <label className="block text-slate-700 font-semibold mb-1">
+                                    Địa chỉ nhận chăm sóc / Thường trú
+                                </label>
                                 <input
-                                    type="tel"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    placeholder="Số điện thoại của người thân hoặc người giám hộ"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800"
+                                    type="text"
+                                    maxLength={255}
+                                    value={formData.address || ""}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    placeholder="Ví dụ: 123 Nguyễn Gia Trí, Phường 25, Quận Bình Thạnh, TP.HCM"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800 text-xs"
                                 />
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                    Địa chỉ này sẽ dùng làm vị trí mặc định khi gia đình đặt ca cho người thân.
+                                </p>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* KHỐI 2: TIỀN SỬ BỆNH LÝ & GHI CHÚ ĐẶC BIỆT */}
+                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                        <span className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-1 flex items-center gap-1.5">
+                            <svg className="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                            2. Tình trạng sức khỏe & Ghi chú y tế
+                        </span>
+
+                        <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                                Tiền sử bệnh lý & Chẩn đoán hiện tại (Medical History)
+                            </label>
+                            <textarea
+                                rows={3}
+                                value={formData.medicalHistory || ""}
+                                onChange={(e) => setFormData({ ...formData, medicalHistory: e.target.value })}
+                                placeholder="Ví dụ: Hậu phẫu phục hồi khớp gối, cao huyết áp độ 1, tiền sử dị ứng kháng sinh penicillin..."
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800 text-xs"
+                            />
                         </div>
 
                         <div>
                             <label className="block text-slate-700 font-semibold mb-1">
-                                Ghi chú & Dặn dò của gia đình gửi Điều dưỡng
+                                Ghi chú đặc biệt & Dặn dò điều dưỡng (Special Notes)
                             </label>
                             <textarea
                                 rows={2}
-                                value={formData.medicalNote}
-                                onChange={(e) => setFormData({ ...formData, medicalNote: e.target.value })}
-                                placeholder="Ví dụ: Hạn chế ăn mặn, cần hỗ trợ tập co duỗi khớp gối 20 phút mỗi buổi sáng, cụ thích đi dạo nhẹ trong nhà..."
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800"
+                                value={formData.specialNotes || ""}
+                                onChange={(e) => setFormData({ ...formData, specialNotes: e.target.value })}
+                                placeholder="Ví dụ: Cần hỗ trợ tập co duỗi khớp gối 20 phút mỗi buổi sáng, hạn chế ăn mặn, cụ thích đi dạo nhẹ trong sân..."
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 text-slate-800 text-xs"
                             />
-                        </div>
-                    </div>
-
-                    {/* KHỐI 2: HỒ SƠ Y KHOA CHUYÊN MÔN (READ-ONLY DO ĐIỀU DƯỠNG QUẢN LÝ) */}
-                    <div className="p-3.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                                </svg>
-                                Hồ sơ y khoa chuyên môn (Được quản lý bởi Điều dưỡng)
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium italic">Chỉ xem (Read-only)</span>
-                        </div>
-
-                        <div>
-                            <label className="block text-slate-500 font-medium mb-1 text-[11px]">
-                                Tình trạng sức khỏe & Chẩn đoán lâm sàng:
-                            </label>
-                            <div className="px-3 py-2 bg-slate-100/90 border border-slate-200 rounded-xl text-slate-700 font-medium select-none">
-                                {formData.healthCondition || "Chưa ghi nhận"}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-slate-500 font-medium mb-1 text-[11px]">
-                                Thuốc đang dùng theo phác đồ bác sĩ:
-                            </label>
-                            <div className="px-3 py-2 bg-slate-100/90 border border-slate-200 rounded-xl text-slate-700 font-medium select-none">
-                                {formData.medicationsSummary || "Theo chỉ định"}
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-2 pt-1 text-[11px] text-slate-500">
-                            <svg className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                            </svg>
-                            <p>
-                                Để đảm bảo tính chuẩn xác và an toàn y tế, đơn thuốc và bệnh lý chỉ được xác nhận bởi Điều dưỡng phụ trách. Nếu người thân có toa thuốc mới từ bệnh viện, vui lòng{" "}
-                                <Link to="/chat" className="text-teal-700 font-bold hover:underline">
-                                    gửi ảnh toa thuốc tại đây →
-                                </Link>
-                            </p>
                         </div>
                     </div>
 
@@ -336,16 +287,17 @@ export function RelativeFormModal({
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
-// ════════════════════════════════════════════════════════════════════
-// 3. MODAL XÁC NHẬN XÓA HỔ SƠ NGƯỜI THÂN
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════
+// 3. MODAL XÁC NHẬN XÓA HỒ SƠ NGƯỜI THÂN
+// ══════════════════════════════════════════════════════════════════════
 export function DeleteConfirmModal({ name, deleting, onConfirm, onCancel }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
@@ -390,6 +342,7 @@ export function DeleteConfirmModal({ name, deleting, onConfirm, onCancel }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

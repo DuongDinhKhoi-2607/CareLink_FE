@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import familyApi from "../../../api/familyApi";
+import conversationApi from "../../../api/conversationApi";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -11,15 +12,8 @@ const verificationItems = [
     "Hồ sơ đã xác minh",
 ];
 
-// Chi tiết hồ sơ nhanh
-const profileDetails = [
-    { text: "4.9 (128 đánh giá)", isRating: true },
-    { text: "Bình Thạnh, TP. HCM", isRating: false },
-    { text: "3 năm kinh nghiệm", isRating: false },
-];
-
-// Danh sách kỹ năng
-const skills = [
+// Danh sách kỹ năng mặc định nếu chưa cập nhật
+const defaultSkills = [
     "Tiêm truyền",
     "Thay băng",
     "Chăm sóc người già",
@@ -109,22 +103,34 @@ export default function CaregiverProfile() {
     const navigate = useNavigate();
     const location = useLocation();
     const caregiver = location?.state?.caregiver;
+    const searchParams = new URLSearchParams(location.search);
+    const queryNurseId = searchParams.get("id") || searchParams.get("nurseId");
+    const nurseId = caregiver?.id || caregiver?.nurseId || queryNurseId || null;
 
     const [saved, setSaved] = useState(false);
     const [contacted, setContacted] = useState(false);
 
     // Fallback ảnh online chất lượng cao, bền vững (dùng chung avatar ĐD. Nguyễn Thùy Linh)
-    const avatarUrl = caregiver?.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
-    const displayName = caregiver?.name || "Nguyễn Thùy Linh";
-    const displayRole = caregiver?.role || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
+    const avatarUrl = caregiver?.image || caregiver?.avatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
+    const displayName = caregiver?.name || caregiver?.fullName || "Nguyễn Thùy Linh";
+    const displayRole = caregiver?.role || caregiver?.title || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
 
-    const handleContact = () => {
+    const handleContact = async () => {
         setContacted(true);
+        if (nurseId) {
+            try {
+                const res = await conversationApi.getOrCreateConversation({ caregiverId: nurseId });
+                const convId = res?.id || res?.data?.id;
+                if (convId) {
+                    navigate("/dashboard/messages", { state: { conversationId: convId, caregiver } });
+                    return;
+                }
+            } catch (err) {
+                console.warn("[CareLink] Chưa mở được hội thoại API, chuyển sang giao diện chat:", err);
+            }
+        }
         navigate("/chat", { state: { caregiver } });
     };
-
-    // ── Trích xuất nurseId từ state hoặc params
-    const nurseId = caregiver?.id || caregiver?.nurseId || null;
 
     // ── STATE: Đánh giá & Tổng quan
     const [reviews, setReviews] = useState([]);
@@ -145,10 +151,19 @@ export default function CaregiverProfile() {
             });
             const items = res?.items || res?.data?.items || (Array.isArray(res) ? res : []);
             const totalCount = res?.totalCount || res?.data?.totalCount || items.length;
+            const mappedItems = items.map((r, i) => ({
+                id: r.id || i,
+                name: r.reviewerName || "Khách hàng CareLink",
+                initials: (r.reviewerName ? r.reviewerName.charAt(0) : "K").toUpperCase(),
+                date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                rating: Math.round(Number(r.overallRating || 5)),
+                text: r.comment || "Dịch vụ tận tâm, chăm sóc chu đáo.",
+                color: i % 2 === 0 ? "bg-[#102030]" : "bg-[#00677c]",
+            }));
             if (page === 1) {
-                setReviews(items);
+                setReviews(mappedItems);
             } else {
-                setReviews((prev) => [...prev, ...items]);
+                setReviews((prev) => [...prev, ...mappedItems]);
             }
             setReviewsHasMore(page * REVIEWS_PAGE_SIZE < totalCount);
             setReviewsPage(page);
@@ -236,7 +251,20 @@ export default function CaregiverProfile() {
 
                                     {/* Pills thông tin rating, địa chỉ, kinh nghiệm */}
                                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-2">
-                                        {profileDetails.map((item, idx) => (
+                                        {[
+                                            {
+                                                text: `${Number(reviewSummary?.averageRating ?? caregiver?.averageRating ?? caregiver?.rating ?? 4.9).toFixed(1)} (${reviewSummary?.totalReviews ?? caregiver?.totalReviews ?? caregiver?.reviewsCount ?? 128} đánh giá)`,
+                                                isRating: true,
+                                            },
+                                            {
+                                                text: caregiver?.workDistrict || caregiver?.district || "Bình Thạnh, TP. HCM",
+                                                isRating: false,
+                                            },
+                                            {
+                                                text: caregiver?.experienceYears ? `${caregiver.experienceYears} năm kinh nghiệm` : "3 năm kinh nghiệm",
+                                                isRating: false,
+                                            },
+                                        ].map((item, idx) => (
                                             <div
                                                 key={idx}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs font-semibold text-slate-700"
@@ -294,14 +322,17 @@ export default function CaregiverProfile() {
                                     Kỹ năng chuyên môn
                                 </h3>
                                 <div className="flex flex-wrap gap-2.5">
-                                    {skills.map((skill) => (
-                                        <span
-                                            key={skill}
-                                            className="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200/70 transition-colors"
-                                        >
-                                            {skill}
-                                        </span>
-                                    ))}
+                                    {((Array.isArray(caregiver?.skills) && caregiver.skills.length > 0) ? caregiver.skills : defaultSkills).map((skill) => {
+                                        const skillName = typeof skill === "string" ? skill : (skill?.name || String(skill));
+                                        return (
+                                            <span
+                                                key={skillName}
+                                                className="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200/70 transition-colors"
+                                            >
+                                                {skillName}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -424,7 +455,9 @@ export default function CaregiverProfile() {
                                     Chi phí dịch vụ
                                 </span>
                                 <div className="flex items-baseline gap-1.5">
-                                    <span className="text-3xl font-extrabold text-[#102030]">180.000đ</span>
+                                    <span className="text-3xl font-extrabold text-[#102030]">
+                                        {Number(caregiver?.hourlyRate || caregiver?.price || 180000).toLocaleString("vi-VN")}đ
+                                    </span>
                                     <span className="text-xs font-semibold text-slate-400">/ giờ</span>
                                 </div>
                             </div>

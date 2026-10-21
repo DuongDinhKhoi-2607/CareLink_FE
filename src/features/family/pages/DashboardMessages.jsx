@@ -1,163 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import conversationApi from "../../../api/conversationApi";
 import CreateProposalModal from "../components/CreateProposalModal";
-
-// Dữ liệu danh sách các cuộc trò chuyện trong Dashboard
-const initialConversations = [
-    {
-        id: "caregiver-1",
-        name: "ĐD. Nguyễn Thùy Linh",
-        role: "Cử nhân Y4 • ĐH Y Dược TP.HCM",
-        // Dùng chung ảnh online với trang Báo cáo sức khỏe & Dashboard
-        avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-        online: true,
-        type: "active", // Đang trong ca chăm sóc
-        careTarget: "Bà Nguyễn Thị Lan (75 tuổi) • Mẹ anh An",
-        shiftInfo: "Ca hôm nay: 08:00 - 10:00 (Đang diễn ra)",
-        serviceName: "Chăm sóc phục hồi sau phẫu thuật",
-        address: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP. HCM",
-        unreadCount: 1,
-        lastMessage: "Dạ em vừa hoàn thành đo các chỉ số sinh hiệu cho bà Lan...",
-        lastTime: "10:14",
-        vitals: {
-            bp: "125/80 mmHg",
-            heartRate: "74 bpm",
-            temp: "36.8 °C",
-            spo2: "98%",
-            updatedAt: "10:10 hôm nay",
-            status: "Ổn định",
-        },
-    },
-    {
-        id: "caregiver-2",
-        name: "KTV. Trần Quốc Tuấn",
-        role: "Kỹ thuật viên PHCN • BV Chợ Rẫy",
-        avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400",
-        online: false,
-        type: "upcoming", // Lịch tiếp theo
-        careTarget: "Bà Nguyễn Thị Lan (75 tuổi) • Mẹ anh An",
-        shiftInfo: "Ca tiếp theo: Chiều mai, 14:00 - 16:00",
-        serviceName: "Vật lý trị liệu & Vận động khớp gối",
-        address: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP. HCM",
-        unreadCount: 0,
-        lastMessage: "Chào anh An, chiều mai 14h em qua hướng dẫn bà tập vận động nhẹ nhé.",
-        lastTime: "Hôm qua",
-        vitals: null,
-    },
-    {
-        id: "support-carelink",
-        name: "Trung Tâm Y Tế CareLink 24/7",
-        role: "Đội ngũ Bác sĩ Trực ban & CSKH",
-        avatar: "/carelink-logo.png",
-        isCareLinkBot: true,
-        online: true,
-        type: "support", // Kênh hỗ trợ
-        careTarget: "Hỗ trợ thành viên Gia đình Bác An",
-        shiftInfo: "Hỗ trợ y tế khẩn cấp 24/7",
-        serviceName: "Tư vấn & Điều phối khẩn cấp",
-        address: "Hỗ trợ trực tuyến TP. Hồ Chí Minh",
-        unreadCount: 0,
-        lastMessage: "Hệ thống đã cập nhật Báo cáo sức khỏe mới nhất của Bà Lan.",
-        lastTime: "23/09",
-        vitals: null,
-    },
-];
-
-// Lịch sử tin nhắn khởi tạo cho từng hội thoại (Chào anh An theo hồ sơ Family)
-const initialMessagesMap = {
-    "caregiver-1": [
-        {
-            id: 1,
-            sender: "caregiver",
-            text: "Chào anh An, em đã có mặt tại nhà và đang chuẩn bị hỗ trợ bà vệ sinh cá nhân buổi sáng ạ.",
-            time: "08:00 AM",
-            type: "text",
-        },
-        {
-            id: 2,
-            sender: "family",
-            text: "Cảm ơn em nhiều nhé! Sáng nay bà có than đau mỏi khớp gối nhiều không em?",
-            time: "08:05 AM",
-            type: "text",
-        },
-        {
-            id: 3,
-            sender: "caregiver",
-            text: "Dạ bà bảo khớp gối đỡ sưng hơn hôm qua nhiều rồi anh ạ. Em vừa hỗ trợ bà co duỗi nhẹ nhàng 15 phút tại giường rất tốt.",
-            time: "08:12 AM",
-            type: "text",
-        },
-        {
-            id: 4,
-            sender: "family",
-            text: "May quá! Anh có để sẵn hộp sữa chua với thuốc huyết áp sau ăn ở tủ thứ 2, em nhắc bà giúp anh với nhé.",
-            time: "08:25 AM",
-            type: "text",
-        },
-        {
-            id: 5,
-            sender: "caregiver",
-            text: "Dạ vâng, bà đã dùng bữa nhẹ và uống thuốc đầy đủ theo toa rồi anh yên tâm nha!",
-            time: "08:40 AM",
-            type: "text",
-        },
-        {
-            id: 6,
-            sender: "caregiver",
-            text: "Em vừa hoàn thành kiểm tra các chỉ số sinh hiệu cho bà Lan lúc 10:10. Em gửi kết quả cập nhật trực tiếp vào hệ thống nhé:",
-            time: "10:14 AM",
-            type: "vital_card",
-            vitals: {
-                bp: "125/80 mmHg",
-                heartRate: "74 bpm",
-                temp: "36.8 °C",
-                spo2: "98%",
-                note: "Vết mổ khô ráo, không sưng đỏ. Tinh thần bà minh mẫn, vui vẻ.",
-            },
-        },
-        {
-            id: 7,
-            sender: "caregiver",
-            text: "Anh kiểm tra xem gia đình có cần em dặn dò thêm gì trước khi kết thúc ca trực 10:00 không ạ?",
-            time: "10:15 AM",
-            type: "text",
-        },
-    ],
-    "caregiver-2": [
-        {
-            id: 101,
-            sender: "family",
-            text: "Chào em Tuấn, lịch chiều mai 14h của bà Lan nhà anh em vẫn qua đúng giờ được chứ?",
-            time: "09:30 AM",
-            type: "text",
-        },
-        {
-            id: 102,
-            sender: "caregiver",
-            text: "Chào anh An, chiều mai 14h em qua hướng dẫn bà tập vận động nhẹ nhé. Em sẽ mang theo bóng tập và đai hỗ trợ gối ạ.",
-            time: "10:00 AM",
-            type: "text",
-        },
-    ],
-    "support-carelink": [
-        {
-            id: 201,
-            sender: "caregiver",
-            text: "Kính chào anh Nguyễn Văn An! CareLink sẵn sàng hỗ trợ điều phối điều dưỡng khẩn cấp và giải đáp mọi vấn đề kỹ thuật 24/7.",
-            time: "07:00 AM",
-            type: "text",
-        },
-        {
-            id: 202,
-            sender: "caregiver",
-            text: "Hệ thống đã tự động đồng bộ Báo cáo sức khỏe mới nhất của Bà Nguyễn Thị Lan từ Điều dưỡng Nguyễn Thùy Linh. Quý gia đình có thể theo dõi trực tiếp tại mục Báo cáo sức khỏe.",
-            time: "10:15 AM",
-            type: "text",
-        },
-    ],
-};
 
 // Gợi ý tin nhắn y tế nhanh 1 chạm (Quick Smart Chips)
 const quickReplies = [
@@ -168,9 +13,9 @@ const quickReplies = [
 ];
 
 export default function DashboardMessages() {
-    const [conversations, setConversations] = useState(initialConversations);
-    const [activeChatId, setActiveChatId] = useState("caregiver-1");
-    const [messagesMap, setMessagesMap] = useState(initialMessagesMap);
+    const [conversations, setConversations] = useState([]);
+    const [activeChatId, setActiveChatId] = useState(null);
+    const [messagesMap, setMessagesMap] = useState({});
     const [inputText, setInputText] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState("all");
@@ -186,139 +31,95 @@ export default function DashboardMessages() {
         setTimeout(() => setToastMessage(null), 4000);
     };
 
-    const handleProposalCreated = (newProposal) => {
-        showToast("Đã gửi đề xuất ca chăm sóc thành công! Đang chờ điều dưỡng phản hồi.");
-        
-        // Luôn hiển thị ngay thẻ đề xuất vào hội thoại chat
-        const proposalMsg = {
-            id: Date.now(),
-            sender: "family",
-            text: `Khách hàng đã gửi đề xuất ca chăm sóc #${newProposal?.proposalNumber || 1}: ${newProposal?.serviceName || "Chăm sóc theo yêu cầu"} (${new Date(newProposal?.scheduledStart || Date.now()).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}) - ${Number(newProposal?.totalPrice || 350000).toLocaleString("vi-VN")}đ`,
-            time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-            type: "proposal_card",
-            proposalId: newProposal?.id,
-            bookingId: newProposal?.bookingId || null,
-        };
-        setMessagesMap((prev) => ({
-            ...prev,
-            [activeChatId]: [...(prev[activeChatId] || []), proposalMsg],
-        }));
-        setTimeout(() => scrollToBottom("smooth"), 100);
-
-        if (activeConv?.isRealApi && activeChatId) {
-            conversationApi
-                .getMessages(activeChatId, { PageNumber: 1, PageSize: 50 })
-                .then((res) => {
-                    const items = res?.items || (Array.isArray(res) ? res : []);
-                    if (items.length > 0) {
-                        const mappedMsgs = items.map((m) => ({
-                            id: m.id,
-                            sender: m.isMine ? "family" : "caregiver",
-                            text: m.content,
-                            time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-                            type: m.type === 2 ? "proposal_card" : "text",
-                            proposalId: m.proposalId,
-                            bookingId: m.bookingId,
-                        }));
-                        setMessagesMap((prev) => ({
-                            ...prev,
-                            [activeChatId]: mappedMsgs,
-                        }));
-                    }
-                })
-                .catch(() => {});
+    // 1. Tải danh sách hội thoại thực từ Backend API (GET /api/v1/conversations) kèm Polling 3.5s
+    const fetchConversations = useCallback(async (isInitial = false) => {
+        try {
+            const res = await conversationApi.getConversations({ PageNumber: 1, PageSize: 50 });
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            if (items.length > 0) {
+                const mapped = items.map((c) => ({
+                    id: c.id,
+                    name: c.otherPartyName || c.nurseName || "Điều dưỡng",
+                    role: c.otherPartyRole === "Nurse" ? "Điều dưỡng chuyên nghiệp" : "Thành viên gia đình",
+                    avatar: c.otherPartyAvatar || c.nurseAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+                    online: true,
+                    type: "active",
+                    careTarget: "Trao đổi kế hoạch chăm sóc",
+                    shiftInfo: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleDateString("vi-VN") : "Hội thoại mới",
+                    serviceName: "Dịch vụ điều dưỡng CareLink",
+                    address: "TP. Hồ Chí Minh",
+                    unreadCount: 0,
+                    lastMessage: c.lastMessageContent || "Chưa có tin nhắn mới",
+                    lastTime: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "",
+                    vitals: null,
+                    isRealApi: true,
+                }));
+                setConversations(mapped);
+                setActiveChatId((prev) => (prev && mapped.some((m) => m.id === prev) ? prev : mapped[0].id));
+            } else {
+                setConversations([]);
+                if (isInitial) setActiveChatId(null);
+            }
+        } catch (err) {
+            console.warn("[CareLink] Lỗi tải hội thoại:", err);
+            if (isInitial) {
+                setConversations([]);
+                setActiveChatId(null);
+            }
         }
-    };
-
-    // 1. Tải danh sách hội thoại thực từ Backend API (GET /api/v1/conversations)
-    useEffect(() => {
-        let isMounted = true;
-        conversationApi
-            .getConversations({ PageNumber: 1, PageSize: 50 })
-            .then((res) => {
-                if (!isMounted) return;
-                const items = res?.items || (Array.isArray(res) ? res : []);
-                if (items.length > 0) {
-                    const mapped = items.map((c) => ({
-                        id: c.id,
-                        name: c.otherPartyName || c.nurseName,
-                        role: c.otherPartyRole === "Nurse" ? "Điều dưỡng chuyên nghiệp" : "Thành viên gia đình",
-                        avatar: c.otherPartyAvatar || c.nurseAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-                        online: true,
-                        type: "active",
-                        careTarget: "Trao đổi kế hoạch chăm sóc",
-                        shiftInfo: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleDateString("vi-VN") : "Hội thoại mới",
-                        serviceName: "Dịch vụ điều dưỡng CareLink",
-                        address: "TP. Hồ Chí Minh",
-                        unreadCount: 0,
-                        lastMessage: c.lastMessageContent || "Chưa có tin nhắn mới",
-                        lastTime: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "",
-                        vitals: null,
-                        isRealApi: true,
-                    }));
-                    setConversations(mapped);
-                    setActiveChatId(mapped[0].id);
-                } else {
-                    // API thành công nhưng danh sách rỗng -> hiển thị empty state, không thay bằng mock
-                    setConversations([]);
-                    setActiveChatId(null);
-                }
-            })
-            .catch((err) => {
-                const status = err.response?.status;
-                if (status === 401 || status === 403) {
-                    // Lỗi phân quyền hoặc hết phiên -> không dùng mock che giấu
-                    setConversations([]);
-                    setActiveChatId(null);
-                } else if (!err.response || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK") {
-                    // Chỉ dùng mock fallback khi mất kết nối mạng / server offline
-                    setConversations(initialConversations);
-                    setActiveChatId(initialConversations[0]?.id || null);
-                } else {
-                    // Lỗi 400/404/500 từ máy chủ
-                    setConversations([]);
-                    setActiveChatId(null);
-                }
-            });
-        return () => {
-            isMounted = false;
-        };
     }, []);
 
-    const messagesContainerRef = useRef(null);
-    const activeConv = conversations.find((c) => c.id === activeChatId) || conversations[0];
-    const currentMessages = messagesMap[activeChatId] || [];
-
-    // 2. Tải tin nhắn của hội thoại đang chọn nếu là Real API
     useEffect(() => {
-        if (!activeConv?.isRealApi || !activeChatId) return;
-        let isMounted = true;
-        conversationApi
-            .getMessages(activeChatId, { PageNumber: 1, PageSize: 50 })
-            .then((res) => {
-                if (!isMounted) return;
-                const items = res?.items || (Array.isArray(res) ? res : []);
-                const mappedMsgs = items.map((m) => ({
-                    id: m.id,
-                    sender: m.isMine ? "family" : "caregiver",
-                    text: m.content,
-                    time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-                    type: m.type === 2 ? "proposal_card" : "text",
-                    proposalId: m.proposalId,
-                    bookingId: m.bookingId,
-                }));
-                setMessagesMap((prev) => ({
-                    ...prev,
-                    [activeChatId]: mappedMsgs,
-                }));
-            })
-            .catch((err) => {
-                console.warn("[CareLink] Tải tin nhắn thất bại:", err);
-            });
-        return () => {
-            isMounted = false;
-        };
-    }, [activeChatId, activeConv?.isRealApi]);
+        fetchConversations(true);
+        const interval = setInterval(() => {
+            fetchConversations(false);
+        }, 3500);
+        return () => clearInterval(interval);
+    }, [fetchConversations]);
+
+    // 2. Tải & Polling tin nhắn của hội thoại đang chọn
+    const fetchMessages = useCallback(async (convId) => {
+        if (!convId) return;
+        try {
+            const res = await conversationApi.getMessages(convId, { PageNumber: 1, PageSize: 50 });
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            const mappedMsgs = items.map((m) => ({
+                id: m.id,
+                sender: m.isMine ? "family" : "caregiver",
+                text: m.content,
+                time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                type: m.type === 2 ? "proposal_card" : "text",
+                proposalId: m.proposalId,
+                bookingId: m.bookingId,
+            }));
+            setMessagesMap((prev) => ({
+                ...prev,
+                [convId]: mappedMsgs,
+            }));
+        } catch (err) {
+            console.warn("[CareLink] Lỗi tải tin nhắn:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!activeChatId) return;
+        fetchMessages(activeChatId);
+        const msgInterval = setInterval(() => {
+            fetchMessages(activeChatId);
+        }, 3500);
+        return () => clearInterval(msgInterval);
+    }, [activeChatId, fetchMessages]);
+
+    const handleProposalCreated = (newProposal) => {
+        showToast("Đã gửi đề xuất ca chăm sóc thành công! Đang chờ điều dưỡng phản hồi.");
+        if (activeChatId) {
+            fetchMessages(activeChatId);
+            fetchConversations(false);
+        }
+    };
+    const messagesContainerRef = useRef(null);
+    const activeConv = conversations.find((c) => c.id === activeChatId) || conversations[0] || null;
+    const currentMessages = messagesMap[activeChatId] || [];
 
     // Luôn giữ ở đầu trang khi mới vào trang chat hoặc khi chuyển đổi hội thoại
     useEffect(() => {
@@ -354,99 +155,34 @@ export default function DashboardMessages() {
     // Xử lý gửi tin nhắn
     const handleSendMessage = async (textToSend) => {
         const text = (textToSend || inputText).trim();
-        if (!text || isSending) return;
+        if (!text || isSending || !activeChatId) return;
 
-        if (activeConv?.isRealApi) {
-            setIsSending(true);
-            try {
-                const res = await conversationApi.sendMessage(activeChatId, { content: text });
-                const newMsg = {
-                    id: res.id || Date.now(),
-                    sender: "family",
-                    text: res.content || text,
-                    time: new Date(res.createdAt || Date.now()).toLocaleTimeString("vi-VN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    }),
-                    type: "text",
-                };
-                setMessagesMap((prev) => ({
-                    ...prev,
-                    [activeChatId]: [...(prev[activeChatId] || []), newMsg],
-                }));
-                setInputText("");
-                setTimeout(() => scrollToBottom("smooth"), 50);
-            } catch (err) {
-                console.error("[CareLink] Gửi tin nhắn thất bại:", err);
-                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi tin nhắn. Vui lòng thử lại.";
-                showToast(msg);
-            } finally {
-                setIsSending(false);
-            }
-            return;
-        }
-
-        // Chế độ dự phòng demo
-        const newMsgId = Date.now();
-        const nowTime = new Date().toLocaleTimeString("vi-VN", {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-
-        const newMsg = {
-            id: newMsgId,
-            sender: "family",
-            text: text,
-            time: nowTime,
-            type: "text",
-        };
-
-        setMessagesMap((prev) => ({
-            ...prev,
-            [activeChatId]: [...(prev[activeChatId] || []), newMsg],
-        }));
-
-        setInputText("");
-        setTimeout(() => scrollToBottom("smooth"), 50);
-
-        // Giả lập Điều dưỡng hoặc Bot tự động trả lời chân thực (Auto-reply Simulation)
-        if (activeChatId === "caregiver-1" || activeChatId === "support-carelink") {
-            setTimeout(() => {
-                setIsTyping(true);
-                setTimeout(() => scrollToBottom("smooth"), 50);
-            }, 800);
-
-            setTimeout(() => {
-                setIsTyping(false);
-                let replyContent = "Dạ vâng, em đã ghi nhận thông tin dặn dò của anh An ạ. Em đang theo dõi sát tình trạng của bà, anh cứ yên tâm nhé!";
-
-                if (text.includes("ăn uống") || text.includes("ngon miệng")) {
-                    replyContent = "Dạ sáng nay bà ăn được hơn nửa bát cháo yến mạch và 1 hũ sữa chua, tinh thần rất vui vẻ anh nhé!";
-                } else if (text.includes("thuốc")) {
-                    replyContent = "Dạ vâng, bà đã uống đúng 2 viên thuốc huyết áp và 1 viên kháng viêm sau bữa ăn lúc 08:35 rồi ạ.";
-                } else if (text.includes("vết mổ") || text.includes("băng")) {
-                    replyContent = "Dạ vết mổ liền miệng rất đẹp, dịch không rỉ ra băng, em đã sát khuẩn và thay gạc mới vô trùng cho bà rồi ạ.";
-                } else if (activeChatId === "support-carelink") {
-                    replyContent = "Tổng đài CSKH CareLink đã tiếp nhận yêu cầu từ anh An. Chuyên viên chăm sóc khách hàng sẽ liên hệ lại ngay trong 5 phút.";
-                }
-
-                const replyMsg = {
-                    id: Date.now() + 1,
-                    sender: "caregiver",
-                    text: replyContent,
-                    time: new Date().toLocaleTimeString("vi-VN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    }),
-                    type: "text",
-                };
-
-                setMessagesMap((prev) => ({
-                    ...prev,
-                    [activeChatId]: [...(prev[activeChatId] || []), replyMsg],
-                }));
-                setTimeout(() => scrollToBottom("smooth"), 80);
-            }, 2300);
+        setIsSending(true);
+        try {
+            const res = await conversationApi.sendMessage(activeChatId, { content: text });
+            const newMsg = {
+                id: res.id || Date.now(),
+                sender: "family",
+                text: res.content || text,
+                time: new Date(res.createdAt || Date.now()).toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                }),
+                type: "text",
+            };
+            setMessagesMap((prev) => ({
+                ...prev,
+                [activeChatId]: [...(prev[activeChatId] || []), newMsg],
+            }));
+            setInputText("");
+            setTimeout(() => scrollToBottom("smooth"), 50);
+            fetchConversations(false);
+        } catch (err) {
+            console.error("[CareLink] Gửi tin nhắn thất bại:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi tin nhắn. Vui lòng thử lại.";
+            showToast(msg);
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -654,86 +390,106 @@ export default function DashboardMessages() {
 
                 {/* ═══ CỘT GIỮA: VÙNG TRÒ CHUYỆN CHÍNH ═══ */}
                 <div className={`${mobileView === "chat" ? "flex" : "hidden sm:flex"} flex-1 flex-col bg-[#f8fafc] overflow-hidden min-w-0`}>
-                    {/* Header cuộc trò chuyện đang chọn */}
-                    <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-200/80 flex items-center justify-between gap-3 shadow-2xs z-10">
-                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                            {/* Nút quay lại danh sách trên Mobile */}
-                            <button
-                                type="button"
-                                onClick={() => setMobileView("list")}
-                                className="sm:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer shrink-0"
-                                title="Quay lại danh sách hội thoại"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    {!activeConv ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#f8fafc]">
+                            <div className="w-16 h-16 rounded-2xl bg-teal-50 text-[#00677c] flex items-center justify-center mb-3">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                                 </svg>
-                            </button>
-
-                            <div className="relative shrink-0">
-                                {activeConv.isCareLinkBot ? (
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00677c] to-[#002045] flex items-center justify-center text-white shadow-2xs">
-                                        <svg className="w-5 h-5 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.18-5.72A11.956 11.956 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                        </svg>
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={activeConv.avatar}
-                                        alt={activeConv.name}
-                                        className="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100 shadow-2xs"
-                                        onError={(e) => {
-                                            e.currentTarget.onerror = null;
-                                            e.currentTarget.src = "/images/caregiver_avatar.svg";
-                                        }}
-                                    />
-                                )}
-                                {activeConv.online && (
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
-                                )}
                             </div>
-
-                            <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-sm sm:text-base font-extrabold text-[#002045] truncate">
-                                        {activeConv.name}
-                                    </h2>
-                                    <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200/50">
-                                        ✓ Đã xác thực y tế
-                                    </span>
-                                </div>
-                                <span className="text-[11.5px] text-slate-500 truncate flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    {activeConv.shiftInfo}
-                                </span>
-                            </div>
+                            <h3 className="text-base font-bold text-slate-800">Chưa có cuộc trò chuyện nào</h3>
+                            <p className="text-xs text-slate-500 max-w-sm mt-1">
+                                Kênh trao đổi với Điều dưỡng sẽ xuất hiện khi bạn đặt lịch ca chăm sóc hoặc bắt đầu tư vấn.
+                            </p>
+                            <Link
+                                to="/services"
+                                className="mt-4 px-4 py-2 bg-[#00677c] hover:bg-[#005566] text-white text-xs font-semibold rounded-xl transition shadow-xs"
+                            >
+                                Khám phá dịch vụ
+                            </Link>
                         </div>
+                    ) : (
+                        <>
+                            {/* Header cuộc trò chuyện đang chọn */}
+                            <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-200/80 flex items-center justify-between gap-3 shadow-2xs z-10">
+                                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                    {/* Nút quay lại danh sách trên Mobile */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileView("list")}
+                                        className="sm:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer shrink-0"
+                                        title="Quay lại danh sách hội thoại"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                        </svg>
+                                    </button>
 
-                        {/* Các nút công cụ thao tác */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                            {/* Nút Tạo đề xuất ca chăm sóc mới */}
-                            {activeConv?.isRealApi && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowProposalModal(true)}
-                                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-[#00677c] text-white hover:from-teal-700 hover:to-[#005566] font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-                                    title="Tạo đề xuất ca chăm sóc mới gửi cho điều dưỡng"
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    <span className="hidden sm:inline">Tạo đề xuất ca</span>
-                                </button>
-                            )}
+                                    <div className="relative shrink-0">
+                                        {activeConv?.isCareLinkBot ? (
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00677c] to-[#002045] flex items-center justify-center text-white shadow-2xs">
+                                                <svg className="w-5 h-5 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.18-5.72A11.956 11.956 0 0112 2.944a11.956 11.956 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                </svg>
+                                            </div>
+                                        ) : (
+                                            <img
+                                                src={activeConv?.avatar || "/images/caregiver_avatar.svg"}
+                                                alt={activeConv?.name || "Người liên hệ"}
+                                                className="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100 shadow-2xs"
+                                                onError={(e) => {
+                                                    e.currentTarget.onerror = null;
+                                                    e.currentTarget.src = "/images/caregiver_avatar.svg";
+                                                }}
+                                            />
+                                        )}
+                                        {activeConv?.online && (
+                                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
+                                        )}
+                                    </div>
 
-                            <button
-                                type="button"
-                                onClick={() => showToast(`Đang kết nối cuộc gọi thoại với ${activeConv.name}...`)}
-                                className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:text-teal-700 hover:bg-slate-50 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                                title="Gọi thoại trực tiếp"
-                            >
-                                <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                                </svg>
-                                <span className="hidden lg:inline">Gọi điện</span>
-                            </button>
+                                    <div className="flex flex-col min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-sm sm:text-base font-extrabold text-[#002045] truncate">
+                                                {activeConv?.name || "Hội thoại"}
+                                            </h2>
+                                            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200/50">
+                                                ✓ Đã xác thực y tế
+                                            </span>
+                                        </div>
+                                        <span className="text-[11.5px] text-slate-500 truncate flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            {activeConv?.shiftInfo || "Đang kết nối"}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Các nút công cụ thao tác */}
+                                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                    {/* Nút Tạo đề xuất ca chăm sóc mới */}
+                                    {activeConv?.isRealApi && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowProposalModal(true)}
+                                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-[#00677c] text-white hover:from-teal-700 hover:to-[#005566] font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                                            title="Tạo đề xuất ca chăm sóc mới gửi cho điều dưỡng"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">Tạo đề xuất ca</span>
+                                        </button>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={() => showToast(`Đang kết nối cuộc gọi thoại với ${activeConv?.name || "điều dưỡng"}...`)}
+                                        className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:text-teal-700 hover:bg-slate-50 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                        title="Gọi thoại trực tiếp"
+                                    >
+                                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                                        </svg>
+                                        <span className="hidden lg:inline">Gọi điện</span>
+                                    </button>
 
                             {/* Nút bật/tắt ngăn thông tin ca trực kèm tooltip và trạng thái active */}
                             <button
@@ -971,7 +727,9 @@ export default function DashboardMessages() {
                             </svg>
                         </button>
                     </div>
-                </div>
+                </>
+            )}
+        </div>
 
                 {/* ═══ CỘT PHẢI (SMOOTH ANIMATED DRAWER): THÔNG TIN CA TRỰC & SỨC KHỎE ═══ */}
                 <div
@@ -1025,14 +783,14 @@ export default function DashboardMessages() {
                                     </div>
                                 </div>
                                 <div className="text-xs text-slate-600 space-y-1 pt-1 border-t border-teal-100">
-                                    <p><strong>Dịch vụ:</strong> {activeConv.serviceName}</p>
+                                    <p><strong>Dịch vụ:</strong> {activeConv?.serviceName || "Dịch vụ điều dưỡng CareLink"}</p>
                                     <p><strong>Khung giờ:</strong> 08:00 - 10:00 (Hôm nay)</p>
-                                    <p><strong>Địa chỉ:</strong> {activeConv.address}</p>
+                                    <p><strong>Địa chỉ:</strong> {activeConv?.address || "TP. Hồ Chí Minh"}</p>
                                 </div>
                             </div>
 
                             {/* Thẻ chỉ số sinh hiệu trực tiếp mới nhất */}
-                            {activeConv.vitals && (
+                            {activeConv?.vitals && (
                                 <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-bold text-[#002045]">
@@ -1044,19 +802,19 @@ export default function DashboardMessages() {
                                     <div className="space-y-2 text-xs">
                                         <div className="flex items-center justify-between py-1 border-b border-slate-100">
                                             <span className="text-slate-500">Huyết áp:</span>
-                                            <span className="font-extrabold text-teal-700">{activeConv.vitals.bp}</span>
+                                            <span className="font-extrabold text-teal-700">{activeConv.vitals?.bp}</span>
                                         </div>
                                         <div className="flex items-center justify-between py-1 border-b border-slate-100">
                                             <span className="text-slate-500">Nhịp tim:</span>
-                                            <span className="font-extrabold text-rose-600">{activeConv.vitals.heartRate}</span>
+                                            <span className="font-extrabold text-rose-600">{activeConv.vitals?.heartRate}</span>
                                         </div>
                                         <div className="flex items-center justify-between py-1 border-b border-slate-100">
                                             <span className="text-slate-500">Thân nhiệt:</span>
-                                            <span className="font-extrabold text-amber-600">{activeConv.vitals.temp}</span>
+                                            <span className="font-extrabold text-amber-600">{activeConv.vitals?.temp}</span>
                                         </div>
                                         <div className="flex items-center justify-between py-1">
                                             <span className="text-slate-500">Nồng độ SpO2:</span>
-                                            <span className="font-extrabold text-blue-600">{activeConv.vitals.spo2}</span>
+                                            <span className="font-extrabold text-blue-600">{activeConv.vitals?.spo2}</span>
                                         </div>
                                     </div>
 
