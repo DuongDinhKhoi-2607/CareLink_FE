@@ -50,7 +50,11 @@ export default function CaregiverBookingDetailPanel({
             <aside
                 className={`${
                     mobileSection !== "details" ? "hidden lg:flex" : "flex"
-                } min-h-0 flex-col gap-4 lg:col-span-12 xl:col-span-3`}
+                } h-full min-h-0 flex-col gap-4 overflow-y-auto pr-0.5 lg:col-span-12 xl:col-span-3`}
+                style={{
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(8,116,135,0.25) transparent",
+                }}
             >
                 {/* Booking card */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">

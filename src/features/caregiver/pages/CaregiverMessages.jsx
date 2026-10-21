@@ -417,6 +417,7 @@ export default function CaregiverMessages() {
                     id: m.id,
                     sender: m.isMine ? "caregiver" : "family",
                     text: m.content,
+                    createdAt: m.createdAt,
                     time: `${pad(mDate.getHours())}:${pad(mDate.getMinutes())}`,
                     type: m.type === 2 ? "proposal_card" : "text",
                     proposalId: m.proposalId,
@@ -622,6 +623,7 @@ export default function CaregiverMessages() {
                 id: Date.now(),
                 sender: "caregiver",
                 text: trimmed,
+                createdAt: new Date().toISOString(),
                 time: nowTime,
                 type: "text",
             };
@@ -636,7 +638,7 @@ export default function CaregiverMessages() {
                 if (res?.id) {
                     setDemoState((prev) => ({
                         ...prev,
-                        messages: prev.messages.map((m) => m.id === newCaregiverMsg.id ? { ...m, id: res.id } : m),
+                        messages: prev.messages.map((m) => m.id === newCaregiverMsg.id ? { ...m, id: res.id, createdAt: res.createdAt || newCaregiverMsg.createdAt } : m),
                     }));
                 }
             } catch (err) {
@@ -867,13 +869,13 @@ export default function CaregiverMessages() {
                     })}
                 </div>
 
-                {/* Main Layout: 3 Cột (Bảo vệ 100% bố cục Laptop/Desktop) */}
-                <div className="grid min-h-[680px] grid-cols-1 items-stretch gap-4 lg:grid-cols-12 xl:gap-5">
+                {/* Main Layout: 3 Cột (Bảo vệ 100% bố cục Laptop/Desktop - Bằng nhau không khoảng trắng) */}
+                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 xl:gap-5 lg:h-[calc(100vh-140px)] lg:min-h-[660px]">
                     {/* CỘT 1: DANH SÁCH HỘI THOẠI */}
                     <aside
                         className={`${
                             mobileSection !== "list" ? "hidden lg:flex" : "flex"
-                        } min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm lg:col-span-4 xl:col-span-3`}
+                        } h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm lg:col-span-4 xl:col-span-3`}
                     >
                         <div className="border-b border-slate-100 p-4">
                             <div className="mb-4 flex items-center justify-between gap-2">

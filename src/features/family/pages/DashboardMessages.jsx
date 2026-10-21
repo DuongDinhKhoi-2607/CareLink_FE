@@ -1,3 +1,32 @@
+// Hàm định dạng ngày phân cách tin nhắn chuẩn phong cách Zalo / Messenger
+function formatMessageDateDivider(dateValue) {
+    if (!dateValue) {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        return `Hôm nay, ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    }
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return "Hôm nay";
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((today - target) / (1000 * 60 * 60 * 24));
+
+    const pad = (n) => String(n).padStart(2, "0");
+    const dStr = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+
+    if (diffDays === 0) {
+        return `Hôm nay, ${dStr}`;
+    } else if (diffDays === 1) {
+        return `Hôm qua, ${dStr}`;
+    } else {
+        const weekdays = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+        const weekday = weekdays[date.getDay()] || "Ngày";
+        return `${weekday}, ${dStr}`;
+    }
+}
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
@@ -87,6 +116,7 @@ export default function DashboardMessages() {
                 id: m.id,
                 sender: m.isMine ? "family" : "caregiver",
                 text: m.content,
+                createdAt: m.createdAt,
                 time: new Date(m.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
                 type: m.type === 2 ? "proposal_card" : "text",
                 proposalId: m.proposalId,
@@ -164,6 +194,7 @@ export default function DashboardMessages() {
                 id: res.id || Date.now(),
                 sender: "family",
                 text: res.content || text,
+                createdAt: res.createdAt || new Date().toISOString(),
                 time: new Date(res.createdAt || Date.now()).toLocaleTimeString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -510,20 +541,38 @@ export default function DashboardMessages() {
                     </div>
 
                     {/* Vùng hiển thị bong bóng tin nhắn (Cuộn) */}
-                    <div ref={messagesContainerRef} className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-slate-50/50 to-white">
-                        {/* Mốc thời gian */}
-                        <div className="flex items-center justify-center my-2">
-                            <span className="px-3 py-1 bg-slate-200/70 text-slate-600 rounded-full text-[11px] font-semibold">
-                                Hôm nay, 13/10/2026
-                            </span>
-                        </div>
+                    <div
+                        ref={messagesContainerRef}
+                        className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-slate-50/50 to-white"
+                        style={{
+                            scrollbarWidth: "thin",
+                            scrollbarColor: "rgba(0, 103, 124, 0.25) transparent",
+                        }}
+                    >
+                        {(() => {
+                            let lastDateKey = null;
+                            return currentMessages.map((msg, index) => {
+                                const msgDate = msg.createdAt ? new Date(msg.createdAt) : null;
+                                const dateKey = msgDate && !isNaN(msgDate.getTime())
+                                    ? `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`
+                                    : "today";
+                                const showDivider = dateKey !== lastDateKey;
+                                if (showDivider) {
+                                    lastDateKey = dateKey;
+                                }
+                                const isOutgoing = msg.sender === "family";
 
-                        {currentMessages.map((msg) => {
-                            const isOutgoing = msg.sender === "family";
-
-                            return (
-                                <div
-                                    key={msg.id}
+                                return (
+                                    <React.Fragment key={msg.id || index}>
+                                        {showDivider && (
+                                            <div className="flex items-center justify-center my-3">
+                                                <span className="px-3.5 py-1 bg-slate-200/80 text-slate-600 rounded-full text-[11px] font-semibold shadow-2xs">
+                                                    {formatMessageDateDivider(msg.createdAt)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div
+                                            key={msg.id}
                                     className={`flex items-end gap-2.5 max-w-[85%] sm:max-w-[75%] ${
                                         isOutgoing ? "ml-auto flex-row-reverse" : "mr-auto"
                                     }`}
@@ -636,8 +685,10 @@ export default function DashboardMessages() {
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })}
+                                    </React.Fragment>
+                                );
+                            });
+                        })()}
 
                         {/* Chỉ báo Điều dưỡng đang nhập tin nhắn (Typing indicator) */}
                         {isTyping && (

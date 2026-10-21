@@ -1,3 +1,32 @@
+// Hàm định dạng ngày phân cách tin nhắn chuẩn phong cách Zalo / Messenger
+function formatMessageDateDivider(dateValue) {
+    if (!dateValue) {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        return `Hôm nay, ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    }
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return "Hôm nay";
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((today - target) / (1000 * 60 * 60 * 24));
+
+    const pad = (n) => String(n).padStart(2, "0");
+    const dStr = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+
+    if (diffDays === 0) {
+        return `Hôm nay, ${dStr}`;
+    } else if (diffDays === 1) {
+        return `Hôm qua, ${dStr}`;
+    } else {
+        const weekdays = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+        const weekday = weekdays[date.getDay()] || "Ngày";
+        return `${weekday}, ${dStr}`;
+    }
+}
+
 import React from "react";
 import {
     MessageSquare,
@@ -48,7 +77,7 @@ export default function CaregiverChatThread({
         <main
             className={`${
                 mobileSection !== "chat" ? "hidden lg:flex" : "flex"
-            } min-h-[620px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm lg:col-span-8 xl:col-span-6`}
+            } h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm lg:col-span-8 xl:col-span-6`}
         >
             {/* Chat header */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:px-5">
@@ -140,81 +169,107 @@ export default function CaregiverChatThread({
                         </p>
                     </div>
                 ) : (
-                    demoState.messages.map((message, index) => {
-                        if (message.sender === "system") {
+                    (() => {
+                        let lastDateKey = null;
+                        return demoState.messages.map((message, index) => {
+                            const msgDate = message.createdAt ? new Date(message.createdAt) : null;
+                            const dateKey = msgDate && !isNaN(msgDate.getTime())
+                                ? `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`
+                                : "today";
+                            const showDivider = dateKey !== lastDateKey;
+                            if (showDivider) {
+                                lastDateKey = dateKey;
+                            }
+
+                            if (message.sender === "system") {
+                                return (
+                                    <React.Fragment key={message.id ?? index}>
+                                        {showDivider && (
+                                            <div className="flex items-center justify-center my-3">
+                                                <span className="px-3.5 py-1 bg-slate-200/80 text-slate-600 rounded-full text-[11px] font-semibold shadow-2xs">
+                                                    {formatMessageDateDivider(message.createdAt)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <SystemMessage message={message} />
+                                    </React.Fragment>
+                                );
+                            }
+
+                            const isCaregiver = message.sender === "caregiver";
+
                             return (
-                                <SystemMessage
-                                    key={message.id ?? index}
-                                    message={message}
-                                />
-                            );
-                        }
-
-                        const isCaregiver = message.sender === "caregiver";
-
-                        return (
-                            <div
-                                key={message.id ?? index}
-                                className={`flex w-full ${
-                                    isCaregiver
-                                        ? "justify-end"
-                                        : "justify-start"
-                                }`}
-                            >
-                                <div
-                                    className={`flex max-w-[90%] items-end gap-2 sm:max-w-[82%] ${
-                                        isCaregiver
-                                            ? "flex-row-reverse"
-                                            : "flex-row"
-                                    }`}
-                                >
-                                    {!isCaregiver && (
-                                        <Avatar
-                                            name={demoState.activeConvName || booking.customerName || "Khách hàng"}
-                                            image={demoState.activeConvAvatar}
-                                            size="sm"
-                                        />
+                                <React.Fragment key={message.id ?? index}>
+                                    {showDivider && (
+                                        <div className="flex items-center justify-center my-3">
+                                            <span className="px-3.5 py-1 bg-slate-200/80 text-slate-600 rounded-full text-[11px] font-semibold shadow-2xs">
+                                                {formatMessageDateDivider(message.createdAt)}
+                                            </span>
+                                        </div>
                                     )}
-
                                     <div
-                                        className={`flex min-w-0 flex-col ${
+                                        className={`flex w-full ${
                                             isCaregiver
-                                                ? "items-end"
-                                                : "items-start"
+                                                ? "justify-end"
+                                                : "justify-start"
                                         }`}
                                     >
                                         <div
-                                            className={`mb-1.5 px-1 text-[10px] font-medium text-slate-400 ${
+                                            className={`flex max-w-[90%] items-end gap-2 sm:max-w-[82%] ${
                                                 isCaregiver
-                                                    ? "text-right"
-                                                    : "text-left"
+                                                    ? "flex-row-reverse"
+                                                    : "flex-row"
                                             }`}
                                         >
-                                            {isCaregiver
-                                                ? (currentUser?.name || currentUser?.fullName ? `Bạn · ${currentUser.name || currentUser.fullName}` : "Bạn")
-                                                : (demoState.activeConvName || booking.customerName || "Khách hàng")}
-                                        </div>
+                                            {!isCaregiver && (
+                                                <Avatar
+                                                    name={demoState.activeConvName || booking.customerName || "Khách hàng"}
+                                                    image={demoState.activeConvAvatar}
+                                                    size="sm"
+                                                />
+                                            )}
 
-                                        <div
-                                            className={`rounded-2xl px-4 py-3 text-[13px] leading-[1.75] shadow-sm ${
-                                                isCaregiver
-                                                    ? "rounded-br-md bg-[#087487] text-white"
-                                                    : "rounded-bl-md border border-slate-200/80 bg-white text-slate-700"
-                                            }`}
-                                        >
-                                            <p className="whitespace-pre-wrap break-words">
-                                                {message.text}
-                                            </p>
-                                        </div>
+                                            <div
+                                                className={`flex min-w-0 flex-col ${
+                                                    isCaregiver
+                                                        ? "items-end"
+                                                        : "items-start"
+                                                }`}
+                                            >
+                                                <div
+                                                    className={`mb-1.5 px-1 text-[10px] font-medium text-slate-400 ${
+                                                        isCaregiver
+                                                            ? "text-right"
+                                                            : "text-left"
+                                                    }`}
+                                                >
+                                                    {isCaregiver
+                                                        ? (currentUser?.name || currentUser?.fullName ? `Bạn · ${currentUser.name || currentUser.fullName}` : "Bạn")
+                                                        : (demoState.activeConvName || booking.customerName || "Khách hàng")}
+                                                </div>
 
-                                        <span className="mt-1.5 px-1 text-[10px] text-slate-400">
-                                            {message.time}
-                                        </span>
+                                                <div
+                                                    className={`rounded-2xl px-4 py-3 text-[13px] leading-[1.75] shadow-sm ${
+                                                        isCaregiver
+                                                            ? "rounded-br-md bg-[#087487] text-white"
+                                                            : "rounded-bl-md border border-slate-200/80 bg-white text-slate-700"
+                                                    }`}
+                                                >
+                                                    <p className="whitespace-pre-wrap break-words">
+                                                        {message.text}
+                                                    </p>
+                                                </div>
+
+                                                <span className="mt-1.5 px-1 text-[10px] text-slate-400">
+                                                    {message.time}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        );
-                    })
+                                </React.Fragment>
+                            );
+                        });
+                    })()
                 )}
             </div>
 
