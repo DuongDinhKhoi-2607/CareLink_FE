@@ -154,7 +154,87 @@ export default function PaymentResult() {
     };
 
     // =========================================================================
-    // TRƯỜNG HỢP 1: Không có bookingId
+    // TRƯỜNG HỢP 2: Người dùng huỷ thanh toán (Route /payment/cancel hoặc status=CANCELLED)
+    // Đặt lên trước trường hợp thiếu bookingId để người dùng huỷ ở PayOS luôn thấy giao diện huỷ lịch sự
+    // =========================================================================
+    if (isCancelRoute && payment?.status !== 2 && !isPaidFromParams) {
+        return (
+            <div className="bg-[#f8fafc] py-12 font-sans antialiased text-[#102030] min-h-[calc(100vh-140px)] flex items-center justify-center p-4 sm:p-6">
+                <div className="max-w-xl w-full bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] p-6 sm:p-10 text-center relative overflow-hidden backdrop-blur-sm">
+                    {/* Thanh điểm nhấn trên đỉnh */}
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+
+                    <div className="relative mb-4">
+                        <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-200/80 flex items-center justify-center text-amber-600 mx-auto shadow-inner">
+                            <Clock className="w-10 h-10" />
+                        </div>
+                    </div>
+
+                    <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 mb-3 inline-block">
+                        GIAO DỊCH TẠM DỪNG
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">
+                        Chưa hoàn tất thanh toán
+                    </h1>
+                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6 max-w-md mx-auto">
+                        Bạn đã hủy hoặc tạm dừng thanh toán qua cổng PayOS. Ca chăm sóc của bạn vẫn được giữ chỗ trong vòng <strong>30 phút</strong> kể từ khi tạo ca.
+                    </p>
+
+                    {/* Thẻ tóm tắt ca (nếu có thông tin booking) */}
+                    {booking && (
+                        <div className="bg-slate-50/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 mb-6 text-left text-xs sm:text-sm space-y-2.5">
+                            <div className="flex justify-between items-center text-slate-500">
+                                <span>Dịch vụ:</span>
+                                <span className="font-semibold text-slate-800">{booking.serviceName || "Chăm sóc gia đình"}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-500">
+                                <span>Điều dưỡng:</span>
+                                <span className="font-semibold text-slate-800">{booking.nurseName || "Chuyên viên CareLink"}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-500">
+                                <span>Thời gian hẹn:</span>
+                                <span className="font-semibold text-slate-800">{formatDateTime(booking.scheduledStart)}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 text-slate-900 font-bold">
+                                <span>Tổng số tiền:</span>
+                                <span className="text-[#00677c] text-base">{formatCurrency(booking.totalPrice)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        {bookingId ? (
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/checkout?bookingId=${bookingId}`)}
+                                className="px-6 py-3 bg-[#00677c] hover:bg-[#005566] text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <CreditCard className="w-4 h-4" />
+                                <span>Tiếp tục thanh toán</span>
+                            </button>
+                        ) : null}
+                        <Link
+                            to="/dashboard/appointments"
+                            className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Calendar className="w-4 h-4" />
+                            <span>Quay về Lịch hẹn</span>
+                        </Link>
+                        <Link
+                            to="/"
+                            className="px-5 py-3 bg-white hover:bg-slate-50 text-slate-600 text-xs sm:text-sm font-medium rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Home className="w-4 h-4" />
+                            <span>Trang chủ</span>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // =========================================================================
+    // TRƯỜNG HỢP 1: Không có bookingId (chỉ áp dụng cho các luồng không phải Cancel)
     // =========================================================================
     if (!bookingId) {
         return (
@@ -191,75 +271,6 @@ export default function PaymentResult() {
         );
     }
 
-    // =========================================================================
-    // TRƯỜNG HỢP 2: Người dùng huỷ thanh toán (Route /payment/cancel hoặc status=CANCELLED)
-    // =========================================================================
-    if (isCancelRoute && payment?.status !== 2 && !isPaidFromParams) {
-        return (
-            <div className="bg-[#f8fafc] py-12 font-sans antialiased text-[#102030] min-h-[calc(100vh-140px)] flex items-center justify-center p-4 sm:p-6">
-                <div className="max-w-xl w-full bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] p-6 sm:p-10 text-center relative overflow-hidden backdrop-blur-sm">
-                    {/* Thanh điểm nhấn trên đỉnh */}
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
-
-                    <div className="relative mb-4">
-                        <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-200/80 flex items-center justify-center text-amber-600 mx-auto shadow-inner">
-                            <Clock className="w-10 h-10" />
-                        </div>
-                    </div>
-
-                    <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 mb-3 inline-block">
-                        GIAO DỊCH TẠM DỪNG
-                    </span>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">
-                        Chưa hoàn tất thanh toán
-                    </h1>
-                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6 max-w-md mx-auto">
-                        Bạn đã hủy hoặc tạm dừng thanh toán qua cổng PayOS. Ca chăm sóc của bạn vẫn được giữ chỗ trong vòng <strong>30 phút</strong> kể từ khi tạo ca.
-                    </p>
-
-                    {/* Thẻ tóm tắt ca */}
-                    {booking && (
-                        <div className="bg-slate-50/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 mb-6 text-left text-xs sm:text-sm space-y-2.5">
-                            <div className="flex justify-between items-center text-slate-500">
-                                <span>Dịch vụ:</span>
-                                <span className="font-semibold text-slate-800">{booking.serviceName || "Chăm sóc gia đình"}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-slate-500">
-                                <span>Điều dưỡng:</span>
-                                <span className="font-semibold text-slate-800">{booking.nurseName || "Chuyên viên CareLink"}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-slate-500">
-                                <span>Thời gian hẹn:</span>
-                                <span className="font-semibold text-slate-800">{formatDateTime(booking.scheduledStart)}</span>
-                            </div>
-                            <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 text-slate-900 font-bold">
-                                <span>Tổng số tiền:</span>
-                                <span className="text-[#00677c] text-base">{formatCurrency(booking.totalPrice)}</span>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/checkout?bookingId=${bookingId}`)}
-                            className="px-6 py-3 bg-[#00677c] hover:bg-[#005566] text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                            <CreditCard className="w-4 h-4" />
-                            <span>Tiếp tục thanh toán</span>
-                        </button>
-                        <Link
-                            to="/dashboard/appointments"
-                            className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Calendar className="w-4 h-4" />
-                            <span>Quay về Lịch hẹn</span>
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     // =========================================================================
     // TRƯỜNG HỢP 3: Đang xác minh hoặc Webhook đang đối soát (Chỉ khi chưa có kết quả)

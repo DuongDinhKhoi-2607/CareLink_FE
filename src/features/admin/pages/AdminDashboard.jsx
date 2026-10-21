@@ -159,7 +159,7 @@ export default function AdminDashboard() {
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                         Tổng quan hệ thống
                         <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-teal-50 text-[#00677c] border border-teal-200/60 flex items-center gap-1">
-                            <Activity className="w-3 h-3 animate-pulse" /> Live Telemetry
+                            <Activity className="w-3 h-3 animate-pulse" /> Dữ liệu trực tiếp
                         </span>
                     </h1>
                     <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                             <div>
                                 <h3 className="text-base font-bold text-slate-900">Doanh thu & Lượt đặt ca trực</h3>
-                                <p className="text-xs text-slate-500">Biểu đồ ước tính dòng tiền qua nền tảng CareLink (Mock data)</p>
+                                <p className="text-xs text-slate-500">Biểu đồ ước tính dòng tiền và doanh thu qua nền tảng CareLink</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1 text-xs text-slate-500">

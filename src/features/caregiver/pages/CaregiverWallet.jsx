@@ -4,15 +4,15 @@ import caregiverApi from "../../../api/caregiverApi";
 export default function CaregiverWallet() {
     // ── STATE SỐ DƯ & VÍ ĐIỀU DƯỠNG (KHỚP CHUẨN DTO BACKEND: WalletResponse & PayoutResponse) ──
     const [wallet, setWallet] = useState({
-        balance: 4250000,
-        availableBalance: 2250000,
-        pendingPayout: 2000000,
-        totalEarned: 18600000,
-        totalWithdrawn: 5000000,
+        balance: 0,
+        availableBalance: 0,
+        pendingPayout: 0,
+        totalEarned: 0,
+        totalWithdrawn: 0,
         bankAccount: {
-            bankName: "Vietcombank (Ngân hàng Ngoại thương Việt Nam)",
-            accountNumber: "1018992345",
-            accountHolder: "NGUYEN THUY LINH",
+            bankName: "",
+            accountNumber: "",
+            accountHolder: "",
         },
     });
 
@@ -21,53 +21,7 @@ export default function CaregiverWallet() {
     const [submittingPayout, setSubmittingPayout] = useState(false);
 
     // ── LỊCH SỬ BIẾN ĐỘNG SỐ DƯ (TRANSACTIONS - CỐ ĐỊNH PHÍ SÀN 60K/CA THEO NGHIỆP VỤ) ──
-    const [transactions, setTransactions] = useState([
-        {
-            id: "TX-109",
-            date: "14/10/2026 18:00",
-            title: "Thu nhập ca chăm sóc #CK-28491",
-            type: "earning",
-            amount: 420000,
-            balanceAfter: 4250000,
-            note: "Bà Nguyễn Thị Lan – Phục hồi chức năng 4 giờ",
-        },
-        {
-            id: "TX-108",
-            date: "14/10/2026 18:00",
-            title: "Phí dịch vụ nền tảng CareLink",
-            type: "platform_fee",
-            amount: -60000,
-            balanceAfter: 3830000,
-            note: "Phí sàn cố định 60.000 VNĐ / ca hoàn thành",
-        },
-        {
-            id: "TX-107",
-            date: "14/10/2026 09:30",
-            title: "Tạo lệnh rút tiền về ngân hàng",
-            type: "payout",
-            amount: -2000000,
-            balanceAfter: 3880000,
-            note: "Lệnh PO-20261014-01 đang chờ xử lý",
-        },
-        {
-            id: "TX-106",
-            date: "13/10/2026 12:30",
-            title: "Thu nhập ca chăm sóc #CK-28310",
-            type: "earning",
-            amount: 540000,
-            balanceAfter: 5880000,
-            note: "Ông Nguyễn Văn Bình – Kiểm tra huyết áp & vận động",
-        },
-        {
-            id: "TX-105",
-            date: "13/10/2026 12:30",
-            title: "Phí dịch vụ nền tảng CareLink",
-            type: "platform_fee",
-            amount: -60000,
-            balanceAfter: 5340000,
-            note: "Phí sàn cố định 60.000 VNĐ / ca hoàn thành",
-        },
-    ]);
+    const [transactions, setTransactions] = useState([]);
 
     // ── MODAL RÚT TIỀN ──
     const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
@@ -139,9 +93,12 @@ export default function CaregiverWallet() {
                         note: t.note || t.reference || "",
                     }))
                 );
+            } else {
+                setTransactions([]);
             }
         } catch (err) {
             console.warn("Lỗi tải lịch sử giao dịch:", err);
+            setTransactions([]);
         }
     }, []);
 
@@ -170,7 +127,7 @@ export default function CaregiverWallet() {
                             accountNumber: p.accountNumber || "—",
                             accountHolder: p.accountHolder || "—",
                             status: isApproved ? "approved" : isRejected ? "rejected" : "pending",
-                            statusLabel: isApproved ? "Đã chuyển khoản" : isRejected ? "Từ chối" : "Chờ Admin duyệt",
+                            statusLabel: isApproved ? "Đã chuyển khoản" : isRejected ? "Từ chối" : "Đang chờ đối soát",
                             statusColor: isApproved
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 : isRejected
@@ -181,9 +138,12 @@ export default function CaregiverWallet() {
                         };
                     })
                 );
+            } else {
+                setPayouts([]);
             }
         } catch (err) {
             console.warn("Lỗi tải lịch sử rút tiền:", err);
+            setPayouts([]);
         }
     }, []);
 
@@ -312,13 +272,13 @@ export default function CaregiverWallet() {
                 {/* Tiền chờ duyệt rút (PendingPayout) */}
                 <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between min-h-[140px]">
                     <div>
-                        <span className="text-slate-400 text-xs font-semibold tracking-wide uppercase">Chờ Admin duyệt rút (Pending)</span>
+                        <span className="text-slate-400 text-xs font-semibold tracking-wide uppercase">Đang chờ đối soát giải ngân</span>
                         <h2 className="text-3xl font-extrabold text-[#002045] mt-1 tracking-tight">
                             {wallet.pendingPayout.toLocaleString("vi-VN")} <span className="text-lg font-bold text-slate-400">₫</span>
                         </h2>
                     </div>
                     <p className="text-xs text-slate-500 pt-2 border-t border-slate-100">
-                        Tổng các lệnh rút đang chờ Quản trị viên đối soát & giải ngân Napas
+                        Tổng các lệnh rút đang chờ Quản trị viên đối soát & giải ngân vào tài khoản
                     </p>
                 </div>
 
