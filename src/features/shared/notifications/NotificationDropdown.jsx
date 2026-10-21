@@ -23,60 +23,45 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [isDemoMode, setIsDemoMode] = useState(() => {
-        return import.meta.env.VITE_ENABLE_NOTIFICATION_DEMO === "true";
-    });
+    const [isDemoMode] = useState(false);
 
     // ── 1. Lấy số lượng thông báo chưa đọc (Polling nhẹ mỗi 45s) ──
     const fetchUnreadCount = useCallback(async () => {
-        if (isDemoMode) {
-            setUnreadCount(getMockUnreadCountByRole(userRole));
-            return;
-        }
-
         try {
             const res = await notificationApi.getUnreadCount();
             if (typeof res?.unreadCount === "number") {
                 setUnreadCount(res.unreadCount);
+            } else {
+                setUnreadCount(0);
             }
         } catch (err) {
             console.warn("[CareLink Notifications] Không thể lấy unread count:", err?.message);
-            setUnreadCount(getMockUnreadCountByRole(userRole));
+            setUnreadCount(0);
         }
-    }, [isDemoMode, userRole]);
+    }, []);
 
     // ── 2. Lấy danh sách thông báo khi mở dropdown ──
     const fetchNotifications = useCallback(async () => {
-        if (isDemoMode) {
-            const roleItems = getMockNotificationsByRole(userRole);
-            setNotifications(roleItems);
-            setUnreadCount(roleItems.filter((n) => !n.isRead).length);
-            setLoading(false);
-            setError(null);
-            return;
-        }
-
         setLoading(true);
         setError(null);
 
         try {
             const res = await notificationApi.getNotifications({ pageNumber: 1, pageSize: 8 });
-            const items = Array.isArray(res?.items) ? res.items : [];
+            const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
             setNotifications(items);
 
             // Cập nhật lại unread count từ danh sách
             const unreadInList = items.filter((n) => !n.isRead).length;
             setUnreadCount(unreadInList);
         } catch (err) {
-            console.warn("[CareLink Notifications] Lỗi tải thông báo, kích hoạt fallback tự nhiên:", err);
-            const roleItems = getMockNotificationsByRole(userRole);
-            setNotifications(roleItems);
-            setUnreadCount(roleItems.filter((n) => !n.isRead).length);
+            console.warn("[CareLink Notifications] Lỗi tải thông báo:", err);
+            setNotifications([]);
+            setUnreadCount(0);
             setError(null);
         } finally {
             setLoading(false);
         }
-    }, [isDemoMode, userRole]);
+    }, []);
 
     // ── 3. Polling chu kỳ 45s & Cập nhật khi tab hoạt động trở lại ──
     useEffect(() => {

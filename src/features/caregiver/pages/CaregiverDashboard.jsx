@@ -131,6 +131,37 @@ export default function CaregiverDashboard() {
             if (u) setCurrentUser(u);
         });
 
+        Promise.all([
+            caregiverApi.getProfile().catch(() => null),
+            caregiverApi.getVerificationStatus().catch(() => null),
+        ]).then(([pRes, vRes]) => {
+            const p = pRes?.data || pRes;
+            const v = vRes?.data || vRes;
+            if (p || v) {
+                setCurrentUser((prev) => {
+                    const validName = p?.fullName && p.fullName.toLowerCase() !== "nurse" && !p.fullName.includes("@")
+                        ? p.fullName
+                        : prev?.fullName && prev.fullName.toLowerCase() !== "nurse" && !prev.fullName.includes("@")
+                        ? prev.fullName
+                        : "Điều dưỡng";
+
+                    const updated = {
+                        ...prev,
+                        fullName: validName,
+                        name: validName,
+                        avatar: p?.avatarUrl || prev?.avatar,
+                        avatarUrl: p?.avatarUrl || prev?.avatarUrl,
+                        nurseStatus: v?.verificationStatus ?? (p?.status ?? prev?.nurseStatus),
+                        verificationStatusName: v?.verificationStatusName || null,
+                    };
+                    try {
+                        localStorage.setItem("carelink_user", JSON.stringify(updated));
+                    } catch {}
+                    return updated;
+                });
+            }
+        });
+
         caregiverApi.getBookings({ PageNumber: 1, PageSize: 10 })
             .then((res) => {
                 const items = Array.isArray(res) ? res : (res?.data || res?.items || []);
@@ -173,7 +204,10 @@ export default function CaregiverDashboard() {
         }
     };
 
-    const displayName = currentUser?.name || currentUser?.fullName || "Điều dưỡng";
+    const rawDisplayName = currentUser?.fullName || currentUser?.name;
+    const displayName = (rawDisplayName && rawDisplayName.toLowerCase() !== "nurse" && !rawDisplayName.includes("@"))
+        ? rawDisplayName
+        : "Điều dưỡng CareLink";
 
     // Tính toán số liệu thống kê thực tế
     const todayStr = new Date().toDateString();
@@ -307,68 +341,108 @@ export default function CaregiverDashboard() {
                 </p>
             </div>
 
-            {/* Verification Banner */}
-            {currentUser?.nurseStatus === 1 ? (
-                <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+            {/* Verification Banner chuẩn xác theo 4 trạng thái */}
+            {(() => {
+                const vStatus = currentUser?.nurseStatus;
+                const vStatusName = currentUser?.verificationStatusName;
+                const isApproved = vStatus === 2 || vStatus === "Approved" || vStatusName === "Approved" || (vStatus === 1 && !vStatusName);
+                const isPending = vStatus === 1 || vStatus === 4 || vStatus === "Pending" || vStatus === "Resubmitted" || vStatusName === "Pending";
+                const isRejected = vStatus === 3 || vStatus === "Rejected" || vStatusName === "Rejected";
+
+                if (isApproved) {
+                    return (
+                        <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-emerald-800">Tài khoản đã được xác minh</p>
+                                <p className="text-xs text-emerald-600 mt-0.5">
+                                    Hồ sơ năng lực của bạn đã đạt chuẩn. Bạn có thể sẵn sàng nhận lịch hẹn chăm sóc từ các gia đình.
+                                </p>
+                            </div>
+                            <Link
+                                to="/caregiver/verification"
+                                className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
+                            >
+                                Chi tiết hồ sơ
+                            </Link>
+                        </div>
+                    );
+                }
+
+                if (isPending) {
+                    return (
+                        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-amber-800">Tài khoản đang chờ xác minh</p>
+                                <p className="text-xs text-amber-600 mt-0.5">
+                                    Hồ sơ của bạn đang được đội ngũ CareLink đối soát và kiểm duyệt. Thường mất 1–3 ngày làm việc.
+                                </p>
+                            </div>
+                            <Link
+                                to="/caregiver/verification"
+                                className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
+                            >
+                                Xem hồ sơ
+                            </Link>
+                        </div>
+                    );
+                }
+
+                if (isRejected) {
+                    return (
+                        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-rose-800">Hồ sơ cần cập nhật / bổ sung</p>
+                                <p className="text-xs text-rose-600 mt-0.5">
+                                    Hồ sơ xác minh điều dưỡng của bạn cần cập nhật lại thông tin hoặc chứng chỉ theo yêu cầu từ Quản trị viên.
+                                </p>
+                            </div>
+                            <Link
+                                to="/caregiver/verification"
+                                className="shrink-0 text-xs font-bold text-rose-700 bg-rose-100 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
+                            >
+                                Nộp lại hồ sơ
+                            </Link>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="mb-6 p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center shrink-0">
+                            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-slate-800">Chưa nộp hồ sơ xác thực hành nghề</p>
+                            <p className="text-xs text-slate-600 mt-0.5">
+                                Bạn cần nộp CCCD và chứng chỉ hành nghề để được mở quyền nhận ca chăm sóc từ các gia đình.
+                            </p>
+                        </div>
+                        <Link
+                            to="/caregiver/verification"
+                            className="shrink-0 text-xs font-bold text-white bg-[#00677c] px-3.5 py-1.5 rounded-lg hover:bg-[#005566] transition-colors"
+                        >
+                            Nộp hồ sơ ngay
+                        </Link>
                     </div>
-                    <div className="flex-1">
-                        <p className="text-sm font-bold text-emerald-800">Tài khoản đã được xác minh</p>
-                        <p className="text-xs text-emerald-600 mt-0.5">
-                            Hồ sơ năng lực của bạn đã đạt chuẩn. Bạn có thể sẵn sàng nhận lịch hẹn chăm sóc từ các gia đình.
-                        </p>
-                    </div>
-                    <Link
-                        to="/caregiver/verification"
-                        className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
-                    >
-                        Chi tiết hồ sơ
-                    </Link>
-                </div>
-            ) : currentUser?.nurseStatus === 2 ? (
-                <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-sm font-bold text-rose-800">Hồ sơ cần cập nhật / bổ sung</p>
-                        <p className="text-xs text-rose-600 mt-0.5">
-                            Hồ sơ xác minh điều dưỡng của bạn cần cập nhật lại thông tin hoặc chứng chỉ theo yêu cầu từ Quản trị viên.
-                        </p>
-                    </div>
-                    <Link
-                        to="/caregiver/verification"
-                        className="shrink-0 text-xs font-bold text-rose-700 bg-rose-100 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
-                    >
-                        Nộp lại hồ sơ
-                    </Link>
-                </div>
-            ) : (
-                <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-sm font-bold text-amber-800">Tài khoản đang chờ xác minh</p>
-                        <p className="text-xs text-amber-600 mt-0.5">
-                            Hồ sơ của bạn đang được đội ngũ CareLink xem xét. Thường mất 1–3 ngày làm việc.
-                        </p>
-                    </div>
-                    <Link
-                        to="/caregiver/verification"
-                        className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
-                    >
-                        Xem hồ sơ
-                    </Link>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">

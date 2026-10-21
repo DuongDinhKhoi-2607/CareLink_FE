@@ -106,10 +106,42 @@ export default function CaregiverLayout() {
         };
         window.addEventListener("storage", handleSync);
 
-        // Tải thông tin mới nhất từ API /users/me
+        // Tải thông tin mới nhất từ API /users/me và /nurse/profile
         fetchAndSyncUserMe().then((updatedUser) => {
             if (updatedUser) {
                 setCurrentUser(updatedUser);
+            }
+        });
+
+        // Đồng bộ trực tiếp hồ sơ Điều dưỡng & trạng thái xét duyệt thực tế
+        Promise.all([
+            caregiverApi.getProfile().catch(() => null),
+            caregiverApi.getVerificationStatus().catch(() => null),
+        ]).then(([pRes, vRes]) => {
+            const p = pRes?.data || pRes;
+            const v = vRes?.data || vRes;
+            if (p || v) {
+                setCurrentUser((prev) => {
+                    const validName = p?.fullName && p.fullName.toLowerCase() !== "nurse" && !p.fullName.includes("@")
+                        ? p.fullName
+                        : prev?.fullName && prev.fullName.toLowerCase() !== "nurse" && !prev.fullName.includes("@")
+                        ? prev.fullName
+                        : "Điều dưỡng";
+
+                    const updated = {
+                        ...prev,
+                        fullName: validName,
+                        name: validName,
+                        avatar: p?.avatarUrl || prev?.avatar,
+                        avatarUrl: p?.avatarUrl || prev?.avatarUrl,
+                        nurseStatus: v?.verificationStatus ?? (p?.status ?? prev?.nurseStatus),
+                        verificationStatusName: v?.verificationStatusName || null,
+                    };
+                    try {
+                        localStorage.setItem("carelink_user", JSON.stringify(updated));
+                    } catch {}
+                    return updated;
+                });
             }
         });
 
@@ -221,23 +253,45 @@ export default function CaregiverLayout() {
 
                 <div className="flex-1" />
 
-                {/* Verification badge */}
-                {currentUser?.nurseStatus === 1 ? (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200" title="Tài khoản đã được duyệt">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs font-semibold text-emerald-700 hidden sm:block">Đã xác minh</span>
-                    </div>
-                ) : currentUser?.nurseStatus === 2 ? (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200" title="Hồ sơ cần cập nhật hoặc bổ sung">
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span className="text-xs font-semibold text-rose-700 hidden sm:block">Cần bổ sung</span>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200" title="Đang chờ Quản trị viên duyệt">
-                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        <span className="text-xs font-semibold text-amber-700 hidden sm:block">Đang xác minh</span>
-                    </div>
-                )}
+                {/* Verification badge chuẩn đa tầng */}
+                {(() => {
+                    const vStatus = currentUser?.nurseStatus;
+                    const vStatusName = currentUser?.verificationStatusName;
+                    const isApproved = vStatus === 2 || vStatus === "Approved" || vStatusName === "Approved" || (vStatus === 1 && !vStatusName);
+                    const isPending = vStatus === 1 || vStatus === 4 || vStatus === "Pending" || vStatus === "Resubmitted" || vStatusName === "Pending";
+                    const isRejected = vStatus === 3 || vStatus === "Rejected" || vStatusName === "Rejected";
+
+                    if (isApproved) {
+                        return (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200" title="Tài khoản đã được duyệt">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span className="text-xs font-semibold text-emerald-700 hidden sm:block">Đã xác minh</span>
+                            </div>
+                        );
+                    }
+                    if (isPending) {
+                        return (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200" title="Đang chờ Quản trị viên duyệt">
+                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                <span className="text-xs font-semibold text-amber-700 hidden sm:block">Đang xác minh</span>
+                            </div>
+                        );
+                    }
+                    if (isRejected) {
+                        return (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200" title="Hồ sơ cần cập nhật hoặc bổ sung">
+                                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                <span className="text-xs font-semibold text-rose-700 hidden sm:block">Cần bổ sung</span>
+                            </div>
+                        );
+                    }
+                    return (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200" title="Chưa nộp hồ sơ chứng thực">
+                            <span className="w-2 h-2 rounded-full bg-slate-400" />
+                            <span className="text-xs font-semibold text-slate-600 hidden sm:block">Chưa nộp hồ sơ</span>
+                        </div>
+                    );
+                })()}
 
                 {/* Notification Bell */}
                 <NotificationDropdown userRole="caregiver" align="right" />
@@ -254,19 +308,27 @@ export default function CaregiverLayout() {
                             <img
                                 src={currentUser.avatar || currentUser.avatarUrl}
                                 alt={currentUser.name || "Caregiver"}
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                                }}
                                 className="w-9 h-9 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
                             />
                         ) : (
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
-                                {(currentUser?.name || currentUser?.fullName || "N").charAt(0).toUpperCase()}
+                                {((currentUser?.fullName || currentUser?.name || "Đ").charAt(0) || "Đ").toUpperCase()}
                             </div>
                         )}
                         <div className="hidden sm:flex flex-col text-left">
                             <span className="text-sm font-semibold text-[#102030] leading-tight">
-                                {currentUser?.name || currentUser?.fullName || "Điều dưỡng"}
+                                {(currentUser?.fullName && currentUser.fullName.toLowerCase() !== "nurse" && !currentUser.fullName.includes("@"))
+                                    ? currentUser.fullName
+                                    : (currentUser?.name && currentUser.name.toLowerCase() !== "nurse" && !currentUser.name.includes("@"))
+                                    ? currentUser.name
+                                    : "Điều dưỡng CareLink"}
                             </span>
                             <span className="text-xs text-slate-400 leading-tight">
-                                {currentUser?.role || "Caregiver"}
+                                {(currentUser?.role && currentUser.role !== "Caregiver" && currentUser.role !== "caregiver") ? currentUser.role : "Điều dưỡng chuyên nghiệp"}
                             </span>
                         </div>
                     </button>
@@ -510,7 +572,7 @@ export default function CaregiverLayout() {
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
                 onConfirm={handleLogout}
-                roleName="tài khoản Điều dưỡng (Caregiver)"
+                roleName="tài khoản Điều dưỡng"
             />
         </div>
     );

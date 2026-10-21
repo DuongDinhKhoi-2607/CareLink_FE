@@ -374,6 +374,10 @@ export default function CaregiverProfilePage() {
                             <img
                                 src={profile.avatar}
                                 alt={profile.fullName}
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                                }}
                                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-teal-600/30 shadow-md"
                             />
                             {isEditing && (
@@ -423,11 +427,13 @@ export default function CaregiverProfilePage() {
                                 <>
                                     <div className="flex items-center gap-2">
                                         <h2 className="text-xl font-bold text-[#002045]">{profile.fullName}</h2>
-                                        <span className="p-1 rounded-full bg-teal-100 text-teal-700" title="Đã xác thực y tế">
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                        </span>
+                                        {(profile.verificationStatus === 2 || profile.verificationStatus === "Approved" || profile.verificationStatusName === "Approved" || certStatusInfo?.verificationStatus === 2) && (
+                                            <span className="p-1 rounded-full bg-teal-100 text-teal-700" title="Đã xác thực y tế">
+                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-xs font-semibold text-teal-700 mt-0.5">{profile.title}</p>
                                     
@@ -883,18 +889,56 @@ export default function CaregiverProfilePage() {
                         </div>
 
                         <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs">
-                            {/* Trạng thái xác thực */}
-                            <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 flex items-center justify-between">
-                                <div>
-                                    <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider block">Trạng thái hồ sơ</span>
-                                    <span className="text-sm font-bold text-teal-900 mt-0.5 block">
-                                        {certStatusInfo?.verificationStatusName || (profile.verificationStatus === "verified" || profile.verificationStatus === 2 ? "Đã phê duyệt hành nghề" : "Đang chờ đối soát")}
-                                    </span>
-                                </div>
-                                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                    ✓ Đã xác minh
-                                </span>
-                            </div>
+                            {/* Trạng thái xác thực chuẩn xác */}
+                            {(() => {
+                                const vStatus = certStatusInfo?.verificationStatus ?? profile.verificationStatus;
+                                const vStatusName = certStatusInfo?.verificationStatusName || profile.verificationStatusName;
+                                const isApproved = vStatus === 2 || vStatus === "Approved" || vStatusName === "Approved";
+                                const isPending = vStatus === 1 || vStatus === 4 || vStatus === "Pending" || vStatus === "Resubmitted" || vStatusName === "Pending";
+                                const isRejected = vStatus === 3 || vStatus === "Rejected" || vStatusName === "Rejected";
+
+                                return (
+                                    <div className={`p-4 rounded-2xl border flex items-center justify-between ${
+                                        isApproved
+                                            ? "bg-emerald-50/70 border-emerald-200"
+                                            : isPending
+                                            ? "bg-amber-50/70 border-amber-200"
+                                            : isRejected
+                                            ? "bg-rose-50/70 border-rose-200"
+                                            : "bg-slate-50 border-slate-200"
+                                    }`}>
+                                        <div>
+                                            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Trạng thái hồ sơ</span>
+                                            <span className="text-sm font-bold text-slate-900 mt-0.5 block">
+                                                {isApproved
+                                                    ? "Đã phê duyệt hành nghề"
+                                                    : isPending
+                                                    ? "Đang chờ đối soát chứng chỉ"
+                                                    : isRejected
+                                                    ? "Hồ sơ bị từ chối / Cần bổ sung"
+                                                    : "Chưa nộp hồ sơ chứng thực"}
+                                            </span>
+                                        </div>
+                                        {isApproved ? (
+                                            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                ✓ Đã xác minh
+                                            </span>
+                                        ) : isPending ? (
+                                            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                ⏳ Đang xác minh
+                                            </span>
+                                        ) : isRejected ? (
+                                            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                                ✕ Cần bổ sung
+                                            </span>
+                                        ) : (
+                                            <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-200 text-slate-700 border border-slate-300">
+                                                📁 Chưa nộp
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Thông tin CCHN */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -941,28 +985,19 @@ export default function CaregiverProfilePage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
-                                        <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">🪪</span>
-                                                <span className="font-semibold text-slate-800 text-xs">Căn cước công dân gắn chip (Mặt trước & sau)</span>
-                                            </div>
-                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Hợp lệ</span>
+                                    <div className="py-6 px-4 rounded-2xl border border-dashed border-slate-200 text-center bg-slate-50/60 space-y-3">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-lg shadow-2xs">📄</div>
+                                        <div>
+                                            <p className="font-bold text-slate-800 text-xs">Chưa có chứng từ nào được đính kèm</p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">Vui lòng nộp CCCD 2 mặt, bằng cấp chuyên môn và CCHN để được duyệt hồ sơ.</p>
                                         </div>
-                                        <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">📜</span>
-                                                <span className="font-semibold text-slate-800 text-xs">Bằng Cử nhân Điều dưỡng ĐH Y Dược</span>
-                                            </div>
-                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Hợp lệ</span>
-                                        </div>
-                                        <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 text-xs">🏥</span>
-                                                <span className="font-semibold text-slate-800 text-xs">Chứng chỉ hành nghề y tế Sở Y Tế cấp</span>
-                                            </div>
-                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Hợp lệ</span>
-                                        </div>
+                                        <Link
+                                            to="/caregiver/verification"
+                                            onClick={() => setIsCertModalOpen(false)}
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005263] transition-colors shadow-2xs"
+                                        >
+                                            Nộp hồ sơ xác thực ngay →
+                                        </Link>
                                     </div>
                                 )}
                             </div>
