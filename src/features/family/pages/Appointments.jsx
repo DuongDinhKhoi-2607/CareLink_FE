@@ -25,9 +25,24 @@ import CancelBookingModal from "../components/CancelBookingModal";
 import Toast from "../../../components/Toast";
 import familyApi from "../../../api/familyApi";
 
+const getConfirmedPaidBookings = () => {
+    try {
+        return JSON.parse(localStorage.getItem("carelink_confirmed_paid_bookings") || "{}");
+    } catch {
+        return {};
+    }
+};
+
 // Adapter chuyển đổi BookingResponse từ Backend sang cấu trúc hiển thị của giao diện Family
 const mapBookingToAppointment = (b) => {
-    const rawStatus = typeof b.status === "number" ? b.status : 1;
+    let rawStatus = typeof b.status === "number" ? b.status : 1;
+    const paidMap = getConfirmedPaidBookings();
+    const isLocalPaid = Boolean(b.id && paidMap[b.id]);
+    if (rawStatus === 1 && isLocalPaid) {
+        // Đã thanh toán thành công qua PayOS: chuyển sang Đã tiếp nhận (Accepted) nếu từ Proposal hoặc Chờ điều dưỡng nhận
+        rawStatus = b.conversationId ? 3 : 2;
+    }
+
     const createdAtMs = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     const isPaymentExpired = rawStatus === 1 && createdAtMs > 0 && (Date.now() - createdAtMs) > 30 * 60 * 1000;
 
@@ -363,6 +378,34 @@ export default function Appointments() {
             const mapped = items.map(mapBookingToAppointment);
             setAppointments(mapped);
             setIsUsingFallback(false);
+
+            // Tự động kiểm tra đối soát ngầm cho các ca đang ở trạng thái PendingPayment (1)
+            const pendingList = items.filter((b) => (typeof b.status === "number" ? b.status : 1) === 1);
+            if (pendingList.length > 0) {
+                pendingList.forEach(async (pb) => {
+                    try {
+                        const payRes = await familyApi.getPaymentDetail(pb.id);
+                        if (payRes?.status === 2) {
+                            const paidMap = getConfirmedPaidBookings();
+                            paidMap[pb.id] = { paidAt: Date.now(), status: 2 };
+                            localStorage.setItem("carelink_confirmed_paid_bookings", JSON.stringify(paidMap));
+                            setAppointments((prev) =>
+                                prev.map((item) => {
+                                    if ((item.rawId || item.id) === pb.id) {
+                                        return mapBookingToAppointment({
+                                            ...item.rawBackendData,
+                                            status: pb.conversationId ? 3 : 2,
+                                        });
+                                    }
+                                    return item;
+                                })
+                            );
+                        }
+                    } catch (e) {
+                        // Silent check
+                    }
+                });
+            }
         } catch (err) {
             console.warn("[CareLink] Tải danh sách booking thất bại:", err);
             const msg =

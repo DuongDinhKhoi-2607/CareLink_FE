@@ -22,6 +22,14 @@ const calculateAge = (dob) => {
     return age > 0 ? age : 75;
 };
 
+const getConfirmedPaidBookings = () => {
+    try {
+        return JSON.parse(localStorage.getItem("carelink_confirmed_paid_bookings") || "{}");
+    } catch {
+        return {};
+    }
+};
+
 // Cột biểu đồ huyết áp 7 ngày
 const chartBars = [
     { height: "76px", bg: "bg-[#4fd9fd66]" },
@@ -120,6 +128,26 @@ export default function Dashboard() {
                     : Array.isArray(res?.items) ? res.items
                     : [];
                 setBookings(list);
+
+                // Tự động kiểm tra đối soát ngầm cho ca PendingPayment
+                const pendingList = list.filter((b) => (typeof b.status === "number" ? b.status : 1) === 1);
+                if (pendingList.length > 0) {
+                    pendingList.forEach(async (pb) => {
+                        try {
+                            const pRes = await familyApi.getPaymentDetail(pb.id);
+                            if (pRes?.status === 2 && isMounted) {
+                                const paidMap = getConfirmedPaidBookings();
+                                paidMap[pb.id] = { paidAt: Date.now(), status: 2 };
+                                localStorage.setItem("carelink_confirmed_paid_bookings", JSON.stringify(paidMap));
+                                setBookings((prev) =>
+                                    prev.map((item) =>
+                                        item.id === pb.id ? { ...item, status: pb.conversationId ? 3 : 2 } : item
+                                    )
+                                );
+                            }
+                        } catch {}
+                    });
+                }
             })
         // Tải tin nhắn gần nhất để hiển thị thẻ trao đổi
         conversationApi.getConversations({ PageNumber: 1, PageSize: 1 })
@@ -139,9 +167,11 @@ export default function Dashboard() {
 
     // Tìm ca chăm sóc sắp tới (Accepted=3, InProgress=4, PendingAcceptance=2)
     const upcomingBooking = useMemo(() => {
+        const paidMap = getConfirmedPaidBookings();
         const active = bookings.filter((b) => {
+            const isLocalPaid = Boolean(b.id && paidMap[b.id]);
             const st = typeof b.status === "number" ? b.status : 0;
-            return st === 3 || st === 4 || st === 2 || b.status === "Accepted" || b.status === "InProgress" || b.status === "PendingAcceptance";
+            return st === 3 || st === 4 || st === 2 || (isLocalPaid && st === 1) || b.status === "Accepted" || b.status === "InProgress" || b.status === "PendingAcceptance";
         });
         if (active.length === 0) return null;
         return active.sort((a, b) => new Date(a.scheduledStart) - new Date(b.scheduledStart))[0];
@@ -149,7 +179,9 @@ export default function Dashboard() {
 
     // Tìm ca đang chờ thanh toán (PendingPayment=1)
     const pendingPaymentBooking = useMemo(() => {
+        const paidMap = getConfirmedPaidBookings();
         const list = bookings.filter((b) => {
+            if (b.id && paidMap[b.id]) return false;
             const st = typeof b.status === "number" ? b.status : 0;
             return st === 1 || b.status === "PendingPayment";
         });

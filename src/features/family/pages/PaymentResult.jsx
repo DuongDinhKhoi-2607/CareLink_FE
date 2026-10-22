@@ -81,6 +81,19 @@ export default function PaymentResult() {
             if (status === 2 || isPaidFromParams) {
                 // Đã thanh toán thành công (Backend xác nhận HOẶC PayOS Sandbox xác nhận)
                 sessionStorage.removeItem("carelink_pending_payment_booking_id");
+                if (bookingId) {
+                    try {
+                        const currentPaid = JSON.parse(localStorage.getItem("carelink_confirmed_paid_bookings") || "{}");
+                        currentPaid[bookingId] = {
+                            paidAt: Date.now(),
+                            orderCode: orderCode || paymentRes?.paymentCode || "PAID",
+                            status: 2,
+                        };
+                        localStorage.setItem("carelink_confirmed_paid_bookings", JSON.stringify(currentPaid));
+                    } catch (e) {
+                        console.warn("[CareLink] Lưu trạng thái booking đã thanh toán:", e);
+                    }
+                }
                 setLoading(false);
                 setVerifying(false);
                 if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
