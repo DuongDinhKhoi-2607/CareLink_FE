@@ -142,8 +142,8 @@ export default function CaregiverDashboard() {
                     const validName = p?.fullName && p.fullName.toLowerCase() !== "nurse" && !p.fullName.includes("@")
                         ? p.fullName
                         : prev?.fullName && prev.fullName.toLowerCase() !== "nurse" && !prev.fullName.includes("@")
-                        ? prev.fullName
-                        : "Điều dưỡng";
+                            ? prev.fullName
+                            : "Điều dưỡng";
 
                     const updated = {
                         ...prev,
@@ -156,7 +156,7 @@ export default function CaregiverDashboard() {
                     };
                     try {
                         localStorage.setItem("carelink_user", JSON.stringify(updated));
-                    } catch {}
+                    } catch { }
                     return updated;
                 });
             }
@@ -167,13 +167,13 @@ export default function CaregiverDashboard() {
                 const items = Array.isArray(res) ? res : (res?.data || res?.items || []);
                 setBookingsList(items);
             })
-            .catch(() => {});
+            .catch(() => { });
 
         caregiverApi.getWallet()
             .then((res) => {
                 setWallet(res);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -273,7 +273,7 @@ export default function CaregiverDashboard() {
         },
     ];
 
-    // Chuyển đổi danh sách ca chăm sóc thực tế (100% không dùng mock data)
+    // Chuyển đổi danh sách ca chăm sóc thực tế
     const displayBookings = bookingsList.length > 0
         ? bookingsList.slice(0, 5).map((b) => {
             const rawSt = typeof b.status === "number" ? b.status : 2;
@@ -429,7 +429,7 @@ export default function CaregiverDashboard() {
             );
         }
 
-        // ── ONBOARDING HERO CARD DÀNH CHO ĐIỀU DƯỠNG CHƯA NỘP HỒ SƠ ──
+        // ── ONBOARDING HERO CARD DÀNH CHO ĐIỀU DƯỠNG CHƯA NỘP HỒ SƠ (SOLID CARELINK TEAL, NO GRADIENT) ──
         return (
             <div className="mb-8 rounded-3xl bg-[#00677C] p-6 sm:p-8 text-white shadow-md border border-[#005466]">
                 <div>
