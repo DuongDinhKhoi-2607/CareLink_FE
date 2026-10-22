@@ -60,35 +60,82 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                     {/* 1. Thông tin cá nhân & đào tạo */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50/80 border border-slate-100 text-xs">
                         <div>
+                            <span className="text-slate-400 font-medium">Đối tượng chuyên môn:</span>
+                            <div className="mt-1">
+                                {caregiver.practitionerType === 2 || caregiver.role?.includes("Sinh viên") ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 font-bold border border-blue-200">
+                                        🎓 Sinh viên Y khoa
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
+                                        👩‍⚕️ Điều dưỡng chính quy
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
                             <span className="text-slate-400 font-medium">Số điện thoại:</span>
                             <div className="font-bold text-slate-800 mt-0.5">{caregiver.phone || "Chưa cập nhật"}</div>
                         </div>
+
                         <div>
-                            <span className="text-slate-400 font-medium">Email:</span>
+                            <span className="text-slate-400 font-medium">Email tài khoản:</span>
                             <div className="font-bold text-slate-800 mt-0.5">{caregiver.email || "Chưa cập nhật"}</div>
                         </div>
+
+                        {(caregiver.practitionerType === 2 || caregiver.role?.includes("Sinh viên")) && (
+                            <div>
+                                <span className="text-slate-400 font-medium">Email trường cấp (.edu.vn):</span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="font-bold text-blue-900 font-mono">{caregiver.studentEmail || caregiver.email}</span>
+                                    {caregiver.isStudentEmailVerified ? (
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                                            ✓ Đã xác thực OTP
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                                            Chưa xác thực OTP
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <div>
                             <span className="text-slate-400 font-medium">Số Căn cước công dân (CCCD):</span>
                             <div className="font-bold text-slate-900 font-mono mt-0.5">{caregiver.citizenId || "Chưa cung cấp"}</div>
                         </div>
+
                         <div>
                             <span className="text-slate-400 font-medium">Kinh nghiệm chăm sóc:</span>
                             <div className="font-bold text-slate-800 mt-0.5">
                                 {caregiver.experienceYears != null ? `${caregiver.experienceYears} năm kinh nghiệm` : (caregiver.experience || "Theo hồ sơ")}
                             </div>
                         </div>
+
                         <div className="sm:col-span-2">
                             <span className="text-slate-400 font-medium">Trường đào tạo / Nơi công tác:</span>
                             <div className="font-bold text-slate-800 mt-0.5">{caregiver.workplace || caregiver.educationLevel || "Chưa cập nhật"}</div>
                         </div>
-                        <div>
-                            <span className="text-slate-400 font-medium">Số Chứng chỉ hành nghề (CCHN):</span>
-                            <div className="font-bold text-[#00677c] font-mono mt-0.5">{caregiver.licenseNumber || "Chưa có / Sinh viên Y"}</div>
-                        </div>
-                        <div>
-                            <span className="text-slate-400 font-medium">Thời hạn CCHN:</span>
-                            <div className="font-bold text-slate-800 mt-0.5">{caregiver.licenseExpiryDate || "Vô thời hạn / Dài hạn"}</div>
-                        </div>
+
+                        {caregiver.practitionerType === 2 || caregiver.role?.includes("Sinh viên") ? (
+                            <div className="sm:col-span-2 p-2.5 rounded-lg bg-blue-50/70 border border-blue-100 text-blue-800 text-[11px]">
+                                ℹ️ <strong>Hồ sơ Sinh viên Y khoa:</strong> Không bắt buộc Chứng chỉ hành nghề y tế (CCHN). Yêu cầu đối chiếu Thẻ sinh viên và Giấy xác nhận trường.
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <span className="text-slate-400 font-medium">Số Chứng chỉ hành nghề (CCHN):</span>
+                                    <div className="font-bold text-[#00677c] font-mono mt-0.5">{caregiver.licenseNumber || "Chưa có"}</div>
+                                </div>
+                                <div>
+                                    <span className="text-slate-400 font-medium">Thời hạn CCHN:</span>
+                                    <div className="font-bold text-slate-800 mt-0.5">{caregiver.licenseExpiryDate || "Vô thời hạn / Dài hạn"}</div>
+                                </div>
+                            </>
+                        )}
+
                         {caregiver.bio && (
                             <div className="sm:col-span-2 pt-2 border-t border-slate-200/60">
                                 <span className="text-slate-400 font-medium">Giới thiệu bản thân & kỹ năng:</span>

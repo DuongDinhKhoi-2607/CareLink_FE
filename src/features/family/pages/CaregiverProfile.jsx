@@ -114,8 +114,8 @@ export default function CaregiverProfile() {
 
     // Fallback ảnh online chất lượng cao, bền vững (dùng chung avatar ĐD. Nguyễn Thùy Linh)
     const avatarUrl = caregiver?.image || caregiver?.avatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
-    const displayName = caregiver?.name || caregiver?.fullName || "Nguyễn Thùy Linh";
-    const displayRole = caregiver?.role || caregiver?.title || "Sinh viên Y4 - Đại học Y Dược TP.HCM";
+    const displayName = caregiver?.name || caregiver?.fullName || "Điều dưỡng CareLink";
+    const displayRole = caregiver?.role || caregiver?.title || "Nhân viên y tế CareLink";
 
     const handleContact = async () => {
         const token = localStorage.getItem("carelink_token");

@@ -350,6 +350,184 @@ export default function CaregiverDashboard() {
         color: vStatus === 2 ? "bg-emerald-600" : (vStatus === 1 || vStatus === 4 ? "bg-amber-500" : "bg-slate-400"),
     });
 
+    const renderVerificationBanner = () => {
+        const vStatus = currentUser?.nurseStatus;
+        const vStatusName = currentUser?.verificationStatusName;
+        const isApproved = vStatus === 2 || vStatus === "Approved" || vStatusName === "Approved";
+        const isPending = vStatus === 1 || vStatus === 4 || vStatus === "Pending" || vStatus === "Resubmitted" || vStatusName === "Pending";
+        const isRejected = vStatus === 3 || vStatus === "Rejected" || vStatusName === "Rejected";
+
+        if (isApproved) {
+            return (
+                <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-emerald-800">Tài khoản đã được xác minh</p>
+                        <p className="text-xs text-emerald-600 mt-0.5">
+                            Hồ sơ năng lực của bạn đã đạt chuẩn. Bạn có thể sẵn sàng nhận lịch hẹn chăm sóc từ các gia đình.
+                        </p>
+                    </div>
+                    <Link
+                        to="/caregiver/verification"
+                        className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
+                    >
+                        Chi tiết hồ sơ
+                    </Link>
+                </div>
+            );
+        }
+
+        if (isPending) {
+            return (
+                <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-amber-800">Tài khoản đang chờ xác minh</p>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                            Hồ sơ của bạn đang được đội ngũ CareLink đối soát và kiểm duyệt. Thường mất 1–3 ngày làm việc.
+                        </p>
+                    </div>
+                    <Link
+                        to="/caregiver/verification"
+                        className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
+                    >
+                        Xem hồ sơ
+                    </Link>
+                </div>
+            );
+        }
+
+        if (isRejected) {
+            return (
+                <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-rose-800">Hồ sơ cần cập nhật / bổ sung</p>
+                        <p className="text-xs text-rose-600 mt-0.5">
+                            Hồ sơ xác minh điều dưỡng của bạn cần cập nhật lại thông tin hoặc chứng chỉ theo yêu cầu từ Quản trị viên.
+                        </p>
+                    </div>
+                    <Link
+                        to="/caregiver/verification"
+                        className="shrink-0 text-xs font-bold text-rose-700 bg-rose-100 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
+                    >
+                        Nộp lại hồ sơ
+                    </Link>
+                </div>
+            );
+        }
+
+        // ── ONBOARDING HERO CARD DÀNH CHO ĐIỀU DƯỠNG CHƯA NỘP HỒ SƠ ──
+        return (
+            <div className="mb-8 rounded-3xl bg-[#00677C] p-6 sm:p-8 text-white shadow-md border border-[#005466]">
+                <div>
+                    {/* Top row: Status pill */}
+                    <div className="flex items-center mb-3.5">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white text-xs font-medium">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+                            </span>
+                            <span>Bắt đầu với CareLink · Hồ sơ chưa kích hoạt</span>
+                        </div>
+                    </div>
+
+                    {/* Main Title & Subtitle */}
+                    <div className="max-w-3xl">
+                        <h2 className="text-xl sm:text-2xl lg:text-[25px] font-bold text-white tracking-tight leading-snug">
+                            Chào mừng bạn đến với Mạng lưới Điều dưỡng CareLink!
+                        </h2>
+                        <p className="text-sm sm:text-[15px] text-teal-50/90 mt-2 leading-relaxed font-normal">
+                            Chỉ còn 1 bước để mở khóa quyền nhận lịch trực, kết nối với hàng ngàn gia đình và nhận thu nhập hấp dẫn. Vui lòng hoàn tất nộp hồ sơ chứng chỉ chuyên môn và CCCD để Quản trị viên kích hoạt tài khoản của bạn trong 24h.
+                        </p>
+                    </div>
+
+                    {/* 3-Step Information Road */}
+                    <div className="mt-6 pt-5 border-t border-white/20 grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        <div className="bg-[#005769] rounded-2xl p-4 border border-white/15 hover:border-white/30 transition-all duration-200 hover:-translate-y-0.5">
+                            <div className="flex items-center justify-between gap-3 mb-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-white text-[#00677C] font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                    1
+                                </div>
+                                <span className="text-[10px] font-semibold text-teal-100 bg-white/15 border border-white/20 px-2 py-0.5 rounded-md">
+                                    ~ 2 phút
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-white">Thông tin năng lực</p>
+                            <p className="text-xs text-teal-100/80 mt-1 leading-relaxed">Kinh nghiệm lâm sàng, học vấn & chuyên môn y tế</p>
+                        </div>
+
+                        <div className="bg-[#005769] rounded-2xl p-4 border border-white/15 hover:border-white/30 transition-all duration-200 hover:-translate-y-0.5">
+                            <div className="flex items-center justify-between gap-3 mb-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-white text-[#00677C] font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                    2
+                                </div>
+                                <span className="text-[10px] font-semibold text-teal-100 bg-white/15 border border-white/20 px-2 py-0.5 rounded-md">
+                                    ~ 3 phút
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-white">Chứng từ & CCHN</p>
+                            <p className="text-xs text-teal-100/80 mt-1 leading-relaxed">Ảnh CCCD 2 mặt, bằng tốt nghiệp hoặc thẻ SV</p>
+                        </div>
+
+                        <div className="bg-[#005769] rounded-2xl p-4 border border-white/15 hover:border-white/30 transition-all duration-200 hover:-translate-y-0.5">
+                            <div className="flex items-center justify-between gap-3 mb-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-white text-[#00677C] font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                    3
+                                </div>
+                                <span className="text-[10px] font-semibold text-teal-100 bg-white/15 border border-white/20 px-2 py-0.5 rounded-md">
+                                    Trong 24h
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-white">Duyệt & Nhận ca</p>
+                            <p className="text-xs text-teal-100/80 mt-1 leading-relaxed">Admin xét duyệt trong 24h và cấp quyền nhận việc</p>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons & Reassurance Footer */}
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-4 pt-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Link
+                                to="/caregiver/verification"
+                                className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-teal-50 text-[#00677C] font-bold text-xs shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                            >
+                                <span>Nộp hồ sơ xác thực ngay</span>
+                                <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            </Link>
+                            <Link
+                                to="/caregiver/profile"
+                                className="inline-flex items-center gap-2 px-4.5 py-3 rounded-xl bg-[#005769] hover:bg-[#004e5e] text-white font-semibold text-xs border border-white/25 transition-all shadow-xs"
+                            >
+                                <span>Kiểm tra hồ sơ & chứng chỉ</span>
+                            </Link>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-teal-100/90">
+                            <svg className="w-4 h-4 text-teal-200 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                            </svg>
+                            <span>Thông tin y tế và CCCD được mã hóa bảo mật theo tiêu chuẩn CareLink</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="p-5 sm:p-8 max-w-7xl mx-auto animate-page-enter">
             {/* Header */}
@@ -361,162 +539,7 @@ export default function CaregiverDashboard() {
             </div>
 
             {/* Verification Banner chuẩn xác theo 4 trạng thái */}
-            {(() => {
-                const vStatus = currentUser?.nurseStatus;
-                const vStatusName = currentUser?.verificationStatusName;
-                const isApproved = vStatus === 2 || vStatus === "Approved" || vStatusName === "Approved" || (vStatus === 1 && !vStatusName);
-                const isPending = vStatus === 1 || vStatus === 4 || vStatus === "Pending" || vStatus === "Resubmitted" || vStatusName === "Pending";
-                const isRejected = vStatus === 3 || vStatus === "Rejected" || vStatusName === "Rejected";
-
-                if (isApproved) {
-                    return (
-                        <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-emerald-800">Tài khoản đã được xác minh</p>
-                                <p className="text-xs text-emerald-600 mt-0.5">
-                                    Hồ sơ năng lực của bạn đã đạt chuẩn. Bạn có thể sẵn sàng nhận lịch hẹn chăm sóc từ các gia đình.
-                                </p>
-                            </div>
-                            <Link
-                                to="/caregiver/verification"
-                                className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
-                            >
-                                Chi tiết hồ sơ
-                            </Link>
-                        </div>
-                    );
-                }
-
-                if (isPending) {
-                    return (
-                        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-amber-800">Tài khoản đang chờ xác minh</p>
-                                <p className="text-xs text-amber-600 mt-0.5">
-                                    Hồ sơ của bạn đang được đội ngũ CareLink đối soát và kiểm duyệt. Thường mất 1–3 ngày làm việc.
-                                </p>
-                            </div>
-                            <Link
-                                to="/caregiver/verification"
-                                className="shrink-0 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors"
-                            >
-                                Xem hồ sơ
-                            </Link>
-                        </div>
-                    );
-                }
-
-                if (isRejected) {
-                    return (
-                        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-                                <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-rose-800">Hồ sơ cần cập nhật / bổ sung</p>
-                                <p className="text-xs text-rose-600 mt-0.5">
-                                    Hồ sơ xác minh điều dưỡng của bạn cần cập nhật lại thông tin hoặc chứng chỉ theo yêu cầu từ Quản trị viên.
-                                </p>
-                            </div>
-                            <Link
-                                to="/caregiver/verification"
-                                className="shrink-0 text-xs font-bold text-rose-700 bg-rose-100 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
-                            >
-                                Nộp lại hồ sơ
-                            </Link>
-                        </div>
-                    );
-                }
-
-                // ── LUXURY ONBOARDING HERO CARD DÀNH CHO ĐIỀU DƯỠNG CHƯA NỘP HỒ SƠ ──
-                return (
-                    <div className="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#003847] via-[#004f5e] to-[#00677c] p-6 sm:p-8 text-white shadow-xl border border-teal-500/20">
-                        {/* Decorative background glow circles */}
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-teal-400/10 blur-3xl pointer-events-none" />
-                        <div className="absolute bottom-0 left-1/3 -mb-16 w-48 h-48 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
-
-                        <div className="relative z-10">
-                            {/* Glass Badge */}
-                            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-teal-200 text-xs font-semibold uppercase tracking-wider mb-4 shadow-sm">
-                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                                Bắt đầu với CareLink · Hồ sơ chưa kích hoạt
-                            </div>
-
-                            {/* Main Title & Subtitle */}
-                            <div className="max-w-2xl">
-                                <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">
-                                    Chào mừng bạn đến với Mạng lưới Điều dưỡng CareLink!
-                                </h2>
-                                <p className="text-sm text-teal-100/90 mt-2 leading-relaxed">
-                                    Chỉ còn 1 bước để mở khóa quyền nhận lịch trực, kết nối với hàng ngàn gia đình và nhận thu nhập hấp dẫn. Vui lòng hoàn tất nộp hồ sơ chứng chỉ chuyên môn và CCCD để Quản trị viên kích hoạt tài khoản của bạn trong 24h.
-                                </p>
-                            </div>
-
-                            {/* 3-Step Progress Road */}
-                            <div className="mt-6 pt-6 border-t border-white/15 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="flex items-start gap-3 bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-                                    <div className="w-7 h-7 rounded-xl bg-teal-500/30 text-teal-200 font-bold text-xs flex items-center justify-center shrink-0 border border-teal-400/30">
-                                        1
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-white">Thông tin năng lực</p>
-                                        <p className="text-[11px] text-teal-200/80 mt-0.5">Kinh nghiệm, chuyên môn y tế</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3 bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-                                    <div className="w-7 h-7 rounded-xl bg-teal-500/30 text-teal-200 font-bold text-xs flex items-center justify-center shrink-0 border border-teal-400/30">
-                                        2
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-white">Chứng từ & CCHN</p>
-                                        <p className="text-[11px] text-teal-200/80 mt-0.5">CCCD, bằng cấp hoặc thẻ SV</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3 bg-white/5 rounded-2xl p-3 border border-white/10 backdrop-blur-xs">
-                                    <div className="w-7 h-7 rounded-xl bg-teal-500/30 text-teal-200 font-bold text-xs flex items-center justify-center shrink-0 border border-teal-400/30">
-                                        3
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-white">Duyệt & Nhận ca</p>
-                                        <p className="text-[11px] text-teal-200/80 mt-0.5">Xét duyệt trong 24h làm việc</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="mt-6 flex flex-wrap items-center gap-3">
-                                <Link
-                                    to="/caregiver/verification"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-[#004f5e] font-bold text-xs shadow-lg hover:bg-teal-50 transition-all hover:scale-[1.02] cursor-pointer"
-                                >
-                                    <span>Nộp hồ sơ xác thực ngay</span>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                    </svg>
-                                </Link>
-                                <Link
-                                    to="/caregiver/profile"
-                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-md transition-colors"
-                                >
-                                    <span>Kiểm tra hồ sơ & chứng chỉ</span>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })()}
+            {renderVerificationBanner()}
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">

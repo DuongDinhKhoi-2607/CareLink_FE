@@ -5,31 +5,34 @@ import caregiverApi from "../../../api/caregiverApi";
 import authApi, { fetchAndSyncUserMe } from "../../../api/authApi";
 
 export default function CaregiverProfilePage() {
+    // Lấy thông tin tài khoản đang đăng nhập từ localStorage để khởi tạo đúng tên, email người dùng thật
+    const getLoggedInUser = () => {
+        try {
+            const raw = localStorage.getItem("carelink_user");
+            if (raw) return JSON.parse(raw);
+        } catch {}
+        return null;
+    };
+    const loggedInUser = getLoggedInUser();
+
     // ── STATE HỒ SƠ ĐIỀU DƯỠNG (KHỚP DTO BACKEND: NurseProfileResponse & UpdateNurseProfileRequest) ──
     const [profile, setProfile] = useState({
-        fullName: "Điều dưỡng Nguyễn Thùy Linh",
-        title: "Cử nhân Điều dưỡng ĐH Y Dược TP.HCM",
-        email: "thuylinh.nurse@carelink.vn",
-        phone: "0912 888 999",
-        avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-        rating: 4.9,
-        reviewsCount: 128,
-        completedBookings: 154,
-        experienceYears: 5,
-        bio: "Với hơn 5 năm kinh nghiệm công tác tại Khoa Nội tổng hợp và phục hồi chức năng, tôi luôn tận tâm, chu đáo và kiên nhẫn trong từng ca trực. Thành thạo kỹ thuật theo dõi sinh hiệu, chăm sóc người cao tuổi tai biến, bệnh nền tiểu đường, cao huyết áp và hỗ trợ tập vận động tại nhà.",
+        fullName: loggedInUser?.name || loggedInUser?.email?.split("@")[0] || "Điều dưỡng CareLink",
+        title: "",
+        email: loggedInUser?.email || "",
+        phone: loggedInUser?.phone || "",
+        avatar: loggedInUser?.avatar || "/images/caregiver_avatar.svg",
+        rating: 5.0,
+        reviewsCount: 0,
+        completedBookings: 0,
+        experienceYears: 0,
+        bio: "",
         maxDistanceKm: 10,
         serviceRadiusKm: 10, // Khớp chuẩn DTO Backend: ServiceRadiusKm
-        workDistrict: "Quận Bình Thạnh", // Khớp DTO Backend: WorkDistrict
-        baseAddress: "182 Bạch Đằng, Phường 24, Quận Bình Thạnh, TP.HCM",
-        preferredDistricts: ["Quận Bình Thạnh", "Quận 1", "Quận Phú Nhuận", "Quận 3"],
-        skills: [
-            "Theo dõi & Đo sinh hiệu (HA, Tim, SpO2, Đường huyết)",
-            "Chăm sóc phục hồi chức năng sau tai biến",
-            "Thay băng, rửa vết thương y tế vô khuẩn",
-            "Nhắc và hỗ trợ uống thuốc theo phác đồ",
-            "Hỗ trợ vệ sinh, tắm gội tại giường cho người cao tuổi",
-            "Xoa bóp, tập co duỗi khớp gối phòng teo cơ",
-        ],
+        workDistrict: "", // Khớp DTO Backend: WorkDistrict
+        baseAddress: "",
+        preferredDistricts: [],
+        skills: [],
         verificationStatus: 0, // 0: Unsubmitted | 1: Pending | 2: Approved | 3: Rejected | 4: Resubmitted
         adminNote: null,
         licenseNumber: "",
@@ -146,13 +149,13 @@ export default function CaregiverProfilePage() {
                         email: data.email || prev.email,
                         phone: data.phone || data.phoneNumber || prev.phone,
                         avatar: data.avatar || data.avatarUrl || prev.avatar,
-                        rating: Number(data.rating ?? data.averageRating ?? prev.rating),
-                        reviewsCount: Number(data.reviewsCount ?? data.totalReviews ?? prev.reviewsCount),
-                        completedBookings: Number(data.completedBookings ?? data.totalBookings ?? prev.completedBookings),
-                        experienceYears: Number(data.experienceYears ?? data.yearsOfExperience ?? prev.experienceYears),
+                        rating: Number(data.rating ?? data.averageRating ?? prev.rating ?? 5.0),
+                        reviewsCount: Number(data.reviewsCount ?? data.totalReviews ?? prev.reviewsCount ?? 0),
+                        completedBookings: Number(data.completedBookings ?? data.totalBookings ?? prev.completedBookings ?? 0),
+                        experienceYears: Number(data.experienceYears ?? data.yearsOfExperience ?? prev.experienceYears ?? 0),
                         bio: data.bio || data.description || prev.bio,
-                        maxDistanceKm: Number(data.maxDistanceKm ?? data.serviceRadiusKm ?? prev.maxDistanceKm),
-                        serviceRadiusKm: Number(data.serviceRadiusKm ?? data.maxDistanceKm ?? prev.serviceRadiusKm),
+                        maxDistanceKm: Number(data.maxDistanceKm ?? data.serviceRadiusKm ?? prev.maxDistanceKm ?? 10),
+                        serviceRadiusKm: Number(data.serviceRadiusKm ?? data.maxDistanceKm ?? prev.serviceRadiusKm ?? 10),
                         workDistrict: data.workDistrict || data.district || prev.workDistrict,
                         baseAddress: data.baseAddress || data.address || prev.baseAddress,
                         preferredDistricts: Array.isArray(data.preferredDistricts) && data.preferredDistricts.length > 0
@@ -172,9 +175,16 @@ export default function CaregiverProfilePage() {
                     setDraft(merged);
                     return merged;
                 });
+            } else {
+                setDraft((prev) => ({
+                    ...prev,
+                    fullName: loggedInUser?.name || loggedInUser?.email?.split("@")[0] || prev.fullName,
+                    email: loggedInUser?.email || prev.email,
+                    phone: loggedInUser?.phone || prev.phone,
+                }));
             }
         } catch (err) {
-            console.warn("Lỗi tải hồ sơ điều dưỡng từ server, giữ thông tin dự phòng:", err);
+            console.warn("Lỗi tải hồ sơ điều dưỡng từ server, giữ thông tin người dùng đăng nhập:", err);
         } finally {
             setLoading(false);
         }

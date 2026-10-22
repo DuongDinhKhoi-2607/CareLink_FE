@@ -526,7 +526,42 @@ function InterviewWaiting({ role }) {
     );
 }
 
-// Hàm hỗ trợ upload tài liệu lên server hoặc chuyển đổi sang Data URL để xem được ảnh thật
+// Hàm nén ảnh sang Data URL an toàn gọn nhẹ (~60KB - 120KB) phòng khi upload file thất bại
+const compressImageToDataUrl = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve) => {
+        if (!file || !file.type?.startsWith("image/")) {
+            return resolve(file?.name ? `/uploads/documents/${file.name}` : "https://carelink.vn/docs/default_doc.jpg");
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL("image/jpeg", quality));
+                } else {
+                    resolve(e.target.result);
+                }
+            };
+            img.onerror = () => resolve(e.target.result);
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve("https://carelink.vn/docs/default_doc.jpg");
+        reader.readAsDataURL(file);
+    });
+};
+
+// Hàm hỗ trợ upload tài liệu lên server hoặc chuyển đổi an toàn
 const uploadOrConvertFile = async (file) => {
     if (!file) return null;
     try {
@@ -536,20 +571,19 @@ const uploadOrConvertFile = async (file) => {
         const url = res?.fileUrl || res?.data?.fileUrl || res?.relativeUrl;
         if (url) return url;
     } catch (uploadErr) {
-        console.warn("[CareLink] Upload qua API backend thất bại, fallback Data URL (Base64):", uploadErr);
+        console.warn("[CareLink] Upload qua API /api/v1/uploads thất bại, fallback Data URL nén an toàn:", uploadErr);
     }
 
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => resolve(file.name ? `/uploads/documents/${file.name}` : "https://carelink.vn/docs/default_doc.jpg");
-        reader.readAsDataURL(file);
-    });
+    return await compressImageToDataUrl(file);
 };
 
 export default function Verification() {
     const [searchParams] = useSearchParams();
-    const role = searchParams.get("role") === "nurse" ? "nurse" : "student";
+    const [selectedRole, setSelectedRole] = useState(() => {
+        const param = searchParams.get("role");
+        return param === "nurse" ? "nurse" : "student";
+    });
+    const role = selectedRole;
     const isStudent = role === "student";
     const steps = isStudent ? STUDENT_STEPS : NURSE_STEPS;
     const skillOptions = isStudent ? STUDENT_SKILLS : NURSE_SKILLS;
@@ -562,6 +596,15 @@ export default function Verification() {
     const [eduData, setEduData] = useState(INITIAL_EDU);
     const [files, setFiles] = useState(INITIAL_FILES);
     const [selectedSkills, setSelectedSkills] = useState([]);
+
+    // ── STATE XÁC THỰC OTP EMAIL TRƯỜNG DÀNH CHO SINH VIÊN Y KHOA (LUỒNG 1) ──
+    const [studentEmail, setStudentEmail] = useState("");
+    const [studentOtp, setStudentOtp] = useState("");
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [isOtpVerified, setIsOtpVerified] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [otpError, setOtpError] = useState("");
+    const [otpSuccessMessage, setOtpSuccessMessage] = useState("");
 
     // ── STATE KẾT NỐI API XÁC MINH HỒ SƠ ──
     const [statusLoading, setStatusLoading] = useState(true);
@@ -604,6 +647,19 @@ export default function Verification() {
                 const data = res?.data || res;
                 if (data && typeof data === "object") {
                     setExistingStatus(data);
+                    if (data.studentEmail) {
+                        setStudentEmail(data.studentEmail);
+                    }
+                    if (data.isStudentEmailVerified) {
+                        setIsOtpVerified(true);
+                        setIsOtpSent(true);
+                    }
+                    if (data.practitionerType === 1) {
+                        setSelectedRole("nurse");
+                    } else if (data.practitionerType === 2) {
+                        setSelectedRole("student");
+                    }
+
                     // Nếu đã nộp và đang chờ duyệt (status = 1 hoặc verificationStatus = 1)
                     if (data.verificationStatus === 1 || data.status === 1) {
                         setSubmitted(true);
@@ -630,6 +686,64 @@ export default function Verification() {
             isMounted = false;
         };
     }, []);
+
+    // Gửi mã OTP xác thực email sinh viên y khoa
+    const handleSendStudentEmailOtp = async () => {
+        setOtpError("");
+        setOtpSuccessMessage("");
+        const email = studentEmail.trim();
+        if (!email) {
+            setOtpError("Vui lòng nhập địa chỉ email trường của bạn.");
+            return;
+        }
+        if (!email.endsWith(".edu.vn") && !email.endsWith(".edu")) {
+            setOtpError("Email sinh viên y khoa phải có đuôi trường kết thúc bằng .edu.vn hoặc .edu (ví dụ: sv_y@ump.edu.vn).");
+            return;
+        }
+
+        setOtpLoading(true);
+        try {
+            const res = await caregiverApi.sendStudentEmailOtp({ studentEmail: email });
+            setIsOtpSent(true);
+            setOtpSuccessMessage(res?.data?.message || res?.message || "Mã OTP 6 số đã được gửi đến email trường. Vui lòng kiểm tra hộp thư!");
+        } catch (err) {
+            const rawDetail = err.response?.data?.detail || err.response?.data?.message || "";
+            if (rawDetail && !rawDetail.toLowerCase().includes("unexpected error") && !rawDetail.toLowerCase().includes("internal server")) {
+                setOtpError(rawDetail);
+            } else {
+                setOtpError("Hệ thống gửi mã OTP đang đồng bộ dữ liệu hoặc máy chủ đang bận. Vui lòng thử lại sau ít phút hoặc liên hệ quản trị viên.");
+            }
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    // Xác nhận mã OTP email sinh viên y khoa
+    const handleVerifyStudentEmailOtp = async () => {
+        setOtpError("");
+        setOtpSuccessMessage("");
+        const otp = studentOtp.trim();
+        if (!otp || otp.length !== 6) {
+            setOtpError("Mã OTP phải gồm đúng 6 chữ số.");
+            return;
+        }
+
+        setOtpLoading(true);
+        try {
+            await caregiverApi.verifyStudentEmailOtp({ otp });
+            setIsOtpVerified(true);
+            setOtpSuccessMessage("✓ Đã xác thực danh tính sinh viên y khoa qua Email trường thành công!");
+        } catch (err) {
+            const rawDetail = err.response?.data?.detail || err.response?.data?.message || "";
+            if (rawDetail && !rawDetail.toLowerCase().includes("unexpected error") && !rawDetail.toLowerCase().includes("internal server")) {
+                setOtpError(rawDetail);
+            } else {
+                setOtpError("Mã OTP không chính xác hoặc đã hết hạn (15 phút). Vui lòng yêu cầu gửi lại mã mới.");
+            }
+        } finally {
+            setOtpLoading(false);
+        }
+    };
 
     const handleFormChange = (event) => {
         const { name, value } = event.target;
@@ -720,6 +834,9 @@ export default function Verification() {
         }
 
         if (step === 3 && isStudent) {
+            if (!isOtpVerified) {
+                nextErrors.studentEmailOtp = "Vui lòng xác thực email trường (.edu.vn hoặc .edu) bằng mã OTP 6 chữ số trước khi tiếp tục.";
+            }
             if (!eduData.university.trim()) {
                 nextErrors.university = "Vui lòng nhập tên trường.";
             }
@@ -810,6 +927,7 @@ export default function Verification() {
 
         setIsSubmitting(true);
         setSubmitError("");
+        let payload = null;
 
         try {
             // Chuẩn hóa danh sách chứng từ đính kèm (DocumentType: 1=CCCD_FRONT, 2=CCCD_BACK, 3=DEGREE, 4=LICENSE, 5=SELFIE, 6=STUDENT_CARD)
@@ -868,8 +986,8 @@ export default function Verification() {
                 }
             }
 
-            const payload = {
-                citizenId: formData.citizenId?.trim() || "079203001234",
+            payload = {
+                citizenId: formData.citizenId?.trim() || "",
                 practitionerType: isStudent ? 2 : 1,
                 licenseNumber: !isStudent ? eduData.licenseNumber?.trim() || null : null,
                 licenseIssuedDate: !isStudent && eduData.licenseDate ? eduData.licenseDate : null,
@@ -908,7 +1026,7 @@ export default function Verification() {
             setSubmitted(true);
             window.scrollTo({ top: 0, behavior: "smooth" });
         } catch (err) {
-            // Log chi tiết toàn bộ lỗi cho FE & BE tiện kiểm tra và đối chiếu
+            // Log chi tiết toàn bộ lỗi kỹ thuật vào console cho lập trình viên tra cứu
             console.error("[CareLink Verification Error] Chi tiết lỗi khi gửi hồ sơ xác minh:", {
                 status: err.response?.status,
                 data: err.response?.data,
@@ -931,7 +1049,7 @@ export default function Verification() {
                 rawDetail.toLowerCase().includes("unexpected error") ||
                 rawDetail.toLowerCase().includes("constraint")
             ) {
-                msg = "Không thể lưu chứng từ do cơ sở dữ liệu Supabase chưa mở rộng ràng buộc loại tài liệu Thẻ sinh viên (constraint document_type 6). Vui lòng chạy câu lệnh SQL cập nhật trên Supabase hoặc thử lại sau.";
+                msg = "Hệ thống đang đồng bộ dữ liệu hồ sơ hoặc máy chủ đang bận. Vui lòng thử lại sau ít phút hoặc liên hệ quản trị viên để được hỗ trợ.";
             } else {
                 msg = rawDetail || "Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.";
             }
@@ -1045,6 +1163,39 @@ export default function Verification() {
                         <div className="min-w-0">
                             {currentStep === 1 && (
                                 <SectionCard>
+                                    {/* Confirmation banner of chosen role from ChooseRole */}
+                                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50/70 via-emerald-50/50 to-teal-50/40 p-4 shadow-2xs">
+                                        <div className="flex items-center gap-3.5">
+                                            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-xs text-2xl border border-teal-100">
+                                                {isStudent ? "🎓" : "👩‍⚕️"}
+                                            </span>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#087E78]">
+                                                        Đối tượng xác thực
+                                                    </span>
+                                                    <span className="rounded-full bg-[#087E78] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                                                        {isStudent ? "Sinh viên Y khoa" : "Điều dưỡng hành nghề"}
+                                                    </span>
+                                                </div>
+                                                <p className="mt-0.5 text-xs text-slate-600">
+                                                    {isStudent
+                                                        ? "Đang theo học khối ngành Y - Dược · Cần xác thực email trường (.edu.vn) & thẻ sinh viên"
+                                                        : "Đã tốt nghiệp · Yêu cầu chứng chỉ hành nghề (CCHN) hoặc bằng tốt nghiệp y tế"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Link
+                                            to="/caregiver/choose-role"
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-teal-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-[#087E78] shadow-2xs hover:bg-teal-50/80 transition-all hover:scale-[1.02]"
+                                        >
+                                            <span>Đổi đối tượng</span>
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                            </svg>
+                                        </Link>
+                                    </div>
+
                                     <SectionHeading
                                         eyebrow="Bước 01 · Thông tin cơ bản"
                                         title="Thông tin cá nhân"
@@ -1200,6 +1351,117 @@ export default function Verification() {
 
                             {currentStep === 3 && isStudent && (
                                 <div className="space-y-5">
+                                    {/* Xác thực Email trường Sinh viên Y khoa (OTP) */}
+                                    <SectionCard>
+                                        <SectionHeading
+                                            eyebrow="Bắt buộc đối với Sinh viên Y khoa"
+                                            title="Xác thực danh tính Sinh viên Y khoa"
+                                            description="CareLink yêu cầu sinh viên y khoa xác minh hộp thư trường (.edu.vn hoặc .edu) bằng mã OTP 6 chữ số để đảm bảo tính xác thực của đối tượng chuyên môn."
+                                        />
+
+                                        {errors.studentEmailOtp && (
+                                            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 font-semibold flex items-center gap-2">
+                                                <svg className="h-4 w-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                                </svg>
+                                                {errors.studentEmailOtp}
+                                            </div>
+                                        )}
+
+                                        {otpSuccessMessage && (
+                                            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-semibold flex items-center gap-2">
+                                                <svg className="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                {otpSuccessMessage}
+                                            </div>
+                                        )}
+
+                                        {otpError && (
+                                            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 font-semibold flex items-center gap-2">
+                                                <svg className="h-4 w-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                {otpError}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                                                    Email trường cấp (.edu.vn / .edu) <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                    <input
+                                                        type="email"
+                                                        value={studentEmail}
+                                                        onChange={(e) => {
+                                                            setStudentEmail(e.target.value);
+                                                            setOtpError("");
+                                                        }}
+                                                        disabled={isOtpVerified}
+                                                        placeholder="Ví dụ: sv_nguyenvana@ump.edu.vn"
+                                                        className={`flex-1 rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-all ${
+                                                            isOtpVerified
+                                                                ? "border-emerald-300 bg-emerald-50/50 text-emerald-900 font-medium"
+                                                                : "border-slate-300 bg-white hover:border-slate-400 focus:border-[#087E78] focus:ring-4 focus:ring-[#087E78]/10"
+                                                        }`}
+                                                    />
+                                                    {!isOtpVerified && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleSendStudentEmailOtp}
+                                                            disabled={otpLoading || !studentEmail.trim()}
+                                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#087E78] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#066A65] disabled:opacity-50 sm:w-auto"
+                                                        >
+                                                            {otpLoading ? "Đang gửi..." : isOtpSent ? "Gửi lại mã OTP" : "Gửi mã OTP"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <p className="mt-1 text-[11px] text-slate-500">
+                                                    Mã xác thực gồm 6 chữ số có hiệu lực trong 15 phút.
+                                                </p>
+                                            </div>
+
+                                            {isOtpSent && !isOtpVerified && (
+                                                <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-3.5">
+                                                    <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                                                        Nhập mã OTP 6 chữ số <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <div className="flex flex-col sm:flex-row gap-2">
+                                                        <input
+                                                            type="text"
+                                                            maxLength={6}
+                                                            value={studentOtp}
+                                                            onChange={(e) => setStudentOtp(e.target.value.replace(/\D/g, ""))}
+                                                            placeholder="Nhập 6 số"
+                                                            className="w-full sm:w-48 tracking-widest text-center text-base font-bold rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 outline-none focus:border-[#087E78] focus:ring-4 focus:ring-[#087E78]/10"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleVerifyStudentEmailOtp}
+                                                            disabled={otpLoading || studentOtp.length !== 6}
+                                                            className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                                                        >
+                                                            {otpLoading ? "Đang kiểm tra..." : "Xác thực ngay"}
+                                                        </button>
+                                                    </div>
+                                                    <p className="mt-2 text-[11px] text-teal-800">
+                                                        💡 Nếu chưa nhận được mã xác thực, vui lòng kiểm tra hộp thư Rác (Spam) hoặc nhấn gửi lại.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {isOtpVerified && (
+                                                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-800">
+                                                    <span className="text-base">✓</span>
+                                                    <span>Đã hoàn tất xác thực email trường: <span className="underline">{studentEmail}</span></span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </SectionCard>
+
                                     <SectionCard>
                                         <SectionHeading
                                             eyebrow="Bước 03 · Thông tin học tập"

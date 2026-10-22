@@ -12,98 +12,8 @@ import {
     AlertCircle,
 } from "lucide-react";
 
-const initialCaregivers = [
-    {
-        id: "CG-101",
-        name: "Trần Thị Mai",
-        role: "Sinh viên Y khoa",
-        phone: "0901 234 567",
-        email: "mai.tran@med.edu.vn",
-        workplace: "Đại học Y Dược TP.HCM (Năm 4)",
-        experience: "2 năm thực tập lâm sàng tại BV Chợ Rẫy",
-        submittedDate: "20/09/2026",
-        status: "Chờ duyệt",
-        skills: ["Đo huyết áp & đường huyết", "Thay băng rửa vết thương", "Hỗ trợ phục hồi vận động"],
-        documents: [
-            { name: "Căn cước công dân (Mặt trước & sau)", type: "Định danh", status: "Hợp lệ" },
-            { name: "Thẻ sinh viên Y khoa niên khóa 2022-2028", type: "Học vấn", status: "Hợp lệ" },
-            { name: "Chứng nhận thực tập lâm sàng BV Chợ Rẫy", type: "Kinh nghiệm", status: "Hợp lệ" },
-            { name: "Giấy khám sức khỏe định kỳ loại 1", type: "Sức khỏe", status: "Hợp lệ" },
-        ],
-    },
-    {
-        id: "CG-102",
-        name: "Lê Hoàng Long",
-        role: "Điều dưỡng chuyên nghiệp",
-        phone: "0912 345 678",
-        email: "long.le@hospital.vn",
-        workplace: "BV Nhân Dân Gia Định",
-        experience: "4 năm điều dưỡng khoa Hồi sức tích cực",
-        submittedDate: "19/09/2026",
-        status: "Chờ duyệt",
-        skills: ["Đặt ống thông tiểu", "Tiêm tĩnh mạch & truyền dịch", "Chăm sóc bệnh nhân thở máy"],
-        documents: [
-            { name: "Căn cước công dân (CCCD chip)", type: "Định danh", status: "Hợp lệ" },
-            { name: "Bằng Cử nhân Điều dưỡng chính quy", type: "Bằng cấp", status: "Hợp lệ" },
-            { name: "Chứng chỉ hành nghề y tế do Sở Y Tế cấp", type: "Chứng chỉ", status: "Hợp lệ" },
-            { name: "Chứng chỉ hồi sức cấp cứu nâng cao (ACLS)", type: "Kỹ năng", status: "Hợp lệ" },
-        ],
-    },
-    {
-        id: "CG-103",
-        name: "Nguyễn Thị Phương Thảo",
-        role: "Sinh viên Y khoa",
-        phone: "0988 765 432",
-        email: "thao.nguyen@pnt.edu.vn",
-        workplace: "ĐH Y Khoa Phạm Ngọc Thạch (Năm 5)",
-        experience: "3 năm hỗ trợ chăm sóc người già tại viện dưỡng lão",
-        submittedDate: "18/09/2026",
-        status: "Chờ duyệt",
-        skills: ["Đo dấu hiệu sinh tồn", "Vệ sinh cá nhân người cao tuổi", "Hỗ trợ tập vận động thụ động"],
-        documents: [
-            { name: "Căn cước công dân", type: "Định danh", status: "Hợp lệ" },
-            { name: "Thẻ sinh viên Y khoa PNT", type: "Học vấn", status: "Hợp lệ" },
-            { name: "Chứng chỉ sơ cấp cứu Hội Chữ Thập Đỏ", type: "Chứng chỉ", status: "Hợp lệ" },
-            { name: "Giấy xác nhận thực tập BV Trưng Vương", type: "Kinh nghiệm", status: "Hợp lệ" },
-        ],
-    },
-    {
-        id: "CG-104",
-        name: "Phạm Quốc Huy",
-        role: "Điều dưỡng chuyên nghiệp",
-        phone: "0933 456 789",
-        email: "huy.pham@carelink.vn",
-        workplace: "Phòng khám Đa khoa Quốc tế",
-        experience: "5 năm điều dưỡng chăm sóc gia đình",
-        submittedDate: "15/09/2026",
-        status: "Đã duyệt",
-        skills: ["Chăm sóc người tai biến", "Vật lý trị liệu khớp", "Dinh dưỡng bệnh lý"],
-        documents: [
-            { name: "Căn cước công dân", type: "Định danh", status: "Hợp lệ" },
-            { name: "Bằng Cử nhân Điều dưỡng ĐH Y Hà Nội", type: "Bằng cấp", status: "Hợp lệ" },
-            { name: "Chứng chỉ hành nghề y tế", type: "Chứng chỉ", status: "Hợp lệ" },
-        ],
-    },
-    {
-        id: "CG-105",
-        name: "Vũ Thị Bích Trâm",
-        role: "Sinh viên Y khoa",
-        phone: "0977 112 233",
-        email: "tram.vu@gmail.com",
-        workplace: "Cao đẳng Y Dược Hồng Đức",
-        experience: "1 năm thực tập tại phòng khám tư",
-        submittedDate: "12/09/2026",
-        status: "Từ chối",
-        skills: ["Thay băng", "Đo huyết áp"],
-        documents: [
-            { name: "Căn cước công dân (Ảnh mờ)", type: "Định danh", status: "Cần chụp lại" },
-            { name: "Bảng điểm chưa công chứng", type: "Học vấn", status: "Chưa hợp lệ" },
-        ],
-    },
-];
-
 export default function CaregiverApprovals() {
-    const [caregivers, setCaregivers] = useState(initialCaregivers);
+    const [caregivers, setCaregivers] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -124,41 +34,40 @@ export default function CaregiverApprovals() {
                 ? res.data
                 : [];
 
-            if (list.length > 0) {
-                const mapped = list.map((item) => {
-                    const st =
-                        item.verificationStatus === 1 || item.verificationStatus === 4
-                            ? "Chờ duyệt"
-                            : item.verificationStatus === 2
-                            ? "Đã duyệt"
-                            : item.verificationStatus === 3
-                            ? "Từ chối"
-                            : "Chưa nộp hồ sơ";
-                    return {
-                        id: item.nurseId || item.id,
-                        rawNurseId: item.nurseId || item.id,
-                        name: item.fullName || "Điều dưỡng CareLink",
-                        role: item.practitionerType === 2 ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
-                        phone: item.phone || "0901 234 567",
-                        email: item.email || "nurse@carelink.vn",
-                        workplace: item.workplace || "Cơ sở y tế TP.HCM",
-                        experience: item.experience || "Theo hồ sơ năng lực",
-                        submittedDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
-                        status: st,
-                        skills: ["Đo dấu hiệu sinh tồn", "Chăm sóc người cao tuổi", "Theo dõi y tế"],
-                        documents: (item.documents || []).map((d) => ({
-                            name: d.documentTypeName || "Giấy tờ xác minh",
-                            type: d.documentTypeName || "Chứng từ",
-                            status: d.statusName || "Hợp lệ",
-                            url: d.fileUrl,
-                        })),
-                        raw: item,
-                    };
-                });
-                setCaregivers(mapped);
-            }
+            const mapped = list.map((item) => {
+                const st =
+                    item.verificationStatus === 1 || item.verificationStatus === 4
+                        ? "Chờ duyệt"
+                        : item.verificationStatus === 2
+                        ? "Đã duyệt"
+                        : item.verificationStatus === 3
+                        ? "Từ chối"
+                        : "Chưa nộp hồ sơ";
+                return {
+                    id: item.nurseId || item.id,
+                    rawNurseId: item.nurseId || item.id,
+                    name: item.fullName || "Điều dưỡng CareLink",
+                    role: item.practitionerType === 2 ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
+                    phone: item.phone || "0901 234 567",
+                    email: item.email || "nurse@carelink.vn",
+                    workplace: item.workplace || "Cơ sở y tế TP.HCM",
+                    experience: item.experience || "Theo hồ sơ năng lực",
+                    submittedDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                    status: st,
+                    skills: ["Đo dấu hiệu sinh tồn", "Chăm sóc người cao tuổi", "Theo dõi y tế"],
+                    documents: (item.documents || []).map((d) => ({
+                        name: d.documentTypeName || "Giấy tờ xác minh",
+                        type: d.documentTypeName || "Chứng từ",
+                        status: d.statusName || "Hợp lệ",
+                        url: d.fileUrl,
+                    })),
+                    raw: item,
+                };
+            });
+            setCaregivers(mapped);
         } catch (err) {
-            console.warn("[CareLink Admin] Lấy danh sách duyệt hồ sơ từ API thất bại, dùng fallback:", err);
+            console.warn("[CareLink Admin] Lấy danh sách duyệt hồ sơ từ API thất bại:", err);
+            setCaregivers([]);
         } finally {
             setLoading(false);
         }
@@ -214,7 +123,10 @@ export default function CaregiverApprovals() {
                     phone: detail.phone || c.phone,
                     email: detail.email || c.email,
                     avatarUrl: detail.avatarUrl || c.avatarUrl,
-                    role: detail.licenseNumber ? "Điều dưỡng chuyên nghiệp" : (c.role || "Sinh viên Y khoa"),
+                    practitionerType: detail.practitionerType ?? (c.role?.includes("Sinh viên") ? 2 : 1),
+                    studentEmail: detail.studentEmail || c.raw?.studentEmail || null,
+                    isStudentEmailVerified: Boolean(detail.isStudentEmailVerified ?? c.raw?.isStudentEmailVerified),
+                    role: (detail.practitionerType === 2 || c.role?.includes("Sinh viên")) ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
                     workplace: detail.educationLevel || c.workplace || "Chưa cập nhật nơi công tác",
                     experience: detail.experienceYears != null ? `${detail.experienceYears} năm kinh nghiệm` : (c.experience || "Theo hồ sơ năng lực"),
                     experienceYears: detail.experienceYears,

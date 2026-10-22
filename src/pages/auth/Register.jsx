@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import authApi, { GOOGLE_CLIENT_ID } from "../../api/authApi";
 import Toast from "../../components/Toast";
@@ -305,8 +305,17 @@ function PasswordField({
 ========================================================= */
 export default function Register() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
-    const [role, setRole] = useState("family");
+    // Khởi tạo role từ query param ?role=family hoặc ?role=caregiver; nếu không truyền thì để null (không chọn mặc định)
+    const initialRole = (() => {
+        const r = searchParams.get("role")?.toLowerCase();
+        if (r === "caregiver" || r === "nurse") return "caregiver";
+        if (r === "family" || r === "customer") return "family";
+        return null;
+    })();
+
+    const [role, setRole] = useState(initialRole);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -320,13 +329,20 @@ export default function Register() {
     const [errors, setErrors] = useState({});
 
     const isFamilyRole = role === "family";
+    const isCaregiverRole = role === "caregiver";
     const selectedRoleLabel = isFamilyRole
         ? "Gia đình"
-        : "Điều dưỡng/Sinh viên Y";
+        : isCaregiverRole
+        ? "Điều dưỡng / Sinh viên Y"
+        : "Chưa chọn vai trò";
 
     /* VALIDATION */
     const validateForm = () => {
         const newErrors = {};
+
+        if (!role) {
+            newErrors.role = "Vui lòng chọn vai trò bạn muốn tham gia (Gia đình hoặc Điều dưỡng).";
+        }
 
         if (!name.trim()) {
             newErrors.name = "Vui lòng nhập họ và tên của bạn.";
@@ -372,6 +388,13 @@ export default function Register() {
         }
 
         setErrors(newErrors);
+        if (newErrors.role) {
+            setToast({
+                type: "warning",
+                title: "Chưa chọn vai trò",
+                message: newErrors.role,
+            });
+        }
         return Object.keys(newErrors).length === 0;
     };
 
@@ -472,12 +495,11 @@ export default function Register() {
             }
 
             if (err.code === "ERR_NETWORK" || !err.response) {
+                const effectiveName =
+                    name.trim() ||
+                    (email.trim() ? email.trim().split("@")[0] : "Người dùng CareLink");
                 const mockUser = {
-                    name:
-                        name.trim() ||
-                        (targetRole === "family"
-                            ? "Gia đình Minh An"
-                            : "Điều dưỡng Thùy Linh"),
+                    name: effectiveName,
                     email: email.trim(),
                     phone: phone.trim(),
                     role: targetRole,
@@ -542,11 +564,14 @@ export default function Register() {
                 targetRole = "family";
             }
 
+            const fallbackName =
+                data.user?.fullName ||
+                data.user?.name ||
+                (data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google");
+
             const userObj = {
                 id: data.user?.id,
-                name: data.user?.email
-                    ? data.user.email.split("@")[0]
-                    : "Người dùng Google",
+                name: fallbackName,
                 email: data.user?.email || "google.user@carelink.vn",
                 role: targetRole,
                 avatar:
@@ -571,23 +596,17 @@ export default function Register() {
                     type: "info",
                     title: "Chế độ trải nghiệm",
                     message:
-                        "Không kết nối được Backend. Đang kích hoạt tài khoản Google mẫu...",
+                        "Không kết nối được Backend. Đang kích hoạt tài khoản Google...",
                 });
 
                 const googleUser = {
-                    name:
-                        role === "family"
-                            ? "Gia đình Minh An (Google)"
-                            : "Điều dưỡng Thùy Linh (Google)",
-                    email:
-                        role === "family"
-                            ? "an.family.google@carelink.vn"
-                            : "linh.nurse.google@carelink.vn",
+                    name: "Người dùng CareLink (Google)",
+                    email: "user.google@carelink.vn",
                     role,
                     avatar:
                         role === "family"
                             ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                            : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+                            : "/images/caregiver_avatar.svg",
                 };
 
                 saveUserAndNavigate(
@@ -617,6 +636,20 @@ export default function Register() {
 
         setToast(null);
 
+        // Bắt buộc người dùng phải chọn vai trò trước khi đăng ký bằng Google
+        if (!role) {
+            setToast({
+                type: "warning",
+                title: "Chưa chọn vai trò",
+                message: "Vui lòng chọn vai trò bạn muốn tham gia (Gia đình hoặc Điều dưỡng) trước khi đăng ký bằng Google.",
+            });
+            setErrors((prev) => ({
+                ...prev,
+                role: "Vui lòng chọn vai trò bạn muốn tham gia.",
+            }));
+            return;
+        }
+
         const hiddenBtn = document.querySelector(
             "#google-register-hidden-wrapper div[role=button]"
         );
@@ -639,23 +672,17 @@ export default function Register() {
                 type: "info",
                 title: "Chế độ trải nghiệm",
                 message:
-                    "Không tải được Google Sign-In SDK. Đang đăng ký với tài khoản Google mẫu...",
+                    "Không tải được Google Sign-In SDK. Đang đăng ký với tài khoản Google...",
             });
 
             const googleUser = {
-                name:
-                    role === "family"
-                        ? "Gia đình Minh An (Google)"
-                        : "Điều dưỡng Thùy Linh (Google)",
-                email:
-                    role === "family"
-                        ? "an.family.google@carelink.vn"
-                        : "linh.nurse.google@carelink.vn",
+                name: "Người dùng Google",
+                email: "user.google@carelink.vn",
                 role,
                 avatar:
                     role === "family"
                         ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                        : "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+                        : "/images/caregiver_avatar.svg",
             };
 
             saveUserAndNavigate(
@@ -860,10 +887,21 @@ export default function Register() {
                                     </div>
 
                                     <div className="space-y-3">
+                                        {errors.role && (
+                                            <div className="flex items-center gap-2 rounded-xl border border-rose-400/40 bg-rose-950/60 px-3.5 py-2.5 text-xs font-bold text-rose-200 shadow-sm animate-pulse">
+                                                <Icon name="alert" className="h-4 w-4 shrink-0 text-rose-400" />
+                                                <span>{errors.role}</span>
+                                            </div>
+                                        )}
                                         <RoleCard
                                             role="family"
                                             selectedRole={role}
-                                            onSelect={setRole}
+                                            onSelect={(r) => {
+                                                setRole(r);
+                                                if (errors.role) {
+                                                    setErrors((prev) => ({ ...prev, role: "" }));
+                                                }
+                                            }}
                                             icon={
                                                 <Icon
                                                     name="heart"
@@ -882,7 +920,12 @@ export default function Register() {
                                         <RoleCard
                                             role="caregiver"
                                             selectedRole={role}
-                                            onSelect={setRole}
+                                            onSelect={(r) => {
+                                                setRole(r);
+                                                if (errors.role) {
+                                                    setErrors((prev) => ({ ...prev, role: "" }));
+                                                }
+                                            }}
                                             icon={
                                                 <Icon
                                                     name="stethoscope"
@@ -937,22 +980,30 @@ export default function Register() {
                                         </p>
                                     </div>
 
-                                    {/* SELECTED ROLE BADGE — Đã tăng kích thước nhẹ & đặt ngang hàng chuẩn với Tạo tài khoản */}
+                                    {/* SELECTED ROLE BADGE */}
                                     <div
-                                        className={`flex shrink-0 items-center gap-2.5 rounded-2xl border px-3 py-2 sm:px-3.5 sm:py-2.5 shadow-2xs transition-all ${isFamilyRole
-                                            ? "border-emerald-200/90 bg-emerald-50/90 text-emerald-900"
-                                            : "border-sky-200/90 bg-sky-50/90 text-sky-900"
-                                            }`}
+                                        className={`flex shrink-0 items-center gap-2.5 rounded-2xl border px-3 py-2 sm:px-3.5 sm:py-2.5 shadow-2xs transition-all ${
+                                            !role
+                                                ? "border-amber-200/90 bg-amber-50/90 text-amber-900"
+                                                : isFamilyRole
+                                                ? "border-emerald-200/90 bg-emerald-50/90 text-emerald-900"
+                                                : "border-sky-200/90 bg-sky-50/90 text-sky-900"
+                                        }`}
                                     >
                                         <span
-                                            className={`flex h-8.5 w-8.5 items-center justify-center rounded-xl text-white shadow-xs ${isFamilyRole
-                                                ? "bg-emerald-600"
-                                                : "bg-sky-700"
-                                                }`}
+                                            className={`flex h-8.5 w-8.5 items-center justify-center rounded-xl text-white shadow-xs ${
+                                                !role
+                                                    ? "bg-amber-500"
+                                                    : isFamilyRole
+                                                    ? "bg-emerald-600"
+                                                    : "bg-sky-700"
+                                            }`}
                                         >
                                             <Icon
                                                 name={
-                                                    isFamilyRole
+                                                    !role
+                                                        ? "user"
+                                                        : isFamilyRole
                                                         ? "heart"
                                                         : "stethoscope"
                                                 }
@@ -1216,7 +1267,9 @@ export default function Register() {
                                     ) : (
                                         <>
                                             <span>
-                                                Tạo tài khoản {selectedRoleLabel}
+                                                {role
+                                                    ? `Tạo tài khoản ${selectedRoleLabel}`
+                                                    : "Tạo tài khoản CareLink"}
                                             </span>
                                             <Icon
                                                 name="arrow"

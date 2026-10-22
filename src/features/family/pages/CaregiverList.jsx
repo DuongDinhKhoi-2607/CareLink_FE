@@ -39,7 +39,7 @@ const normalizeNurse = (item) => ({
 // ============================================================
 
 const qualifications = [
-    "Điều dưỡng (RN)",
+    "Điều dưỡng chính quy",
     "Sinh viên Điều dưỡng",
     "Y tá thực hành",
 ];
@@ -59,119 +59,8 @@ const availabilityOptions = [
 ];
 
 // ============================================================
-// MOCK DATA - SAU NÀY CÓ THỂ THAY BẰNG API
+// ICONS
 // ============================================================
-
-const caregiversData = [
-    {
-        id: 1,
-        name: "Nguyễn Thùy Linh",
-        role: "Sinh viên Điều dưỡng năm 4",
-        rate: "80.000đ/giờ",
-        rateNumber: 80000,
-        experience: "2 năm KN",
-        experienceYears: 2,
-        specialty: "Chăm sóc người già",
-        qualifications: "Sinh viên Điều dưỡng",
-        availability: ["Ngày thường", "Cuối tuần", "Ca ngày"],
-        location: "Bình Thạnh, TP. HCM",
-        city: "Thành phố Hồ Chí Minh",
-        quote: "Sinh viên điều dưỡng ĐH Y Dược TP.HCM tận tâm, chu đáo trong việc hỗ trợ vận động, ăn uống và theo dõi sức khỏe người cao tuổi.",
-        rating: 4.9,
-        image:
-            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
-    },
-    {
-        id: 2,
-        name: "Nguyễn Hoàng Nam",
-        role: "Điều dưỡng (RN)",
-        rate: "200.000đ/giờ",
-        rateNumber: 200000,
-        experience: "8 năm KN",
-        experienceYears: 8,
-        specialty: "Chăm sóc vết thương",
-        qualifications: "Điều dưỡng (RN)",
-        availability: ["Ngày thường", "Ca ngày", "Ca đêm"],
-        location: "Quận 1, TP. Hồ Chí Minh",
-        city: "Thành phố Hồ Chí Minh",
-        quote: "Điều dưỡng chuyên môn cao chuyên về phục hồi sau phẫu thuật, rửa vết thương và theo dõi y tế.",
-        rating: 5.0,
-        image:
-            "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400",
-    },
-    {
-        id: 3,
-        name: "Trần Thị Kim Chi",
-        role: "Cử nhân Phục hồi Chức năng",
-        rate: "150.000đ/giờ",
-        rateNumber: 150000,
-        experience: "5 năm KN",
-        experienceYears: 5,
-        specialty: "Vật lý trị liệu",
-        qualifications: "Điều dưỡng (RN)",
-        availability: ["Ngày thường", "Cuối tuần", "Ca ngày"],
-        location: "Bình Thạnh, TP. Hồ Chí Minh",
-        city: "Thành phố Hồ Chí Minh",
-        quote: "Tập trung vào phục hồi chức năng vận động và các bài tập thể chất chuyên sâu cho người sau tai biến.",
-        rating: 4.8,
-        image:
-            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
-    },
-    {
-        id: 4,
-        name: "Phạm Quốc Huy",
-        role: "Sinh viên Điều dưỡng năm 3",
-        rate: "65.000đ/giờ",
-        rateNumber: 65000,
-        experience: "1 năm KN",
-        experienceYears: 1,
-        specialty: "Chăm sóc người già",
-        qualifications: "Sinh viên Điều dưỡng",
-        availability: ["Cuối tuần", "Ca ngày"],
-        location: "Thủ Đức, TP. Hồ Chí Minh",
-        city: "Thành phố Hồ Chí Minh",
-        quote: "Năng động và nhiệt huyết, mong muốn hỗ trợ các hoạt động sinh hoạt hàng ngày và bầu bạn cùng các cụ.",
-        rating: 4.7,
-        image:
-            "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400",
-    },
-    {
-        id: 5,
-        name: "Lê Hoàng Yến",
-        role: "Điều dưỡng Ngoại khoa (RN)",
-        rate: "220.000đ/giờ",
-        rateNumber: 220000,
-        experience: "6 năm KN",
-        experienceYears: 6,
-        specialty: "Chăm sóc sau phẫu thuật",
-        qualifications: "Điều dưỡng (RN)",
-        availability: ["Ngày thường", "Cuối tuần", "Ca đêm"],
-        location: "Quận 3, TP. Hồ Chí Minh",
-        city: "Thành phố Hồ Chí Minh",
-        quote: "Chuyên trách chăm sóc vết mổ ngoại khoa, theo dõi dịch dẫn lưu và hỗ trợ phục hồi hậu phẫu tại nhà.",
-        rating: 4.9,
-        image:
-            "https://images.unsplash.com/photo-1594824813583-0498b8feae6e?auto=format&fit=crop&q=80&w=400",
-    },
-    {
-        id: 6,
-        name: "Vũ Đức Trọng",
-        role: "Y tá thực hành chuyên khoa",
-        rate: "120.000đ/giờ",
-        rateNumber: 120000,
-        experience: "4 năm KN",
-        experienceYears: 4,
-        specialty: "Chăm sóc sau phẫu thuật",
-        qualifications: "Y tá thực hành",
-        availability: ["Ngày thường", "Ca ngày"],
-        location: "Quận 10, TP. Hồ Chí Minh",
-        city: "Thành phố Hồ Chí Minh",
-        quote: "Thành thạo kỹ thuật tiêm truyền, thay băng vô khuẩn và chăm sóc người bệnh hạn chế khả năng tự chủ.",
-        rating: 4.8,
-        image:
-            "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400",
-    },
-];
 
 // ============================================================
 // ICONS
@@ -296,7 +185,6 @@ export default function CaregiverList() {
     const [servicesList, setServicesList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState(null);
-    const [isUsingFallback, setIsUsingFallback] = useState(false);
     const [searchTrigger, setSearchTrigger] = useState(0);
 
     // 1. Tải danh mục dịch vụ thực từ Backend (GET /api/v1/services)
@@ -350,26 +238,19 @@ export default function CaregiverList() {
                 res?.totalPages ??
                     (items.length > 0 ? Math.ceil((res?.totalCount || items.length) / pageSize) : 0)
             );
-            setIsUsingFallback(false);
         } catch (err) {
-            console.warn("[CareLink] Nurse search API error:", err);
-            const msg =
-                err.response?.data?.detail ||
-                err.response?.data?.message ||
-                "Không thể kết nối đến máy chủ để tải danh sách điều dưỡng.";
-            setApiError(msg);
-
-            // Safety fallback: Khi mất kết nối mạng để không làm sập giao diện demo
-            if (err.code === "ERR_NETWORK" || !err.response) {
-                setIsUsingFallback(true);
-                setNurses(caregiversData.map(normalizeNurse));
-                setTotalCount(caregiversData.length);
-                setTotalPages(1);
-            } else {
-                setNurses([]);
-                setTotalCount(0);
-                setTotalPages(0);
+            console.error("[CareLink Search Error] Chi tiết lỗi tìm kiếm điều dưỡng:", err);
+            const rawDetail = err.response?.data?.detail || err.response?.data?.message || "";
+            let msg = "Không thể kết nối đến máy chủ để tải danh sách điều dưỡng. Vui lòng thử lại sau ít phút.";
+            if (rawDetail && !rawDetail.toLowerCase().includes("unexpected error") && !rawDetail.toLowerCase().includes("exception")) {
+                msg = rawDetail;
+            } else if (err.response?.status === 500) {
+                msg = "Máy chủ đang gián đoạn kết nối hoặc đang được bảo trì. Vui lòng thử tải lại sau ít phút.";
             }
+            setApiError(msg);
+            setNurses([]);
+            setTotalCount(0);
+            setTotalPages(0);
         } finally {
             setIsLoading(false);
         }
@@ -999,7 +880,7 @@ export default function CaregiverList() {
                                     </div>
                                 ))}
                             </div>
-                        ) : apiError && !isUsingFallback ? (
+                        ) : apiError ? (
                             <div className="bg-white border border-rose-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
                                 <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1018,11 +899,6 @@ export default function CaregiverList() {
                             </div>
                         ) : filteredCaregivers.length > 0 ? (
                             <>
-                                {isUsingFallback && (
-                                    <div className="mb-4 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between">
-                                        <span>Đang kết nối chế độ dự phòng do máy chủ tạm thời không khả dụng.</span>
-                                    </div>
-                                )}
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                                     {filteredCaregivers.map((caregiver) => (
                                         <CaregiverCard

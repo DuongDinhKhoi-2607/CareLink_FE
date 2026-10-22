@@ -189,11 +189,11 @@ export default function CancelBookingModal({
                         )}
                     </div>
 
-                    {/* Chính sách hủy */}
+                    {/* Chính sách hủy (Luồng 6: Non-refundable holding fee) */}
                     <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2">
                         <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         <div className="leading-relaxed">
-                            <strong>Chính sách hủy:</strong> Trước thời điểm bắt đầu ca, gia đình có thể hủy ca mà không bị tính phí phạt. Nếu ca đã thanh toán trực tuyến, yêu cầu hoàn tiền sẽ được ghi nhận tự động.
+                            <strong>Chính sách hủy ca:</strong> Gia đình có thể hủy ca trước khi ca bắt đầu để giải phóng lịch cho điều dưỡng. Lưu ý: Phí giữ chỗ nền tảng PayOS là khoản phí kỹ thuật không hoàn lại (Non-refundable). Khoản tiền công dịch vụ chính sẽ do gia đình và điều dưỡng tự đối soát trực tiếp khi thực hiện ca.
                         </div>
                     </div>
 

@@ -162,6 +162,11 @@ const mapBookingToAppointment = (b) => {
         canPay: rawStatus === 1 && !isPaymentExpired,
         isPaymentExpired,
         price: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + "đ" : "0đ",
+        // Luồng 5: GPS Check-in & thời gian điều dưỡng bắt đầu ca
+        startedAt: b.startedAt ? new Date(b.startedAt) : null,
+        checkInLatitude: b.checkInLatitude ?? null,
+        checkInLongitude: b.checkInLongitude ?? null,
+        checkInNote: b.checkInNote ?? null,
         tasks: ["Đo huyết áp & sinh hiệu", "Theo dõi sức khỏe theo đơn", "Ghi nhật ký thể trạng"],
         // reviewed: backend trả về true nếu khách đã gửi review cho ca này
         reviewed: b.isReviewed || b.reviewed || false,
@@ -177,163 +182,11 @@ const mapBookingToAppointment = (b) => {
     };
 };
 
-const INITIAL_FALLBACK_APPOINTMENTS = [
-    {
-        id: "CK-28491",
-        tab: "upcoming",
-        caregiver: {
-            name: "Điều dưỡng Nguyễn Thùy Linh",
-            role: "Chăm sóc phục hồi chức năng & Vận động y tế",
-            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-            verified: true,
-            phone: "0912 888 999",
-        },
-        service: "Chăm sóc phục hồi chức năng & Vận động y tế",
-        serviceCategory: "health_care",
-        recipient: "Bà Nguyễn Thị Lan",
-        recipientRelation: "Mẹ, 75 tuổi",
-        date: "Thứ Bảy, 24/10/2026",
-        time: "08:00 – 12:00 (4 giờ)",
-        duration: "4 giờ",
-        location: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP.HCM",
-        status: "pending_payment",
-        statusLabel: "CHỜ THANH TOÁN",
-        statusBadge: "bg-amber-50 text-amber-700 border border-amber-200",
-        dotColor: "bg-amber-500",
-        canCancel: true,
-        canPay: true,
-        tasks: ["Đo huyết áp & đường huyết", "Hỗ trợ co duỗi khớp gối 20 phút", "Nhắc uống thuốc theo đơn"],
-        price: "420.000đ",
-    },
-    {
-        id: "CK-28492",
-        tab: "upcoming",
-        caregiver: {
-            name: "Điều dưỡng Trần Thị Mai",
-            role: "Điều dưỡng Đa khoa & Hồi sức ngoại",
-            avatar: "https://images.unsplash.com/photo-1594824813682-1c255bc29909?auto=format&fit=crop&q=80&w=300",
-            verified: true,
-            phone: "0903 888 111",
-        },
-        service: "Tiêm truyền & Theo dõi vết mổ tại nhà",
-        serviceCategory: "health_care",
-        recipient: "Bác Lê Văn Dũng",
-        recipientRelation: "Bố, 82 tuổi",
-        date: "Chủ Nhật, 25/10/2026",
-        time: "07:30 – 09:30 (2 giờ)",
-        duration: "2 giờ",
-        location: "45 Võ Văn Tần, Quận 3, TP.HCM",
-        status: "confirmed",
-        statusLabel: "ĐÃ TIẾP NHẬN",
-        statusBadge: "bg-[#e2f4f2] text-[#007469]",
-        dotColor: "bg-[#00a896]",
-        canCancel: true,
-        canPay: false,
-        tasks: ["Kiểm tra vết mổ và thay băng vô trùng", "Đo huyết áp và điện tim cơ bản", "Dặn dò chế độ dinh dưỡng"],
-        price: "350.000đ",
-    },
-    {
-        id: "CK-28485",
-        tab: "ongoing",
-        caregiver: {
-            name: "Điều dưỡng Lê Hoàng Nam",
-            role: "Chăm sóc bệnh nhân thở máy & Hậu phẫu",
-            avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300",
-            verified: true,
-            phone: "0918 777 666",
-        },
-        service: "Chăm sóc toàn diện sau phẫu thuật thay khớp",
-        serviceCategory: "health_care",
-        recipient: "Bà Trần Thị Bình",
-        recipientRelation: "Bác ruột, 65 tuổi",
-        date: "Hôm nay",
-        time: "14:00 – 18:00 (4 giờ)",
-        duration: "4 giờ",
-        location: "88 Lê Lợi, Quận 1, TP.HCM",
-        status: "in_progress",
-        statusLabel: "ĐANG DIỄN RA",
-        statusBadge: "bg-teal-50 text-teal-700 ring-1 ring-teal-500/20",
-        dotColor: "bg-teal-500 animate-ping",
-        canCancel: false,
-        canPay: false,
-        tasks: ["Theo dõi chỉ số sinh hiệu liên tục", "Hỗ trợ vận động trị liệu khớp", "Vệ sinh cá nhân vô trùng"],
-        price: "520.000đ",
-    },
-    {
-        id: "CK-28470",
-        tab: "completed",
-        caregiver: {
-            name: "Điều dưỡng Nguyễn Thùy Linh",
-            role: "Chăm sóc phục hồi chức năng & Vận động y tế",
-            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
-            verified: true,
-            phone: "0912 888 999",
-        },
-        service: "Chăm sóc phục hồi chức năng & Vận động y tế",
-        serviceCategory: "health_care",
-        recipient: "Bà Nguyễn Thị Lan",
-        recipientRelation: "Mẹ, 75 tuổi",
-        date: "Thứ Năm, 15/10/2026",
-        time: "08:00 – 11:00 (3 giờ)",
-        duration: "3 giờ",
-        location: "123 Nguyễn Gia Trí, P. 25, Bình Thạnh, TP.HCM",
-        status: "completed",
-        statusLabel: "ĐÃ HOÀN THÀNH",
-        statusBadge: "bg-slate-100 text-slate-700",
-        dotColor: "bg-slate-400",
-        canCancel: false,
-        canPay: false,
-        reviewed: true,
-        rating: 5,
-        tasks: ["Đo huyết áp & đường huyết", "Hỗ trợ co duỗi khớp gối", "Nhắc uống thuốc theo đơn"],
-        price: "360.000đ",
-        healthRecord: {
-            bloodPressureSystolic: 120,
-            bloodPressureDiastolic: 80,
-            heartRate: 72,
-            temperature: 36.6,
-            bloodGlucose: 105,
-            woundStatus: "Khô ráo, mép vết mổ phẳng, không rỉ dịch",
-            mobilityStatus: "Tập đi lại với gậy hỗ trợ 15 phút, co duỗi khớp gối 90 độ",
-            mentalStatus: "Bác tỉnh táo, vui vẻ, ăn uống tốt",
-            nurseNotes: "Bác Lan hồi phục rất nhanh. Đã đo huyết áp ổn định 120/80 mmHg, đường huyết 105 mg/dL trước ăn. Bác đã uống thuốc đúng giờ.",
-            createdAt: "15/10/2026 · 11:15",
-        },
-    },
-    {
-        id: "CK-28461",
-        tab: "cancelled",
-        caregiver: {
-            name: "Điều dưỡng Hoàng Minh Tuấn",
-            role: "Chăm sóc người cao tuổi & Bệnh mãn tính",
-            avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300",
-            verified: true,
-            phone: "0944 555 666",
-        },
-        service: "Chăm sóc người cao tuổi bán thời gian",
-        serviceCategory: "living_support",
-        recipient: "Ông Vũ Văn Hùng",
-        recipientRelation: "Bố, 78 tuổi",
-        date: "Thứ Ba, 13/10/2026",
-        time: "13:00 – 17:00 (4 giờ)",
-        duration: "4 giờ",
-        location: "99 Cách Mạng Tháng 8, Quận 10, TP.HCM",
-        status: "cancelled",
-        statusLabel: "ĐÃ HỦY",
-        statusBadge: "bg-rose-50 text-rose-700 border border-rose-200",
-        dotColor: "bg-rose-500",
-        canCancel: false,
-        canPay: false,
-        tasks: ["Hỗ trợ sinh hoạt", "Trò chuyện & dạo bộ", "Uống thuốc đúng đơn"],
-        price: "400.000đ",
-    },
-];
-
 export default function Appointments() {
     const [activeTab, setActiveTab] = useState("upcoming"); // 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
     const [searchQuery, setSearchQuery] = useState("");
     const [serviceFilter, setServiceFilter] = useState("all");
-    const [monthFilter, setMonthFilter] = useState("09/2026");
+    const [monthFilter, setMonthFilter] = useState("all_months");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedAppointment, setSelectedAppointment] = useState(null); // Cho modal xem chi tiết
     const [detailData, setDetailData] = useState(null);
@@ -366,7 +219,6 @@ export default function Appointments() {
     const [appointments, setAppointments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState(null);
-    const [isUsingFallback, setIsUsingFallback] = useState(false);
 
     // 1. Tải danh sách ca chăm sóc từ Backend (GET /api/v1/bookings)
     const fetchAppointments = useCallback(async () => {
@@ -377,7 +229,6 @@ export default function Appointments() {
             const items = res?.items || (Array.isArray(res) ? res : []);
             const mapped = items.map(mapBookingToAppointment);
             setAppointments(mapped);
-            setIsUsingFallback(false);
 
             // Tự động kiểm tra đối soát ngầm cho các ca đang ở trạng thái PendingPayment (1)
             const pendingList = items.filter((b) => (typeof b.status === "number" ? b.status : 1) === 1);
@@ -417,15 +268,8 @@ export default function Appointments() {
             const status = err.response?.status;
             if (status === 401 || status === 403) {
                 setApiError("Phiên làm việc đã hết hạn hoặc bạn chưa đăng nhập tài khoản gia đình.");
-                setAppointments([]);
-                setIsUsingFallback(false);
-            } else if (!err.response || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK") {
-                setIsUsingFallback(true);
-                setAppointments(INITIAL_FALLBACK_APPOINTMENTS);
-            } else {
-                setAppointments([]);
-                setIsUsingFallback(false);
             }
+            setAppointments([]);
         } finally {
             setIsLoading(false);
         }
@@ -675,16 +519,16 @@ export default function Appointments() {
                     </svg>
                 </div>
 
-                {/* Dropdown 2: Tháng này (09/2026) */}
+                {/* Dropdown 2: Bộ lọc thời gian */}
                 <div className="relative">
                     <select
                         value={monthFilter}
                         onChange={(e) => setMonthFilter(e.target.value)}
                         className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#f1f5f9]/70 hover:bg-slate-100/90 border border-slate-200/90 focus:border-teal-600 rounded-xl text-xs sm:text-sm font-medium text-slate-700 focus:outline-none cursor-pointer transition-colors"
                     >
-                        <option value="09/2026">Tháng này (09/2026)</option>
-                        <option value="08/2026">Tháng trước (08/2026)</option>
                         <option value="all_months">Tất cả thời gian</option>
+                        <option value="this_month">Tháng này</option>
+                        <option value="last_month">Tháng trước</option>
                     </select>
                     <svg
                         className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -745,7 +589,7 @@ export default function Appointments() {
                         </div>
                     ))}
                 </div>
-            ) : apiError && !isUsingFallback ? (
+            ) : apiError ? (
                 <div className="bg-white rounded-2xl border border-rose-200 p-8 text-center flex flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -870,6 +714,13 @@ export default function Appointments() {
                                         <span className="text-[11px] text-slate-400 font-medium">
                                             Mã lịch hẹn: #{apt.id}
                                         </span>
+                                        {/* Luồng 5: Hiển thị thời gian check-in của điều dưỡng khi ca đang diễn ra hoặc đã hoàn tất */}
+                                        {apt.startedAt && (apt.status === "in_progress" || apt.status === "completed") && (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200/80 text-[11px] font-semibold text-teal-800" title={apt.checkInNote || "Điều dưỡng đã check-in đúng giờ"}>
+                                                <MapPin className="w-3 h-3 text-teal-600 shrink-0" />
+                                                <span>Check-in: {apt.startedAt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 

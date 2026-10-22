@@ -34,8 +34,19 @@ export const familyApi = {
     cancelBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/cancel`, data),
 
     // ── 5. Thanh toán trực tuyến PayOS (Payments) ──
-    createPaymentLink: (bookingId, params) =>
-        axiosClient.post(`/api/v1/bookings/${bookingId}/payments`, null, { params }),
+    createPaymentLink: (bookingId, bodyOrParams, maybeParams) => {
+        let body = null;
+        let params = null;
+        if (maybeParams !== undefined) {
+            body = bodyOrParams;
+            params = maybeParams;
+        } else if (bodyOrParams) {
+            // Nếu truyền 1 object, vừa dùng làm body vừa dùng fallback query params
+            body = bodyOrParams;
+            params = bodyOrParams;
+        }
+        return axiosClient.post(`/api/v1/bookings/${bookingId}/payments`, body, { params });
+    },
     getPaymentDetail: (bookingId) =>
         axiosClient.get(`/api/v1/bookings/${bookingId}/payments`),
 

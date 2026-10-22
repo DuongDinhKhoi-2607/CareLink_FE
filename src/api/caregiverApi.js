@@ -8,28 +8,45 @@ export const caregiverApi = {
     getProfile: () => axiosClient.get("/api/v1/nurse/profile"),
     updateProfile: (data) => axiosClient.put("/api/v1/nurse/profile", data),
 
-    // ── 2. Quản lý lịch làm việc rảnh / bận ──
+    // ── 2. Quản lý lịch làm việc rảnh / bận & Nghỉ đột xuất ──
     getAvailability: () => axiosClient.get("/api/v1/nurse/availability"),
     addAvailability: (data) => axiosClient.post("/api/v1/nurse/availability", data),
     setAvailability: (data) => axiosClient.put("/api/v1/nurse/availability", data),
     deleteAvailability: (id) => axiosClient.delete(`/api/v1/nurse/availability/${id}`),
 
-    // ── 3. Nộp hồ sơ chứng thực & Giấy phép hành nghề ──
-    uploadFile: (formData) =>
-        axiosClient.post("/api/v1/uploads", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        }),
+    // Luồng 2: Bật/Tắt chế độ nhận ca (Online / Offline Toggle)
+    setAcceptingBookings: (isAcceptingBookings) =>
+        axiosClient.put("/api/v1/nurse/accepting-bookings", { isAcceptingBookings }),
+    updateAcceptingBookings: (isAcceptingBookings) =>
+        axiosClient.patch("/api/v1/nurse/status/accepting-bookings", { isAcceptingBookings }),
+
+    // Luồng 2: Quản lý ngày nghỉ đột xuất / Lịch bận (Blackout Dates)
+    getUnavailabilities: (params) =>
+        axiosClient.get("/api/v1/nurse/unavailabilities", { params }),
+    addUnavailability: (data) =>
+        axiosClient.post("/api/v1/nurse/unavailabilities", data),
+    deleteUnavailability: (id) =>
+        axiosClient.delete(`/api/v1/nurse/unavailabilities/${id}`),
+
+    // ── 3. Nộp hồ sơ chứng thực & Giấy phép hành nghề & OTP Sinh viên ──
+    uploadFile: (formData) => axiosClient.post("/api/v1/uploads", formData),
     uploadDocuments: (data) => axiosClient.post("/api/v1/nurse/documents", data),
     getDocuments: () => axiosClient.get("/api/v1/nurse/documents"),
     reSubmitDocuments: (data) => axiosClient.post("/api/v1/nurse/documents/re-submit", data),
     getVerificationStatus: () => axiosClient.get("/api/v1/nurse/verification-status"),
+
+    // Luồng 1: Xác thực OTP Email trường (.edu.vn / .edu) cho Sinh viên Y khoa
+    sendStudentEmailOtp: (data) =>
+        axiosClient.post("/api/v1/nurse/student-email/send-otp", data),
+    verifyStudentEmailOtp: (data) =>
+        axiosClient.post("/api/v1/nurse/student-email/verify-otp", data),
 
     // ── 4. Tiếp nhận & Quản lý ca chăm sóc (Bookings) ──
     getBookings: (params) => axiosClient.get("/api/v1/bookings", { params }),
     getBookingDetail: (id) => axiosClient.get(`/api/v1/bookings/${id}`),
     acceptBooking: (id) => axiosClient.put(`/api/v1/bookings/${id}/accept`),
     rejectBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/reject`, data),
-    startBooking: (id) => axiosClient.put(`/api/v1/bookings/${id}/start`),
+    startBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/start`, data || {}),
     finishBooking: (id) => axiosClient.put(`/api/v1/bookings/${id}/finish`),
     cancelBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/cancel`, data),
 

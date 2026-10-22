@@ -497,14 +497,30 @@ export default function CaregiverBookingRequests() {
         }
     };
 
-    // 4. Bắt đầu ca chăm sóc (PUT /api/v1/bookings/{id}/start)
+    // 4. Bắt đầu ca chăm sóc (PUT /api/v1/bookings/{id}/start) - Luồng 5: GPS Check-in
     const handleStart = async (id) => {
         try {
-            await caregiverApi.startBooking(id);
+            // Lấy tọa độ GPS thực tế từ thiết bị (Soft Check)
+            let coords = null;
+            if (navigator?.geolocation) {
+                coords = await new Promise((resolve) => {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                        (err) => {
+                            console.warn("[CareLink GPS] Không lấy được tọa độ:", err.message);
+                            resolve(null);
+                        },
+                        { timeout: 6000, enableHighAccuracy: true }
+                    );
+                });
+            }
+
+            const payload = coords ? { latitude: coords.latitude, longitude: coords.longitude } : {};
+            await caregiverApi.startBooking(id, payload);
             showToast({
                 type: "success",
-                title: "Đã bắt đầu ca chăm sóc",
-                message: "Ca chăm sóc đã chuyển sang trạng thái Đang thực hiện. Bạn có thể ghi bệnh án.",
+                title: "Đã bắt đầu ca chăm sóc (Check-in thành công)",
+                message: "Ca chăm sóc đã chuyển sang trạng thái Đang thực hiện. Bạn có thể tiến hành theo dõi và ghi bệnh án.",
             });
             fetchBookings();
         } catch (err) {

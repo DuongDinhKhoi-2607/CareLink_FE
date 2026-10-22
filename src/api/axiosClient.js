@@ -72,6 +72,9 @@ axiosClient.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        if (config.data instanceof FormData) {
+            delete config.headers["Content-Type"];
+        }
         // Tinh chỉnh timeout: Localhost chỉ cần 2.5s - 3s để failover tức thì nếu chưa bật BE; Render cho 25s phòng cold start
         const targetBase = config.baseURL || axiosClient.defaults.baseURL || PRIMARY_URL;
         const isTargetLocal = targetBase.includes("localhost") || targetBase.includes("127.0.0.1");
@@ -105,7 +108,8 @@ axiosClient.interceptors.response.use(
 
         // Chuyển đổi thông minh an toàn giữa Localhost (7183 / 5024) và Render BE:
         // Nếu chạy local mà Visual Studio chưa mở, request bị từ chối kết nối (ERR_NETWORK / ECONNREFUSED),
-        // hệ thống sẽ tự động chuyển thẳng sang Render Backend để ứng dụng vẫn chạy mượt mà!
+        // hệ thống sẽ tự động chuyển thẳng sang Render Backend và LƯU LẠI vào localStorage
+        // để toàn bộ các request sau và reload trang không phải chờ timeout hay thử lại localhost nữa!
         const currentBase = originalRequest?.baseURL || axiosClient.defaults.baseURL || PRIMARY_URL;
         const isLocalhost = currentBase.includes("localhost") || currentBase.includes("127.0.0.1");
 
@@ -122,17 +126,15 @@ axiosClient.interceptors.response.use(
         ) {
             originalRequest._localFallbackAttempts = (originalRequest._localFallbackAttempts || 0) + 1;
 
-            let nextTarget = RENDER_BACKEND_URL;
-            if (originalRequest._localFallbackAttempts === 1 && currentBase.includes("7183")) {
-                nextTarget = LOCAL_HTTP_URL;
-            } else {
-                nextTarget = RENDER_BACKEND_URL;
-            }
+            const nextTarget = RENDER_BACKEND_URL;
+            try {
+                localStorage.setItem("carelink_api_mode", "render");
+            } catch {}
 
-            console.info(`[CareLink API] ${currentBase} không phản hồi (${isTimeout ? "Timeout" : "Mất kết nối"}), tự động chuyển sang ${nextTarget}`);
+            console.info(`[CareLink API] ${currentBase} không phản hồi (${isTimeout ? "Timeout" : "Mất kết nối"}), đã tự động chuyển & lưu kết nối trực tiếp sang Render Deploy: ${nextTarget}`);
             axiosClient.defaults.baseURL = nextTarget;
             originalRequest.baseURL = nextTarget;
-            originalRequest.timeout = nextTarget.includes("localhost") ? 3000 : 25000;
+            originalRequest.timeout = 25000;
             originalRequest._customTimeoutSet = true;
 
             if (isSafeIdempotent || isConnectionRefused || isTimeout) {
