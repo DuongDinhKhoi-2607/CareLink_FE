@@ -394,13 +394,13 @@ export default function CaregiverLayout() {
                 </div>
             </header>
 
-            {/* ── Khung nội dung: Sidebar tự động kéo dài 100% theo nội dung từng trang (items-stretch + self-stretch) ── */}
-            <div className="flex flex-1 items-stretch min-h-[calc(100vh-4rem)]">
-                {/* ── DESKTOP SIDEBAR: Có nút thu gọn/mở rộng, animation mượt mà, lưu trạng thái localStorage ── */}
+            {/* ── Khung nội dung: Sidebar cố định theo viewport (sticky top-16), không bị kéo dài bất thường ── */}
+            <div className="flex flex-1 min-h-[calc(100vh-4rem)]">
+                {/* ── DESKTOP SIDEBAR: Giữ cố định sang xịn đẹp, không kéo dài xuống, animation mượt mà ── */}
                 <aside
-                    className={`hidden lg:flex flex-col ${
+                    className={`hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto ${
                         isCollapsed ? "w-20" : "w-64"
-                    } bg-[#102030] shrink-0 self-stretch transition-all duration-300 ease-in-out relative border-r border-slate-800/50`}
+                    } bg-[#102030] shrink-0 transition-all duration-300 ease-in-out z-20 border-r border-slate-800/50`}
                 >
                     {/* Header danh mục + Nút Thu gọn / Mở rộng */}
                     <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} px-4 pt-5 pb-2 transition-all`}>

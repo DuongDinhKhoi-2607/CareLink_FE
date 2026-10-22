@@ -56,8 +56,8 @@ export default function CaregiverBookingDetailPanel({
                     scrollbarColor: "rgba(8,116,135,0.25) transparent",
                 }}
             >
-                {/* Booking card */}
-                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                {/* Booking card — shrink-0 để không bị co ép mất nút thao tác và thông tin */}
+                <div className="shrink-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
                     <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-3">
@@ -67,11 +67,11 @@ export default function CaregiverBookingDetailPanel({
 
                                 <div className="min-w-0">
                                     <h3 className="text-sm font-bold text-slate-900">
-                                        Chi tiết ca
+                                        Chi tiết ca {booking?.proposalNumber ? `#${booking.proposalNumber}` : ""}
                                     </h3>
 
                                     <p className="mt-1 text-[11px] text-slate-500">
-                                        Thông tin yêu cầu chăm sóc
+                                        Thông tin yêu cầu chăm sóc từ khách hàng
                                     </p>
                                 </div>
                             </div>
@@ -311,8 +311,8 @@ export default function CaregiverBookingDetailPanel({
                     </div>
                 </div>
 
-                {/* Safety note */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                {/* Safety note — shrink-0 giữ cố định cấu trúc đẹp mắt */}
+                <div className="shrink-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
                     <div className="flex items-center gap-2.5">
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
                             <ShieldCheck className="h-4 w-4" />

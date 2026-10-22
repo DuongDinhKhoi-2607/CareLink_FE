@@ -452,6 +452,7 @@ export default function CaregiverMessages() {
                     activeProposalId: pendingProposal?.id || latestProposal?.id || null,
                     bookingInfo: targetProposal ? {
                         customerName: activeName,
+                        proposalNumber: targetProposal.proposalNumber || 1,
                         serviceName: targetProposal.serviceName || "Chăm sóc sức khỏe",
                         recipientName: targetProposal.recipientName || "Người nhận chăm sóc",
                         recipientAge: "",
@@ -463,6 +464,7 @@ export default function CaregiverMessages() {
                         fee: targetProposal.totalPrice ? Number(targetProposal.totalPrice).toLocaleString("vi-VN") + " VNĐ" : "Thỏa thuận",
                     } : {
                         customerName: activeName,
+                        proposalNumber: null,
                         serviceName: "Chưa có đề xuất ca",
                         recipientName: "Người nhận chăm sóc",
                         recipientAge: "",
@@ -870,7 +872,7 @@ export default function CaregiverMessages() {
                 </div>
 
                 {/* Main Layout: 3 Cột (Bảo vệ 100% bố cục Laptop/Desktop - Bằng nhau không khoảng trắng) */}
-                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 xl:gap-5 lg:h-[calc(100vh-140px)] lg:min-h-[660px]">
+                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 xl:gap-5 lg:h-[calc(100vh-140px)] lg:min-h-[720px]">
                     {/* CỘT 1: DANH SÁCH HỘI THOẠI */}
                     <aside
                         className={`${
