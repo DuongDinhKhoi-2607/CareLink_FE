@@ -186,6 +186,63 @@ export default function CaregiverApprovals() {
         return matchesSearch && matchesRole && matchesStatus;
     });
 
+    // Tải chi tiết hồ sơ năng lực và toàn bộ chứng từ thật của điều dưỡng (GET /api/v1/admin/nurse-verifications/{id})
+    const handleOpenDetail = async (c) => {
+        const targetId = c.rawNurseId || c.raw?.nurseId || c.id;
+        setSelectedCaregiver({ ...c, isLoadingDetail: true });
+
+        try {
+            const res = await adminApi.getNurseVerificationDetail(targetId);
+            const detail = res?.data || res;
+            if (detail) {
+                const docs = (detail.documents || []).map((d) => ({
+                    id: d.id,
+                    name: d.documentTypeName || "Tài liệu xác minh",
+                    type: d.documentTypeName || "Chứng từ",
+                    status: d.statusName || (d.status === 1 ? "Hợp lệ" : d.status === 2 ? "Từ chối" : "Chờ duyệt"),
+                    rawStatus: d.status,
+                    url: d.fileUrl,
+                    fileUrl: d.fileUrl,
+                    adminNote: d.adminNote,
+                }));
+
+                setSelectedCaregiver({
+                    ...c,
+                    id: targetId,
+                    rawNurseId: targetId,
+                    name: detail.fullName || c.name,
+                    phone: detail.phone || c.phone,
+                    email: detail.email || c.email,
+                    avatarUrl: detail.avatarUrl || c.avatarUrl,
+                    role: detail.licenseNumber ? "Điều dưỡng chuyên nghiệp" : (c.role || "Sinh viên Y khoa"),
+                    workplace: detail.educationLevel || c.workplace || "Chưa cập nhật nơi công tác",
+                    experience: detail.experienceYears != null ? `${detail.experienceYears} năm kinh nghiệm` : (c.experience || "Theo hồ sơ năng lực"),
+                    experienceYears: detail.experienceYears,
+                    educationLevel: detail.educationLevel,
+                    citizenId: detail.citizenId || c.citizenId || "Chưa cung cấp",
+                    licenseNumber: detail.licenseNumber || "Chưa có / Sinh viên",
+                    licenseIssuedDate: detail.licenseIssuedDate,
+                    licenseExpiryDate: detail.licenseExpiryDate,
+                    bio: detail.bio,
+                    submittedDate: detail.createdAt ? new Date(detail.createdAt).toLocaleDateString("vi-VN") : c.submittedDate,
+                    status: detail.verificationStatusName || c.status,
+                    verificationStatus: detail.verificationStatus,
+                    skills: c.skills || ["Đo dấu hiệu sinh tồn", "Chăm sóc người cao tuổi", "Theo dõi y tế"],
+                    documents: docs.length > 0 ? docs : (c.documents || []),
+                    latestChecklist: detail.latestChecklist,
+                    latestAdminNote: detail.latestAdminNote,
+                    raw: detail,
+                    isLoadingDetail: false,
+                });
+            } else {
+                setSelectedCaregiver((prev) => ({ ...prev, isLoadingDetail: false }));
+            }
+        } catch (err) {
+            console.warn("[CareLink Admin] Lấy chi tiết hồ sơ điều dưỡng thất bại:", err);
+            setSelectedCaregiver((prev) => ({ ...prev, isLoadingDetail: false }));
+        }
+    };
+
     // ── 36. PUT /api/v1/admin/nurse-verifications/{id} ── Phê duyệt hồ sơ
     const handleApprove = async (id) => {
         const target = caregivers.find((c) => c.id === id);
@@ -485,7 +542,7 @@ export default function CaregiverApprovals() {
                                         <td className="py-3.5 px-4 sm:px-6 text-right">
                                             <button
                                                 type="button"
-                                                onClick={() => setSelectedCaregiver(c)}
+                                                onClick={() => handleOpenDetail(c)}
                                                 className="px-3.5 py-1.5 rounded-xl bg-teal-50 text-[#00677c] hover:bg-[#00677c] hover:text-white font-bold text-xs transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
                                             >
                                                 <span>Xem hồ sơ</span>

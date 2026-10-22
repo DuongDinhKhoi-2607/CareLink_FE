@@ -15,6 +15,10 @@ export const caregiverApi = {
     deleteAvailability: (id) => axiosClient.delete(`/api/v1/nurse/availability/${id}`),
 
     // ── 3. Nộp hồ sơ chứng thực & Giấy phép hành nghề ──
+    uploadFile: (formData) =>
+        axiosClient.post("/api/v1/uploads", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        }),
     uploadDocuments: (data) => axiosClient.post("/api/v1/nurse/documents", data),
     getDocuments: () => axiosClient.get("/api/v1/nurse/documents"),
     reSubmitDocuments: (data) => axiosClient.post("/api/v1/nurse/documents/re-submit", data),

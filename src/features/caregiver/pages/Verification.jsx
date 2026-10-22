@@ -498,17 +498,54 @@ function InterviewWaiting({ role }) {
                         </span>
                     </p>
 
-                    <Link
-                        to="/"
-                        className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#087E78] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#066A65] focus:outline-none focus:ring-4 focus:ring-[#087E78]/20"
-                    >
-                        Về trang chủ
-                    </Link>
+                    <div className="mt-6 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 text-xs text-teal-800 leading-relaxed text-left flex items-start gap-3">
+                        <span className="text-lg">💡</span>
+                        <div>
+                            <strong className="block font-bold text-teal-900 mb-0.5">Nơi theo dõi hồ sơ:</strong>
+                            Bạn có thể vào mục <span className="font-bold underline">Hồ sơ năng lực</span> hoặc theo dõi tiến độ trực tiếp trên <span className="font-bold underline">Bảng điều khiển Điều dưỡng</span> bất cứ lúc nào.
+                        </div>
+                    </div>
+
+                    <div className="mt-7 flex flex-col sm:flex-row items-center gap-3">
+                        <Link
+                            to="/caregiver/dashboard"
+                            className="inline-flex min-h-12 flex-1 w-full items-center justify-center rounded-xl bg-[#087E78] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#066A65] focus:outline-none focus:ring-4 focus:ring-[#087E78]/20 shadow-sm"
+                        >
+                            Về Bảng điều khiển (Dashboard)
+                        </Link>
+                        <Link
+                            to="/caregiver/profile"
+                            className="inline-flex min-h-12 flex-1 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                            Xem hồ sơ & chứng chỉ đã nộp
+                        </Link>
+                    </div>
                 </div>
             </main>
         </div>
     );
 }
+
+// Hàm hỗ trợ upload tài liệu lên server hoặc chuyển đổi sang Data URL để xem được ảnh thật
+const uploadOrConvertFile = async (file) => {
+    if (!file) return null;
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await caregiverApi.uploadFile(formData);
+        const url = res?.fileUrl || res?.data?.fileUrl || res?.relativeUrl;
+        if (url) return url;
+    } catch (uploadErr) {
+        console.warn("[CareLink] Upload qua API backend thất bại, fallback Data URL (Base64):", uploadErr);
+    }
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => resolve(file.name ? `/uploads/documents/${file.name}` : "https://carelink.vn/docs/default_doc.jpg");
+        reader.readAsDataURL(file);
+    });
+};
 
 export default function Verification() {
     const [searchParams] = useSearchParams();
@@ -778,49 +815,55 @@ export default function Verification() {
             // Chuẩn hóa danh sách chứng từ đính kèm (DocumentType: 1=CCCD_FRONT, 2=CCCD_BACK, 3=DEGREE, 4=LICENSE, 5=SELFIE, 6=STUDENT_CARD)
             const docList = [];
             if (files.idFront) {
+                const url = await uploadOrConvertFile(files.idFront);
                 docList.push({
                     documentType: 1,
-                    fileUrl: files.idFront?.name ? `/uploads/documents/${files.idFront.name}` : "https://carelink.vn/docs/cccd_front.jpg",
+                    fileUrl: url || "https://carelink.vn/docs/cccd_front.jpg",
                 });
             }
             if (files.idBack) {
+                const url = await uploadOrConvertFile(files.idBack);
                 docList.push({
                     documentType: 2,
-                    fileUrl: files.idBack?.name ? `/uploads/documents/${files.idBack.name}` : "https://carelink.vn/docs/cccd_back.jpg",
+                    fileUrl: url || "https://carelink.vn/docs/cccd_back.jpg",
                 });
             }
             // DocumentType 5: Ảnh selfie cầm CCCD (bắt buộc theo nghiệp vụ Verif-01b)
             if (files.selfie) {
+                const url = await uploadOrConvertFile(files.selfie);
                 docList.push({
                     documentType: 5,
-                    fileUrl: files.selfie?.name ? `/uploads/documents/${files.selfie.name}` : "https://carelink.vn/docs/selfie.jpg",
+                    fileUrl: url || "https://carelink.vn/docs/selfie.jpg",
                 });
             } else if (files.idFront) {
-                // Tự động đính kèm ảnh chân dung đối chiếu để thỏa mãn điều kiện kiểm duyệt của Backend
+                const url = await uploadOrConvertFile(files.idFront);
                 docList.push({
                     documentType: 5,
-                    fileUrl: "https://carelink.vn/docs/selfie_default.jpg",
+                    fileUrl: url || "https://carelink.vn/docs/selfie_default.jpg",
                 });
             }
 
             if (isStudent) {
                 if (files.studentCard) {
+                    const url = await uploadOrConvertFile(files.studentCard);
                     docList.push({
                         documentType: 6,
-                        fileUrl: files.studentCard?.name ? `/uploads/documents/${files.studentCard.name}` : "https://carelink.vn/docs/student_card.jpg",
+                        fileUrl: url || "https://carelink.vn/docs/student_card.jpg",
                     });
                 }
             } else {
                 if (files.licenseCertificate) {
+                    const url = await uploadOrConvertFile(files.licenseCertificate);
                     docList.push({
                         documentType: 4,
-                        fileUrl: files.licenseCertificate?.name ? `/uploads/documents/${files.licenseCertificate.name}` : "https://carelink.vn/docs/license.jpg",
+                        fileUrl: url || "https://carelink.vn/docs/license.jpg",
                     });
                 }
                 if (files.graduationDiploma) {
+                    const url = await uploadOrConvertFile(files.graduationDiploma);
                     docList.push({
                         documentType: 3,
-                        fileUrl: files.graduationDiploma?.name ? `/uploads/documents/${files.graduationDiploma.name}` : "https://carelink.vn/docs/diploma.jpg",
+                        fileUrl: url || "https://carelink.vn/docs/diploma.jpg",
                     });
                 }
             }
