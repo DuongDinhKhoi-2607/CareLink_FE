@@ -308,7 +308,7 @@ export default function Dashboard() {
                                         Nhắn tin
                                     </Link>
                                     <Link
-                                        to="/appointments"
+                                        to="/dashboard/appointments"
                                         className="px-4 py-2 bg-orient text-white rounded-xl text-sm font-semibold hover:bg-[#005263] transition-colors shadow-xs"
                                     >
                                         Xem chi tiết
@@ -500,14 +500,17 @@ export default function Dashboard() {
 
                         <div className="flex flex-col gap-1 relative z-10">
                             <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-100/90">
-                                {pendingPaymentBooking ? "PHÍ CA CHĂM SÓC HIỆN TẠI" : "PHÍ NỀN TẢNG CARELINK"}
+                                {pendingPaymentBooking ? "PHÍ CA CHĂM SÓC HIỆN TẠI" : "TỔNG CHI PHÍ DỊCH VỤ"}
                             </span>
                             <span className="text-3xl font-extrabold text-white">
                                 {pendingPaymentBooking
                                     ? (Number(pendingPaymentBooking.totalPrice || 60000).toLocaleString("vi-VN") + "đ")
                                     : (upcomingBooking?.totalPrice || recentBooking?.totalPrice
                                         ? Number(upcomingBooking?.totalPrice || recentBooking?.totalPrice).toLocaleString("vi-VN") + "đ"
-                                        : "60.000đ")}
+                                        : "0đ")}
+                            </span>
+                            <span className="text-[11px] text-cyan-100/80">
+                                (Đã bao gồm 60.000đ phí nền tảng CareLink)
                             </span>
 
                             {pendingPaymentBooking ? (
@@ -555,7 +558,7 @@ export default function Dashboard() {
                             </Link>
                         ) : (
                             <Link
-                                to="/appointments"
+                                to="/dashboard/appointments"
                                 className="w-full py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-xs font-bold text-white transition-colors relative z-10 text-center"
                             >
                                 Xem lịch hẹn

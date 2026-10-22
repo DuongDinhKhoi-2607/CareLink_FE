@@ -143,7 +143,7 @@ export default function Review() {
     // ── Bỏ qua đánh giá
     const handleSkipReview = () => {
         sessionStorage.removeItem("pendingReviewBookingId");
-        navigate("/appointments");
+        navigate("/dashboard/appointments");
     };
 
     // ── Màn hình không có bookingId hợp lệ
@@ -163,7 +163,7 @@ export default function Review() {
                         </p>
                     </div>
                     <Link
-                        to="/appointments"
+                        to="/dashboard/appointments"
                         className="px-6 py-3 bg-[#00677c] text-white rounded-xl text-sm font-bold hover:bg-[#005566] transition-colors"
                     >
                         Quay lại Lịch hẹn
@@ -179,7 +179,7 @@ export default function Review() {
             <div className="bg-[#f8fafc] py-10 font-sans antialiased text-[#102030] min-h-[calc(100vh-140px)] flex flex-col items-center">
                 <div className="max-w-2xl w-full mx-auto px-4 sm:px-6 flex flex-col gap-6">
                     <div>
-                        <Link to="/appointments" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#00677c] transition-colors">
+                        <Link to="/dashboard/appointments" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#00677c] transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                             </svg>
@@ -199,7 +199,7 @@ export default function Review() {
                                 )}
                             </p>
                         </div>
-                        <Link to="/appointments" className="px-6 py-3 bg-[#00677c] text-white rounded-xl text-sm font-bold hover:bg-[#005566] transition-colors">
+                        <Link to="/dashboard/appointments" className="px-6 py-3 bg-[#00677c] text-white rounded-xl text-sm font-bold hover:bg-[#005566] transition-colors">
                             Xem lịch hẹn của tôi
                         </Link>
                     </div>
@@ -215,7 +215,7 @@ export default function Review() {
                 {/* Nút quay lại */}
                 <div>
                     <Link
-                        to="/appointments"
+                        to="/dashboard/appointments"
                         className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#00677c] transition-colors"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -489,7 +489,7 @@ export default function Review() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg pt-2">
                             <button
                                 type="button"
-                                onClick={() => navigate("/appointments")}
+                                onClick={() => navigate("/dashboard/appointments")}
                                 className="w-full min-h-[52px] py-3.5 px-5 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] whitespace-nowrap"
                             >
                                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

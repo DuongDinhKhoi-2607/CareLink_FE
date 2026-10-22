@@ -1002,7 +1002,7 @@ export default function CaregiverProfilePage() {
                                             <p className="text-[11px] text-slate-500 mt-0.5">Vui lòng nộp CCCD 2 mặt, bằng cấp chuyên môn và CCHN để được duyệt hồ sơ.</p>
                                         </div>
                                         <Link
-                                            to="/caregiver/verification"
+                                            to="/caregiver/choose-role"
                                             onClick={() => setIsCertModalOpen(false)}
                                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005263] transition-colors shadow-2xs"
                                         >

@@ -500,7 +500,7 @@ export default function CaregiverDashboard() {
                     <div className="mt-6 flex flex-wrap items-center justify-between gap-4 pt-1">
                         <div className="flex flex-wrap items-center gap-3">
                             <Link
-                                to="/caregiver/verification"
+                                to="/caregiver/choose-role"
                                 className="group inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-teal-50 text-[#00677C] font-bold text-xs shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                             >
                                 <span>Nộp hồ sơ xác thực ngay</span>

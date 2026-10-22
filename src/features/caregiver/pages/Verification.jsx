@@ -581,8 +581,17 @@ export default function Verification() {
     const [searchParams] = useSearchParams();
     const [selectedRole, setSelectedRole] = useState(() => {
         const param = searchParams.get("role");
-        return param === "nurse" ? "nurse" : "student";
+        return param === "student" ? "student" : param === "nurse" ? "nurse" : "student";
     });
+
+    // Luôn ưu tiên vai trò người dùng đã chọn từ URL (?role=student hoặc ?role=nurse)
+    useEffect(() => {
+        const param = searchParams.get("role");
+        if (param === "student" || param === "nurse") {
+            setSelectedRole(param);
+        }
+    }, [searchParams]);
+
     const role = selectedRole;
     const isStudent = role === "student";
     const steps = isStudent ? STUDENT_STEPS : NURSE_STEPS;
@@ -654,10 +663,15 @@ export default function Verification() {
                         setIsOtpVerified(true);
                         setIsOtpSent(true);
                     }
-                    if (data.practitionerType === 1) {
-                        setSelectedRole("nurse");
-                    } else if (data.practitionerType === 2) {
-                        setSelectedRole("student");
+
+                    // Chỉ ghi đè vai trò từ backend nếu URL không truyền query param (?role=...)
+                    const currentQueryRole = searchParams.get("role");
+                    if (!currentQueryRole) {
+                        if (data.practitionerType === 1) {
+                            setSelectedRole("nurse");
+                        } else if (data.practitionerType === 2) {
+                            setSelectedRole("student");
+                        }
                     }
 
                     // Nếu đã nộp và đang chờ duyệt (status = 1 hoặc verificationStatus = 1)

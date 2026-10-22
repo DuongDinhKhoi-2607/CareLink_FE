@@ -228,8 +228,8 @@ export default function CaregiverSchedule() {
         try {
             const res = await caregiverApi.getBookings({ PageNumber: 1, PageSize: 20 });
             const items = res?.items || (Array.isArray(res) ? res : []);
-            // Chỉ lấy các ca đang chờ điều dưỡng xác nhận (status = 2 / PendingAcceptance)
-            const pendingItems = items.filter((b) => b.status === 2 || b.status === "PendingAcceptance");
+            // Lấy các ca đang chờ điều dưỡng xác nhận (status = 2 / PendingAcceptance hoặc đã thanh toán)
+            const pendingItems = items.filter((b) => b.status === 2 || b.status === "PendingAcceptance" || (b.status === 1 && (b.paymentStatus === 2 || b.paymentStatus === "Paid")));
             setRequests(
                 pendingItems.map((b) => {
                     const start = b.scheduledStart ? new Date(b.scheduledStart) : new Date();

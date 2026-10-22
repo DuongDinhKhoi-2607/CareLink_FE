@@ -100,10 +100,21 @@ export default function Checkout() {
     const [isLoadingBooking, setIsLoadingBooking] = useState(Boolean(bookingId && !location.state?.booking));
 
     const [selectedPayment, setSelectedPayment] = useState("vnpay");
+    const [paymentTier, setPaymentTier] = useState("full"); // "full" | "platform_fee" | "test_10k"
     const [acceptedTerms, setAcceptedTerms] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState("");
     const [paymentError, setPaymentError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const totalServicePrice = Number(booking?.totalPrice || 350000);
+    const platformFee = 60000;
+    const testAmount = 10000;
+    const chargeAmount = paymentTier === "platform_fee"
+        ? platformFee
+        : paymentTier === "test_10k"
+        ? testAmount
+        : totalServicePrice;
+    const remainingCash = Math.max(0, totalServicePrice - chargeAmount);
 
     // Tải thông tin booking thật nếu có bookingId
     useEffect(() => {
@@ -156,10 +167,11 @@ export default function Checkout() {
         }
 
         setIsSubmitting(true);
-        setPaymentStatus("Đang khởi tạo liên kết thanh toán PayOS bảo mật...");
+        setPaymentStatus(`Đang khởi tạo liên kết thanh toán PayOS (${chargeAmount.toLocaleString("vi-VN")} VNĐ)...`);
         try {
             const currentOrigin = window.location.origin;
             const res = await familyApi.createPaymentLink(bookingId, {
+                amount: chargeAmount,
                 returnUrl: `${currentOrigin}/payment/success`,
                 cancelUrl: `${currentOrigin}/payment/cancel`,
             });
@@ -235,26 +247,104 @@ export default function Checkout() {
                     <section className="lg:col-span-7 flex flex-col gap-6">
                         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e0e3e5] shadow-sm flex flex-col gap-6">
 
-                            {/* Phí nền tảng */}
+                            {/* Chi tiết thanh toán & Tùy chọn số tiền */}
                             <div className="flex flex-col gap-2">
-                                <h2 className="text-xl font-semibold text-prussian-blue">Phí nền tảng</h2>
+                                <h2 className="text-xl font-semibold text-prussian-blue">Chi tiết thanh toán dịch vụ</h2>
                                 <p className="text-sm text-[#43474e] leading-relaxed">
-                                    Khoản phí này giúp CareLink vận hành hệ thống, hỗ trợ xác thực điều dưỡng và chăm sóc khách hàng.
+                                    Bạn có thể chọn thanh toán trọn gói ca chăm sóc qua cổng PayOS hoặc thanh toán trước phí sàn giữ chỗ (tiền công còn lại thanh toán trực tiếp cho Điều dưỡng sau ca trực).
                                 </p>
                             </div>
 
+                            {/* Tùy chọn mức thanh toán PayOS */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentTier("full")}
+                                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                                        paymentTier === "full"
+                                            ? "border-[#00677c] bg-teal-50/60 ring-2 ring-[#00677c]/20 shadow-xs"
+                                            : "border-slate-200 bg-white hover:border-slate-300"
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-[#00677c]">Trọn gói ca</span>
+                                            {paymentTier === "full" && <span className="w-2 h-2 rounded-full bg-[#00677c]" />}
+                                        </div>
+                                        <p className="text-lg font-extrabold text-[#102030] mt-1">
+                                            {totalServicePrice.toLocaleString("vi-VN")} VNĐ
+                                        </p>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 leading-snug">
+                                        Đã gồm trọn gói dịch vụ và phí sàn. Không phát sinh thêm.
+                                    </p>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentTier("platform_fee")}
+                                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                                        paymentTier === "platform_fee"
+                                            ? "border-[#00677c] bg-teal-50/60 ring-2 ring-[#00677c]/20 shadow-xs"
+                                            : "border-slate-200 bg-white hover:border-slate-300"
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-[#00677c]">Phí sàn giữ chỗ</span>
+                                            {paymentTier === "platform_fee" && <span className="w-2 h-2 rounded-full bg-[#00677c]" />}
+                                        </div>
+                                        <p className="text-lg font-extrabold text-[#102030] mt-1">
+                                            60.000 VNĐ
+                                        </p>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 leading-snug">
+                                        Giữ chỗ ca trực. Còn lại {Math.max(0, totalServicePrice - 60000).toLocaleString("vi-VN")} VNĐ trả điều dưỡng.
+                                    </p>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentTier("test_10k")}
+                                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                                        paymentTier === "test_10k"
+                                            ? "border-[#00677c] bg-teal-50/60 ring-2 ring-[#00677c]/20 shadow-xs"
+                                            : "border-slate-200 bg-white hover:border-slate-300"
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-amber-600">Thử nghiệm</span>
+                                            {paymentTier === "test_10k" && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+                                        </div>
+                                        <p className="text-lg font-extrabold text-[#102030] mt-1">
+                                            10.000 VNĐ
+                                        </p>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 leading-snug">
+                                        Mức nạp kiểm thử PayOS Sandbox dành cho Demo.
+                                    </p>
+                                </button>
+                            </div>
+
                             {/* Thẻ tổng cộng phí */}
-                            <div className="p-6 rounded-xl bg-[#f1f4f6] border border-[#c4c6cf4c] flex flex-col gap-1">
-                                <span className="text-sm text-[#43474e]">
-                                    {booking?.serviceName ? `Tổng cộng phí dịch vụ (${booking.serviceName})` : "Tổng cộng phí dịch vụ"}
-                                </span>
-                                <span className="text-3xl sm:text-4xl font-bold text-prussian-blue">
-                                    {booking?.totalPrice
-                                        ? Number(booking.totalPrice).toLocaleString("vi-VN") + " VNĐ"
-                                        : "60.000 VNĐ"}
-                                </span>
+                            <div className="p-5 rounded-xl bg-[#f1f4f6] border border-[#c4c6cf4c] flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-600">
+                                        Số tiền thanh toán qua PayOS lúc này:
+                                    </span>
+                                    <span className="text-2xl sm:text-3xl font-bold text-[#00677c]">
+                                        {chargeAmount.toLocaleString("vi-VN")} VNĐ
+                                    </span>
+                                </div>
+                                {remainingCash > 0 && (
+                                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
+                                        <span>Tiền công dịch vụ còn lại thanh toán cho Điều dưỡng:</span>
+                                        <span className="font-bold text-slate-800">{remainingCash.toLocaleString("vi-VN")} VNĐ</span>
+                                    </div>
+                                )}
                                 {booking?.recipientName && (
-                                    <span className="text-xs text-slate-500 mt-1">
+                                    <span className="text-xs text-slate-500 pt-1">
                                         Người nhận: <strong>{booking.recipientName}</strong> · Điều dưỡng: <strong>{booking.nurseName || "Đang xếp lịch"}</strong>
                                     </span>
                                 )}
@@ -355,7 +445,7 @@ export default function Checkout() {
                                         className="w-full py-4 px-6 text-white rounded-xl text-base font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                                         style={{ backgroundColor: selectedMethodData?.brandHex || '#102030' }}
                                     >
-                                        {isSubmitting ? "Đang kết nối cổng PayOS..." : `Thanh toán qua ${selectedMethodData?.label}`}
+                                        {isSubmitting ? "Đang kết nối cổng PayOS..." : `Thanh toán ${chargeAmount.toLocaleString("vi-VN")} VNĐ qua ${selectedMethodData?.label}`}
                                     </button>
                                 )}
 
