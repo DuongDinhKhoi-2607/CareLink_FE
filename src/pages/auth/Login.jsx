@@ -71,47 +71,6 @@ export default function Login() {
         }, 1500);
     };
 
-    const doMockLoginFallback = (input) => {
-        let targetRole = "family";
-        let targetName = "Nguyễn Văn An";
-
-        if (input.includes("admin")) {
-            targetRole = "admin";
-            targetName = "Ban Quản trị CareLink";
-        } else if (
-            input.includes("caregiver") ||
-            input.includes("dieuduong") ||
-            input.includes("linh")
-        ) {
-            targetRole = "caregiver";
-            targetName = "Điều dưỡng Nguyễn Thùy Linh";
-        } else {
-            targetRole = "family";
-            targetName =
-                emailOrPhone && !input.includes("family")
-                    ? emailOrPhone.includes("@")
-                        ? emailOrPhone.split("@")[0]
-                        : emailOrPhone
-                    : "Nguyễn Văn An";
-        }
-
-        const mockUser = {
-            name: targetName,
-            email: emailOrPhone || `${targetRole}@carelink.vn`,
-            role: targetRole,
-            avatar:
-                targetRole === "admin"
-                    ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
-                    : targetRole === "caregiver"
-                        ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
-                        : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        };
-
-        // Lưu giả lập token để các trang khác không bị chặn
-        const mockToken = "mock_token_" + Date.now();
-        handleLoginSuccess(mockUser, mockToken, mockToken);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isLoading) return;
@@ -137,13 +96,8 @@ export default function Login() {
 
         setIsLoading(true);
 
-        const input = emailTrimmed.toLowerCase();
-        const isMockKeyword = ["admin", "caregiver", "dieuduong", "linh", "family"].some((k) =>
-            input.includes(k)
-        );
-
         try {
-            // 1. ƯU TIÊN GỌI API THẬT TỪ BACKEND
+            // 1. GỌI API THẬT TỪ BACKEND
             const res = await authApi.login({
                 email: emailTrimmed,
                 password,
@@ -202,18 +156,12 @@ export default function Login() {
         } catch (err) {
             console.warn("[CareLink Auth] Login API error:", err);
 
-            // 2. SAFETY FALLBACK: Nếu người dùng nhập tài khoản mẫu demo hoặc backend chưa bật
-            if (isMockKeyword || err.code === "ERR_NETWORK" || !err.response) {
-                doMockLoginFallback(input);
-                return;
-            }
-
-            // 3. XỬ LÝ LỖI CHÍNH XÁC VÀ THÂN THIỆN
+            // 2. XỬ LÝ LỖI TRUNG THỰC TỪ BACKEND
             let errorMessage = "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
             if (err.response?.status === 401 || err.response?.status === 400) {
-                errorMessage = "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
+                errorMessage = err.response?.data?.detail || err.response?.data?.message || "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
             } else if (err.code === "ERR_NETWORK" || !err.response) {
-                errorMessage = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại!";
+                errorMessage = "Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra kết nối mạng!";
             } else if (err.response?.data?.detail) {
                 errorMessage = err.response.data.detail;
             } else if (err.response?.data?.message) {
@@ -293,30 +241,17 @@ export default function Login() {
             handleLoginSuccess(userObj, data.accessToken, data.refreshToken);
         } catch (apiErr) {
             console.warn("[CareLink Auth] Google login API error:", apiErr);
-            if (apiErr.code === "ERR_NETWORK" || !apiErr.response) {
-                setToast({
-                    type: "info",
-                    title: "Chế độ trải nghiệm",
-                    message: "Không kết nối được Backend. Đang kích hoạt phiên làm việc Google mẫu...",
-                });
-                const mockGoogleUser = {
-                    name: "Nguyễn Văn An (Google)",
-                    email: "an.nguyen.google@carelink.vn",
-                    role: "family",
-                    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-                };
-                handleLoginSuccess(mockGoogleUser, "mock_google_token_" + Date.now(), "mock_google_refresh_" + Date.now());
-            } else {
-                const msg =
-                    apiErr.response?.data?.message ||
-                    apiErr.response?.data?.detail ||
-                    "Đăng nhập bằng tài khoản Google đang gặp gián đoạn. Vui lòng thử lại lần nữa hoặc thử lại sau ít phút.";
-                setToast({
-                    type: "error",
-                    title: "Đăng nhập Google chưa thành công",
-                    message: msg,
-                });
-            }
+            const msg =
+                apiErr.response?.data?.message ||
+                apiErr.response?.data?.detail ||
+                (apiErr.code === "ERR_NETWORK" || !apiErr.response
+                    ? "Không thể kết nối đến máy chủ để xác thực Google. Vui lòng kiểm tra lại mạng!"
+                    : "Đăng nhập bằng tài khoản Google chưa thành công. Vui lòng thử lại!");
+            setToast({
+                type: "error",
+                title: "Đăng nhập Google thất bại",
+                message: msg,
+            });
         } finally {
             setIsLoading(false);
         }
