@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import CaregiverCard from "../components/CaregiverCard";
 import CaregiverFilterSidebar from "../components/CaregiverFilterSidebar";
 import familyApi from "../../../api/familyApi";
+import { HeartHandshake, ShieldAlert, LogIn, UserPlus, X, MessageSquare } from "lucide-react";
 
 // Helper chuyển đổi dữ liệu từ Backend API (GET /api/v1/nurses/search) sang cấu trúc Card
 const normalizeNurse = (item) => ({
@@ -424,7 +425,40 @@ export default function CaregiverList() {
         setSearchTrigger((prev) => prev + 1);
     };
 
+    const [authModal, setAuthModal] = useState({ open: false, type: "unauthenticated", caregiver: null });
+
     const handleProfile = (caregiver) => {
+        navigate("/caregivers/profile", {
+            state: {
+                caregiver,
+                selectedService: activeService,
+            },
+        });
+    };
+
+    const handleBook = (caregiver) => {
+        const token = localStorage.getItem("carelink_token");
+        const rawUser = localStorage.getItem("carelink_user");
+        let user = null;
+        try {
+            user = rawUser ? JSON.parse(rawUser) : null;
+        } catch {}
+
+        // 1. Kiểm tra nếu khách vãng lai chưa đăng nhập
+        if (!token) {
+            setAuthModal({ open: true, type: "unauthenticated", caregiver });
+            return;
+        }
+
+        // 2. Kiểm tra nếu người dùng đang đăng nhập bằng tài khoản Điều dưỡng
+        const role = user?.role?.toLowerCase();
+        const roleIdNum = Number(user?.roleId);
+        if (role === "nurse" || role === "caregiver" || roleIdNum === 3) {
+            setAuthModal({ open: true, type: "nurse_role", caregiver });
+            return;
+        }
+
+        // 3. Đã có tài khoản Gia đình -> chuyển sang trang hồ sơ điều dưỡng để đặt lịch
         navigate("/caregivers/profile", {
             state: {
                 caregiver,
@@ -995,7 +1029,7 @@ export default function CaregiverList() {
                                             key={caregiver.id}
                                             caregiver={caregiver}
                                             onProfile={handleProfile}
-                                            onBook={handleProfile}
+                                            onBook={handleBook}
                                         />
                                     ))}
                                 </div>
@@ -1055,6 +1089,149 @@ export default function CaregiverList() {
                 </div>
 
             </div>
+
+            {/* Modal cảnh báo yêu cầu tài khoản Gia đình */}
+            {authModal.open && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setAuthModal((prev) => ({ ...prev, open: false }));
+                        }
+                    }}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                    >
+                        <div className="flex items-start justify-between border-b border-slate-100 p-5 sm:p-6">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                                        authModal.type === "unauthenticated"
+                                            ? "bg-[#eaf5f7] text-[#00677c]"
+                                            : "bg-amber-50 text-amber-600 border border-amber-200"
+                                    }`}
+                                >
+                                    {authModal.type === "unauthenticated" ? (
+                                        <HeartHandshake className="h-6 w-6" />
+                                    ) : (
+                                        <ShieldAlert className="h-6 w-6" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-extrabold text-slate-900">
+                                        {authModal.type === "unauthenticated"
+                                            ? "Đăng nhập để đặt lịch chăm sóc"
+                                            : "Tài khoản hiện tại là Điều dưỡng"}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        Dịch vụ kết nối chăm sóc CareLink
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
+                                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 sm:p-6 space-y-4">
+                            {authModal.type === "unauthenticated" ? (
+                                <>
+                                    <p className="text-sm leading-relaxed text-slate-600">
+                                        Để chọn điều dưỡng, gửi yêu cầu chăm sóc và theo dõi lịch hẹn, quý khách vui lòng đăng nhập hoặc tạo tài khoản dành cho <strong>Gia đình</strong>.
+                                    </p>
+                                    <div className="rounded-2xl border border-[#cbe4e8] bg-[#f0f8fa] p-3.5 text-xs text-[#065b65] space-y-1.5">
+                                        <div className="flex items-center gap-2 font-bold text-[#00677c]">
+                                            <MessageSquare className="h-4 w-4 shrink-0" />
+                                            <span>Kết nối nhanh chóng & an toàn</span>
+                                        </div>
+                                        <p className="leading-relaxed">
+                                            Tài khoản Gia đình giúp bạn dễ dàng lưu danh sách điều dưỡng yêu thích, trao đổi tin nhắn và nhận ca chăm sóc thuận tiện.
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm leading-relaxed text-slate-600">
+                                        Bạn đang đăng nhập bằng tài khoản <strong>Điều dưỡng</strong>. Để đặt lịch chăm sóc cho người thân, vui lòng chuyển sang hoặc tạo tài khoản <strong>Gia đình</strong>.
+                                    </p>
+                                    <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900 leading-relaxed">
+                                        Bạn có thể chuyển về trang tổng quan dành cho Điều dưỡng hoặc đăng xuất để đăng nhập tài khoản Khách hàng.
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:px-6">
+                            <button
+                                type="button"
+                                onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
+                                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                            >
+                                {authModal.type === "unauthenticated" ? "Để sau" : "Đóng"}
+                            </button>
+
+                            {authModal.type === "unauthenticated" ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAuthModal((prev) => ({ ...prev, open: false }));
+                                            navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+                                        }}
+                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-[#00677c] transition"
+                                    >
+                                        <LogIn className="h-4 w-4" />
+                                        Đăng nhập
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAuthModal((prev) => ({ ...prev, open: false }));
+                                            navigate("/register?role=family");
+                                        }}
+                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#00677c] text-xs font-bold text-white shadow-sm hover:bg-[#065363] transition"
+                                    >
+                                        <UserPlus className="h-4 w-4" />
+                                        Đăng ký Gia đình
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAuthModal((prev) => ({ ...prev, open: false }));
+                                            navigate("/caregiver/dashboard");
+                                        }}
+                                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                                    >
+                                        Về trang Điều dưỡng
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setAuthModal((prev) => ({ ...prev, open: false }));
+                                            localStorage.removeItem("carelink_token");
+                                            localStorage.removeItem("carelink_user");
+                                            navigate("/login");
+                                        }}
+                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-600 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                    >
+                                        Đăng xuất tài khoản
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
