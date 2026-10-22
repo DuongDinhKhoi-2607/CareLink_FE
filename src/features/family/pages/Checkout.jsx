@@ -158,7 +158,11 @@ export default function Checkout() {
         setIsSubmitting(true);
         setPaymentStatus("Đang khởi tạo liên kết thanh toán PayOS bảo mật...");
         try {
-            const res = await familyApi.createPaymentLink(bookingId);
+            const currentOrigin = window.location.origin;
+            const res = await familyApi.createPaymentLink(bookingId, {
+                returnUrl: `${currentOrigin}/payment/success`,
+                cancelUrl: `${currentOrigin}/payment/cancel`,
+            });
             if (res?.checkoutUrl) {
                 sessionStorage.setItem("carelink_pending_payment_booking_id", bookingId);
                 setPaymentStatus("Đang chuyển hướng tới cổng thanh toán an toàn PayOS...");

@@ -34,8 +34,8 @@ export const familyApi = {
     cancelBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/cancel`, data),
 
     // ── 5. Thanh toán trực tuyến PayOS (Payments) ──
-    createPaymentLink: (bookingId) =>
-        axiosClient.post(`/api/v1/bookings/${bookingId}/payments`),
+    createPaymentLink: (bookingId, params) =>
+        axiosClient.post(`/api/v1/bookings/${bookingId}/payments`, null, { params }),
     getPaymentDetail: (bookingId) =>
         axiosClient.get(`/api/v1/bookings/${bookingId}/payments`),
 
