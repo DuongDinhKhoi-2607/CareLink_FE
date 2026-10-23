@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import caregiverApi from "../../../api/caregiverApi";
 import authApi, { fetchAndSyncUserMe } from "../../../api/authApi";
+import { resolveDocumentUrl } from "../../../api/axiosClient";
 
 export default function CaregiverProfilePage() {
     // Lấy thông tin tài khoản đang đăng nhập từ localStorage để khởi tạo đúng tên, email người dùng thật
@@ -22,6 +23,7 @@ export default function CaregiverProfilePage() {
         email: loggedInUser?.email || "",
         phone: loggedInUser?.phone || "",
         avatar: loggedInUser?.avatar || "/images/caregiver_avatar.svg",
+        practitionerType: loggedInUser?.practitionerType || 1,
         rating: 5.0,
         reviewsCount: 0,
         completedBookings: 0,
@@ -171,6 +173,7 @@ export default function CaregiverProfilePage() {
                         adminNote: vData?.latestAdminNote || data.rejectionReason,
                         licenseNumber: vData?.licenseNumber || data.licenseNumber || prev.licenseNumber,
                         licenseExpiry: vData?.licenseExpiryDate || data.licenseExpiry || prev.licenseExpiry,
+                        practitionerType: vData?.practitionerType ?? (data?.practitionerType ?? prev.practitionerType ?? 1),
                     };
                     setDraft(merged);
                     return merged;
@@ -289,9 +292,17 @@ export default function CaregiverProfilePage() {
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-700 text-xs font-semibold border border-teal-200/60">
-                            Điều dưỡng chuyên nghiệp
-                        </span>
+                        {profile.practitionerType === 2 ? (
+                            <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200/60 flex items-center gap-1">
+                                <span>🎓</span>
+                                Sinh viên Y khoa
+                            </span>
+                        ) : (
+                            <span className="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-700 text-xs font-semibold border border-teal-200/60 flex items-center gap-1">
+                                <span>🩺</span>
+                                Điều dưỡng chuyên nghiệp
+                            </span>
+                        )}
                         {(() => {
                             const vStatus = profile.verificationStatus;
                             const note = profile.adminNote || certStatusInfo?.latestAdminNote;
@@ -986,7 +997,7 @@ export default function CaregiverProfilePage() {
                                                         {doc.statusName || "Hợp lệ"}
                                                     </span>
                                                     {doc.fileUrl && (
-                                                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:text-teal-700 font-bold text-xs underline">
+                                                        <a href={resolveDocumentUrl(doc.fileUrl)} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:text-teal-700 font-bold text-xs underline">
                                                             Xem
                                                         </a>
                                                     )}

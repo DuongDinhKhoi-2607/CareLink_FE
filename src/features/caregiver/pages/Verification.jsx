@@ -948,55 +948,69 @@ export default function Verification() {
             const docList = [];
             if (files.idFront) {
                 const url = await uploadOrConvertFile(files.idFront);
-                docList.push({
-                    documentType: 1,
-                    fileUrl: url || "https://carelink.vn/docs/cccd_front.jpg",
-                });
+                if (url) {
+                    docList.push({
+                        documentType: 1,
+                        fileUrl: url,
+                    });
+                }
             }
             if (files.idBack) {
                 const url = await uploadOrConvertFile(files.idBack);
-                docList.push({
-                    documentType: 2,
-                    fileUrl: url || "https://carelink.vn/docs/cccd_back.jpg",
-                });
+                if (url) {
+                    docList.push({
+                        documentType: 2,
+                        fileUrl: url,
+                    });
+                }
             }
             // DocumentType 5: Ảnh selfie cầm CCCD (bắt buộc theo nghiệp vụ Verif-01b)
             if (files.selfie) {
                 const url = await uploadOrConvertFile(files.selfie);
-                docList.push({
-                    documentType: 5,
-                    fileUrl: url || "https://carelink.vn/docs/selfie.jpg",
-                });
+                if (url) {
+                    docList.push({
+                        documentType: 5,
+                        fileUrl: url,
+                    });
+                }
             } else if (files.idFront) {
                 const url = await uploadOrConvertFile(files.idFront);
-                docList.push({
-                    documentType: 5,
-                    fileUrl: url || "https://carelink.vn/docs/selfie_default.jpg",
-                });
+                if (url) {
+                    docList.push({
+                        documentType: 5,
+                        fileUrl: url,
+                    });
+                }
             }
 
             if (isStudent) {
                 if (files.studentCard) {
                     const url = await uploadOrConvertFile(files.studentCard);
-                    docList.push({
-                        documentType: 6,
-                        fileUrl: url || "https://carelink.vn/docs/student_card.jpg",
-                    });
+                    if (url) {
+                        docList.push({
+                            documentType: 6,
+                            fileUrl: url,
+                        });
+                    }
                 }
             } else {
                 if (files.licenseCertificate) {
                     const url = await uploadOrConvertFile(files.licenseCertificate);
-                    docList.push({
-                        documentType: 4,
-                        fileUrl: url || "https://carelink.vn/docs/license.jpg",
-                    });
+                    if (url) {
+                        docList.push({
+                            documentType: 4,
+                            fileUrl: url,
+                        });
+                    }
                 }
                 if (files.graduationDiploma) {
                     const url = await uploadOrConvertFile(files.graduationDiploma);
-                    docList.push({
-                        documentType: 3,
-                        fileUrl: url || "https://carelink.vn/docs/diploma.jpg",
-                    });
+                    if (url) {
+                        docList.push({
+                            documentType: 3,
+                            fileUrl: url,
+                        });
+                    }
                 }
             }
 

@@ -14,6 +14,9 @@ import {
     Info,
     ArrowLeft,
     Check,
+    MapPin,
+    Calendar,
+    FileCheck2,
 } from "lucide-react";
 import caregiverApi from "../../../api/caregiverApi";
 import Toast from "../../../components/Toast";
@@ -184,63 +187,248 @@ export default function CaregiverPricing() {
                 </div>
             </div>
 
-            {/* Readiness Notification Banner */}
+            {/* Readiness 4-Condition Checklist Block */}
             {readiness && (
                 <div
-                    className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    className={`p-5 sm:p-6 rounded-3xl border transition-all ${
                         readiness.isReadyToReceiveBookings
-                            ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
-                            : "bg-amber-50/90 border-amber-200 text-amber-950"
+                            ? "bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white border-emerald-200 shadow-sm"
+                            : "bg-gradient-to-br from-amber-50/90 via-slate-50/50 to-white border-amber-200/90 shadow-sm"
                     }`}
                 >
-                    <div className="flex items-start gap-3">
-                        <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                                readiness.isReadyToReceiveBookings
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : "bg-amber-100 text-amber-700"
-                            }`}
-                        >
-                            {readiness.isReadyToReceiveBookings ? (
-                                <CheckCircle2 className="w-5 h-5" />
-                            ) : (
-                                <AlertCircle className="w-5 h-5" />
-                            )}
-                        </div>
-                        <div>
-                            <p className="text-xs sm:text-sm font-bold">
-                                {readiness.isReadyToReceiveBookings
-                                    ? "Hồ sơ của bạn đã sẵn sàng nhận ca và hiển thị trên bộ tìm kiếm!"
-                                    : "Bạn cần hoàn thiện 4 điều kiện để xuất hiện trong kết quả tìm kiếm của khách hàng"}
-                            </p>
-                            {!readiness.isReadyToReceiveBookings && readiness.missingRequirements?.length > 0 && (
-                                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                                    Còn thiếu: {readiness.missingRequirements.join(" • ")}
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/60">
+                        <div className="flex items-start gap-3">
+                            <div
+                                className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                                    readiness.isReadyToReceiveBookings
+                                        ? "bg-emerald-100 text-emerald-700 shadow-2xs"
+                                        : "bg-amber-100 text-amber-700 shadow-2xs"
+                                }`}
+                            >
+                                {readiness.isReadyToReceiveBookings ? (
+                                    <CheckCircle2 className="w-5 h-5" />
+                                ) : (
+                                    <AlertCircle className="w-5 h-5" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="text-sm sm:text-base font-extrabold text-[#102030]">
+                                    {readiness.isReadyToReceiveBookings
+                                        ? "Hồ sơ đã đạt chuẩn và sẵn sàng xuất hiện trong kết quả tìm kiếm!"
+                                        : "Hoàn thiện 4 điều kiện để xuất hiện trong kết quả tìm kiếm của khách hàng"}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    CareLink yêu cầu hoàn thiện đủ 4 tiêu chuẩn để đảm bảo an toàn y tế và trải nghiệm tốt nhất cho gia đình.
                                 </p>
-                            )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                            <span
+                                className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                    readiness.isReadyToReceiveBookings
+                                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                        : "bg-amber-100 text-amber-900 border-amber-300"
+                                }`}
+                            >
+                                {readiness.isReadyToReceiveBookings
+                                    ? "✓ 4/4 Sẵn sàng nhận ca"
+                                    : `Đã hoàn thành ${
+                                          [
+                                              readiness.isProfileApproved,
+                                              readiness.hasWorkLocation,
+                                              readiness.hasAvailability,
+                                              readiness.hasServicePricing,
+                                          ].filter(Boolean).length
+                                      }/4`}
+                            </span>
                         </div>
                     </div>
 
-                    {!readiness.isReadyToReceiveBookings && (
-                        <div className="flex items-center gap-2 shrink-0">
-                            {!readiness.hasAvailability && (
+                    {/* 4 Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-4">
+                        {/* 1. Duyệt hồ sơ */}
+                        <div
+                            className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                readiness.isProfileApproved
+                                    ? "bg-white/90 border-emerald-200 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:border-amber-300 shadow-2xs"
+                            }`}
+                        >
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div
+                                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
+                                            readiness.isProfileApproved
+                                                ? "bg-emerald-50 text-emerald-600"
+                                                : "bg-slate-100 text-slate-500"
+                                        }`}
+                                    >
+                                        <FileCheck2 className="w-4 h-4" />
+                                    </div>
+                                    <span
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                            readiness.isProfileApproved
+                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                                        }`}
+                                    >
+                                        {readiness.isProfileApproved ? "✓ Đã duyệt" : "Chưa duyệt"}
+                                    </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900">1. Xét duyệt hồ sơ</h4>
+                                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    {readiness.isProfileApproved
+                                        ? "Chứng từ & lý lịch đã được Ban Quản trị phê duyệt."
+                                        : "Cần nộp CCCD và bằng cấp chuyên môn để Admin duyệt."}
+                                </p>
+                            </div>
+                            {!readiness.isProfileApproved && (
                                 <Link
-                                    to="/caregiver/schedule"
-                                    className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-xs font-semibold hover:bg-amber-100/60 transition"
+                                    to="/caregiver/choose-role"
+                                    className="mt-3 w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold text-center border border-amber-200 transition"
                                 >
-                                    Cài lịch rảnh
+                                    Nộp hồ sơ ngay
                                 </Link>
                             )}
+                        </div>
+
+                        {/* 2. Địa bàn làm việc */}
+                        <div
+                            className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                readiness.hasWorkLocation
+                                    ? "bg-white/90 border-emerald-200 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:border-amber-300 shadow-2xs"
+                            }`}
+                        >
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div
+                                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
+                                            readiness.hasWorkLocation
+                                                ? "bg-emerald-50 text-emerald-600"
+                                                : "bg-slate-100 text-slate-500"
+                                        }`}
+                                    >
+                                        <MapPin className="w-4 h-4" />
+                                    </div>
+                                    <span
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                            readiness.hasWorkLocation
+                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                                        }`}
+                                    >
+                                        {readiness.hasWorkLocation ? "✓ Đã cài đặt" : "Chưa cài"}
+                                    </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900">2. Địa bàn & Bán kính</h4>
+                                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    {readiness.hasWorkLocation
+                                        ? "Đã lưu vị trí xuất phát và khoảng cách nhận ca tối đa."
+                                        : "Cần cấu hình địa chỉ thường trú và bán kính nhận việc."}
+                                </p>
+                            </div>
                             {!readiness.hasWorkLocation && (
                                 <Link
                                     to="/caregiver/profile"
-                                    className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-xs font-semibold hover:bg-amber-100/60 transition"
+                                    className="mt-3 w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold text-center border border-amber-200 transition"
                                 >
                                     Chọn địa bàn
                                 </Link>
                             )}
                         </div>
-                    )}
+
+                        {/* 3. Lịch rảnh trong tuần */}
+                        <div
+                            className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                readiness.hasAvailability
+                                    ? "bg-white/90 border-emerald-200 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:border-amber-300 shadow-2xs"
+                            }`}
+                        >
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div
+                                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
+                                            readiness.hasAvailability
+                                                ? "bg-emerald-50 text-emerald-600"
+                                                : "bg-slate-100 text-slate-500"
+                                        }`}
+                                    >
+                                        <Calendar className="w-4 h-4" />
+                                    </div>
+                                    <span
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                            readiness.hasAvailability
+                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                                        }`}
+                                    >
+                                        {readiness.hasAvailability ? "✓ Đã có lịch" : "Chưa cài"}
+                                    </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900">3. Lịch rảnh định kỳ</h4>
+                                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    {readiness.hasAvailability
+                                        ? "Đã thiết lập các khung giờ sẵn sàng nhận ca trong tuần."
+                                        : "Cần bật ít nhất 1 khung giờ rảnh để khách đặt lịch."}
+                                </p>
+                            </div>
+                            {!readiness.hasAvailability && (
+                                <Link
+                                    to="/caregiver/schedule"
+                                    className="mt-3 w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold text-center border border-amber-200 transition"
+                                >
+                                    Cài lịch rảnh
+                                </Link>
+                            )}
+                        </div>
+
+                        {/* 4. Bảng giá dịch vụ */}
+                        <div
+                            className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                readiness.hasServicePricing
+                                    ? "bg-white/90 border-emerald-200 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:border-amber-300 shadow-2xs"
+                            }`}
+                        >
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div
+                                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
+                                            readiness.hasServicePricing
+                                                ? "bg-emerald-50 text-emerald-600"
+                                                : "bg-slate-100 text-slate-500"
+                                        }`}
+                                    >
+                                        <DollarSign className="w-4 h-4" />
+                                    </div>
+                                    <span
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                            readiness.hasServicePricing
+                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                                        }`}
+                                    >
+                                        {readiness.hasServicePricing ? "✓ Đã bật giá" : "Chưa bật"}
+                                    </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900">4. Bảng giá dịch vụ</h4>
+                                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    {readiness.hasServicePricing
+                                        ? `Đang bật ${offeredCount} dịch vụ nhận làm ở bảng bên dưới.`
+                                        : "Cần bật công tắc nhận làm cho ít nhất 1 dịch vụ bên dưới."}
+                                </p>
+                            </div>
+                            {!readiness.hasServicePricing && (
+                                <div className="mt-3 py-1.5 px-3 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold text-center border border-slate-200">
+                                    Bật ở danh sách dưới 👇
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 

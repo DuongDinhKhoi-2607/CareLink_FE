@@ -167,6 +167,17 @@ export default function FamilyProfile() {
                 setPersonalInfo(fresh);
                 setPersonalDraft(fresh);
 
+                if (norm.emergencyContact && (norm.emergencyContact.name || norm.emergencyContact.phone)) {
+                    const ec = {
+                        name: norm.emergencyContact.name,
+                        relation: norm.emergencyContact.relation || "Người thân",
+                        phone: norm.emergencyContact.phone,
+                        secondaryPhone: "",
+                    };
+                    setEmergencyContact(ec);
+                    setEmergencyDraft(ec);
+                }
+
                 // Đồng bộ với localStorage để Header/Sidebar không bị lệch
                 try {
                     const saved = JSON.parse(localStorage.getItem("carelink_user") || "{}");
@@ -276,11 +287,24 @@ export default function FamilyProfile() {
         }
     };
 
-    const handleSaveEmergency = (e) => {
+    const handleSaveEmergency = async (e) => {
         e.preventDefault();
-        setEmergencyContact({ ...emergencyDraft });
-        setIsEditingEmergency(false);
-        showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp mới!");
+        try {
+            await authApi.updateMe({
+                emergencyContactName: emergencyDraft.name?.trim() || null,
+                emergencyContactPhone: emergencyDraft.phone?.trim() || null,
+                emergencyContactRelation: emergencyDraft.relation?.trim() || null,
+            });
+            setEmergencyContact({ ...emergencyDraft });
+            setIsEditingEmergency(false);
+            showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp lên hệ thống thành công!");
+            await fetchAndSyncUserMe();
+        } catch (err) {
+            console.warn("Lỗi lưu liên hệ khẩn cấp:", err);
+            setEmergencyContact({ ...emergencyDraft });
+            setIsEditingEmergency(false);
+            showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp!");
+        }
     };
 
     // ── 49. GET /api/v1/addresses ─────────────────────────────────────────────────────

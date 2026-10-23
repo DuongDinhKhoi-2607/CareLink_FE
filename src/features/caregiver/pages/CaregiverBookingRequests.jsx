@@ -46,8 +46,11 @@ const mapBackendToCaregiverBooking = (b) => {
         source: "direct",
         family: {
             name: b.customerName || "Khách hàng CareLink",
-            phone: "0901 234 567",
+            phone: b.customerPhone || "Chưa cập nhật",
             address: b.addressSnapshot || "Địa chỉ khách hàng",
+            emergencyContactName: b.emergencyContactName,
+            emergencyContactPhone: b.emergencyContactPhone,
+            emergencyContactRelation: b.emergencyContactRelation,
             rating: 5.0,
             totalSessions: 1,
         },
@@ -222,6 +225,27 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                                 {family.address}
                             </div>
                         </div>
+
+                        {/* Emergency Contact */}
+                        {(family.emergencyContactName || family.emergencyContactPhone) && (
+                            <div className="mt-2.5 p-2.5 rounded-xl bg-rose-50/90 border border-rose-200 text-xs">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="font-bold text-rose-700 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                                        Liên hệ khẩn cấp: {family.emergencyContactName} {family.emergencyContactRelation ? `(${family.emergencyContactRelation})` : ""}
+                                    </span>
+                                    {family.emergencyContactPhone && (
+                                        <a
+                                            href={`tel:${family.emergencyContactPhone}`}
+                                            className="font-extrabold text-rose-700 hover:text-rose-900 underline flex items-center gap-1"
+                                            title="Gọi khẩn cấp cho gia đình"
+                                        >
+                                            📞 {family.emergencyContactPhone}
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Patient Info */}

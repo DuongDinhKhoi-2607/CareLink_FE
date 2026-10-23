@@ -10,7 +10,7 @@ export const GOOGLE_CLIENT_ID =
 // ══════════════════════════════════════════════════════════════════
 export const authApi = {
     // 1. Đăng ký tài khoản mới (Customer = 0 hoặc Nurse = 1)
-    register: ({ email, password, role = 0 }) => {
+    register: ({ email, password, role = 0, fullName, phone }) => {
         const normalizedRole =
             role === 1 || role === "caregiver" || role === "nurse" || role === "Nurse"
                 ? 1
@@ -19,6 +19,8 @@ export const authApi = {
             email: email?.trim(),
             password,
             role: normalizedRole,
+            fullName: fullName?.trim() || undefined,
+            phone: phone?.trim() || undefined,
         });
     },
 
@@ -120,6 +122,15 @@ export const normalizeUserProfile = (data) => {
             : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200");
 
     const nurseStatus = raw.nurseProfile?.status ?? (raw.verificationStatus ?? null);
+    const practitionerType = raw.nurseProfile?.practitionerType ?? (raw.practitionerType ?? 1);
+
+    const emergencyContact = raw.customerProfile
+        ? {
+            name: raw.customerProfile.emergencyContactName || "",
+            phone: raw.customerProfile.emergencyContactPhone || "",
+            relation: raw.customerProfile.emergencyContactRelation || "",
+        }
+        : null;
 
     return {
         id: raw.id || null,
@@ -132,6 +143,8 @@ export const normalizeUserProfile = (data) => {
         avatar,
         avatarUrl: avatar,
         nurseStatus,
+        practitionerType,
+        emergencyContact,
         customerProfile: raw.customerProfile || null,
         nurseProfile: raw.nurseProfile || null,
     };
