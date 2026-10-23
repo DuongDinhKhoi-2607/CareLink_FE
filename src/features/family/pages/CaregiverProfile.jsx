@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
-import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert } from "lucide-react";
+import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2 } from "lucide-react";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -578,7 +578,7 @@ export default function CaregiverProfile() {
             {/* Modal cảnh báo yêu cầu tài khoản Gia đình */}
             {authModal.open && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-[fadeIn_150ms_ease-out]"
                     onMouseDown={(e) => {
                         if (e.target === e.currentTarget) {
                             setAuthModal((prev) => ({ ...prev, open: false }));
@@ -588,57 +588,76 @@ export default function CaregiverProfile() {
                     <div
                         role="dialog"
                         aria-modal="true"
-                        className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                        className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
                     >
-                        <div className="flex items-start justify-between border-b border-slate-100 p-5 sm:p-6">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                                        authModal.type === "unauthenticated"
-                                            ? "bg-[#eaf5f7] text-[#00677c]"
-                                            : "bg-amber-50 text-amber-600 border border-amber-200"
-                                    }`}
+                        {/* Header Modal */}
+                        <div className="relative border-b border-slate-100 bg-white p-6 pb-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-4">
+                                    <div
+                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                                            authModal.type === "unauthenticated"
+                                                ? "border-teal-200 bg-teal-50 text-[#00677C]"
+                                                : "border-amber-200 bg-amber-50 text-amber-600"
+                                        }`}
+                                    >
+                                        {authModal.type === "unauthenticated" ? (
+                                            <HeartHandshake className="h-6 w-6" />
+                                        ) : (
+                                            <ShieldAlert className="h-6 w-6" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-50 text-[#00677C] border border-teal-200/60 mb-1.5">
+                                            Dành cho Gia đình & Khách hàng
+                                        </div>
+                                        <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
+                                            {authModal.type === "unauthenticated"
+                                                ? "Đăng nhập để đặt lịch chăm sóc"
+                                                : "Tài khoản hiện tại là Điều dưỡng"}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            CareLink Medical Care • Chăm sóc an tâm cho cha mẹ và người thân
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
+                                    className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
                                 >
-                                    {authModal.type === "unauthenticated" ? (
-                                        <HeartHandshake className="h-6 w-6" />
-                                    ) : (
-                                        <ShieldAlert className="h-6 w-6" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-extrabold text-slate-900">
-                                        {authModal.type === "unauthenticated"
-                                            ? "Đăng nhập để đặt lịch chăm sóc"
-                                            : "Tài khoản hiện tại là Điều dưỡng"}
-                                    </h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        Dịch vụ kết nối chăm sóc CareLink
-                                    </p>
-                                </div>
+                                    <X className="h-5 w-5" />
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
-                                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
                         </div>
 
-                        <div className="p-5 sm:p-6 space-y-4">
+                        {/* Body Modal */}
+                        <div className="p-6 space-y-4">
                             {authModal.type === "unauthenticated" ? (
                                 <>
                                     <p className="text-sm leading-relaxed text-slate-600">
-                                        Để liên hệ trao đổi trực tiếp, gửi đề xuất ca và đặt lịch chăm sóc với <strong>{displayName}</strong>, quý khách vui lòng đăng nhập hoặc đăng ký tài khoản dành cho <strong>Gia đình</strong>.
+                                        Để liên hệ trao đổi trực tiếp, gửi đề xuất ca và đặt lịch chăm sóc với <strong>{displayName}</strong>, quý khách vui lòng đăng nhập hoặc tạo tài khoản <strong>Gia đình</strong>.
                                     </p>
-                                    <div className="rounded-2xl border border-[#cbe4e8] bg-[#f0f8fa] p-3.5 text-xs text-[#065b65] space-y-1.5">
-                                        <div className="flex items-center gap-2 font-bold text-[#00677c]">
-                                            <MessageSquare className="h-4 w-4 shrink-0" />
-                                            <span>Kết nối an tâm, trao đổi bảo mật</span>
+
+                                    {/* Giá trị nổi bật */}
+                                    <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
+                                        <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#00677C] mt-0.5" />
+                                            <span>100% Điều dưỡng đã xác thực lý lịch, bằng cấp & chứng chỉ chuyên môn</span>
                                         </div>
-                                        <p className="leading-relaxed">
-                                            Tài khoản Gia đình giúp bạn quản lý hồ sơ người thân, theo dõi tiến trình chăm sóc và nhận thông tin từ điều dưỡng dễ dàng.
-                                        </p>
+                                        <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#00677C] mt-0.5" />
+                                            <span>Theo dõi chỉ số sinh hiệu (HA, Tim, SpO2) và bệnh án sau từng ca</span>
+                                        </div>
+                                        <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#00677C] mt-0.5" />
+                                            <span>Nghiệm thu ca trực 2 chiều và chính sách bảo vệ thanh toán an toàn</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/50 px-3.5 py-2.5 text-xs text-[#065b65]">
+                                        <MessageSquare className="h-4 w-4 shrink-0 text-[#00677C]" />
+                                        <span>Tạo tài khoản nhanh chóng chỉ mất 30 giây để tìm người chăm sóc phù hợp.</span>
                                     </div>
                                 </>
                             ) : (
@@ -653,7 +672,8 @@ export default function CaregiverProfile() {
                             )}
                         </div>
 
-                        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:px-6">
+                        {/* Footer Buttons */}
+                        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
                             <button
                                 type="button"
                                 onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
@@ -670,7 +690,7 @@ export default function CaregiverProfile() {
                                             setAuthModal((prev) => ({ ...prev, open: false }));
                                             navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
                                         }}
-                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-[#00677c] transition"
+                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-[#00677c] transition"
                                     >
                                         <LogIn className="h-4 w-4" />
                                         Đăng nhập

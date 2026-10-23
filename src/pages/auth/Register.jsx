@@ -316,6 +316,17 @@ export default function Register() {
     })();
 
     const [role, setRole] = useState(initialRole);
+
+    // Đồng bộ role khi query parameter thay đổi
+    useEffect(() => {
+        const r = searchParams.get("role")?.toLowerCase();
+        if (r === "caregiver" || r === "nurse") {
+            setRole("caregiver");
+        } else if (r === "family" || r === "customer") {
+            setRole("family");
+        }
+    }, [searchParams]);
+
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -445,19 +456,25 @@ export default function Register() {
                 email: email.trim(),
                 password,
                 role: backendRole,
+                fullName: name.trim(),
+                phone: phone.trim(),
             });
 
             if (res && res.accessToken) {
+                const effectiveFullName = res.user?.fullName || name.trim() || email.trim().split("@")[0];
+                const effectivePhone = res.user?.phone || phone.trim();
                 const userObj = {
                     id: res.user?.id,
-                    name: name.trim() || email.trim().split("@")[0],
+                    name: effectiveFullName,
+                    fullName: effectiveFullName,
                     email: res.user?.email || email.trim(),
-                    phone: phone.trim(),
+                    phone: effectivePhone,
                     role: targetRole,
                     avatar:
-                        targetRole === "family"
+                        res.user?.avatarUrl ||
+                        (targetRole === "family"
                             ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                            : "/images/caregiver_avatar.svg",
+                            : "/images/caregiver_avatar.svg"),
                 };
 
                 saveUserAndNavigate(

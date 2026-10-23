@@ -211,4 +211,42 @@ axiosClient.interceptors.response.use(
     }
 );
 
+/**
+ * Chuẩn hóa URL tệp tài liệu/hình ảnh để hiển thị an toàn trên giao diện.
+ * Tự động chuyển đổi các đường dẫn tương đối (/uploads/documents/...) hoặc URL từ backend khác sang URL backend đang kết nối.
+ */
+export const resolveDocumentUrl = (rawUrl) => {
+    if (!rawUrl || typeof rawUrl !== "string") return "";
+
+    // Data URLs (base64) hoặc Blob URLs
+    if (rawUrl.startsWith("data:") || rawUrl.startsWith("blob:")) return rawUrl;
+
+    // Bỏ qua placeholder mock cũ không hợp lệ
+    if (rawUrl.includes("carelink.vn/docs/")) {
+        return "";
+    }
+
+    const currentBase = axiosClient.defaults.baseURL || PRIMARY_URL;
+
+    // Đường dẫn tương đối
+    if (rawUrl.startsWith("/")) {
+        return `${currentBase}${rawUrl}`;
+    }
+    if (rawUrl.startsWith("uploads/")) {
+        return `${currentBase}/${rawUrl}`;
+    }
+
+    // URL tuyệt đối trỏ tới endpoint file của backend
+    try {
+        const parsed = new URL(rawUrl);
+        if (parsed.pathname.includes("/uploads/") || parsed.pathname.startsWith("/api/v1/uploads/")) {
+            return `${currentBase}${parsed.pathname}`;
+        }
+    } catch {
+        // Giữ nguyên nếu không parse được
+    }
+
+    return rawUrl;
+};
+
 export default axiosClient;

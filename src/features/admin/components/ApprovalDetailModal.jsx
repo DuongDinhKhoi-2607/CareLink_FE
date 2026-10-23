@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, FileText, Check, AlertCircle, Eye, ShieldCheck, XCircle, ExternalLink, Loader2 } from "lucide-react";
+import { resolveDocumentUrl } from "../../../api/axiosClient";
 
 export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onReject }) {
     const [rejectReason, setRejectReason] = useState("");
@@ -231,38 +232,45 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                             </div>
 
                             <div className="bg-slate-950 rounded-xl p-3 flex flex-col items-center justify-center min-h-48 border border-slate-800">
-                                {(selectedDocPreview.url || selectedDocPreview.fileUrl) ? (
-                                    <>
-                                        <img
-                                            src={selectedDocPreview.url || selectedDocPreview.fileUrl}
-                                            alt={selectedDocPreview.name}
-                                            className="max-h-[380px] w-auto max-w-full object-contain rounded-lg border border-slate-700 shadow-md"
-                                            onError={(e) => {
-                                                e.target.style.display = "none";
-                                                const fallback = document.getElementById("doc-preview-fallback");
-                                                if (fallback) fallback.style.display = "block";
-                                            }}
-                                        />
-                                        <div id="doc-preview-fallback" style={{ display: "none" }} className="py-8 text-center text-slate-400">
-                                            <p className="font-semibold">Tệp tài liệu PDF hoặc định dạng cần xem ngoài trình duyệt.</p>
-                                        </div>
-                                        <div className="mt-3 flex items-center gap-3">
-                                            <a
-                                                href={selectedDocPreview.url || selectedDocPreview.fileUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                <span>Mở tệp gốc trong tab mới</span>
-                                            </a>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="py-8 text-center text-slate-400">
-                                        Không tìm thấy đường dẫn tệp tài liệu này trên hệ thống.
-                                    </div>
-                                )}
+                                {(() => {
+                                    const rawUrl = selectedDocPreview.url || selectedDocPreview.fileUrl;
+                                    const resolvedUrl = resolveDocumentUrl(rawUrl);
+                                    if (!resolvedUrl) {
+                                        return (
+                                            <div className="py-8 text-center text-slate-400">
+                                                Không tìm thấy đường dẫn tệp tài liệu này trên hệ thống.
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <>
+                                            <img
+                                                src={resolvedUrl}
+                                                alt={selectedDocPreview.name}
+                                                className="max-h-[380px] w-auto max-w-full object-contain rounded-lg border border-slate-700 shadow-md"
+                                                onError={(e) => {
+                                                    e.target.style.display = "none";
+                                                    const fallback = document.getElementById("doc-preview-fallback");
+                                                    if (fallback) fallback.style.display = "block";
+                                                }}
+                                            />
+                                            <div id="doc-preview-fallback" style={{ display: "none" }} className="py-8 text-center text-slate-400">
+                                                <p className="font-semibold">Tệp tài liệu PDF hoặc định dạng cần xem ngoài trình duyệt.</p>
+                                            </div>
+                                            <div className="mt-3 flex items-center gap-3">
+                                                <a
+                                                    href={resolvedUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
+                                                >
+                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                    <span>Mở tệp gốc trong tab mới</span>
+                                                </a>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}
