@@ -17,7 +17,8 @@ import {
     Loader2,
     Sparkles,
     AlertCircle,
-    Award
+    Award,
+    Star
 } from "lucide-react";
 import ViewHealthRecordModal from "../components/ViewHealthRecordModal";
 import CreateDisputeModal from "../components/CreateDisputeModal";
@@ -113,6 +114,17 @@ const mapBookingToAppointment = (b) => {
         statusStr = "disputed";
     }
 
+    // Nghiệm thu 2 chiều: Nếu điều dưỡng đã xác nhận nhưng khách hàng chưa ký nghiệm thu
+    const needsCustomerConfirm = (rawStatus === 4 || rawStatus === 5) && Boolean(b.nurseConfirmedAt) && !Boolean(b.customerConfirmedAt);
+    if (needsCustomerConfirm) {
+        tab = "ongoing";
+        statusLabel = "CHỜ BẠN NGHIỆM THU";
+        statusBadge = "bg-amber-100 text-amber-900 border border-amber-300 font-bold";
+        dotColor = "bg-amber-500 animate-pulse";
+        canCancel = false;
+        statusStr = "needs_confirm";
+    }
+
     const startDate = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
     const endDate = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
     const formattedDate = startDate.toLocaleDateString("vi-VN", {
@@ -147,6 +159,8 @@ const mapBookingToAppointment = (b) => {
             : `https://ui-avatars.com/api/?name=${encodeURIComponent(b.customerName || "Khách hàng")}&background=087487&color=fff&size=160&bold=true`,
         customerPhone: b.customerPhone || "",
         service: b.serviceName || "Chăm sóc theo yêu cầu",
+        services: Array.isArray(b.services) ? b.services : [],
+        platformFee: b.platformFee ?? 60000,
         serviceCategory: "health_care",
         recipient: b.recipientName || "Người thân",
         recipientRelation: "Người nhận chăm sóc",
@@ -162,6 +176,10 @@ const mapBookingToAppointment = (b) => {
         canPay: rawStatus === 1 && !isPaymentExpired,
         isPaymentExpired,
         price: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + "đ" : "0đ",
+        // Luồng 4: Nghiệm thu 2 chiều
+        needsCustomerConfirm,
+        nurseConfirmedAt: b.nurseConfirmedAt ? new Date(b.nurseConfirmedAt) : null,
+        customerConfirmedAt: b.customerConfirmedAt ? new Date(b.customerConfirmedAt) : null,
         // Luồng 5: GPS Check-in & thời gian điều dưỡng bắt đầu ca
         startedAt: b.startedAt ? new Date(b.startedAt) : null,
         checkInLatitude: b.checkInLatitude ?? null,
@@ -195,6 +213,11 @@ export default function Appointments() {
     const [disputingAppointment, setDisputingAppointment] = useState(null); // Cho modal khiếu nại
     const [viewingDispute, setViewingDispute] = useState(null); // Cho modal xem tiến độ khiếu nại
     const [cancellingAppointment, setCancellingAppointment] = useState(null); // Cho modal xác nhận hủy ca
+    const [confirmingAppointment, setConfirmingAppointment] = useState(null); // Cho modal nghiệm thu 2 chiều
+    const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false);
+    const [confirmRating, setConfirmRating] = useState(5);
+    const [confirmFeedback, setConfirmFeedback] = useState("");
+    const [confirmAgreement, setConfirmAgreement] = useState(true);
     const [toastMessage, setToastMessage] = useState(null);
 
     // Mở modal xem chi tiết và nạp dữ liệu chi tiết ca mới nhất từ Backend (GET /api/v1/bookings/{id})
@@ -212,6 +235,39 @@ export default function Appointments() {
             console.warn("[CareLink] Lỗi tải chi tiết ca hẹn:", err);
         } finally {
             setLoadingDetail(false);
+        }
+    };
+
+    // Nghiệm thu 2 chiều: Khách hàng ký xác nhận hoàn tất ca & đánh giá chất lượng
+    const handleConfirmBooking = async (e) => {
+        if (e) e.preventDefault();
+        if (!confirmingAppointment) return;
+        setIsSubmittingConfirm(true);
+        try {
+            const bookingId = confirmingAppointment.rawId || confirmingAppointment.id;
+            await familyApi.customerConfirmBooking(bookingId, {
+                feedback: confirmFeedback.trim() || undefined,
+            });
+
+            if (confirmRating > 0) {
+                await familyApi.createReview(bookingId, {
+                    overallRating: confirmRating,
+                    careQualityRating: confirmRating,
+                    comment: confirmFeedback.trim() || "Dịch vụ chăm sóc chu đáo, tận tâm!",
+                }).catch(() => {});
+            }
+
+            setToastMessage("Ký nghiệm thu thành công! Tiền ca trực đã được giải ngân cho điều dưỡng.");
+            setConfirmingAppointment(null);
+            setConfirmFeedback("");
+            setConfirmRating(5);
+            fetchAppointments();
+        } catch (err) {
+            console.error("Lỗi ký nghiệm thu:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể nghiệm thu lúc này. Vui lòng thử lại.";
+            setToastMessage(msg);
+        } finally {
+            setIsSubmittingConfirm(false);
         }
     };
 
@@ -724,6 +780,27 @@ export default function Appointments() {
                                     </div>
                                 </div>
 
+                                {/* Luồng 4: Banner Nghiệm thu 2 chiều khi điều dưỡng đã nộp báo cáo */}
+                                {apt.needsCustomerConfirm && (
+                                    <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs my-1">
+                                        <div className="flex items-center gap-2.5 text-amber-900">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                                            <div>
+                                                <p className="font-bold text-amber-950">Điều dưỡng đã hoàn thành và gửi báo cáo y tế</p>
+                                                <p className="text-[11px] text-amber-800">Vui lòng kiểm tra báo cáo y tế và ký nghiệm thu để giải ngân tiền công cho điều dưỡng.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmingAppointment(apt)}
+                                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shrink-0 cursor-pointer shadow-sm transition-all flex items-center gap-1.5"
+                                        >
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                                            <span>Ký nghiệm thu ngay →</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* ======================================================== */}
                                 {/* ĐƯỜNG GẠCH PHÂN CÁCH NGAY DƯỚI CHỖ NGƯỜI NHẬN CHĂM SÓC   */}
                                 {/* ======================================================== */}
@@ -804,6 +881,18 @@ export default function Appointments() {
                                                 className="text-rose-600 hover:text-rose-700 hover:underline font-semibold text-xs sm:text-sm px-2 py-1.5 cursor-pointer transition-colors"
                                             >
                                                 Hủy ca
+                                            </button>
+                                        )}
+
+                                        {/* Nút Nghiệm thu ca (cho ca đang chờ nghiệm thu) */}
+                                        {apt.needsCustomerConfirm && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setConfirmingAppointment(apt)}
+                                                className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-sm cursor-pointer transition-all"
+                                            >
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                                                <span>Nghiệm thu ca</span>
                                             </button>
                                         )}
 
@@ -1326,6 +1415,151 @@ export default function Appointments() {
                                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
                             >
                                 Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Modal Nghiệm thu ca chăm sóc 2 chiều (API: PUT /api/v1/bookings/{id}/customer-confirm) */}
+            {confirmingAppointment && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+                    onClick={() => !isSubmittingConfirm && setConfirmingAppointment(null)}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div
+                        className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col my-auto max-h-[92vh] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-teal-50/50 to-emerald-50/50 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                                        Nghiệm thu ca chăm sóc
+                                    </h3>
+                                    <p className="text-xs text-slate-500">Mã ca: #{confirmingAppointment.id}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isSubmittingConfirm}
+                                onClick={() => setConfirmingAppointment(null)}
+                                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-4 overflow-y-auto text-xs sm:text-sm text-slate-700">
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
+                                <img
+                                    src={confirmingAppointment.caregiver.avatar}
+                                    alt={confirmingAppointment.caregiver.name}
+                                    className="w-11 h-11 rounded-full object-cover border border-white shadow-xs"
+                                />
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-slate-900">{confirmingAppointment.caregiver.name}</p>
+                                    <p className="text-xs text-[#00677c] font-semibold">{confirmingAppointment.service}</p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">{confirmingAppointment.date} · {confirmingAppointment.time}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-2xl text-emerald-900 text-xs leading-relaxed space-y-1">
+                                <p className="font-bold flex items-center gap-1.5 text-emerald-950">
+                                    <span>✓ Báo cáo y tế đã được điều dưỡng nộp đầy đủ</span>
+                                </p>
+                                <p className="text-emerald-800">
+                                    Sau khi quý khách ký xác nhận nghiệm thu, ca trực sẽ chuyển sang trạng thái <strong>Đã hoàn thành</strong> và tiền công sẽ được giải ngân vào ví của điều dưỡng.
+                                </p>
+                            </div>
+
+                            {/* Rating input */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                                    Đánh giá chất lượng ca chăm sóc:
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setConfirmRating(star)}
+                                            className="p-1 text-amber-400 hover:scale-110 transition-transform cursor-pointer"
+                                        >
+                                            <Star
+                                                className={`w-6 h-6 ${star <= confirmRating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
+                                            />
+                                        </button>
+                                    ))}
+                                    <span className="text-xs font-bold text-amber-700 ml-2">
+                                        {confirmRating === 5 ? "Rất hài lòng (5/5)" : confirmRating === 4 ? "Hài lòng (4/5)" : `${confirmRating}/5 sao`}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Feedback textarea */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                                    Nhận xét nghiệm thu & ý kiến đóng góp:
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={confirmFeedback}
+                                    onChange={(e) => setConfirmFeedback(e.target.value)}
+                                    placeholder="Ví dụ: Điều dưỡng đến đúng giờ, thao tác chuyên nghiệp và ân cần..."
+                                    className="w-full p-3 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-teal-600 focus:outline-none resize-none"
+                                />
+                            </div>
+
+                            {/* Agreement checkbox */}
+                            <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={confirmAgreement}
+                                    onChange={(e) => setConfirmAgreement(e.target.checked)}
+                                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <span className="text-xs text-slate-600 leading-snug">
+                                    Tôi xác nhận điều dưỡng đã hoàn tất ca chăm sóc chu đáo và đồng ý nghiệm thu kết quả ca trực.
+                                </span>
+                            </label>
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50 shrink-0">
+                            <button
+                                type="button"
+                                disabled={isSubmittingConfirm}
+                                onClick={() => setConfirmingAppointment(null)}
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                Để sau
+                            </button>
+                            <button
+                                type="button"
+                                disabled={!confirmAgreement || isSubmittingConfirm}
+                                onClick={handleConfirmBooking}
+                                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                            >
+                                {isSubmittingConfirm ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                        <span>Đang ký nghiệm thu...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 className="w-4 h-4 text-white" />
+                                        <span>Ký nghiệm thu & Hoàn tất</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

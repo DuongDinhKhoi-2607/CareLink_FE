@@ -515,7 +515,13 @@ export default function CaregiverBookingRequests() {
                 });
             }
 
-            const payload = coords ? { latitude: coords.latitude, longitude: coords.longitude } : {};
+            const payload = {
+                latitude: coords ? coords.latitude : null,
+                longitude: coords ? coords.longitude : null,
+                currentLocationText: coords
+                    ? "Đã xác thực tọa độ GPS thiết bị"
+                    : "Điều dưỡng đã check-in tại địa chỉ nhận chăm sóc",
+            };
             await caregiverApi.startBooking(id, payload);
             showToast({
                 type: "success",
