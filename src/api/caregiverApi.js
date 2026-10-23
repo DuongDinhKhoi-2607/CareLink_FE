@@ -48,6 +48,7 @@ export const caregiverApi = {
     rejectBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/reject`, data),
     startBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/start`, data || {}),
     finishBooking: (id) => axiosClient.put(`/api/v1/bookings/${id}/finish`),
+    nurseConfirmBooking: (id) => axiosClient.put(`/api/v1/bookings/${id}/nurse-confirm`),
     cancelBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/cancel`, data),
 
     // ── 5. Ghi nhận bệnh án lâm sàng (Health Records) ──
@@ -70,6 +71,12 @@ export const caregiverApi = {
         axiosClient.get(`/api/v1/reviews/users/${userId}`, { params }),
     reviewCustomer: (bookingId, data) =>
         axiosClient.post(`/api/v1/bookings/${bookingId}/reviews`, data),
+
+    // ── 8. Bảng giá cá nhân & Sẵn sàng nhận việc (Nurse Pricing & Readiness) ──
+    getMyPricing: () => axiosClient.get("/api/v1/nurses/pricing/me"),
+    updateMyPricing: (data) => axiosClient.put("/api/v1/nurses/pricing/me", data),
+    getMyReadiness: () => axiosClient.get("/api/v1/nurses/pricing/me/readiness"),
+    getNursePricing: (nurseId) => axiosClient.get(`/api/v1/nurses/pricing/${nurseId}`),
 };
 
 export default caregiverApi;
