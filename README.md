@@ -78,3 +78,160 @@
 ## 🌐 Bản Quyền
 
 Dự án được phát triển bởi đội ngũ **CareLink Team**. Mọi quyền được bảo lưu.
+
+```
+CareLink_FE
+├─ .oxlintrc.json
+├─ AGENTS.md
+├─ docs
+│  └─ ai
+│     ├─ AI_WORKING_RULES.md
+│     ├─ API_INTEGRATION_MATRIX.md
+│     ├─ ARCHITECTURE_DECISIONS.md
+│     ├─ DOCUMENTATION_INDEX.md
+│     ├─ TESTING_AND_ACCEPTANCE.md
+│     └─ WORK_STATUS.md
+├─ FE_BE_GAP_ANALYSIS.md
+├─ index.html
+├─ package-lock.json
+├─ package.json
+├─ public
+│  ├─ favicon.svg
+│  ├─ icons.svg
+│  ├─ images
+│  │  ├─ caregiver-hero.jpg
+│  │  ├─ caregiver_avatar.svg
+│  │  ├─ elderly_caregiver.jpg
+│  │  ├─ erder-caregiver.jpg
+│  │  ├─ home_hero.jpg
+│  │  ├─ home_hero_option2.jpg
+│  │  ├─ home_hero_original.jpg
+│  │  ├─ imagess.jpg
+│  │  ├─ images_elderly.jpg
+│  │  ├─ istockphoto-1029340354-612x612.jpg
+│  │  ├─ istockphoto-1917170366-612x612.jpg
+│  │  ├─ istockphoto-2129584121-612x612.jpg
+│  │  ├─ login_caregiver.jpg
+│  │  ├─ login_caregiver_tight.jpg
+│  │  ├─ parentis-health-Why-Become-a-Caregiver_.jpg
+│  │  └─ senior_caregiver.jpg
+│  └─ _redirects
+├─ README.md
+├─ src
+│  ├─ api
+│  │  ├─ adminApi.js
+│  │  ├─ authApi.js
+│  │  ├─ axiosClient.js
+│  │  ├─ caregiverApi.js
+│  │  ├─ conversationApi.js
+│  │  ├─ familyApi.js
+│  │  ├─ handbookApi.js
+│  │  ├─ index.js
+│  │  └─ notificationApi.js
+│  ├─ App.css
+│  ├─ App.jsx
+│  ├─ components
+│  │  ├─ Footer.jsx
+│  │  ├─ Header.jsx
+│  │  ├─ LogoutModal.jsx
+│  │  ├─ PageTransition.jsx
+│  │  ├─ Rating.jsx
+│  │  └─ Toast.jsx
+│  ├─ data
+│  │  ├─ chatDemoStore.js
+│  │  └─ handbookData.js
+│  ├─ features
+│  │  ├─ admin
+│  │  │  ├─ components
+│  │  │  │  ├─ AppointmentDetailModal.jsx
+│  │  │  │  ├─ ApprovalDetailModal.jsx
+│  │  │  │  ├─ HandbookModals.jsx
+│  │  │  │  └─ ServiceFormModal.jsx
+│  │  │  └─ pages
+│  │  │     ├─ AdminAppointments.jsx
+│  │  │     ├─ AdminDashboard.jsx
+│  │  │     ├─ AdminDisputes.jsx
+│  │  │     ├─ AdminFinance.jsx
+│  │  │     ├─ AdminHandbook.jsx
+│  │  │     ├─ AdminServices.jsx
+│  │  │     ├─ CaregiverApprovals.jsx
+│  │  │     ├─ ServiceManagement.jsx
+│  │  │     └─ UserManagement.jsx
+│  │  ├─ caregiver
+│  │  │  ├─ components
+│  │  │  │  ├─ CaregiverBookingDetailPanel.jsx
+│  │  │  │  ├─ CaregiverChatThread.jsx
+│  │  │  │  ├─ HealthRecordModal.jsx
+│  │  │  │  ├─ RejectBookingModal.jsx
+│  │  │  │  ├─ SubmitHealthRecordModal.jsx
+│  │  │  │  └─ VerificationStepper.jsx
+│  │  │  └─ pages
+│  │  │     ├─ CaregiverBookingRequests.jsx
+│  │  │     ├─ CaregiverDashboard.jsx
+│  │  │     ├─ CaregiverMessages.jsx
+│  │  │     ├─ CaregiverProfile.jsx
+│  │  │     ├─ CaregiverProfilePage.jsx
+│  │  │     ├─ CaregiverReview.jsx
+│  │  │     ├─ CaregiverSchedule.jsx
+│  │  │     ├─ CaregiverWallet.jsx
+│  │  │     ├─ ChooseRole.jsx
+│  │  │     ├─ ForCaregiver.jsx
+│  │  │     └─ Verification.jsx
+│  │  ├─ family
+│  │  │  ├─ components
+│  │  │  │  ├─ BookingSummary.jsx
+│  │  │  │  ├─ CancelBookingModal.jsx
+│  │  │  │  ├─ CaregiverCard.jsx
+│  │  │  │  ├─ CaregiverFilterSidebar.jsx
+│  │  │  │  ├─ CreateDisputeModal.jsx
+│  │  │  │  ├─ CreateProposalModal.jsx
+│  │  │  │  ├─ RelativeModals.jsx
+│  │  │  │  ├─ ServiceCard.jsx
+│  │  │  │  ├─ ServiceDetailModal.jsx
+│  │  │  │  ├─ ServiceSelectionCard.jsx
+│  │  │  │  └─ ViewHealthRecordModal.jsx
+│  │  │  └─ pages
+│  │  │     ├─ Appointments.jsx
+│  │  │     ├─ CaregiverList.jsx
+│  │  │     ├─ CaregiverProfile.jsx
+│  │  │     ├─ Chat.jsx
+│  │  │     ├─ Checkout.jsx
+│  │  │     ├─ Dashboard.jsx
+│  │  │     ├─ DashboardMessages.jsx
+│  │  │     ├─ FamilyProfile.jsx
+│  │  │     ├─ ForFamily.jsx
+│  │  │     ├─ HealthRecords.jsx
+│  │  │     ├─ HealthReports.jsx
+│  │  │     ├─ PaymentResult.jsx
+│  │  │     ├─ Relatives.jsx
+│  │  │     ├─ Review.jsx
+│  │  │     └─ Services.jsx
+│  │  └─ shared
+│  │     └─ notifications
+│  │        ├─ index.js
+│  │        ├─ NotificationDropdown.jsx
+│  │        ├─ NotificationItem.jsx
+│  │        ├─ notificationMockData.js
+│  │        └─ notificationUtils.jsx
+│  ├─ index.css
+│  ├─ layouts
+│  │  ├─ AdminLayout.jsx
+│  │  ├─ CaregiverLayout.jsx
+│  │  ├─ DashboardLayout.jsx
+│  │  └─ MainLayout.jsx
+│  ├─ main.jsx
+│  └─ pages
+│     ├─ auth
+│     │  ├─ ForgotPassword.jsx
+│     │  ├─ Login.jsx
+│     │  └─ Register.jsx
+│     └─ public
+│        ├─ HandbookDetail.jsx
+│        ├─ Home.jsx
+│        ├─ MedicalHandbook.jsx
+│        ├─ PrivacyPolicy.jsx
+│        └─ TermsOfService.jsx
+├─ vercel.json
+└─ vite.config.js
+
+```

@@ -2,12 +2,13 @@
 
 > **Tài liệu sống độc bản (Living Document):** Phản ánh hiện trạng kết nối thực tế 100% của toàn bộ **105 hàm gọi API** nằm trong **7 tệp API Client** của thư mục `src/api/` với hơn **45 Màn hình / Component** của CareLink Frontend.
 >
-> ⚠️ **Quy chuẩn cấp độ kiểm chứng (Verification Tiers):**
+> ⚠️ **Quy chuẩn cấp độ kiểm chứng thống nhất (Verification Framework):**
 > - **[Tier 1] Contract Verified:** Đã đối chiếu đúng Route, HTTP Method, Request/Response DTO và Quyền truy cập trong mã nguồn Backend.
-> - **[Tier 2] FE Integrated:** Đã có hàm gọi trong file API client tương ứng và đã gắn vào Component/Page giao diện.
+> - **[Tier 2] FE Integrated:** Đã có hàm gọi trong file API client tương ứng và đã gắn vào Component/Page giao diện kèm xử lý UI state.
 > - **[Tier 3] Build Passed:** Đã chạy `npm run build` thành công, không có lỗi cú pháp hoặc import.
-> - **[Tier 4] Runtime Verified:** Đã gọi thử thành công tới Backend thật (Localhost hoặc Render) có log HTTP 200/201 thật.
-> - **[Tier 5] E2E Verified:** Đã kiểm thử trọn vẹn kịch bản người dùng qua nhiều vai trò (Customer -> Nurse -> Admin).
+> - **[Tier 4] Automated Tests Passed:** Vượt qua các bài kiểm thử tự động (Unit / Integration Tests).
+> - **[Tier 5] Runtime Verified:** Đã gọi thử thành công tới Backend thật (Localhost hoặc Render) có log HTTP 200/201 thật từ Database.
+> - **[Tier 6] E2E Verified:** Đã kiểm thử trọn vẹn kịch bản người dùng qua nhiều vai trò (Customer -> Nurse -> Admin -> PayOS).
 
 ---
 
@@ -175,6 +176,21 @@
 
 ---
 
+### 📂 Phân Hệ 8: Nâng Cấp Backend V2.1 (Bảng Giá Cá Nhân, Nghiệm Thu 2 Chiều & Thống Kê Admin)
+| STT | HTTP Method | Route Backend | Tên hàm client | Màn hình / Component FE | Quyền (Role) | Cấp độ kiểm chứng | Ghi chú & Tình huống |
+| :---: | :--- | :--- | :--- | :--- | :---: | :---: | :--- |
+| 106 | `GET` | `/api/v1/nurses/pricing/me` | `getMyPricing()` | `CaregiverPricing.jsx` | Nurse | 🥈 **Build-Passed** | Lấy danh sách dịch vụ và bảng giá tự đặt của điều dưỡng hiện tại. |
+| 107 | `PUT` | `/api/v1/nurses/pricing/me` | `updateMyPricing(data)` | `CaregiverPricing.jsx` | Nurse | 🥈 **Build-Passed** | Cập nhật đơn giá mong muốn và bật/tắt nhận từng dịch vụ. |
+| 108 | `GET` | `/api/v1/nurses/pricing/me/readiness` | `getMyReadiness()` | `CaregiverDashboard.jsx`, `CaregiverPricing.jsx` | Nurse | 🥈 **Build-Passed** | Kiểm tra trạng thái sẵn sàng nhận việc (đủ 4 điều kiện). |
+| 109 | `GET` | `/api/v1/nurses/pricing/{nurseId}` | `getNursePricing(nurseId)` | `CreateProposalModal.jsx`, `CaregiverBookingDetailPanel.jsx` | Authorize | 🥈 **Build-Passed** | Xem bảng giá công khai của một điều dưỡng cụ thể. |
+| 110 | `PUT` | `/api/v1/bookings/{id}/nurse-confirm` | `nurseConfirmBooking(id)` | `SubmitHealthRecordModal.jsx` | Nurse | 🥈 **Build-Passed** | Điều dưỡng ký xác nhận hoàn thành sau khi nộp báo cáo y tế. |
+| 111 | `PUT` | `/api/v1/bookings/{id}/customer-confirm` | `customerConfirmBooking(id, data)` | `Appointments.jsx` | Customer | 🥈 **Build-Passed** | Gia đình kiểm tra báo cáo y tế, đánh giá sao và ký nghiệm thu hoàn tất. |
+| 112 | `GET` | `/api/v1/recipients/check-readiness` | `checkRecipientReadiness()` | `CreateProposalModal.jsx` | Customer | 🥈 **Build-Passed** | Kiểm tra nhanh khách hàng đã có hồ sơ người nhận chăm sóc hay chưa. |
+| 113 | `GET` | `/api/v1/admin/nurses/statistics` | `getNurseStatistics(params)` | `AdminNurseStatistics.jsx` | Admin | 🥈 **Build-Passed** | Thống kê danh sách điều dưỡng phân trang (số ca, tỷ lệ hoàn thành, doanh thu, số dư ví). |
+| 114 | `GET` | `/api/v1/admin/nurses/statistics/{nurseId}` | `getNurseDetailStatistics(nurseId)` | `AdminNurseStatistics.jsx` | Admin | 🥈 **Build-Passed** | Chi tiết báo cáo ca trực và sao kê dòng tiền ví của 1 điều dưỡng. |
+
+---
+
 ## 📌 BẢO ĐẢM TÍNH TRUNG THỰC VỀ TRẠNG THÁI KIỂM CHỨNG
 1. **API Upload tài liệu điều dưỡng (STT 44 - `uploadDocuments`):** Đã được đính chính thành **`Build-Passed (Chờ test Supabase)`** vì mới hoàn thành code client và DTO, chưa chạy upload file ảnh thật vào Supabase Storage.
-2. **Đầy đủ 100%:** Toàn bộ 105 phương thức API trong 7 tệp client đều đã được liệt kê chi tiết từng dòng, không còn tình trạng viết tắt hay bỏ sót bất kỳ endpoint nào!
+2. **Đầy đủ 100%:** Toàn bộ 114 phương thức API trong các tệp client đều đã được liệt kê chi tiết từng dòng, đồng bộ đầy đủ với Backend V2.1!
