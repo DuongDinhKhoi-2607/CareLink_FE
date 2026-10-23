@@ -19,6 +19,7 @@ import {
     LogOut,
     BookOpen,
     ShieldAlert,
+    BarChart3,
 } from "lucide-react";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
@@ -62,6 +63,12 @@ const adminNavItems = [
         aliases: ["/admin/users"],
         label: "Người dùng",
         icon: <Users className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
+    },
+    {
+        path: "/admin/nurse-statistics",
+        aliases: ["/admin/nurse-statistics"],
+        label: "Thống kê Điều dưỡng",
+        icon: <BarChart3 className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
     },
     {
         path: "/admin/finance",

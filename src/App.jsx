@@ -36,6 +36,7 @@ import CaregiverMessages from "./features/caregiver/pages/CaregiverMessages";
 import CaregiverReview from "./features/caregiver/pages/CaregiverReview";
 import CaregiverProfilePage from "./features/caregiver/pages/CaregiverProfilePage";
 import CaregiverWallet from "./features/caregiver/pages/CaregiverWallet";
+import CaregiverPricing from "./features/caregiver/pages/CaregiverPricing";
 
 import PageTransition from "./components/PageTransition";
 
@@ -50,6 +51,7 @@ import UserManagement from "./features/admin/pages/UserManagement";
 import AdminFinance from "./features/admin/pages/AdminFinance";
 import AdminHandbook from "./features/admin/pages/AdminHandbook";
 import AdminDisputes from "./features/admin/pages/AdminDisputes";
+import AdminNurseStatistics from "./features/admin/pages/AdminNurseStatistics";
 
 export default function App() {
   return (
@@ -106,6 +108,7 @@ export default function App() {
           <Route element={<CaregiverLayout />}>
             <Route path="/caregiver/dashboard" element={<CaregiverDashboard />} />
             <Route path="/caregiver/profile" element={<CaregiverProfilePage />} />
+            <Route path="/caregiver/pricing" element={<CaregiverPricing />} />
             <Route path="/caregiver/wallet" element={<CaregiverWallet />} />
             <Route path="/caregiver/messages" element={<CaregiverMessages />} />
             <Route path="/caregiver/schedule" element={<CaregiverSchedule />} />
@@ -122,6 +125,7 @@ export default function App() {
             <Route path="/admin/appointments" element={<AdminAppointments />} />
             <Route path="/admin/disputes" element={<AdminDisputes />} />
             <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/nurse-statistics" element={<AdminNurseStatistics />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/handbook" element={<AdminHandbook />} />
           </Route>

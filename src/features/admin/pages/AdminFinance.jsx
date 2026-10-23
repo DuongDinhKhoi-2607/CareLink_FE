@@ -248,6 +248,92 @@ function RejectModal({ withdrawal, onClose, onConfirm }) {
     );
 }
 
+// ── APPROVE MODAL ──────────────────────────────────────────────────────────────
+function ApproveModal({ withdrawal, onClose, onConfirm }) {
+    const [bankReferenceCode, setBankReferenceCode] = useState(`REF-${Date.now().toString().slice(-6)}`);
+    const [adminNote, setAdminNote] = useState("Đã chuyển khoản thành công qua ngân hàng.");
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(4px)" }}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-md"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="p-6 pb-4 border-b border-slate-100 flex items-start justify-between">
+                    <div>
+                        <h2 className="text-lg font-extrabold text-slate-900">Duyệt lệnh rút tiền</h2>
+                        <p className="text-xs text-slate-500 mt-1">
+                            Mã yêu cầu: <strong className="text-emerald-700">{withdrawal.id}</strong> · {withdrawal.caregiver}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center cursor-pointer"
+                    >
+                        <X className="w-4 h-4 text-slate-600" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800 space-y-1">
+                        <p className="font-bold">Số tiền: {formatVND(withdrawal.amount)}</p>
+                        <p>Ngân hàng: {withdrawal.bank} — STK: {withdrawal.accountNumber} ({withdrawal.accountName || withdrawal.caregiver})</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Mã tham chiếu ngân hàng (Bank Reference Code) <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={bankReferenceCode}
+                            onChange={(e) => setBankReferenceCode(e.target.value)}
+                            placeholder="Ví dụ: FT2409228899 hoặc mã giao dịch..."
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Ghi chú quản trị viên (Tùy chọn)
+                        </label>
+                        <textarea
+                            value={adminNote}
+                            onChange={(e) => setAdminNote(e.target.value)}
+                            placeholder="Ghi chú xác nhận chuyển tiền..."
+                            rows={2}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-500 resize-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 pt-0 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                        Hủy bỏ
+                    </button>
+                    <button
+                        onClick={() => bankReferenceCode.trim() && onConfirm(withdrawal.id, { bankReferenceCode: bankReferenceCode.trim(), adminNote: adminNote.trim() || undefined })}
+                        disabled={!bankReferenceCode.trim()}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                            bankReferenceCode.trim()
+                                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        }`}
+                    >
+                        Xác nhận duyệt chi
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── TOAST ──────────────────────────────────────────────────────────────────────
 function Toast({ message, type }) {
     if (!message) return null;
@@ -277,6 +363,7 @@ export default function AdminFinance() {
     const [withdrawals, setWithdrawals] = useState(initialWithdrawals);
     const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState(null);
+    const [approveTarget, setApproveTarget] = useState(null);
     const [rejectTarget, setRejectTarget] = useState(null);
     const [toast, setToast] = useState(null);
 
@@ -300,9 +387,10 @@ export default function AdminFinance() {
             if (list.length > 0) {
                 setWithdrawals(
                     list.map((w) => {
-                        const s = (w.status || "").toString().toLowerCase();
-                        const isApproved = s === "approved" || s === "1" || w.status === 1;
-                        const isRejected = s === "rejected" || s === "2" || w.status === 2;
+                        // Backend PayoutRequestStatus: 1 = Pending, 2 = Approved, 3 = Rejected
+                        const rawSt = typeof w.status === "number" ? w.status : (w.status === "Approved" ? 2 : w.status === "Rejected" ? 3 : 1);
+                        const isApproved = rawSt === 2;
+                        const isRejected = rawSt === 3;
                         const statusText = isApproved ? "Đã duyệt" : isRejected ? "Từ chối" : "Chờ duyệt";
                         return {
                             id: w.id || `WD-${w.code || "N/A"}`,
@@ -310,10 +398,11 @@ export default function AdminFinance() {
                             caregiverPhone: w.nursePhone || w.caregiverPhone || w.user?.phoneNumber || "—",
                             amount: Number(w.amount || 0),
                             bank: w.bankName || w.bank || "Ngân hàng",
-                            accountNumber: w.accountNumber || "—",
+                            accountNumber: w.bankAccountNumber || w.accountNumber || "—",
+                            accountName: w.bankAccountName || w.accountName || "",
                             requestDate: w.createdAt ? new Date(w.createdAt).toLocaleDateString("vi-VN") : w.requestDate || "Hôm nay",
                             status: statusText,
-                            note: w.rejectReason || w.note || "",
+                            note: w.adminNote || w.rejectReason || w.note || "",
                         };
                     })
                 );
@@ -375,15 +464,19 @@ export default function AdminFinance() {
     });
 
     // ── 65. PUT /api/v1/admin/payouts/{id}/approve (Admin duyệt yêu cầu rút tiền) ────
-    const handleApprove = async (id) => {
+    const handleApprove = async (id, payload) => {
         setActionLoadingId(id);
         try {
-            await adminApi.approvePayout(id, { note: "Đã duyệt chi giải ngân" });
+            await adminApi.approvePayout(id, {
+                bankReferenceCode: payload?.bankReferenceCode || `REF-${Date.now().toString().slice(-6)}`,
+                adminNote: payload?.adminNote || "Đã duyệt chi giải ngân thành công",
+            });
             showToast(`✓ Đã duyệt chi trả thành công cho yêu cầu ${id}! Lệnh chuyển tiền đang được xử lý.`, "success");
+            setApproveTarget(null);
             await fetchPayouts();
         } catch (err) {
             console.error("Lỗi duyệt yêu cầu rút tiền:", err);
-            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể duyệt yêu cầu rút tiền. Vui lòng thử lại!";
+            const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.response?.data?.title || "Không thể duyệt yêu cầu rút tiền. Vui lòng thử lại!";
             showToast(`⚠️ ${msg}`, "error");
         } finally {
             setActionLoadingId(null);
@@ -394,13 +487,13 @@ export default function AdminFinance() {
     const handleReject = async (id, reason) => {
         setActionLoadingId(id);
         try {
-            await adminApi.rejectPayout(id, { reason, note: reason });
+            await adminApi.rejectPayout(id, { adminNote: reason });
             showToast(`Đã từ chối yêu cầu rút tiền ${id}. Thông báo đã được gửi đến điều dưỡng.`, "error");
             setRejectTarget(null);
             await fetchPayouts();
         } catch (err) {
             console.error("Lỗi từ chối yêu cầu rút tiền:", err);
-            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể từ chối yêu cầu. Vui lòng thử lại!";
+            const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.response?.data?.title || "Không thể từ chối yêu cầu. Vui lòng thử lại!";
             showToast(`⚠️ ${msg}`, "error");
         } finally {
             setActionLoadingId(null);
@@ -410,6 +503,13 @@ export default function AdminFinance() {
     return (
         <div className="space-y-6 pb-12 font-sans">
             {toast && <Toast message={toast.msg} type={toast.type} />}
+            {approveTarget && (
+                <ApproveModal
+                    withdrawal={approveTarget}
+                    onClose={() => setApproveTarget(null)}
+                    onConfirm={handleApprove}
+                />
+            )}
             {rejectTarget && (
                 <RejectModal
                     withdrawal={rejectTarget}
@@ -701,7 +801,7 @@ export default function AdminFinance() {
                                                         <div className="flex items-center gap-2 justify-end">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleApprove(w.id)}
+                                                                onClick={() => setApproveTarget(w)}
                                                                 disabled={actionLoadingId === w.id}
                                                                 className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs disabled:opacity-50"
                                                             >

@@ -57,6 +57,12 @@ export const adminApi = {
     // ── 7. Giám sát toàn bộ ca chăm sóc trên hệ thống ──
     getAllBookings: (params) =>
         axiosClient.get("/api/v1/bookings", { params }),
+
+    // ── 8. Thống kê & Sao kê Điều dưỡng (Admin Nurse Statistics) ──
+    getNurseStatistics: (params) =>
+        axiosClient.get("/api/v1/admin/nurses/statistics", { params }),
+    getNurseDetailStatistics: (nurseId) =>
+        axiosClient.get(`/api/v1/admin/nurses/statistics/${nurseId}`),
 };
 
 export default adminApi;
