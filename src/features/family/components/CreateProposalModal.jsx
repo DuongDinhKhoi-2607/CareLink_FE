@@ -13,85 +13,51 @@ import {
     Loader2,
     PlusCircle,
     DollarSign,
+    CheckSquare,
+    Square,
+    Layers,
+    Sparkles,
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
 
-// Dữ liệu mẫu chuẩn cấu trúc DTO Backend khi máy chủ chưa khởi động hoặc chưa có dữ liệu
+// Dữ liệu mẫu chuẩn cấu trúc DTO Backend khi máy chủ chưa có dữ liệu
 const FALLBACK_SERVICES = [
     {
         id: "d3b07384-d113-4c91-9c32-2d113a0e1001",
         serviceName: "Chăm sóc phục hồi sau phẫu thuật",
-        description: "Theo dõi chỉ số sinh hiệu, thay băng rửa vết mổ vô trùng, hỗ trợ tập vận động và nhắc dùng thuốc đúng giờ.",
+        description: "Theo dõi sinh hiệu, thay băng vết mổ vô trùng, hỗ trợ tập vận động và nhắc dùng thuốc đúng giờ.",
         basePrice: 350000,
+        customPrice: 350000,
         durationMinutes: 120,
         isActive: true,
     },
     {
         id: "d3b07384-d113-4c91-9c32-2d113a0e1002",
         serviceName: "Vật lý trị liệu & Vận động khớp",
-        description: "Xoa bóp phục hồi chức năng, hướng dẫn co duỗi chi dưới, tập đứng và đi lại an toàn phòng ngừa té ngã.",
+        description: "Xoa bóp phục hồi chức năng, hướng dẫn co duỗi chi dưới, tập đi lại an toàn.",
         basePrice: 400000,
+        customPrice: 400000,
         durationMinutes: 90,
         isActive: true,
     },
     {
         id: "d3b07384-d113-4c91-9c32-2d113a0e1003",
         serviceName: "Chăm sóc người cao tuổi & Vệ sinh toàn diện",
-        description: "Hỗ trợ tắm rửa, gội đầu tại giường, vệ sinh răng miệng, cho ăn qua ống thông sonde và đo đường huyết.",
+        description: "Hỗ trợ tắm rửa, gội đầu tại giường, vệ sinh răng miệng, cho ăn qua sonde và đo đường huyết.",
         basePrice: 300000,
+        customPrice: 300000,
         durationMinutes: 120,
         isActive: true,
     },
     {
         id: "d3b07384-d113-4c91-9c32-2d113a0e1004",
         serviceName: "Tiêm thuốc & Thay băng vết thương",
-        description: "Thực hiện kỹ thuật tiêm bắp, tiêm dưới da theo y lệnh bác sĩ, rửa vết thương sạch và thay gạc vô khuẩn.",
+        description: "Thực hiện tiêm bắp, tiêm dưới da theo y lệnh bác sĩ, rửa vết thương sạch và thay gạc vô khuẩn.",
         basePrice: 250000,
+        customPrice: 250000,
         durationMinutes: 60,
         isActive: true,
-    },
-];
-
-const FALLBACK_RECIPIENTS = [
-    {
-        id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c61",
-        fullName: "Bà Nguyễn Thị Lan",
-        dateOfBirth: "1951-04-12",
-        gender: 2,
-        medicalHistory: "Tăng huyết áp 10 năm, sau phẫu thuật thay khớp gối phải tuần thứ 2.",
-        specialNotes: "Đi lại cần nạng hỗ trợ, dễ bị tụt huyết áp tư thế.",
-        address: "123 Nguyễn Gia Trí, Phường 25, Quận Bình Thạnh, TP. Hồ Chí Minh",
-    },
-    {
-        id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c62",
-        fullName: "Bác Nguyễn Văn An (Bố)",
-        dateOfBirth: "1948-09-20",
-        gender: 1,
-        medicalHistory: "Đái tháo đường type 2, di chứng tai biến nhẹ liệt nửa người trái.",
-        specialNotes: "Cần hỗ trợ ăn uống và kiểm tra đường huyết trước các bữa ăn.",
-        address: "45 Lê Văn Sỹ, Phường 13, Quận 3, TP. Hồ Chí Minh",
-    },
-];
-
-const FALLBACK_ADDRESSES = [
-    {
-        id: "f47ac10b-58cc-4372-a567-0e02b2c3d401",
-        label: "Nhà riêng",
-        fullAddress: "123 Nguyễn Gia Trí, Phường 25, Quận Bình Thạnh, TP. Hồ Chí Minh",
-        ward: "Phường 25",
-        district: "Quận Bình Thạnh",
-        city: "TP. Hồ Chí Minh",
-        isDefault: true,
-    },
-    {
-        id: "f47ac10b-58cc-4372-a567-0e02b2c3d402",
-        label: "Nhà bố mẹ",
-        fullAddress: "45 Lê Văn Sỹ, Phường 13, Quận 3, TP. Hồ Chí Minh",
-        ward: "Phường 13",
-        district: "Quận 3",
-        city: "TP. Hồ Chí Minh",
-        isDefault: false,
     },
 ];
 
@@ -99,6 +65,7 @@ export default function CreateProposalModal({
     isOpen,
     onClose,
     conversationId,
+    caregiverId,
     caregiverName,
     onProposalCreated,
 }) {
@@ -109,19 +76,20 @@ export default function CreateProposalModal({
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [dataError, setDataError] = useState("");
 
-    // Form inputs
-    const [serviceId, setServiceId] = useState("");
+    // Form inputs — Combo đa dịch vụ
+    const [selectedServiceIds, setSelectedServiceIds] = useState([]);
     const [recipientId, setRecipientId] = useState("");
     const [addressId, setAddressId] = useState("");
     const [scheduledDate, setScheduledDate] = useState("");
     const [scheduledTime, setScheduledTime] = useState("");
+    const [customDealPrice, setCustomDealPrice] = useState("");
     const [notes, setNotes] = useState("");
 
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
 
-    // Pre-calculate today / tomorrow for min date
+    // Pre-calculate today for min date
     const todayStr = new Date().toISOString().split("T")[0];
 
     useEffect(() => {
@@ -131,6 +99,7 @@ export default function CreateProposalModal({
         setIsLoadingData(true);
         setDataError("");
         setSubmitError("");
+        setCustomDealPrice("");
 
         // Set default date to tomorrow and time to 08:30
         const tomorrow = new Date();
@@ -138,43 +107,74 @@ export default function CreateProposalModal({
         setScheduledDate(tomorrow.toISOString().split("T")[0]);
         setScheduledTime("08:30");
 
+        // Gọi đồng thời lấy bảng giá điều dưỡng (hoặc dịch vụ chung), danh sách người thân và sổ địa chỉ
+        const pricingPromise = caregiverId
+            ? familyApi.getNursePricing(caregiverId).catch(() => null)
+            : Promise.resolve(null);
+
         Promise.allSettled([
+            pricingPromise,
             familyApi.getServices(),
             familyApi.getRecipients(),
             familyApi.getAddresses(),
         ])
-            .then(([servRes, recRes, addrRes]) => {
+            .then(([nursePricingRes, servRes, recRes, addrRes]) => {
                 if (!isMounted) return;
 
-                // 1. Gói Dịch vụ từ Backend
+                // 1. Gói Dịch vụ từ Backend (Ưu tiên bảng giá của Điều dưỡng nếu có)
                 let servList = [];
-                if (servRes.status === "fulfilled") {
-                    servList = Array.isArray(servRes.value)
-                        ? servRes.value
-                        : servRes.value?.items || [];
+                const nursePricings = nursePricingRes.status === "fulfilled" ? nursePricingRes.value : null;
+                const nursePricingItems = Array.isArray(nursePricings)
+                    ? nursePricings
+                    : (nursePricings?.data || []);
+
+                if (nursePricingItems.length > 0) {
+                    servList = nursePricingItems
+                        .filter((p) => p.isOffered)
+                        .map((p) => ({
+                            id: p.serviceId,
+                            serviceName: p.serviceName,
+                            description: p.description,
+                            basePrice: p.basePrice || p.customPrice,
+                            customPrice: p.customPrice || p.basePrice,
+                            durationMinutes: p.durationMinutes || 60,
+                            requiresLicense: p.requiresLicense,
+                        }));
                 }
-                if (!servList || servList.length === 0) {
+
+                if (servList.length === 0 && servRes.status === "fulfilled") {
+                    const rawServ = Array.isArray(servRes.value) ? servRes.value : (servRes.value?.items || []);
+                    servList = rawServ.map((s) => ({
+                        id: s.id,
+                        serviceName: s.serviceName,
+                        description: s.description,
+                        basePrice: s.basePrice,
+                        customPrice: s.basePrice,
+                        durationMinutes: s.durationMinutes || 60,
+                    }));
+                }
+
+                if (servList.length === 0) {
                     servList = FALLBACK_SERVICES;
                 }
-                setServices(servList);
-                setServiceId(servList[0]?.id || "");
 
-                // 2. Người nhận chăm sóc (Tôn trọng dữ liệu thật từ DB, không gán fake UUID khi rỗng)
+                setServices(servList);
+                if (servList.length > 0) {
+                    setSelectedServiceIds([servList[0].id]);
+                }
+
+                // 2. Người nhận chăm sóc (Tôn trọng dữ liệu thật từ DB)
                 let recList = [];
                 if (recRes.status === "fulfilled") {
-                    recList = Array.isArray(recRes.value)
-                        ? recRes.value
-                        : recRes.value?.items || [];
+                    recList = Array.isArray(recRes.value) ? recRes.value : (recRes.value?.items || []);
                 }
                 setRecipients(recList);
                 setRecipientId(recList[0]?.id || "");
 
-                // 3. Sổ địa chỉ (Nếu rỗng thì gửi addressId: null để Backend dùng địa chỉ người thân)
+                // 3. Sổ địa chỉ
                 let addrList = [];
                 if (addrRes.status === "fulfilled") {
-                    addrList = Array.isArray(addrRes.value)
-                        ? addrRes.value
-                        : addrRes.value?.items || [];
+                    addrList = Array.isArray(addrRes.value) ? addrRes.value : (addrRes.value?.items || []);
                 }
                 setAddresses(addrList);
                 const defaultAddr = addrList.find((a) => a.isDefault) || addrList[0];
@@ -183,7 +183,7 @@ export default function CreateProposalModal({
             .catch(() => {
                 if (!isMounted) return;
                 setServices(FALLBACK_SERVICES);
-                setServiceId(FALLBACK_SERVICES[0]?.id || "");
+                setSelectedServiceIds([FALLBACK_SERVICES[0].id]);
                 setRecipients([]);
                 setRecipientId("");
                 setAddresses([]);
@@ -196,25 +196,39 @@ export default function CreateProposalModal({
         return () => {
             isMounted = false;
         };
-    }, [isOpen]);
+    }, [isOpen, caregiverId]);
 
     if (!isOpen) return null;
 
-    const selectedService = services.find((s) => s.id === serviceId);
-    const selectedRecipient = recipients.find((r) => r.id === recipientId);
-    const selectedAddress = addresses.find((a) => a.id === addressId);
+    // Toggle dịch vụ trong combo
+    const toggleService = (srvId) => {
+        setSelectedServiceIds((prev) => {
+            if (prev.includes(srvId)) {
+                if (prev.length === 1) return prev; // Phải chọn ít nhất 1 dịch vụ
+                return prev.filter((id) => id !== srvId);
+            }
+            return [...prev, srvId];
+        });
+    };
+
+    // Danh sách các dịch vụ đang được chọn
+    const selectedServices = services.filter((s) => selectedServiceIds.includes(s.id));
+    const totalDurationMinutes = selectedServices.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+    const totalServiceBasePrice = selectedServices.reduce((acc, s) => acc + Number(s.customPrice || s.basePrice || 0), 0);
+    const platformFee = 60000;
+    const finalCalculatedTotal = (customDealPrice ? Number(customDealPrice) : totalServiceBasePrice) + platformFee;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitError("");
 
-        if (!serviceId) {
-            setSubmitError("Vui lòng chọn gói dịch vụ chăm sóc.");
+        if (selectedServiceIds.length === 0) {
+            setSubmitError("Vui lòng chọn ít nhất 1 dịch vụ chăm sóc.");
             return;
         }
 
         if (!recipientId) {
-            setSubmitError("Vui lòng chọn người nhận chăm sóc.");
+            setSubmitError("Vui lòng chọn hồ sơ người nhận chăm sóc.");
             return;
         }
 
@@ -240,10 +254,12 @@ export default function CreateProposalModal({
         }
 
         const payload = {
-            serviceId: serviceId,
+            serviceId: selectedServiceIds[0], // Tương thích ngược BE V1
+            serviceIds: selectedServiceIds,   // Combo đa dịch vụ BE V2.1
             recipientId: recipientId,
             addressId: addressId || null,
             scheduledStart: startDateTime.toISOString(),
+            proposedTotalPrice: customDealPrice ? Number(customDealPrice) : totalServiceBasePrice,
             notes: notes.trim() || null,
         };
 
@@ -256,7 +272,10 @@ export default function CreateProposalModal({
             onClose();
         } catch (err) {
             console.error("[CareLink] Lỗi khi tạo đề xuất ca:", err);
-            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất ca chăm sóc tới điều dưỡng. Vui lòng thử lại.";
+            const msg =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Không thể gửi đề xuất ca chăm sóc tới điều dưỡng. Vui lòng kiểm tra lại.";
             setSubmitError(msg);
         } finally {
             setIsSubmitting(false);
@@ -264,20 +283,23 @@ export default function CreateProposalModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-gradient-to-r from-teal-50/60 to-white">
+                <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-gradient-to-r from-teal-50/70 to-white">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-teal-100/70 text-[#00677c] flex items-center justify-center shadow-2xs">
                             <Stethoscope className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-slate-900">
+                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                                 Đề xuất ca chăm sóc mới
+                                <span className="text-[10px] font-semibold bg-teal-100 text-[#00677c] px-2 py-0.5 rounded-full">
+                                    Combo đa dịch vụ
+                                </span>
                             </h3>
                             <p className="text-xs text-slate-500">
-                                Gửi thỏa thuận 2 chiều tới {caregiverName || "Điều dưỡng"}
+                                Gửi thỏa thuận trực tiếp tới {caregiverName || "Điều dưỡng"}
                             </p>
                         </div>
                     </div>
@@ -292,11 +314,11 @@ export default function CreateProposalModal({
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
                     {isLoadingData ? (
                         <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500">
                             <Loader2 className="w-7 h-7 text-[#00677c] animate-spin" />
-                            <span className="text-xs font-medium">Đang tải danh mục dịch vụ và người thân...</span>
+                            <span className="text-xs font-medium">Đang tải bảng giá dịch vụ và hồ sơ...</span>
                         </div>
                     ) : dataError ? (
                         <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
@@ -304,28 +326,28 @@ export default function CreateProposalModal({
                             <span>{dataError}</span>
                         </div>
                     ) : recipients.length === 0 ? (
-                        /* Empty state người nhận chăm sóc */
-                        <div className="py-8 px-4 text-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 space-y-3">
-                            <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 text-amber-800 flex items-center justify-center">
+                        /* Bắt buộc chọn người nhận chăm sóc trước khi tạo Deal */
+                        <div className="py-8 px-5 text-center rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/50 space-y-3.5">
+                            <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center">
                                 <User className="w-6 h-6" />
                             </div>
                             <h4 className="text-sm font-bold text-slate-900">
                                 Chưa có hồ sơ người nhận chăm sóc
                             </h4>
                             <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-                                Để tạo đề xuất đặt ca, bạn cần thêm ít nhất 1 hồ sơ người thân (bệnh nhân) trong hệ thống.
+                                Theo quy định an toàn y tế của CareLink, gia đình bắt buộc phải tạo hồ sơ người bệnh (tiền sử bệnh, độ tuổi, dị ứng) trước khi tạo đề xuất ca.
                             </p>
                             <Link
                                 to="/dashboard/relatives"
                                 onClick={onClose}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005566] transition-colors"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005566] transition-colors shadow-sm"
                             >
                                 <PlusCircle className="w-4 h-4" />
-                                <span>Thêm hồ sơ người thân ngay</span>
+                                <span>Tạo hồ sơ người bệnh ngay</span>
                             </Link>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit} id="create-proposal-form" className="space-y-4.5">
+                        <form onSubmit={handleSubmit} id="create-proposal-form" className="space-y-5">
                             {/* Thông báo lỗi Submit */}
                             {submitError && (
                                 <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5">
@@ -334,33 +356,74 @@ export default function CreateProposalModal({
                                 </div>
                             )}
 
-                            {/* 1. Chọn Gói Dịch vụ */}
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    Gói dịch vụ chăm sóc <span className="text-rose-500">*</span>
-                                </label>
-                                <select
-                                    value={serviceId}
-                                    onChange={(e) => setServiceId(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
-                                >
-                                    {services.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.serviceName} ({s.durationMinutes} phút) — {Number(s.basePrice).toLocaleString("vi-VN")} đ
-                                        </option>
-                                    ))}
-                                </select>
-                                {selectedService?.description && (
-                                    <p className="text-[11px] text-slate-500 italic px-1">
-                                        {selectedService.description}
-                                    </p>
-                                )}
+                            {/* 1. COMBO ĐA DỊCH VỤ (Multi-select Checkbox) */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                        Chọn các dịch vụ trong ca <span className="text-rose-500">*</span>
+                                    </label>
+                                    <span className="text-[11px] text-teal-700 font-semibold">
+                                        Đã chọn: {selectedServices.length} dịch vụ ({totalDurationMinutes} phút)
+                                    </span>
+                                </div>
+
+                                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                    {services.map((s) => {
+                                        const isChecked = selectedServiceIds.includes(s.id);
+                                        const price = Number(s.customPrice || s.basePrice || 0);
+                                        return (
+                                            <div
+                                                key={s.id}
+                                                onClick={() => toggleService(s.id)}
+                                                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                                                    isChecked
+                                                        ? "bg-teal-50/50 border-[#00677c] shadow-2xs"
+                                                        : "bg-white border-slate-200 hover:border-slate-300"
+                                                }`}
+                                            >
+                                                <div className="mt-0.5 shrink-0 text-[#00677c]">
+                                                    {isChecked ? (
+                                                        <CheckSquare className="w-5 h-5 fill-[#00677c] text-white" />
+                                                    ) : (
+                                                        <Square className="w-5 h-5 text-slate-300" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-xs font-bold text-slate-900 truncate">
+                                                            {s.serviceName}
+                                                        </p>
+                                                        <span className="text-xs font-extrabold text-[#00677c] shrink-0">
+                                                            {price.toLocaleString("vi-VN")} đ
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {s.durationMinutes} phút
+                                                        </span>
+                                                        {s.requiresLicense && (
+                                                            <span className="text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded text-[10px] font-semibold border border-amber-200">
+                                                                Yêu cầu CCHN
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {s.description && (
+                                                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">
+                                                            {s.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
-                            {/* 2. Chọn Người nhận chăm sóc */}
+                            {/* 2. CHỌN HỒ SƠ NGƯỜI BỆNH */}
                             <div className="space-y-1.5">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    Người cần chăm sóc <span className="text-rose-500">*</span>
+                                    Hồ sơ người nhận chăm sóc <span className="text-rose-500">*</span>
                                 </label>
                                 <select
                                     value={recipientId}
@@ -369,13 +432,13 @@ export default function CreateProposalModal({
                                 >
                                     {recipients.map((r) => (
                                         <option key={r.id} value={r.id}>
-                                            {r.fullName} {r.gender === 1 ? "(Nam)" : r.gender === 2 ? "(Nữ)" : ""}
+                                            {r.fullName} {r.genderName ? `(${r.genderName})` : r.gender === 1 ? "(Nam)" : r.gender === 2 ? "(Nữ)" : ""} {r.medicalHistory ? `— ${r.medicalHistory}` : ""}
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
-                            {/* 3. Chọn Địa chỉ nhận chăm sóc */}
+                            {/* 3. ĐỊA CHỈ NHẬN CHĂM SÓC */}
                             <div className="space-y-1.5">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                                     Địa chỉ chăm sóc (Tại nhà)
@@ -395,26 +458,24 @@ export default function CreateProposalModal({
                                     </select>
                                 ) : (
                                     <p className="text-xs text-slate-500 italic bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                                        Hệ thống sẽ tự động sử dụng địa chỉ đăng ký mặc định của bạn.
+                                        Hệ thống sẽ tự động sử dụng địa chỉ đăng ký mặc định của người bệnh.
                                     </p>
                                 )}
                             </div>
 
-                            {/* 4. Ngày và Giờ bắt đầu */}
+                            {/* 4. NGÀY VÀ GIỜ BẮT ĐẦU */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                                         Ngày chăm sóc <span className="text-rose-500">*</span>
                                     </label>
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="date"
-                                            min={todayStr}
-                                            value={scheduledDate}
-                                            onChange={(e) => setScheduledDate(e.target.value)}
-                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
-                                        />
-                                    </div>
+                                    <input
+                                        type="date"
+                                        min={todayStr}
+                                        value={scheduledDate}
+                                        onChange={(e) => setScheduledDate(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                                    />
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -430,7 +491,33 @@ export default function CreateProposalModal({
                                 </div>
                             </div>
 
-                            {/* 5. Ghi chú thêm cho điều dưỡng */}
+                            {/* 5. GIÁ THƯƠNG LƯỢNG MONG MUỐN (OPTIONAL DEAL) */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                        Giá đề xuất thương lượng (VNĐ)
+                                    </label>
+                                    <span className="text-[11px] text-slate-400">
+                                        Mặc định: {totalServiceBasePrice.toLocaleString("vi-VN")} đ
+                                    </span>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="10000"
+                                        placeholder={`Tổng giá niêm yết: ${totalServiceBasePrice.toLocaleString("vi-VN")} đ`}
+                                        value={customDealPrice}
+                                        onChange={(e) => setCustomDealPrice(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all placeholder:text-slate-400"
+                                    />
+                                </div>
+                                <p className="text-[11px] text-slate-400">
+                                    Để trống nếu bạn đồng ý với tổng giá niêm yết của các dịch vụ đã chọn.
+                                </p>
+                            </div>
+
+                            {/* 6. GHI CHÚ THÊM */}
                             <div className="space-y-1.5">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                                     Ghi chú đặc biệt cho Điều dưỡng
@@ -445,41 +532,37 @@ export default function CreateProposalModal({
                                 />
                             </div>
 
-                            {/* 6. Hộp tóm tắt thỏa thuận & chi phí Authoritative từ Backend */}
+                            {/* 7. BẢNG TÍNH REALTIME CHI PHÍ */}
                             <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 space-y-2.5">
                                 <div className="flex items-center justify-between text-xs text-slate-700 font-medium">
-                                    <span>Thời lượng ca:</span>
+                                    <span>Tổng thời lượng dự kiến:</span>
                                     <span className="font-bold text-teal-800">
-                                        {selectedService?.durationMinutes || 60} phút
+                                        {totalDurationMinutes} phút
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between text-xs text-slate-600">
-                                    <span>Thù lao điều dưỡng:</span>
+                                    <span>Tổng tiền dịch vụ ({selectedServices.length} dịch vụ):</span>
                                     <span className="font-semibold text-slate-800">
-                                        {selectedService?.basePrice
-                                            ? Math.max(0, Number(selectedService.basePrice) - 60000).toLocaleString("vi-VN") + " VNĐ"
-                                            : "0 VNĐ"}
+                                        {(customDealPrice ? Number(customDealPrice) : totalServiceBasePrice).toLocaleString("vi-VN")} VNĐ
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between text-xs text-slate-600">
                                     <span className="flex items-center gap-1">
                                         Phí nền tảng CareLink:
-                                        <span className="text-[10px] text-slate-400 font-normal">(Bảo hiểm ca & vận hành)</span>
+                                        <span className="text-[10px] text-slate-400 font-normal">(Bảo hiểm & vận hành)</span>
                                     </span>
                                     <span className="font-semibold text-teal-700">
                                         + 60.000 VNĐ
                                     </span>
                                 </div>
                                 <div className="pt-2 border-t border-teal-200/60 flex items-center justify-between text-xs font-bold text-slate-800">
-                                    <span>Tổng chi phí trọn gói (Đã gồm VAT & phí sàn):</span>
+                                    <span>Tổng thanh toán dự kiến (PayOS Escrow):</span>
                                     <span className="text-sm sm:text-base font-extrabold text-[#00677c]">
-                                        {selectedService?.basePrice
-                                            ? Number(selectedService.basePrice).toLocaleString("vi-VN") + " VNĐ"
-                                            : "0 VNĐ"}
+                                        {finalCalculatedTotal.toLocaleString("vi-VN")} VNĐ
                                     </span>
                                 </div>
                                 <p className="text-[11px] text-teal-700/90 italic pt-1">
-                                    * Phí sàn 60.000 VNĐ được phân bổ theo chính sách CareLink (ADR-002). Sau khi điều dưỡng chấp nhận, ca sẽ được tạo ở trạng thái Chờ thanh toán với thời hạn giữ chỗ 30 phút.
+                                    * Phí nền tảng 60.000 VNĐ được quản lý tập trung theo chính sách CareLink (ADR-002). Số tiền sẽ được giữ an toàn trên PayOS Escrow cho đến khi nghiệm thu hoàn tất.
                                 </p>
                             </div>
                         </form>
@@ -501,7 +584,7 @@ export default function CreateProposalModal({
                         <button
                             type="submit"
                             form="create-proposal-form"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || selectedServiceIds.length === 0}
                             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white text-xs font-bold shadow-md hover:shadow-teal-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                             {isSubmitting ? (
@@ -510,7 +593,7 @@ export default function CreateProposalModal({
                                     <span>Đang gửi đề xuất...</span>
                                 </>
                             ) : (
-                                <span>Gửi đề xuất ca</span>
+                                <span>Gửi đề xuất ({selectedServices.length} DV)</span>
                             )}
                         </button>
                     )}

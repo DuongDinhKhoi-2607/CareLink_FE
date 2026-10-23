@@ -906,6 +906,7 @@ export default function DashboardMessages() {
                 onClose={() => setShowProposalModal(false)}
                 conversationId={activeChatId}
                 caregiverName={activeConv?.name}
+                caregiverId={activeConv?.nurseId || activeConv?.otherUserId || activeConv?.userId}
                 onProposalCreated={handleProposalCreated}
             />
 

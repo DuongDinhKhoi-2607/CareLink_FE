@@ -325,7 +325,10 @@ export default function Chat() {
               },
               {
                   label: "DỊCH VỤ",
-                  value: activeProposal.serviceName || "Chăm sóc phục hồi sức khỏe",
+                  value:
+                      activeProposal.services && activeProposal.services.length > 1
+                          ? `${activeProposal.services.map((s) => s.serviceName).join(" + ")} (${activeProposal.services.length} dịch vụ)`
+                          : activeProposal.serviceName || "Chăm sóc phục hồi sức khỏe",
                   icon: defaultIcons.service,
               },
               {
@@ -358,6 +361,13 @@ export default function Chat() {
                   label: "ĐỊA ĐIỂM",
                   value: activeProposal.addressSnapshot || "Địa chỉ gia đình",
                   icon: defaultIcons.address,
+              },
+              {
+                  label: "CHI PHÍ CA",
+                  value: activeProposal.totalPrice
+                      ? `${Number(activeProposal.totalPrice).toLocaleString("vi-VN")} đ + 60.000 đ phí sàn = ${Number(activeProposal.totalPaymentAmount || (Number(activeProposal.totalPrice) + 60000)).toLocaleString("vi-VN")} đ`
+                      : "Theo thỏa thuận",
+                  icon: defaultIcons.service,
               },
           ]
         : [
@@ -393,7 +403,11 @@ export default function Chat() {
         id: activeProposal?.bookingId || null,
         proposalId: activeProposal?.id || null,
         recipientName: activeProposal?.recipientName || "Người thân",
-        serviceName: activeProposal?.serviceName || "Chăm sóc chuyên môn",
+        serviceName:
+            activeProposal?.services && activeProposal.services.length > 1
+                ? activeProposal.services.map((s) => s.serviceName).join(" + ")
+                : (activeProposal?.serviceName || "Chăm sóc chuyên môn"),
+        services: activeProposal?.services || [],
         scheduledDate: activeProposal?.scheduledStart
             ? new Date(activeProposal.scheduledStart).toLocaleDateString("vi-VN")
             : "",
@@ -402,6 +416,8 @@ export default function Chat() {
             : "",
         address: activeProposal?.addressSnapshot || "",
         totalPrice: activeProposal?.totalPrice || 0,
+        platformFee: activeProposal?.platformFee || 60000,
+        totalPaymentAmount: activeProposal?.totalPaymentAmount || ((activeProposal?.totalPrice || 0) + 60000),
     };
 
     // Khi người dùng bấm "Xác nhận muốn đặt lịch" ở cột phải
@@ -830,6 +846,7 @@ export default function Chat() {
                     onClose={() => setShowProposalModal(false)}
                     conversationId={conversation.id}
                     caregiverName={displayName}
+                    caregiverId={currentNurseId}
                     onProposalCreated={handleProposalCreated}
                 />
             )}

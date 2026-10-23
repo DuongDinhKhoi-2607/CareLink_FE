@@ -31,6 +31,8 @@ export const familyApi = {
     createBooking: (data) => axiosClient.post("/api/v1/bookings", data),
     getBookings: (params) => axiosClient.get("/api/v1/bookings", { params }),
     getBookingDetail: (id) => axiosClient.get(`/api/v1/bookings/${id}`),
+    customerConfirmBooking: (id, data) =>
+        axiosClient.put(`/api/v1/bookings/${id}/customer-confirm`, data || {}),
     cancelBooking: (id, data) => axiosClient.put(`/api/v1/bookings/${id}/cancel`, data),
 
     // ── 5. Thanh toán trực tuyến PayOS (Payments) ──
@@ -66,9 +68,11 @@ export const familyApi = {
         axiosClient.post(`/api/v1/bookings/${bookingId}/disputes`, data),
     getDisputeDetail: (id) => axiosClient.get(`/api/v1/disputes/${id}`),
 
-    // ── 8. Gói dịch vụ chăm sóc đang hoạt động (Services) ──
+    // ── 8. Gói dịch vụ chăm sóc & Bảng giá Điều dưỡng (Services & Pricing) ──
     getServices: () => axiosClient.get("/api/v1/services"),
     getServiceDetail: (id) => axiosClient.get(`/api/v1/services/${id}`),
+    getNursePricing: (nurseId) => axiosClient.get(`/api/v1/nurses/pricing/${nurseId}`),
+    checkRecipientReadiness: () => axiosClient.get("/api/v1/recipients/check-readiness"),
 };
 
 export default familyApi;

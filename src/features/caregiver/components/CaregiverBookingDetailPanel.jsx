@@ -18,6 +18,7 @@ import {
     ShieldCheck,
     CircleCheck,
     X,
+    FileText,
 } from "lucide-react";
 
 /**
@@ -45,6 +46,8 @@ export default function CaregiverBookingDetailPanel({
     StatusBadge,
     DetailItem,
 }) {
+    const [showPatientModal, setShowPatientModal] = React.useState(false);
+
     return (
         <>
             <aside
@@ -120,22 +123,48 @@ export default function CaregiverBookingDetailPanel({
                                     {booking.condition || "Chưa có ghi chú tình trạng sức khỏe"}
                                 </p>
                             </div>
+
+                            {/* Nút xem bệnh án chi tiết từ BookingProposalResponse */}
+                            <button
+                                type="button"
+                                onClick={() => setShowPatientModal(true)}
+                                className="mt-2.5 w-full py-2 px-3 text-xs font-bold text-[#087487] bg-[#edf7f9] hover:bg-[#e0f1f4] rounded-xl border border-[#c9e4e9] transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                            >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Xem bệnh án & tiền sử y tế</span>
+                            </button>
                         </section>
 
                         <div className="h-px bg-slate-100" />
 
-                        {/* Service */}
+                        {/* Service (Hỗ trợ Combo nhiều dịch vụ) */}
                         <section>
                             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
-                                Thông tin dịch vụ
+                                Thông tin dịch vụ {booking.services && booking.services.length > 1 ? `(Combo ${booking.services.length} dịch vụ)` : ""}
                             </p>
 
-                            <DetailItem
-                                icon={Stethoscope}
-                                label="Dịch vụ chăm sóc"
-                            >
-                                {booking.serviceName}
-                            </DetailItem>
+                            {booking.services && booking.services.length > 1 ? (
+                                <div className="space-y-2">
+                                    {booking.services.map((s, idx) => (
+                                        <div key={s.serviceId || idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                                            <div className="min-w-0 pr-2">
+                                                <p className="font-bold text-slate-800 truncate">{s.serviceName}</p>
+                                                <p className="text-[10px] text-slate-400">{s.durationMinutes} phút</p>
+                                            </div>
+                                            <span className="font-semibold text-emerald-700 shrink-0">
+                                                {Number(s.price).toLocaleString("vi-VN")} đ
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <DetailItem
+                                    icon={Stethoscope}
+                                    label="Dịch vụ chăm sóc"
+                                >
+                                    {booking.serviceName}
+                                </DetailItem>
+                            )}
                         </section>
 
                         <div className="h-px bg-slate-100" />
@@ -464,6 +493,93 @@ export default function CaregiverBookingDetailPanel({
                             >
                                 <XCircle className="h-3.5 w-3.5" />
                                 Xác nhận từ chối
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal xem chi tiết bệnh án người bệnh (BookingProposalResponse) */}
+            {showPatientModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+                    onClick={() => setShowPatientModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-[#edf7f9] to-white">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-[#087487]/10 text-[#087487] flex items-center justify-center">
+                                    <UserRound className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">
+                                        Hồ sơ bệnh án người bệnh
+                                    </h3>
+                                    <p className="text-xs text-slate-500">
+                                        Thông tin sức khỏe & tiền sử y tế từ gia đình
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowPatientModal(false)}
+                                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 overflow-y-auto space-y-4 text-xs">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Họ và tên</span>
+                                    <p className="text-sm font-bold text-slate-900 mt-0.5">{booking.recipientName}</p>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Độ tuổi / Giới tính</span>
+                                    <p className="text-sm font-bold text-slate-900 mt-0.5">
+                                        {[booking.recipientAge, booking.recipientGenderName].filter(Boolean).join(" · ") || "Chưa cập nhật"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Tiền sử bệnh án</span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium">
+                                    {booking.recipientMedicalHistory || "Không ghi nhận tiền sử bệnh đặc biệt."}
+                                </p>
+                            </div>
+
+                            <div className="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200/80 space-y-1">
+                                <span className="text-[10px] font-bold text-amber-800 uppercase flex items-center gap-1">
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                    Lưu ý đặc biệt / Dị ứng thuốc
+                                </span>
+                                <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                                    {booking.recipientSpecialNotes || "Không có lưu ý dị ứng hoặc chống chỉ định."}
+                                </p>
+                            </div>
+
+                            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Địa chỉ chăm sóc</span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium">
+                                    {booking.recipientAddress || booking.address || "Địa chỉ theo thỏa thuận"}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/70 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setShowPatientModal(false)}
+                                className="px-4 py-2 rounded-xl bg-[#087487] text-white text-xs font-bold hover:bg-[#066274] transition cursor-pointer"
+                            >
+                                Đã xem và hiểu rõ
                             </button>
                         </div>
                     </div>
