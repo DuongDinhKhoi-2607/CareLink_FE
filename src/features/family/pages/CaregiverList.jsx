@@ -501,84 +501,24 @@ export default function CaregiverList() {
 
                 </section>
 
-                {/* ====================================================
-                    ACTIVE SERVICE
-                ==================================================== */}
-
-                {activeService ? (
-                    <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-3.5 rounded-xl bg-[#eef7f4] border border-[#d2e9e2]">
-
-                        <div className="flex items-center gap-3 min-w-0">
-
-                            <div className="w-8 h-8 rounded-lg bg-[#00677c] text-white flex items-center justify-center shrink-0">
-                                <CheckIcon className="w-4 h-4" />
-                            </div>
-
-                            <div className="min-w-0">
-
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-[#167267]">
-                                    Dịch vụ đang chọn
-                                </p>
-
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-
-                                    <span className="text-sm font-bold text-[#102030]">
-                                        {activeService.title}
-                                    </span>
-
-                                    {activeService.priceRange && (
-                                        <span className="text-xs text-slate-500">
-                                            · {activeService.priceRange}
-                                        </span>
-                                    )}
-
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 pl-11 sm:pl-0">
-
-                            <button
-                                type="button"
-                                onClick={showAllCaregivers}
-                                className="text-xs font-bold text-[#00677c] hover:text-[#005566] transition-colors cursor-pointer"
-                            >
-                                Xem tất cả điều dưỡng
-                            </button>
-
-                            <Link
-                                to="/services"
-                                className="text-xs font-semibold text-slate-500 hover:text-[#00677c] transition-colors"
-                            >
-                                Đổi dịch vụ
-                            </Link>
-
-                        </div>
-
+                {/* BANNER TẤT CẢ ĐIỀU DƯỠNG */}
+                <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white border border-[#dfe8e5]">
+                    <div>
+                        <p className="text-xs font-bold text-[#102030]">
+                            Tất cả điều dưỡng CareLink
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                            Danh sách chuyên viên y tế và điều dưỡng đã được xác thực hồ sơ chuyên môn.
+                        </p>
                     </div>
-                ) : (
-                    <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white border border-[#dfe8e5]">
 
-                        <div>
-                            <p className="text-xs font-bold text-[#102030]">
-                                Tất cả điều dưỡng
-                            </p>
-
-                            <p className="text-[11px] text-slate-400 mt-0.5">
-                                Bạn đang xem toàn bộ danh sách điều dưỡng.
-                            </p>
-                        </div>
-
-                        <Link
-                            to="/services"
-                            className="text-xs font-bold text-[#00677c] hover:text-[#005566] transition-colors"
-                        >
-                            Chọn theo dịch vụ
-                        </Link>
-
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs font-semibold text-emerald-700">
+                            Hồ sơ đã được kiểm định
+                        </span>
                     </div>
-                )}
+                </div>
 
                 {/* ====================================================
                     SEARCH
@@ -763,15 +703,6 @@ export default function CaregiverList() {
                                     <option>
                                         Kinh nghiệm nhiều nhất
                                     </option>
-
-                                    <option>
-                                        Giá thấp nhất
-                                    </option>
-
-                                    <option>
-                                        Giá cao nhất
-                                    </option>
-
                                 </select>
 
                             </div>
