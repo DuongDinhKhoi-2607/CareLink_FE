@@ -315,33 +315,34 @@ export default function UserManagement() {
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                             activeTab === "family"
                                 ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
-                                : "bg-white text-slate-600 hover:text-[#00677c] hover:bg-slate-50 border border-slate-200/80 shadow-2xs"
+                                : "bg-teal-50/70 hover:bg-teal-100/80 text-slate-700 hover:text-[#00677c] border border-teal-200/80 shadow-2xs"
                         }`}
                     >
-                        <Users className={`w-4 h-4 ${activeTab === "family" ? "text-cyan-200" : "text-slate-400"}`} />
+                        <Users className={`w-4 h-4 ${activeTab === "family" ? "text-cyan-200" : "text-[#00677c]"}`} />
                         <span>Gia đình</span>
                         <span
                             className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
-                                activeTab === "family" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 border border-slate-200"
+                                activeTab === "family" ? "bg-white/20 text-white" : "bg-teal-100 text-[#00677c] border border-teal-200/80"
                             }`}
                         >
                             {families.length}
                         </span>
                     </button>
+
                     <button
                         type="button"
                         onClick={() => { setActiveTab("caregiver"); setSearchQuery(""); }}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                             activeTab === "caregiver"
                                 ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
-                                : "bg-white text-slate-600 hover:text-[#00677c] hover:bg-slate-50 border border-slate-200/80 shadow-2xs"
+                                : "bg-teal-50/70 hover:bg-teal-100/80 text-slate-700 hover:text-[#00677c] border border-teal-200/80 shadow-2xs"
                         }`}
                     >
-                        <ShieldCheck className={`w-4 h-4 ${activeTab === "caregiver" ? "text-cyan-200" : "text-slate-400"}`} />
+                        <ShieldCheck className={`w-4 h-4 ${activeTab === "caregiver" ? "text-cyan-200" : "text-[#00677c]"}`} />
                         <span>Điều dưỡng</span>
                         <span
                             className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
-                                activeTab === "caregiver" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 border border-slate-200"
+                                activeTab === "caregiver" ? "bg-white/20 text-white" : "bg-teal-100 text-[#00677c] border border-teal-200/80"
                             }`}
                         >
                             {caregivers.length}
