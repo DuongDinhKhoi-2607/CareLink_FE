@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+import caregiverApi from "../../../api/caregiverApi";
 import { ShieldAlert, UserCheck, Stethoscope, ArrowRight, LogIn, UserPlus, X, CheckCircle2 } from "lucide-react";
 
 const roles = [
@@ -116,6 +117,36 @@ const trustItems = [
 export default function ChooseRole() {
     const navigate = useNavigate();
     const [authModal, setAuthModal] = useState({ open: false, type: "unauthenticated", targetRole: "student" });
+    const [approvedStatus, setApprovedStatus] = useState(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem("carelink_token");
+        const rawUser = localStorage.getItem("carelink_user");
+        let user = null;
+        try {
+            user = rawUser ? JSON.parse(rawUser) : null;
+        } catch {}
+        const role = user?.role?.toLowerCase();
+        const roleIdNum = Number(user?.roleId);
+        const isNurse = role === "nurse" || role === "caregiver" || roleIdNum === 3;
+
+        if (token && isNurse) {
+            caregiverApi
+                .getVerificationStatus()
+                .then((res) => {
+                    const data = res?.data || res;
+                    if (
+                        data?.verificationStatus === 2 ||
+                        data?.status === 1 ||
+                        data?.statusName === "Active" ||
+                        data?.verificationStatusName === "Approved"
+                    ) {
+                        setApprovedStatus(data);
+                    }
+                })
+                .catch(() => {});
+        }
+    }, []);
 
     const handleChooseRole = (roleId) => {
         const token = localStorage.getItem("carelink_token");
@@ -151,6 +182,44 @@ export default function ChooseRole() {
 
             <main className="flex-1 px-4 py-7 sm:px-6 sm:py-9">
                 <div className="mx-auto flex w-full max-w-5xl flex-col gap-7">
+                    {/* Banner hiển thị khi điều dưỡng đã được Admin phê duyệt */}
+                    {approvedStatus && (
+                        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                                    <CheckCircle2 className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        ✓ Đã kích hoạt hành nghề
+                                    </div>
+                                    <h4 className="text-sm font-bold text-slate-900 mt-0.5">
+                                        Tài khoản Điều dưỡng của bạn đã được xác minh chính thức!
+                                    </h4>
+                                    <p className="text-xs text-slate-600 mt-0.5">
+                                        Hồ sơ năng lực đã được duyệt. Bạn có thể vào thẳng Dashboard hoặc quản lý Lịch nhận ca.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/caregiver/schedule")}
+                                    className="px-4 py-2 rounded-xl bg-[#087E8B] hover:bg-[#075C66] text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                                >
+                                    Lịch nhận ca
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/caregiver/dashboard")}
+                                    className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition cursor-pointer"
+                                >
+                                    Bảng điều khiển
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Heading */}
                     <header className="mx-auto max-w-2xl text-center">
                         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
@@ -380,27 +449,31 @@ export default function ChooseRole() {
                     <div
                         role="dialog"
                         aria-modal="true"
-                        className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                        className="relative w-full max-w-[560px] overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-[0_25px_70px_rgba(8,126,139,0.18)] ring-1 ring-slate-900/5 animate-in fade-in zoom-in-95 duration-200"
                     >
                         {/* Header Modal */}
-                        <div className="relative border-b border-slate-100 bg-white p-6 pb-5">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-4">
+                        <div className="relative overflow-hidden bg-gradient-to-br from-teal-50/90 via-emerald-50/30 to-white px-7 pt-6 pb-5 border-b border-slate-100/80">
+                            {/* Decorative ambient background blur */}
+                            <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-teal-400/10 blur-2xl pointer-events-none" />
+                            <div className="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-emerald-400/10 blur-xl pointer-events-none" />
+
+                            <div className="relative flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
                                     <div
-                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${
                                             authModal.type === "unauthenticated"
-                                                ? "border-teal-200 bg-teal-50 text-[#087E8B]"
-                                                : "border-amber-200 bg-amber-50 text-amber-600"
+                                                ? "border-teal-200/90 bg-gradient-to-br from-teal-500 to-[#087E8B] text-white shadow-teal-500/20"
+                                                : "border-amber-200/90 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-500/20"
                                         }`}
                                     >
                                         {authModal.type === "unauthenticated" ? (
-                                            <Stethoscope className="h-6 w-6" />
+                                            <Stethoscope className="h-6 w-6 stroke-[2.2]" />
                                         ) : (
-                                            <ShieldAlert className="h-6 w-6" />
+                                            <ShieldAlert className="h-6 w-6 stroke-[2.2]" />
                                         )}
                                     </div>
                                     <div>
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-50 text-[#087E8B] border border-teal-200/60 mb-1.5">
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-100/80 text-[#087E8B] border border-teal-200/80 mb-1">
                                             Dành cho Người chăm sóc
                                         </div>
                                         <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
@@ -416,7 +489,7 @@ export default function ChooseRole() {
                                 <button
                                     type="button"
                                     onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
-                                    className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                                    className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                                 >
                                     <X className="h-5 w-5" />
                                 </button>
@@ -427,7 +500,7 @@ export default function ChooseRole() {
                         <div className="p-6 space-y-4">
                             {authModal.type === "unauthenticated" ? (
                                 <>
-                                    <p className="text-sm leading-relaxed text-slate-600">
+                                    <p className="text-sm leading-relaxed text-slate-700">
                                         Để tham gia quy trình xác minh hồ sơ năng lực và nhận ca chăm sóc tại nhà, bạn cần đăng nhập tài khoản <strong>Điều dưỡng</strong> hoặc <strong>Sinh viên Y khoa</strong>.
                                     </p>
 
@@ -447,7 +520,7 @@ export default function ChooseRole() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/50 px-3.5 py-2.5 text-xs text-[#065b65]">
+                                    <div className="flex items-center gap-2.5 rounded-xl border border-teal-300 bg-teal-100/90 px-4 py-3 text-xs text-teal-950 font-semibold shadow-2xs">
                                         <UserCheck className="h-4 w-4 shrink-0 text-[#087E8B]" />
                                         <span>Chưa có tài khoản? Chỉ mất chưa đầy 1 phút để tạo tài khoản miễn phí.</span>
                                     </div>

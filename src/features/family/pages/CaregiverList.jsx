@@ -979,17 +979,17 @@ export default function CaregiverList() {
                     <div
                         role="dialog"
                         aria-modal="true"
-                        className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                        className="relative w-full max-w-[580px] overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-2xl ring-1 ring-black/5"
                     >
                         {/* Header Modal */}
-                        <div className="relative border-b border-slate-100 bg-white p-6 pb-5">
+                        <div className="relative border-b border-slate-100 bg-gradient-to-br from-teal-50/70 via-white to-slate-50/50 p-6 pb-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-start gap-4">
                                     <div
                                         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
                                             authModal.type === "unauthenticated"
-                                                ? "border-teal-200 bg-teal-50 text-[#00677C]"
-                                                : "border-amber-200 bg-amber-50 text-amber-600"
+                                                ? "border-teal-200 bg-white text-[#00677C] shadow-sm"
+                                                : "border-amber-200 bg-white text-amber-600 shadow-sm"
                                         }`}
                                     >
                                         {authModal.type === "unauthenticated" ? (
@@ -999,7 +999,7 @@ export default function CaregiverList() {
                                         )}
                                     </div>
                                     <div>
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-50 text-[#00677C] border border-teal-200/60 mb-1.5">
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-100/70 text-[#00677C] border border-teal-200/80 mb-1.5">
                                             Dành cho Gia đình & Khách hàng
                                         </div>
                                         <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
@@ -1026,7 +1026,7 @@ export default function CaregiverList() {
                         <div className="p-6 space-y-4">
                             {authModal.type === "unauthenticated" ? (
                                 <>
-                                    <p className="text-sm leading-relaxed text-slate-600">
+                                    <p className="text-sm leading-relaxed text-slate-700">
                                         Để liên hệ trao đổi trực tiếp, gửi đề xuất ca và đặt lịch chăm sóc với người chăm sóc, quý khách vui lòng đăng nhập hoặc tạo tài khoản <strong>Gia đình</strong>.
                                     </p>
 
@@ -1046,7 +1046,7 @@ export default function CaregiverList() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/50 px-3.5 py-2.5 text-xs text-[#065b65]">
+                                    <div className="flex items-center gap-2.5 rounded-xl border border-teal-300 bg-teal-100/90 px-4 py-3 text-xs text-teal-950 font-semibold shadow-2xs">
                                         <MessageSquare className="h-4 w-4 shrink-0 text-[#00677C]" />
                                         <span>Tạo tài khoản nhanh chóng chỉ mất 30 giây để tìm người chăm sóc phù hợp.</span>
                                     </div>
