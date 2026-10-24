@@ -66,9 +66,13 @@ export const caregiverApi = {
     requestPayout: (data) => axiosClient.post("/api/v1/wallet/payouts", data),
     getMyPayouts: () => axiosClient.get("/api/v1/wallet/payouts"),
 
-    // ── 7. Đánh giá nhận xét ──
+    // ── 7. Đánh giá nhận xét & Khiếu nại ──
     getReviewsReceived: (userId, params) =>
         axiosClient.get(`/api/v1/reviews/users/${userId}`, { params }),
+    getBookingReviews: (bookingId) =>
+        axiosClient.get(`/api/v1/bookings/${bookingId}/reviews`),
+    getBookingDispute: (bookingId) =>
+        axiosClient.get(`/api/v1/bookings/${bookingId}/dispute`),
     reviewCustomer: (bookingId, data) =>
         axiosClient.post(`/api/v1/bookings/${bookingId}/reviews`, data),
 
