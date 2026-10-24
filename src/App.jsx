@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import CaregiverLayout from "./layouts/CaregiverLayout";
@@ -75,8 +75,8 @@ export default function App() {
             {/* Cẩm nang y tế & Sức khỏe gia đình */}
             <Route path="/handbook" element={<MedicalHandbook />} />
             <Route path="/handbook/:idOrSlug" element={<HandbookDetail />} />
-            {/* Trang chọn loại dịch vụ */}
-            <Route path="/services" element={<Services />} />
+            {/* Tạm thời bỏ qua trang chọn gói dịch vụ để chuyển thẳng sang trang tìm điều dưỡng */}
+            <Route path="/services" element={<Navigate to="/caregivers" replace />} />
             {/* Pháp lý, Điều khoản & Chính sách bảo mật */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/chinh-sach-bao-mat" element={<PrivacyPolicy />} />

@@ -218,7 +218,7 @@ export default function ForFamily() {
                             <div className="flex flex-col sm:flex-row gap-3 mt-9">
 
                                 <Link
-                                    to="/services"
+                                    to="/caregivers"
                                     className="
                                         inline-flex
                                         items-center
@@ -242,7 +242,7 @@ export default function ForFamily() {
                                 </Link>
 
                                 <Link
-                                    to="/services"
+                                    to="/caregivers"
                                     className="
                                         inline-flex
                                         items-center
@@ -725,7 +725,7 @@ export default function ForFamily() {
                         </div>
 
                         <Link
-                            to="/services"
+                            to="/caregivers"
                             className="
                                 inline-flex
                                 items-center
@@ -782,7 +782,7 @@ export default function ForFamily() {
                     <div className="flex flex-col sm:flex-row justify-center gap-3 mt-9">
 
                         <Link
-                            to="/services"
+                            to="/caregivers"
                             className="
                                 inline-flex
                                 items-center

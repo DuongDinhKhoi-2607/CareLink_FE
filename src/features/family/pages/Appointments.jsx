@@ -34,11 +34,25 @@ const getConfirmedPaidBookings = () => {
     }
 };
 
+const parseStatus = (val) => {
+    if (typeof val === "number") return val;
+    const s = String(val || "").trim().toLowerCase();
+    if (s === "pendingpayment" || s === "1") return 1;
+    if (s === "pendingacceptance" || s === "2") return 2;
+    if (s === "accepted" || s === "3") return 3;
+    if (s === "inprogress" || s === "in_progress" || s === "4") return 4;
+    if (s === "completed" || s === "5") return 5;
+    if (s === "canceled" || s === "cancelled" || s === "6") return 6;
+    if (s === "disputed" || s === "7") return 7;
+    return 1;
+};
+
 // Adapter chuyển đổi BookingResponse từ Backend sang cấu trúc hiển thị của giao diện Family
 const mapBookingToAppointment = (b) => {
-    let rawStatus = typeof b.status === "number" ? b.status : 1;
+    let rawStatus = parseStatus(b.status);
     const paidMap = getConfirmedPaidBookings();
     const isLocalPaid = Boolean(b.id && paidMap[b.id]);
+    // Chỉ áp dụng cờ local paid nếu ca thực sự đang ở trạng thái PendingPayment (1), tuyệt đối KHÔNG ghi đè khi đã Canceled (6) hoặc Completed (5)
     if (rawStatus === 1 && isLocalPaid) {
         // Đã thanh toán thành công qua PayOS: chuyển sang Đã tiếp nhận (Accepted) nếu từ Proposal hoặc Chờ điều dưỡng nhận
         rawStatus = b.conversationId ? 3 : 2;
@@ -287,7 +301,7 @@ export default function Appointments() {
             setAppointments(mapped);
 
             // Tự động kiểm tra đối soát ngầm cho các ca đang ở trạng thái PendingPayment (1)
-            const pendingList = items.filter((b) => (typeof b.status === "number" ? b.status : 1) === 1);
+            const pendingList = items.filter((b) => parseStatus(b.status) === 1);
             if (pendingList.length > 0) {
                 pendingList.forEach(async (pb) => {
                     try {
@@ -339,18 +353,66 @@ export default function Appointments() {
     const handleConfirmCancelBooking = async (id, reason) => {
         try {
             await familyApi.cancelBooking(id, { reason });
+            // 1. Xóa ngay cờ localStorage để không bao giờ ghi đè lại trạng thái hủy
+            try {
+                const paidMap = getConfirmedPaidBookings();
+                if (paidMap[id]) {
+                    delete paidMap[id];
+                    localStorage.setItem("carelink_confirmed_paid_bookings", JSON.stringify(paidMap));
+                }
+            } catch {}
+
+            // 2. Cập nhật optimistic trạng thái hủy ngay lập tức trên UI
+            setAppointments((prev) =>
+                prev.map((item) => {
+                    const itemId = item.rawId || item.id;
+                    if (itemId === id) {
+                        return {
+                            ...item,
+                            tab: "cancelled",
+                            status: "cancelled",
+                            statusLabel: "ĐÃ HỦY",
+                            statusBadge: "bg-rose-50 text-rose-700 border border-rose-200",
+                            dotColor: "bg-rose-500",
+                            canCancel: false,
+                            cancelReason: reason,
+                        };
+                    }
+                    return item;
+                })
+            );
+
             setToastMessage({
                 type: "success",
                 title: "Đã hủy ca chăm sóc thành công",
                 message: `Lịch hẹn #${id} đã được hủy. Hệ thống đã cập nhật trạng thái ca.`,
             });
-            fetchAppointments();
+            await fetchAppointments();
         } catch (err) {
             console.error("[CareLink] Lỗi khi hủy ca:", err);
-            const errorMsg =
+            let errorMsg =
                 err.response?.data?.detail ||
                 err.response?.data?.message ||
                 "Không thể hủy ca chăm sóc lúc này. Vui lòng kiểm tra lại kết nối mạng hoặc chính sách hủy ca.";
+            if (errorMsg.includes("A booking in status 'Canceled' can no longer be canceled") || errorMsg.includes("đã ở trạng thái đã hủy")) {
+                errorMsg = "Lịch hẹn này đã ở trạng thái đã hủy trước đó, không thể hủy lại.";
+                // Cập nhật lại UI sang trạng thái đã hủy
+                setAppointments((prev) =>
+                    prev.map((item) =>
+                        (item.rawId || item.id) === id
+                            ? {
+                                  ...item,
+                                  tab: "cancelled",
+                                  status: "cancelled",
+                                  statusLabel: "ĐÃ HỦY",
+                                  statusBadge: "bg-rose-50 text-rose-700 border border-rose-200",
+                                  dotColor: "bg-rose-500",
+                                  canCancel: false,
+                              }
+                            : item
+                    )
+                );
+            }
             throw new Error(errorMsg);
         }
     };
@@ -453,7 +515,7 @@ export default function Appointments() {
                 </div>
 
                 <Link
-                    to="/services"
+                    to="/caregivers"
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow hover:-translate-y-0.5 shrink-0 cursor-pointer"
                 >
                     <svg className="w-4 h-4 text-cyan-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
