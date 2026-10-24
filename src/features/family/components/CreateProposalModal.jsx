@@ -262,13 +262,14 @@ export default function CreateProposalModal({
             return;
         }
 
+        const finalDealPrice = customDealPrice !== "" ? Number(customDealPrice) : totalServiceBasePrice;
         const payload = {
             serviceId: selectedServiceIds[0], // Tương thích ngược BE V1
             serviceIds: selectedServiceIds,   // Combo đa dịch vụ BE V2.1
             recipientId: recipientId,
             addressId: addressId || null,
             scheduledStart: startDateTime.toISOString(),
-            proposedTotalPrice: finalCalculatedTotal, // Đồng bộ 100% tổng tiền gồm phí sàn 60.000 VNĐ
+            proposedTotalPrice: finalDealPrice, // Tiền công dịch vụ thỏa thuận (phí sàn 60k được quản lý tập trung)
             notes: notes.trim() || null,
         };
 

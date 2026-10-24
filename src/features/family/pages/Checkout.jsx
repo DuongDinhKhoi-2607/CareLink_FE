@@ -105,9 +105,10 @@ export default function Checkout() {
     const [paymentError, setPaymentError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Tổng chi phí ca chăm sóc (đồng bộ từ thỏa thuận đàm phán trong Chat hoặc giá niêm yết của Điều dưỡng)
-    const totalServicePrice = Number(booking?.totalPrice || 350000);
-    const chargeAmount = totalServicePrice;
+    // Tổng chi phí ca chăm sóc: Tiền công dịch vụ thỏa thuận + Phí sàn nền tảng CareLink (ADR-002)
+    const servicePrice = Number(booking?.totalPrice || 0);
+    const platformFee = Number(booking?.platformFee || 60000);
+    const chargeAmount = Number(booking?.totalPaymentAmount || (servicePrice + platformFee));
 
     // Tải thông tin booking thật nếu có bookingId
     useEffect(() => {
@@ -283,18 +284,32 @@ export default function Checkout() {
                                 </div>
                             </div>
 
-                            {/* Thẻ tổng cộng phí */}
-                            <div className="p-5 rounded-xl bg-gradient-to-br from-[#f1f8fa] to-[#e4f3f7] border border-[#00677c]/20 flex flex-col gap-2 shadow-xs">
+                            {/* Thẻ tổng cộng phí bóc tách minh bạch */}
+                            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#f1f8fa] to-[#e4f3f7] border border-[#00677c]/20 flex flex-col gap-3 shadow-xs">
+                                <div className="flex flex-col gap-2 pb-3 border-b border-[#00677c]/15 text-xs sm:text-sm text-slate-700">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500">Chi phí dịch vụ thỏa thuận:</span>
+                                        <span className="font-semibold text-slate-800">{servicePrice.toLocaleString("vi-VN")} VNĐ</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500 flex items-center gap-1.5">
+                                            <span>Phí nền tảng & bảo hiểm CareLink:</span>
+                                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-teal-100 text-[#00677c]">Cố định</span>
+                                        </span>
+                                        <span className="font-semibold text-[#00677c]">+{platformFee.toLocaleString("vi-VN")} VNĐ</span>
+                                    </div>
+                                </div>
+
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-slate-700">
-                                        Tổng số tiền thanh toán (PayOS):
+                                    <span className="text-sm sm:text-base font-bold text-slate-800">
+                                        Tổng thanh toán (PayOS):
                                     </span>
                                     <span className="text-2xl sm:text-3xl font-extrabold text-[#00677c]">
                                         {chargeAmount.toLocaleString("vi-VN")} VNĐ
                                     </span>
                                 </div>
                                 <p className="text-xs text-slate-500 leading-relaxed border-t border-slate-200/80 pt-2">
-                                    ✓ Đã gồm trọn gói dịch vụ và các khoản phí thỏa thuận. Không phát sinh phụ phí ngoài hợp đồng.
+                                    ✓ Đã bao gồm phí sàn và trọn gói dịch vụ thỏa thuận. Không phát sinh phụ phí ngoài hợp đồng.
                                 </p>
                             </div>
 
