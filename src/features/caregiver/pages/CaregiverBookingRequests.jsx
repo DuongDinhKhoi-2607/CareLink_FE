@@ -71,6 +71,12 @@ const mapBackendToCaregiverBooking = (b) => {
             fee: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + " VNĐ" : "350.000 VNĐ",
             tasks: ["Theo dõi sinh hiệu", "Chăm sóc theo chỉ định", "Ghi nhật ký ca trực"],
         },
+        hasNurseReviewed: Boolean(b.hasNurseReviewed),
+        nurseRating: b.nurseRating,
+        nurseReviewComment: b.nurseReviewComment,
+        hasCustomerReviewed: Boolean(b.hasCustomerReviewed),
+        customerRating: b.customerRating,
+        customerReviewComment: b.customerReviewComment,
         rawBackendData: b
     };
 };
@@ -378,18 +384,24 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                                     Xem bệnh án đã nộp
                                 </button>
                                 <Link
-                                    to={`/caregiver/review?bookingId=${booking.id}`}
+                                    to={`/caregiver/review?bookingId=${booking.rawId || booking.id}`}
                                     state={{
-                                        bookingId: booking.id,
-                                        family: booking.customerName || booking.patientName || "Gia đình khách hàng",
-                                        service: booking.serviceName || "Dịch vụ chăm sóc",
-                                        date: booking.date || booking.scheduledAt,
-                                        duration: booking.duration || "Theo ca",
+                                        bookingId: booking.rawId || booking.id,
+                                        family: booking.family?.name || "Gia đình khách hàng",
+                                        service: booking.service?.type || "Dịch vụ chăm sóc",
+                                        date: booking.service?.date || "Hôm nay",
+                                        duration: booking.service?.duration || "Theo ca",
+                                        hasNurseReviewed: booking.hasNurseReviewed,
+                                        nurseRating: booking.nurseRating,
                                     }}
-                                    className="flex-1 py-2.5 rounded-xl bg-[#00677c] hover:bg-[#005263] text-white font-bold text-xs transition-colors shadow-2xs text-center flex items-center justify-center gap-1.5"
+                                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs text-center flex items-center justify-center gap-1.5 ${
+                                        booking.hasNurseReviewed
+                                            ? "bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100"
+                                            : "bg-[#00677c] hover:bg-[#005263] text-white"
+                                    }`}
                                 >
-                                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                                    Đánh giá gia đình
+                                    <Star className={`w-3.5 h-3.5 ${booking.hasNurseReviewed ? "fill-amber-500 text-amber-500" : "fill-amber-300 text-amber-300"}`} />
+                                    <span>{booking.hasNurseReviewed ? `⭐ ${booking.nurseRating ? Number(booking.nurseRating).toFixed(1) : "5.0"} Đã đánh giá` : "Đánh giá gia đình"}</span>
                                 </Link>
                             </div>
                         </div>

@@ -202,8 +202,12 @@ const mapBookingToAppointment = (b) => {
         checkInNote: b.checkInNote ?? null,
         tasks: ["Đo huyết áp & sinh hiệu", "Theo dõi sức khỏe theo đơn", "Ghi nhật ký thể trạng"],
         // reviewed: backend trả về true nếu khách đã gửi review cho ca này
-        reviewed: b.isReviewed || b.reviewed || false,
-        reviewRating: b.reviewRating || b.customerRating || null,
+        reviewed: Boolean(b.hasCustomerReviewed ?? b.HasCustomerReviewed ?? b.isReviewed ?? b.reviewed),
+        reviewRating: b.customerRating ?? b.CustomerRating ?? b.reviewRating ?? null,
+        customerReviewComment: b.customerReviewComment ?? b.CustomerReviewComment ?? null,
+        hasNurseReviewed: Boolean(b.hasNurseReviewed ?? b.HasNurseReviewed),
+        nurseRating: b.nurseRating ?? b.NurseRating ?? null,
+        nurseReviewComment: b.nurseReviewComment ?? b.NurseReviewComment ?? null,
         dispute: b.dispute || (rawStatus === 7 ? {
             id: b.disputeId || `DSP-${b.id}`,
             code: `DSP-${b.id}`,
@@ -1038,9 +1042,22 @@ export default function Appointments() {
                                         {/* Ca đã hoàn thành: Hiển thị badge đánh giá hoặc nút Đánh giá */}
                                         {apt.tab === "completed" && (
                                             apt.reviewed ? (
-                                                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200">
-                                                    ⭐ {apt.reviewRating ? `${apt.reviewRating}/5` : ""} Đã đánh giá
-                                                </span>
+                                                <Link
+                                                    to={`/review?bookingId=${apt.id}`}
+                                                    state={{
+                                                        bookingId: apt.id,
+                                                        nurseId: apt.nurseId,
+                                                        nurseName: apt.caregiver.name,
+                                                        nurseAvatar: apt.caregiver.avatar,
+                                                        serviceName: apt.service,
+                                                        bookingDate: apt.date,
+                                                        booking: apt,
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-xl border border-amber-300 transition-colors shadow-2xs cursor-pointer"
+                                                    title="Xem lại đánh giá 2 chiều đã lưu"
+                                                >
+                                                    <span>⭐ {apt.reviewRating ? `${Number(apt.reviewRating).toFixed(1)}/5` : ""} Đã đánh giá</span>
+                                                </Link>
                                             ) : (
                                                 <Link
                                                     to={`/review?bookingId=${apt.id}`}

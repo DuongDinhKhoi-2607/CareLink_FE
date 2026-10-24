@@ -22,12 +22,19 @@ export default function Review() {
     const bookingIdFromSession = sessionStorage.getItem("pendingReviewBookingId");
     const bookingId = bookingIdFromParam || bookingIdFromState || bookingIdFromSession;
 
-    // ── Thông tin booking từ location.state
+    // ── Thông tin booking từ location.state hoặc fetch
     const bookingState = location?.state?.booking || null;
-    const nurseName = location?.state?.nurseName || bookingState?.caregiver?.name || "Điều dưỡng CareLink";
-    const nurseAvatar = location?.state?.nurseAvatar || bookingState?.caregiver?.avatar || null;
-    const serviceName = location?.state?.serviceName || bookingState?.service || "Ca chăm sóc";
-    const bookingDate = location?.state?.bookingDate || bookingState?.date || "";
+    const [nurseInfo, setNurseInfo] = useState({
+        name: location?.state?.nurseName || bookingState?.caregiver?.name || "Điều dưỡng CareLink",
+        avatar: location?.state?.nurseAvatar || bookingState?.caregiver?.avatar || null,
+        service: location?.state?.serviceName || bookingState?.service || "Ca chăm sóc",
+        date: location?.state?.bookingDate || bookingState?.date || "",
+    });
+
+    const nurseName = nurseInfo.name;
+    const nurseAvatar = nurseInfo.avatar;
+    const serviceName = nurseInfo.service;
+    const bookingDate = nurseInfo.date;
 
     // ── STATE biểu mẫu đánh giá
     const [overallRating, setOverallRating] = useState(0);
@@ -47,29 +54,54 @@ export default function Review() {
     const [feedbackType, setFeedbackType] = useState("error"); // "error" | "success"
     const [alreadyReviewed, setAlreadyReviewed] = useState(false);
     const [existingReview, setExistingReview] = useState(null);
+    const [nurseReview, setNurseReview] = useState(null);
 
-    // ── Khi mount: kiểm tra bookingId hợp lệ + check đã đánh giá chưa
+    // ── Khi mount: kiểm tra bookingId hợp lệ + nạp chi tiết ca và đánh giá 2 chiều
     useEffect(() => {
         if (!bookingId) return;
 
-        // Lưu vào sessionStorage để dự phòng nếu user refresh
         sessionStorage.setItem("pendingReviewBookingId", bookingId);
 
-        // Check xem ca này đã có review chưa
-        const checkExistingReview = async () => {
-            try {
-                const res = await familyApi.getReviewDetail(bookingId);
-                const data = res?.data || res;
-                if (data?.id) {
+        let isMounted = true;
+
+        // 1. Tải chi tiết ca nếu thiếu thông tin
+        if (!location?.state?.nurseName && !bookingState?.caregiver?.name) {
+            familyApi.getBookingDetail(bookingId)
+                .then((res) => {
+                    if (!isMounted) return;
+                    const d = res.data?.data || res.data;
+                    if (d) {
+                        const start = d.scheduledStart ? new Date(d.scheduledStart) : null;
+                        setNurseInfo({
+                            name: d.nurseName || "Điều dưỡng CareLink",
+                            avatar: d.nurseAvatarUrl || null,
+                            service: d.serviceName || "Ca chăm sóc",
+                            date: start ? start.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }) : "",
+                        });
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // 2. Kiểm tra đánh giá 2 chiều đã có từ backend (GET /api/v1/bookings/{id}/reviews)
+        familyApi.getBookingReviews(bookingId)
+            .then((res) => {
+                if (!isMounted) return;
+                const data = res.data?.data || res.data;
+                if (data?.hasCustomerReviewed || data?.customerReview) {
                     setAlreadyReviewed(true);
-                    setExistingReview(data);
+                    setExistingReview(data.customerReview);
                 }
-            } catch {
-                // 404 = chưa đánh giá => ok
-            }
+                if (data?.hasNurseReviewed || data?.nurseReview) {
+                    setNurseReview(data.nurseReview);
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            isMounted = false;
         };
-        checkExistingReview();
-    }, [bookingId]);
+    }, [bookingId, location?.state, bookingState]);
 
     // ── Cập nhật tiêu chí
     const handleCriterionChange = (criterionId, rating) => {
@@ -173,11 +205,11 @@ export default function Review() {
         );
     }
 
-    // ── Màn hình đã đánh giá rồi (từ backend hoặc state)
+    // ── Màn hình đã đánh giá rồi: Xem lại chi tiết đánh giá 2 chiều
     if (alreadyReviewed && !submitted) {
         return (
             <div className="bg-[#f8fafc] py-10 font-sans antialiased text-[#102030] min-h-[calc(100vh-140px)] flex flex-col items-center">
-                <div className="max-w-2xl w-full mx-auto px-4 sm:px-6 flex flex-col gap-6">
+                <div className="max-w-3xl w-full mx-auto px-4 sm:px-6 flex flex-col gap-6 animate-page-enter">
                     <div>
                         <Link to="/dashboard/appointments" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#00677c] transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -186,21 +218,190 @@ export default function Review() {
                             Quay lại Lịch hẹn
                         </Link>
                     </div>
-                    <div className="p-8 bg-white rounded-3xl border border-amber-200 flex flex-col items-center text-center gap-5">
-                        <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-100 flex items-center justify-center text-3xl">⭐</div>
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-800">Bạn đã đánh giá ca này rồi</h2>
-                            <p className="text-sm text-slate-500 mt-1.5">
-                                Mỗi ca chăm sóc chỉ được đánh giá một lần.
-                                {existingReview?.overallRating && (
-                                    <span className="block font-semibold text-amber-600 mt-1">
-                                        Bạn đã chấm {existingReview.overallRating}/5 sao cho ca này.
-                                    </span>
-                                )}
-                            </p>
+
+                    {/* Banner đã đánh giá */}
+                    <div className="p-5 rounded-3xl bg-amber-50/90 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl shrink-0">
+                                ⭐
+                            </div>
+                            <div>
+                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-200/80 text-amber-950 mb-1">
+                                    Đã lưu trên hệ thống
+                                </span>
+                                <h1 className="text-lg font-bold text-slate-900">Chi tiết đánh giá ca chăm sóc</h1>
+                                <p className="text-xs text-slate-500">
+                                    Mã ca · <span className="font-semibold text-slate-700">{bookingId}</span>
+                                </p>
+                            </div>
                         </div>
-                        <Link to="/dashboard/appointments" className="px-6 py-3 bg-[#00677c] text-white rounded-xl text-sm font-bold hover:bg-[#005566] transition-colors">
-                            Xem lịch hẹn của tôi
+                        <Link
+                            to="/dashboard/appointments"
+                            className="px-4 py-2.5 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005566] transition-colors shrink-0 self-start sm:self-center"
+                        >
+                            Về lịch hẹn của tôi
+                        </Link>
+                    </div>
+
+                    {/* Thông tin ca trực */}
+                    <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+                        {nurseAvatar ? (
+                            <img src={nurseAvatar} alt={nurseName} className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-slate-200" />
+                        ) : (
+                            <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#00677c] font-bold text-lg flex items-center justify-center shrink-0 border border-teal-100">
+                                {nurseName.charAt(0)}
+                            </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-base font-bold text-slate-900 truncate">{nurseName}</h2>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                    ✓ Đã hoàn thành
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5 truncate">{serviceName}</p>
+                            {bookingDate && (
+                                <p className="text-[11px] text-slate-400 mt-1">{bookingDate}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 1. ĐÁNH GIÁ CỦA BẠN DÀNH CHO ĐIỀU DƯỠNG */}
+                    <div className="p-6 sm:p-7 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <span className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block">
+                                    Gia đình đánh giá
+                                </span>
+                                <h3 className="text-base font-bold text-slate-900">
+                                    Đánh giá của bạn dành cho Điều dưỡng
+                                </h3>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-bold text-sm">
+                                <span>⭐</span>
+                                <span>{Number(existingReview?.overallRating || 5).toFixed(1)} / 5</span>
+                            </div>
+                        </div>
+
+                        {/* Breakdown 4 tiêu chí */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="text-[10px] text-slate-400 font-medium block">Chuyên môn</span>
+                                <span className="text-sm font-bold text-slate-800 mt-1 block">
+                                    ⭐ {existingReview?.expertiseRating || existingReview?.overallRating || 5}/5
+                                </span>
+                            </div>
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="text-[10px] text-slate-400 font-medium block">Giao tiếp</span>
+                                <span className="text-sm font-bold text-slate-800 mt-1 block">
+                                    ⭐ {existingReview?.communicationRating || existingReview?.overallRating || 5}/5
+                                </span>
+                            </div>
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="text-[10px] text-slate-400 font-medium block">Đúng giờ</span>
+                                <span className="text-sm font-bold text-slate-800 mt-1 block">
+                                    ⭐ {existingReview?.punctualityRating || existingReview?.overallRating || 5}/5
+                                </span>
+                            </div>
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="text-[10px] text-slate-400 font-medium block">Chất lượng</span>
+                                <span className="text-sm font-bold text-slate-800 mt-1 block">
+                                    ⭐ {existingReview?.careQualityRating || existingReview?.overallRating || 5}/5
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Sẵn sàng thuê lại */}
+                        {existingReview?.wouldRehire !== null && existingReview?.wouldRehire !== undefined && (
+                            <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-3.5 py-2.5 rounded-xl">
+                                <span className="font-semibold">Sẵn sàng thuê lại trong tương lai:</span>
+                                <span className={`font-bold ${existingReview.wouldRehire ? "text-emerald-700" : "text-slate-500"}`}>
+                                    {existingReview.wouldRehire ? "✓ Có, rất sẵn lòng" : "Chưa xác định"}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Nhận xét */}
+                        <div>
+                            <span className="text-xs font-bold text-slate-700 block mb-1.5">Nhận xét của bạn:</span>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs text-slate-700 italic leading-relaxed">
+                                "{existingReview?.comment || "Dịch vụ tận tâm, chăm sóc chu đáo và đúng quy trình chuyên môn."}"
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. ĐÁNH GIÁ 2 CHIỀU TỪ ĐIỀU DƯỠNG */}
+                    <div className="p-6 sm:p-7 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">
+                                    Nghiệm thu 2 chiều
+                                </span>
+                                <h3 className="text-base font-bold text-slate-900">
+                                    Đánh giá từ Điều dưỡng dành cho Gia đình
+                                </h3>
+                            </div>
+                            {nurseReview ? (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 font-bold text-sm">
+                                    <span>⭐</span>
+                                    <span>{Number(nurseReview.overallRating || 5).toFixed(1)} / 5</span>
+                                </div>
+                            ) : (
+                                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold">
+                                    Chờ điều dưỡng gửi
+                                </span>
+                            )}
+                        </div>
+
+                        {nurseReview ? (
+                            <>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
+                                        <span className="text-[10px] text-slate-400 font-medium block">Tôn trọng</span>
+                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
+                                            ⭐ {nurseReview.respectRating || 5}/5
+                                        </span>
+                                    </div>
+                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
+                                        <span className="text-[10px] text-slate-400 font-medium block">An toàn</span>
+                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
+                                            ⭐ {nurseReview.safetyRating || 5}/5
+                                        </span>
+                                    </div>
+                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
+                                        <span className="text-[10px] text-slate-400 font-medium block">Vật tư</span>
+                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
+                                            ⭐ {nurseReview.suppliesRating || 5}/5
+                                        </span>
+                                    </div>
+                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
+                                        <span className="text-[10px] text-slate-400 font-medium block">Thanh toán</span>
+                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
+                                            ⭐ {nurseReview.paymentRating || 5}/5
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span className="text-xs font-bold text-slate-700 block mb-1.5">Nhận xét từ điều dưỡng:</span>
+                                    <div className="p-4 bg-teal-50/40 rounded-2xl border border-teal-100 text-xs text-slate-700 italic leading-relaxed">
+                                        "{nurseReview.comment || "Gia đình hợp tác tốt, tạo điều kiện thuận lợi trong suốt quá trình chăm sóc."}"
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center text-xs text-slate-500">
+                                Điều dưỡng phụ trách ca chưa gửi đánh giá phản hồi cho gia đình. Khi có đánh giá, nội dung sẽ tự động cập nhật tại đây.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex justify-center pt-2">
+                        <Link
+                            to="/dashboard/appointments"
+                            className="px-6 py-3 bg-[#00677c] text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-[#005566] transition-colors shadow-sm"
+                        >
+                            Quay lại danh sách Lịch hẹn
                         </Link>
                     </div>
                 </div>
