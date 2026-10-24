@@ -44,8 +44,9 @@ export default function PaymentResult() {
     const [retryCount, setRetryCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState("");
 
-    const maxRetries = 3;
+    const maxRetries = 4;
     const pollingTimerRef = useRef(null);
+    const retriesRef = useRef(0);
 
     // Hàm gọi Backend để kiểm tra trạng thái thanh toán và lấy thông tin chi tiết ca
     const verifyPaymentStatus = useCallback(async (isPolling = false) => {
@@ -54,7 +55,7 @@ export default function PaymentResult() {
             return;
         }
 
-        if (!isPolling) setVerifying(true);
+        if (!isPolling && !isPaidFromParams) setVerifying(true);
         setErrorMsg("");
 
         try {
@@ -66,7 +67,7 @@ export default function PaymentResult() {
                 console.warn("[CareLink] Chưa lấy được chi tiết ca chăm sóc:", bErr);
             }
 
-            // 2. Lấy thông tin thanh toán từ Backend
+            // 2. Lấy thông tin thanh toán từ Backend (kích hoạt PayOS Direct Sync nếu status đang Pending)
             let paymentRes = null;
             try {
                 paymentRes = await familyApi.getPaymentDetail(bookingId);
@@ -78,8 +79,8 @@ export default function PaymentResult() {
             const status = paymentRes?.status;
 
             // Status: 1 = Pending, 2 = Paid, 3 = Failed, 4 = Refunded
-            if (status === 2 || isPaidFromParams) {
-                // Đã thanh toán thành công (Backend xác nhận HOẶC PayOS Sandbox xác nhận)
+            // Nếu Backend đã xác nhận Payment là Paid (status === 2)
+            if (status === 2) {
                 sessionStorage.removeItem("carelink_pending_payment_booking_id");
                 if (bookingId) {
                     try {
@@ -100,24 +101,43 @@ export default function PaymentResult() {
                 return;
             }
 
-            // Nếu Backend vẫn đang Pending mà người dùng từ PayOS trở về báo "00", có thể webhook đến trễ
-            if (status === 1 && !isCancelRoute) {
-                setRetryCount((prev) => {
-                    const next = prev + 1;
-                    if (next <= maxRetries) {
-                        pollingTimerRef.current = setTimeout(() => {
-                            verifyPaymentStatus(true);
-                        }, 2500);
-                    } else {
+            // Nếu Backend vẫn đang Pending (status === 1 hoặc chưa có bản ghi) mà chưa hủy,
+            // tiếp tục polling ngầm tối đa maxRetries lần để kích hoạt Backend PayOS Direct Sync cập nhật DB
+            if (!isCancelRoute && (status === 1 || isPaidFromParams || !paymentRes)) {
+                if (retriesRef.current < maxRetries) {
+                    retriesRef.current += 1;
+                    setRetryCount(retriesRef.current);
+                    pollingTimerRef.current = setTimeout(() => {
+                        verifyPaymentStatus(true);
+                    }, 2500);
+                    // Nếu người dùng từ PayOS quay lại có cờ PAID thì không block UI
+                    if (isPaidFromParams) {
                         setLoading(false);
-                        setVerifying(false);
                     }
-                    return next;
-                });
-            } else {
-                setLoading(false);
-                setVerifying(false);
+                    return;
+                }
             }
+
+            // Sau khi đã đối soát hết số lần mà có cờ xác nhận từ params PayOS
+            if (isPaidFromParams) {
+                sessionStorage.removeItem("carelink_pending_payment_booking_id");
+                if (bookingId) {
+                    try {
+                        const currentPaid = JSON.parse(localStorage.getItem("carelink_confirmed_paid_bookings") || "{}");
+                        currentPaid[bookingId] = {
+                            paidAt: Date.now(),
+                            orderCode: orderCode || paymentRes?.paymentCode || "PAID",
+                            status: 2,
+                        };
+                        localStorage.setItem("carelink_confirmed_paid_bookings", JSON.stringify(currentPaid));
+                    } catch (e) {
+                        console.warn("[CareLink] Lưu trạng thái booking đã thanh toán:", e);
+                    }
+                }
+            }
+
+            setLoading(false);
+            setVerifying(false);
         } catch (err) {
             console.error("[CareLink] Lỗi xác minh trạng thái thanh toán:", err);
             setLoading(false);
@@ -135,7 +155,7 @@ export default function PaymentResult() {
                 }
             }
         }
-    }, [bookingId, isCancelRoute, isPaidFromParams]);
+    }, [bookingId, isCancelRoute, isPaidFromParams, orderCode]);
 
     useEffect(() => {
         verifyPaymentStatus();
