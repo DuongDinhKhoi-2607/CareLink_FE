@@ -4,6 +4,7 @@ import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 import caregiverApi from "../api/caregiverApi";
+import CaregiverGuideModal from "../features/caregiver/components/CaregiverGuideModal";
 
 const navItems = [
     {
@@ -94,6 +95,7 @@ export default function CaregiverLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
 
     // Thông tin người dùng hiện tại từ localStorage
     const [currentUser, setCurrentUser] = useState(() => {
@@ -302,6 +304,23 @@ export default function CaregiverLayout() {
                         </div>
                     );
                 })()}
+
+                {/* Nút Cẩm nang hướng dẫn sử dụng hệ thống */}
+                <button
+                    type="button"
+                    onClick={() => setGuideOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100/90 text-[#00677c] hover:text-[#005466] border border-teal-200/90 transition-all text-xs font-semibold shadow-2xs hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    title="Cẩm nang hướng dẫn sử dụng toàn diện Dashboard"
+                >
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00677c]" />
+                    </span>
+                    <svg className="w-4 h-4 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span className="hidden md:inline">Hướng dẫn sử dụng</span>
+                </button>
 
                 {/* Notification Bell */}
                 <NotificationDropdown userRole="caregiver" align="right" />
@@ -583,6 +602,12 @@ export default function CaregiverLayout() {
                 onClose={() => setShowLogoutModal(false)}
                 onConfirm={handleLogout}
                 roleName="tài khoản Điều dưỡng"
+            />
+
+            {/* Modal cẩm nang hướng dẫn sử dụng toàn diện */}
+            <CaregiverGuideModal
+                isOpen={guideOpen}
+                onClose={() => setGuideOpen(false)}
             />
         </div>
     );
