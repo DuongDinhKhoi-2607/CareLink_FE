@@ -452,25 +452,38 @@ export default function CaregiverWallet() {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setPayoutForm({ ...payoutForm, amount: wallet.availableBalance.toString() })}
-                                className="px-3 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+                                disabled={wallet.availableBalance < 50000}
+                                onClick={() => {
+                                    if (wallet.availableBalance < 50000) {
+                                        setPayoutError("Số dư khả dụng hiện tại chưa đạt hạn mức rút tối thiểu 50.000 ₫.");
+                                        return;
+                                    }
+                                    setPayoutForm({ ...payoutForm, amount: wallet.availableBalance.toString() });
+                                }}
+                                className="px-3 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-xs cursor-pointer"
                             >
                                 Rút tất cả
                             </button>
                         </div>
 
-                        <form onSubmit={handleCreatePayout} className="space-y-4 text-xs">
+                        {wallet.availableBalance < 50000 && (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+                                <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                                <span>Số dư ví hiện tại ({wallet.availableBalance.toLocaleString("vi-VN")} ₫) chưa đạt hạn mức rút tối thiểu (50.000 ₫).</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleCreatePayout} noValidate className="space-y-4 text-xs">
                             <div>
                                 <label className="block text-slate-700 font-semibold mb-1">Số tiền muốn rút (VNĐ) *</label>
                                 <input
                                     type="number"
                                     required
-                                    min="50000"
-                                    max={wallet.availableBalance}
-                                    step="50000"
                                     value={payoutForm.amount}
                                     onChange={(e) => setPayoutForm({ ...payoutForm, amount: e.target.value })}
-                                    placeholder="Tối thiểu 50.000 ₫ (Khớp DTO BE)"
+                                    placeholder="Tối thiểu 50.000 ₫"
                                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-sm font-bold text-[#002045]"
                                 />
                                 <div className="flex gap-2 pt-2">
@@ -565,7 +578,7 @@ export default function CaregiverWallet() {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={submittingPayout}
+                                    disabled={submittingPayout || wallet.availableBalance < 50000}
                                     className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
                                 >
                                     {submittingPayout && (
@@ -574,7 +587,11 @@ export default function CaregiverWallet() {
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                                         </svg>
                                     )}
-                                    {submittingPayout ? "Đang gửi yêu cầu..." : "Xác nhận gửi yêu cầu"}
+                                    {submittingPayout
+                                        ? "Đang gửi yêu cầu..."
+                                        : wallet.availableBalance < 50000
+                                        ? "Số dư không đủ (Tối thiểu 50.000 ₫)"
+                                        : "Xác nhận gửi yêu cầu"}
                                 </button>
                             </div>
                         </form>
