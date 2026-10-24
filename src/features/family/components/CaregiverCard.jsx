@@ -178,15 +178,10 @@ export default function CaregiverCard({
                             </div>
 
                             <div className="text-right shrink-0">
-
-                                <p className="text-[10px] text-slate-400 font-medium">
-                                    Từ
-                                </p>
-
-                                <p className="text-sm font-extrabold text-[#102030] whitespace-nowrap">
-                                    {caregiver.rate}
-                                </p>
-
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold tracking-tight shadow-2xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Sẵn sàng nhận ca
+                                </span>
                             </div>
 
                         </div>

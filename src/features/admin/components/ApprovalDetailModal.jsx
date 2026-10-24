@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, FileText, Check, AlertCircle, Eye, ShieldCheck, XCircle, ExternalLink, Loader2 } from "lucide-react";
+import { X, FileText, Check, AlertCircle, ShieldCheck, XCircle, ExternalLink, Loader2 } from "lucide-react";
 import { resolveDocumentUrl } from "../../../api/axiosClient";
 
 export const formatDocumentTypeName = (docType, docTypeName) => {
@@ -17,7 +17,6 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
     const [rejectReason, setRejectReason] = useState("");
     const [rejectError, setRejectError] = useState("");
     const [isRejecting, setIsRejecting] = useState(false);
-    const [selectedDocPreview, setSelectedDocPreview] = useState(null);
 
     if (!caregiver) return null;
 
@@ -73,6 +72,46 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                         <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs flex items-center gap-2 animate-pulse">
                             <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
                             <span>Đang nạp chi tiết chứng chỉ và giấy tờ thực tế từ máy chủ...</span>
+                        </div>
+                    )}
+
+                    {/* Form Lý do từ chối - ĐƯỢC ĐẨY LÊN TRÊN ĐẦU MODAL ĐỂ ADMIN DỄ NHÌN VÀ NHẬP */}
+                    {isRejecting && (
+                        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2.5 animate-in fade-in slide-in-from-top-2">
+                            <label className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
+                                <AlertCircle className="w-4 h-4 text-rose-600" />
+                                Nhập lý do từ chối hồ sơ (Điều dưỡng sẽ nhận được thông báo này):
+                            </label>
+                            <textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Ví dụ: Ảnh chụp CCCD bị mờ góc hoặc Chứng chỉ hành nghề đã hết hạn..."
+                                rows={3}
+                                className="w-full p-2.5 bg-white border border-rose-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-400 placeholder:text-slate-400"
+                                autoFocus
+                            />
+                            {rejectError && (
+                                <p className="text-xs text-rose-600 font-semibold">{rejectError}</p>
+                            )}
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRejecting(false);
+                                        setRejectError("");
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white rounded-lg cursor-pointer"
+                                >
+                                    Hủy bỏ
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmReject}
+                                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer"
+                                >
+                                    Xác nhận từ chối
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -191,7 +230,8 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                         ) : (
                             <div className="space-y-2.5">
                                 {documents.map((doc, idx) => {
-                                    const docUrl = doc.url || doc.fileUrl;
+                                    const rawUrl = doc.url || doc.fileUrl;
+                                    const resolvedUrl = resolveDocumentUrl(rawUrl);
                                     return (
                                         <div
                                             key={doc.id || idx}
@@ -216,14 +256,19 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                                                 }`}>
                                                     {doc.status || "Chờ duyệt"}
                                                 </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedDocPreview(doc)}
-                                                    className="text-xs font-bold text-[#00677c] hover:underline px-2.5 py-1 rounded hover:bg-teal-50 transition-colors cursor-pointer flex items-center gap-1 border border-teal-100"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    <span>Xem ảnh/tệp</span>
-                                                </button>
+                                                {resolvedUrl ? (
+                                                    <a
+                                                        href={resolvedUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs font-bold text-[#00677c] hover:bg-teal-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 border border-teal-200 shadow-2xs"
+                                                    >
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                        <span>Mở xem ảnh / tệp</span>
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400 italic">Không có tệp</span>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -231,103 +276,6 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                             </div>
                         )}
                     </div>
-
-                    {/* Preview Tài liệu THỰC TẾ (Hiển thị ảnh thật hoặc link tệp) */}
-                    {selectedDocPreview && (
-                        <div className="p-4 rounded-xl bg-slate-900 text-white text-xs space-y-3 animate-in fade-in">
-                            <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                                <span className="font-bold flex items-center gap-2 text-teal-300">
-                                    <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
-                                    Đang xem: {formatDocumentTypeName(selectedDocPreview.documentType, selectedDocPreview.name)}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedDocPreview(null)}
-                                    className="text-slate-400 hover:text-white cursor-pointer px-2 py-0.5 rounded hover:bg-slate-800"
-                                >
-                                    ✕ Đóng xem trước
-                                </button>
-                            </div>
-
-                            <div className="bg-slate-950 rounded-xl p-3 flex flex-col items-center justify-center min-h-48 border border-slate-800">
-                                {(() => {
-                                    const rawUrl = selectedDocPreview.url || selectedDocPreview.fileUrl;
-                                    const resolvedUrl = resolveDocumentUrl(rawUrl);
-                                    if (!resolvedUrl) {
-                                        return (
-                                            <div className="py-8 text-center text-slate-400">
-                                                Không tìm thấy đường dẫn tệp tài liệu này trên hệ thống.
-                                            </div>
-                                        );
-                                    }
-                                    return (
-                                        <>
-                                            <img
-                                                src={resolvedUrl}
-                                                alt={selectedDocPreview.name}
-                                                className="max-h-[380px] w-auto max-w-full object-contain rounded-lg border border-slate-700 shadow-md"
-                                                onError={(e) => {
-                                                    e.target.style.display = "none";
-                                                    const fallback = document.getElementById("doc-preview-fallback");
-                                                    if (fallback) fallback.style.display = "block";
-                                                }}
-                                            />
-                                            <div id="doc-preview-fallback" style={{ display: "none" }} className="py-8 text-center text-slate-400">
-                                                <p className="font-semibold">Tệp tài liệu PDF hoặc định dạng cần xem ngoài trình duyệt.</p>
-                                            </div>
-                                            <div className="mt-3 flex items-center gap-3">
-                                                <a
-                                                    href={resolvedUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
-                                                >
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                    <span>Mở tệp gốc trong tab mới</span>
-                                                </a>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Form Lý do từ chối nếu Admin bấm từ chối */}
-                    {isRejecting && (
-                        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 space-y-2.5">
-                            <label className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
-                                <AlertCircle className="w-4 h-4" />
-                                Nhập lý do từ chối hồ sơ (Điều dưỡng sẽ nhận được thông báo này):
-                            </label>
-                            <textarea
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                                placeholder="Ví dụ: Ảnh chụp CCCD bị mờ góc hoặc Chứng chỉ hành nghề đã hết hạn..."
-                                rows={3}
-                                className="w-full p-2.5 bg-white border border-rose-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                            />
-                            {rejectError && (
-                                <p className="text-xs text-rose-600 font-semibold">{rejectError}</p>
-                            )}
-                            <div className="flex items-center justify-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsRejecting(false)}
-                                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white rounded-lg cursor-pointer"
-                                >
-                                    Hủy bỏ
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleConfirmReject}
-                                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs cursor-pointer"
-                                >
-                                    Xác nhận từ chối
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* ── MODAL FOOTER ACTIONS ── */}

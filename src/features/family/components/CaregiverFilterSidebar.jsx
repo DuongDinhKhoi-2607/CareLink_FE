@@ -125,37 +125,6 @@ export default function CaregiverFilterSidebar({
                         </div>
                     </div>
 
-                    {/* PRICE */}
-                    <div className="pt-5 border-t border-[#edf1ef]">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
-                                Ngân sách / giờ
-                            </h3>
-                            <span className="text-xs font-bold text-[#00677c]">
-                                {priceRange.toLocaleString("vi-VN")}đ
-                            </span>
-                        </div>
-
-                        <input
-                            type="range"
-                            min="50000"
-                            max="500000"
-                            step="25000"
-                            value={priceRange}
-                            onChange={(e) =>
-                                setPriceRange(
-                                    Number(e.target.value)
-                                )
-                            }
-                            className="w-full accent-[#00677c] cursor-pointer"
-                        />
-
-                        <div className="flex justify-between mt-2 text-[10px] text-slate-400">
-                            <span>50.000đ</span>
-                            <span>500.000đ</span>
-                        </div>
-                    </div>
-
                     {/* RATING (MinRating parameter in Backend) */}
                     {setMinRating && (
                         <div className="pt-5 border-t border-[#edf1ef]">
@@ -182,61 +151,6 @@ export default function CaregiverFilterSidebar({
                                             }`}
                                         >
                                             {r.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* SERVICES (ServiceId parameter in Backend) */}
-                    {servicesList && servicesList.length > 0 && setActiveService && (
-                        <div className="pt-5 border-t border-[#edf1ef]">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
-                                    Gói dịch vụ
-                                </h3>
-                                {activeService && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveService(null)}
-                                        className="text-[10px] font-semibold text-[#00677c] hover:underline cursor-pointer"
-                                    >
-                                        Bỏ chọn
-                                    </button>
-                                )}
-                            </div>
-                            <div className="space-y-1.5">
-                                {servicesList.map((srv) => {
-                                    const isSelected = activeService?.id === srv.id;
-                                    return (
-                                        <button
-                                            key={srv.id}
-                                            type="button"
-                                            onClick={() =>
-                                                setActiveService(isSelected ? null : srv)
-                                            }
-                                            className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                                                isSelected
-                                                    ? "bg-[#eef7f4] border-[#00677c] text-[#00677c]"
-                                                    : "bg-[#f8faf9] border-[#e1e9e6] text-slate-700 hover:border-[#b4dcd3]"
-                                            }`}
-                                        >
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-bold truncate">
-                                                    {srv.serviceName || srv.title}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400 mt-0.5">
-                                                    {srv.basePrice
-                                                        ? `${Number(srv.basePrice).toLocaleString("vi-VN")}đ / ca`
-                                                        : srv.durationMinutes
-                                                        ? `${srv.durationMinutes} phút`
-                                                        : ""}
-                                                </p>
-                                            </div>
-                                            {isSelected && (
-                                                <CheckIcon className="w-3.5 h-3.5 shrink-0 text-[#00677c]" />
-                                            )}
                                         </button>
                                     );
                                 })}

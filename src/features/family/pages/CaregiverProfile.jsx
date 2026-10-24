@@ -473,16 +473,22 @@ export default function CaregiverProfile() {
 
                         {/* Box đặt lịch chính */}
                         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-md flex flex-col gap-6">
-                            <div className="flex flex-col gap-1 pb-4 border-b border-slate-100">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    Chi phí dịch vụ
-                                </span>
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-3xl font-extrabold text-[#102030]">
-                                        {Number(caregiver?.hourlyRate || caregiver?.price || 180000).toLocaleString("vi-VN")}đ
+                            <div className="flex flex-col gap-2 pb-4 border-b border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-[#00677c] uppercase tracking-wider">
+                                        Trạng thái hoạt động
                                     </span>
-                                    <span className="text-xs font-semibold text-slate-400">/ giờ</span>
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        Sẵn sàng nhận ca
+                                    </span>
                                 </div>
+                                <h3 className="text-xl font-extrabold text-[#102030] leading-tight">
+                                    Chăm sóc &amp; Đồng hành
+                                </h3>
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                    Gia đình có thể nhắn tin trao đổi trực tiếp, thỏa thuận thời gian và thống nhất chi phí ca chăm sóc phù hợp nhất.
+                                </p>
                             </div>
 
                             {/* Lợi ích */}

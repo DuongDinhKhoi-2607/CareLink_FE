@@ -13,8 +13,6 @@ import {
     Loader2,
     PlusCircle,
     DollarSign,
-    CheckSquare,
-    Square,
     Layers,
     Sparkles,
 } from "lucide-react";
@@ -85,6 +83,8 @@ export default function CreateProposalModal({
     const [customDealPrice, setCustomDealPrice] = useState("");
     const [notes, setNotes] = useState("");
 
+    const [dealPriceError, setDealPriceError] = useState("");
+
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
@@ -99,7 +99,9 @@ export default function CreateProposalModal({
         setIsLoadingData(true);
         setDataError("");
         setSubmitError("");
+        setDealPriceError("");
         setCustomDealPrice("");
+        setSelectedServiceIds([]); // Để rỗng mặc định để khách tự chọn dịch vụ mong muốn
 
         // Set default date to tomorrow and time to 08:30
         const tomorrow = new Date();
@@ -159,9 +161,8 @@ export default function CreateProposalModal({
                 }
 
                 setServices(servList);
-                if (servList.length > 0) {
-                    setSelectedServiceIds([servList[0].id]);
-                }
+                // Khách hàng tự do bấm chọn dịch vụ, không ép chọn phần tử đầu tiên
+                setSelectedServiceIds([]);
 
                 // 2. Người nhận chăm sóc (Tôn trọng dữ liệu thật từ DB)
                 let recList = [];
@@ -183,7 +184,7 @@ export default function CreateProposalModal({
             .catch(() => {
                 if (!isMounted) return;
                 setServices(FALLBACK_SERVICES);
-                setSelectedServiceIds([FALLBACK_SERVICES[0].id]);
+                setSelectedServiceIds([]);
                 setRecipients([]);
                 setRecipientId("");
                 setAddresses([]);
@@ -204,7 +205,6 @@ export default function CreateProposalModal({
     const toggleService = (srvId) => {
         setSelectedServiceIds((prev) => {
             if (prev.includes(srvId)) {
-                if (prev.length === 1) return prev; // Phải chọn ít nhất 1 dịch vụ
                 return prev.filter((id) => id !== srvId);
             }
             return [...prev, srvId];
@@ -221,9 +221,10 @@ export default function CreateProposalModal({
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitError("");
+        setDealPriceError("");
 
         if (selectedServiceIds.length === 0) {
-            setSubmitError("Vui lòng chọn ít nhất 1 dịch vụ chăm sóc.");
+            setSubmitError("Vui lòng chọn ít nhất 1 dịch vụ chăm sóc trong danh sách.");
             return;
         }
 
@@ -235,6 +236,14 @@ export default function CreateProposalModal({
         if (!scheduledDate || !scheduledTime) {
             setSubmitError("Vui lòng chọn ngày và giờ bắt đầu ca.");
             return;
+        }
+
+        if (customDealPrice !== "") {
+            const num = Number(customDealPrice);
+            if (isNaN(num) || num < 0) {
+                setDealPriceError("Vui lòng nhập giá thương lượng hợp lệ (từ 0 VNĐ trở lên hoặc để trống để theo giá niêm yết).");
+                return;
+            }
         }
 
         // Xử lý chuẩn xác giờ 24h từ input HH:mm
@@ -259,7 +268,7 @@ export default function CreateProposalModal({
             recipientId: recipientId,
             addressId: addressId || null,
             scheduledStart: startDateTime.toISOString(),
-            proposedTotalPrice: customDealPrice ? Number(customDealPrice) : totalServiceBasePrice,
+            proposedTotalPrice: finalCalculatedTotal, // Đồng bộ 100% tổng tiền gồm phí sàn 60.000 VNĐ
             notes: notes.trim() || null,
         };
 
@@ -347,7 +356,7 @@ export default function CreateProposalModal({
                             </Link>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit} id="create-proposal-form" className="space-y-5">
+                        <form onSubmit={handleSubmit} id="create-proposal-form" noValidate className="space-y-5">
                             {/* Thông báo lỗi Submit */}
                             {submitError && (
                                 <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5">
@@ -375,17 +384,21 @@ export default function CreateProposalModal({
                                             <div
                                                 key={s.id}
                                                 onClick={() => toggleService(s.id)}
-                                                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                                                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 group ${
                                                     isChecked
-                                                        ? "bg-teal-50/50 border-[#00677c] shadow-2xs"
+                                                        ? "bg-teal-50/60 border-[#00677c] shadow-2xs"
                                                         : "bg-white border-slate-200 hover:border-slate-300"
                                                 }`}
                                             >
-                                                <div className="mt-0.5 shrink-0 text-[#00677c]">
-                                                    {isChecked ? (
-                                                        <CheckSquare className="w-5 h-5 fill-[#00677c] text-white" />
-                                                    ) : (
-                                                        <Square className="w-5 h-5 text-slate-300" />
+                                                <div className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-all ${
+                                                    isChecked
+                                                        ? "bg-[#00677c] border-[#00677c] text-white shadow-2xs"
+                                                        : "border-slate-300 bg-white group-hover:border-slate-400"
+                                                }`}>
+                                                    {isChecked && (
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.8" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                        </svg>
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -505,16 +518,30 @@ export default function CreateProposalModal({
                                     <input
                                         type="number"
                                         min="0"
-                                        step="10000"
+                                        step="any"
                                         placeholder={`Tổng giá niêm yết: ${totalServiceBasePrice.toLocaleString("vi-VN")} đ`}
                                         value={customDealPrice}
-                                        onChange={(e) => setCustomDealPrice(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all placeholder:text-slate-400"
+                                        onChange={(e) => {
+                                            setCustomDealPrice(e.target.value);
+                                            setDealPriceError("");
+                                        }}
+                                        className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-xs text-slate-800 font-medium focus:outline-none transition-all placeholder:text-slate-400 ${
+                                            dealPriceError
+                                                ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                                                : "border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                                        }`}
                                     />
                                 </div>
-                                <p className="text-[11px] text-slate-400">
-                                    Để trống nếu bạn đồng ý với tổng giá niêm yết của các dịch vụ đã chọn.
-                                </p>
+                                {dealPriceError ? (
+                                    <p className="text-[11px] text-rose-600 font-semibold flex items-center gap-1 animate-in fade-in">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{dealPriceError}</span>
+                                    </p>
+                                ) : (
+                                    <p className="text-[11px] text-slate-400">
+                                        Để trống nếu bạn đồng ý với tổng giá niêm yết của các dịch vụ đã chọn.
+                                    </p>
+                                )}
                             </div>
 
                             {/* 6. GHI CHÚ THÊM */}
