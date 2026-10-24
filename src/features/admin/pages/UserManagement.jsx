@@ -17,148 +17,7 @@ import {
     Loader2,
 } from "lucide-react";
 
-// ── MOCK DATA ──────────────────────────────────────────────────────────────────
-const initialFamilies = [
-    {
-        id: "FAM-001",
-        name: "Nguyễn Thu Hà",
-        email: "ha.nguyen@gmail.com",
-        phone: "0901 234 567",
-        joinDate: "15/03/2026",
-        status: "Hoạt động",
-        totalBookings: 12,
-        location: "Quận 1, TP.HCM",
-    },
-    {
-        id: "FAM-002",
-        name: "Trần Minh Khoa",
-        email: "khoa.tran@gmail.com",
-        phone: "0977 111 222",
-        joinDate: "02/05/2026",
-        status: "Hoạt động",
-        totalBookings: 5,
-        location: "Quận 3, TP.HCM",
-    },
-    {
-        id: "FAM-003",
-        name: "Phạm Thị Bích",
-        email: "bich.pham@yahoo.com",
-        phone: "0933 456 789",
-        joinDate: "20/06/2026",
-        status: "Bị khóa",
-        totalBookings: 2,
-        location: "Quận 5, TP.HCM",
-    },
-    {
-        id: "FAM-004",
-        name: "Lê Văn Dũng",
-        email: "dung.le@outlook.com",
-        phone: "0966 333 444",
-        joinDate: "10/07/2026",
-        status: "Hoạt động",
-        totalBookings: 8,
-        location: "Quận 4, TP.HCM",
-    },
-    {
-        id: "FAM-005",
-        name: "Võ Thị Thanh",
-        email: "thanh.vo@gmail.com",
-        phone: "0944 555 666",
-        joinDate: "05/08/2026",
-        status: "Hoạt động",
-        totalBookings: 3,
-        location: "Quận 1, TP.HCM",
-    },
-    {
-        id: "FAM-006",
-        name: "Hoàng Minh Tuấn",
-        email: "tuan.hoang@gmail.com",
-        phone: "0911 777 888",
-        joinDate: "18/08/2026",
-        status: "Bị khóa",
-        totalBookings: 1,
-        location: "Quận 1, TP.HCM",
-    },
-    {
-        id: "FAM-007",
-        name: "Bùi Thị Lan",
-        email: "lan.bui@gmail.com",
-        phone: "0955 123 456",
-        joinDate: "01/09/2026",
-        status: "Hoạt động",
-        totalBookings: 4,
-        location: "Quận 1, TP.HCM",
-    },
-];
-
-const initialCaregivers = [
-    {
-        id: "CG-101",
-        name: "Trần Thị Mai",
-        email: "mai.tran@med.edu.vn",
-        phone: "0901 234 567",
-        joinDate: "10/03/2026",
-        status: "Hoạt động",
-        role: "Sinh viên Y khoa",
-        completedShifts: 34,
-        rating: "4.8",
-    },
-    {
-        id: "CG-102",
-        name: "Lê Hoàng Long",
-        email: "long.le@hospital.vn",
-        phone: "0912 345 678",
-        joinDate: "08/02/2026",
-        status: "Hoạt động",
-        role: "Điều dưỡng chuyên nghiệp",
-        completedShifts: 87,
-        rating: "4.9",
-    },
-    {
-        id: "CG-103",
-        name: "Nguyễn Thị Phương Thảo",
-        email: "thao.nguyen@pnt.edu.vn",
-        phone: "0988 765 432",
-        joinDate: "22/04/2026",
-        status: "Hoạt động",
-        role: "Sinh viên Y khoa",
-        completedShifts: 19,
-        rating: "4.7",
-    },
-    {
-        id: "CG-104",
-        name: "Phạm Quốc Huy",
-        email: "huy.pham@carelink.vn",
-        phone: "0933 456 789",
-        joinDate: "15/01/2026",
-        status: "Bị khóa",
-        role: "Điều dưỡng chuyên nghiệp",
-        completedShifts: 62,
-        rating: "3.9",
-    },
-    {
-        id: "CG-105",
-        name: "Vũ Thị Bích Trâm",
-        email: "tram.vu@gmail.com",
-        phone: "0977 112 233",
-        joinDate: "11/07/2026",
-        status: "Bị khóa",
-        role: "Sinh viên Y khoa",
-        completedShifts: 5,
-        rating: "3.2",
-    },
-    {
-        id: "CG-106",
-        name: "Đặng Văn Bình",
-        email: "binh.dang@hospital.vn",
-        phone: "0944 888 999",
-        joinDate: "03/05/2026",
-        status: "Hoạt động",
-        role: "Điều dưỡng chuyên nghiệp",
-        completedShifts: 45,
-        rating: "4.6",
-    },
-];
+// Dữ liệu người dùng được tải động 100% từ Backend API (adminApi)
 
 // ── TOAST ──────────────────────────────────────────────────────────────────────
 function Toast({ message, type }) {
@@ -285,8 +144,8 @@ function UserRow({ user, onToggleLock, isCaregiver }) {
 
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────────
 export default function UserManagement() {
-    const [families, setFamilies] = useState(initialFamilies);
-    const [caregivers, setCaregivers] = useState(initialCaregivers);
+    const [families, setFamilies] = useState([]);
+    const [caregivers, setCaregivers] = useState([]);
     const [activeTab, setActiveTab] = useState("family");
     const [searchQuery, setSearchQuery] = useState("");
     const [toast, setToast] = useState(null);
@@ -448,21 +307,23 @@ export default function UserManagement() {
 
             {/* ── SEARCH & TABS ── */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-center gap-3">
-                {/* Tabs */}
-                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 shrink-0">
+                {/* Tabs nổi bật dễ nhận diện cho Admin */}
+                <div className="flex items-center bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => { setActiveTab("family"); setSearchQuery(""); }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "family"
-                                ? "bg-white text-[#00677c] shadow-xs"
-                                : "text-slate-600 hover:text-slate-900"
-                            }`}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                            activeTab === "family"
+                                ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
+                                : "bg-white text-slate-600 hover:text-[#00677c] hover:bg-slate-50 border border-slate-200/80 shadow-2xs"
+                        }`}
                     >
-                        <Users className="w-3.5 h-3.5" />
-                        Gia đình
+                        <Users className={`w-4 h-4 ${activeTab === "family" ? "text-cyan-200" : "text-slate-400"}`} />
+                        <span>Gia đình</span>
                         <span
-                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${activeTab === "family" ? "bg-teal-50 text-[#00677c]" : "bg-slate-200 text-slate-600"
-                                }`}
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
+                                activeTab === "family" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
                         >
                             {families.length}
                         </span>
@@ -470,16 +331,18 @@ export default function UserManagement() {
                     <button
                         type="button"
                         onClick={() => { setActiveTab("caregiver"); setSearchQuery(""); }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === "caregiver"
-                                ? "bg-white text-[#00677c] shadow-xs"
-                                : "text-slate-600 hover:text-slate-900"
-                            }`}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                            activeTab === "caregiver"
+                                ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
+                                : "bg-white text-slate-600 hover:text-[#00677c] hover:bg-slate-50 border border-slate-200/80 shadow-2xs"
+                        }`}
                     >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        Điều dưỡng
+                        <ShieldCheck className={`w-4 h-4 ${activeTab === "caregiver" ? "text-cyan-200" : "text-slate-400"}`} />
+                        <span>Điều dưỡng</span>
                         <span
-                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${activeTab === "caregiver" ? "bg-teal-50 text-[#00677c]" : "bg-slate-200 text-slate-600"
-                                }`}
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
+                                activeTab === "caregiver" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
                         >
                             {caregivers.length}
                         </span>

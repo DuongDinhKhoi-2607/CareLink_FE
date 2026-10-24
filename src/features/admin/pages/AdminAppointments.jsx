@@ -13,185 +13,7 @@ import {
 } from "lucide-react";
 import AppointmentDetailModal from "../components/AppointmentDetailModal";
 
-// ── MOCK DATA ──────────────────────────────────────────────────────────────────
-const initialAppointments = [
-    {
-        id: "CA-2001",
-        family: "Nguyễn Thu Hà",
-        familyPhone: "0901 234 567",
-        familyAddress: "123 Nguyễn Trãi, P. Bến Thành, Q.1, TP.HCM",
-        caregiver: "Lê Hoàng Long",
-        caregiverPhone: "0912 345 678",
-        caregiverRole: "Điều dưỡng chuyên nghiệp",
-        service: "Chăm sóc người cao tuổi",
-        date: "23/09/2026",
-        time: "08:00 – 16:00",
-        duration: "8 giờ",
-        status: "Đang thực hiện",
-        notes: "Bệnh nhân 78 tuổi, tiểu đường type 2. Cần đo đường huyết 2 lần/ca, hỗ trợ vật lý trị liệu nhẹ.",
-        totalAmount: "960.000 ₫",
-        relative: "Cụ Nguyễn Văn Sơn",
-        relativeAge: "78 tuổi",
-    },
-    {
-        id: "CA-2002",
-        family: "Trần Minh Khoa",
-        familyPhone: "0977 111 222",
-        familyAddress: "45 Lê Lợi, P. Bến Nghé, Q.1, TP.HCM",
-        caregiver: "Trần Thị Mai",
-        caregiverPhone: "0901 234 567",
-        caregiverRole: "Sinh viên Y khoa",
-        service: "Theo dõi sức khỏe & sinh hiệu",
-        date: "23/09/2026",
-        time: "14:00 – 20:00",
-        duration: "6 giờ",
-        status: "Chờ xác nhận",
-        notes: "Bệnh nhân cao huyết áp, cần đo sinh hiệu mỗi 2 giờ và nhắc uống thuốc đúng giờ.",
-        totalAmount: "540.000 ₫",
-        relative: "Bà Trần Thị Lan",
-        relativeAge: "65 tuổi",
-    },
-    {
-        id: "CA-2003",
-        family: "Phạm Thị Bích",
-        familyPhone: "0933 456 789",
-        familyAddress: "78 Võ Văn Tần, P.6, Q.3, TP.HCM",
-        caregiver: "Nguyễn Thị Phương Thảo",
-        caregiverPhone: "0988 765 432",
-        caregiverRole: "Sinh viên Y khoa",
-        service: "Chăm sóc sau phẫu thuật",
-        date: "22/09/2026",
-        time: "06:00 – 14:00",
-        duration: "8 giờ",
-        status: "Hoàn thành",
-        notes: "Bệnh nhân mới phẫu thuật thay khớp háng. Thay băng 1 lần/ca, hỗ trợ di chuyển nhẹ nhàng.",
-        totalAmount: "960.000 ₫",
-        relative: "Ông Phạm Quốc Bình",
-        relativeAge: "72 tuổi",
-        healthRecord: {
-            bloodPressureSystolic: 120,
-            bloodPressureDiastolic: 80,
-            heartRate: 74,
-            temperature: 36.8,
-            bloodGlucose: 105,
-            woundStatus: "Vết mổ khô, không rỉ dịch hay sưng đỏ, mép mổ liền tốt.",
-            mobilityStatus: "Tự xoay trở được, ngồi dậy với sự trợ giúp nhẹ.",
-            mentalStatus: "Tỉnh táo, tiếp xúc tốt, hợp tác vui vẻ.",
-            nurseNotes: "Đã thay băng vô khuẩn lúc 08:30. Hướng dẫn cụ tập thở sâu và cử động bàn chân chống huyết khối tĩnh mạch. Gia đình cho cụ uống nước ấm và dinh dưỡng theo thực đơn.",
-            submittedAt: "22/09/2026 14:15",
-            nurseName: "Nguyễn Thị Phương Thảo",
-        },
-        familyReview: {
-            rating: 5,
-            comment: "Điều dưỡng Thảo rất tận tâm, thay băng nhẹ nhàng và đúng kỹ thuật vệ sinh. Bố tôi phục hồi tích cực.",
-            date: "22/09/2026",
-        },
-        caregiverReview: {
-            rating: 5,
-            comment: "Gia đình chuẩn bị đầy đủ vật tư thay băng, đón tiếp lịch thiệp và hỗ trợ điều dưỡng rất chu đáo.",
-            date: "22/09/2026",
-        },
-    },
-    {
-        id: "CA-2004",
-        family: "Lê Văn Dũng",
-        familyPhone: "0966 333 444",
-        familyAddress: "210 Hoàng Diệu, P.8, Q.4, TP.HCM",
-        caregiver: "Phạm Quốc Huy",
-        caregiverPhone: "0933 456 789",
-        caregiverRole: "Điều dưỡng chuyên nghiệp",
-        service: "Phục hồi chức năng",
-        date: "21/09/2026",
-        time: "09:00 – 13:00",
-        duration: "4 giờ",
-        status: "Đã hủy",
-        notes: "Gia đình hủy do bệnh nhân phải nhập viện khẩn cấp.",
-        totalAmount: "480.000 ₫",
-        relative: "Bà Lê Thị Hoa",
-        relativeAge: "68 tuổi",
-    },
-    {
-        id: "CA-2005",
-        family: "Võ Thị Thanh",
-        familyPhone: "0944 555 666",
-        familyAddress: "55 Đinh Tiên Hoàng, P. Đa Kao, Q.1, TP.HCM",
-        caregiver: "Vũ Thị Bích Trâm",
-        caregiverPhone: "0977 112 233",
-        caregiverRole: "Sinh viên Y khoa",
-        service: "Đồng hành hỗ trợ sinh hoạt",
-        date: "20/09/2026",
-        time: "07:00 – 15:00",
-        duration: "8 giờ",
-        status: "Có khiếu nại",
-        notes: "Gia đình phản ánh điều dưỡng đến muộn 45 phút và không thực hiện đúng gói dịch vụ đã đăng ký.",
-        totalAmount: "720.000 ₫",
-        relative: "Cụ Võ Văn Nam",
-        relativeAge: "82 tuổi",
-        dispute: {
-            code: "DSP-2005",
-            status: "Đang xác minh",
-            statusNote: "Hệ thống đang chờ Admin đối soát biên bản ca trực và liên hệ 2 bên",
-            reason: "Điều dưỡng đến muộn 45 phút, không hoàn thành đủ các nội dung hỗ trợ vận động buổi sáng như thỏa thuận ban đầu.",
-            createdAt: "20/09/2026 15:30",
-        },
-        familyReview: {
-            rating: 2,
-            comment: "Điều dưỡng đến muộn 45 phút khiến giờ sinh hoạt của cụ bị đảo lộn. Đã gửi khiếu nại lên ban quản trị.",
-            date: "20/09/2026",
-        },
-        caregiverReview: {
-            rating: 4,
-            comment: "Đoạn đường vào nhà bị ngập triều cường nên em đến muộn, em đã gọi điện xin lỗi trước và xin bù thêm giờ cuối ca.",
-            date: "20/09/2026",
-        },
-    },
-    {
-        id: "CA-2006",
-        family: "Hoàng Minh Tuấn",
-        familyPhone: "0911 777 888",
-        familyAddress: "300 Trần Hưng Đạo, P. Cầu Kho, Q.1, TP.HCM",
-        caregiver: "Lê Hoàng Long",
-        caregiverPhone: "0912 345 678",
-        caregiverRole: "Điều dưỡng chuyên nghiệp",
-        service: "Theo dõi sức khỏe & sinh hiệu",
-        date: "24/09/2026",
-        time: "08:00 – 12:00",
-        duration: "4 giờ",
-        status: "Chờ xác nhận",
-        notes: "Bệnh nhân COPD. Cần theo dõi SpO2 liên tục và hỗ trợ xông khí dung.",
-        totalAmount: "360.000 ₫",
-        relative: "Ông Hoàng Văn Phúc",
-        relativeAge: "75 tuổi",
-    },
-    {
-        id: "CA-2007",
-        family: "Bùi Thị Lan",
-        familyPhone: "0955 123 456",
-        familyAddress: "17 Pasteur, P. Nguyễn Thái Bình, Q.1, TP.HCM",
-        caregiver: "Trần Thị Mai",
-        caregiverPhone: "0901 234 567",
-        caregiverRole: "Sinh viên Y khoa",
-        service: "Chăm sóc người cao tuổi",
-        date: "22/09/2026",
-        time: "06:00 – 18:00",
-        duration: "12 giờ",
-        status: "Hoàn thành",
-        notes: "Ca chăm sóc dài ngày. Bệnh nhân mất trí nhớ nhẹ, cần giám sát hoạt động sinh hoạt và nhắc ăn uống.",
-        totalAmount: "1.440.000 ₫",
-        relative: "Bà Bùi Thị Nga",
-        relativeAge: "80 tuổi",
-        familyReview: {
-            rating: 5,
-            comment: "Điều dưỡng Mai rất kiên nhẫn và hòa nhã với người già. Cụ rất quý cháu.",
-            date: "22/09/2026",
-        },
-        caregiverReview: {
-            rating: 5,
-            comment: "Môi trường chăm sóc ấm cúng, người nhà rất chu đáo và hỗ trợ nhiệt tình.",
-            date: "22/09/2026",
-        },
-    },
-];
+// Dữ liệu ca chăm sóc được đồng bộ 100% từ Backend API (adminApi.getAllBookings)
 
 // ── STATUS CONFIG ──────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -248,7 +70,7 @@ const STATUS_CONFIG = {
 
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────────
 export default function AdminAppointments() {
-    const [appointments, setAppointments] = useState(initialAppointments);
+    const [appointments, setAppointments] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -258,7 +80,7 @@ export default function AdminAppointments() {
     const fetchBookings = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await adminApi.getAllBookings({ pageNumber: 1, pageSize: 50 });
+            const res = await adminApi.getAllBookings({ pageNumber: 1, pageSize: 100 });
             const list = Array.isArray(res)
                 ? res
                 : Array.isArray(res?.items)
@@ -267,48 +89,50 @@ export default function AdminAppointments() {
                 ? res.data
                 : [];
 
-            if (list.length > 0) {
-                const mapped = list.map((b) => {
-                    const rawStatus = typeof b.status === "number" ? b.status : 1;
-                    let status = "Chờ xác nhận";
-                    if (rawStatus === 7) {
-                        status = "Có khiếu nại";
-                    } else if (b.refundedAmount && Number(b.refundedAmount) > 0) {
-                        status = "Đã hoàn tiền";
-                    } else if (rawStatus === 1 || rawStatus === 2) {
-                        status = "Chờ xác nhận";
-                    } else if (rawStatus === 3 || rawStatus === 4) {
-                        status = "Đang thực hiện";
-                    } else if (rawStatus === 5) {
-                        status = "Hoàn thành";
-                    } else if (rawStatus === 6) {
-                        status = "Đã hủy";
-                    }
+            const mapped = list.map((b) => {
+                const rawStatus = typeof b.status === "number" ? b.status : 1;
+                let status = "Chờ xác nhận";
+                if (rawStatus === 7) {
+                    status = "Có khiếu nại";
+                } else if (b.refundedAmount && Number(b.refundedAmount) > 0) {
+                    status = "Đã hoàn tiền";
+                } else if (rawStatus === 1 || rawStatus === 2) {
+                    status = "Chờ xác nhận";
+                } else if (rawStatus === 3 || rawStatus === 4) {
+                    status = "Đang thực hiện";
+                } else if (rawStatus === 5) {
+                    status = "Hoàn thành";
+                } else if (rawStatus === 6) {
+                    status = "Đã hủy";
+                }
 
-                    return {
-                        id: b.bookingCode || (b.id ? `CA-${String(b.id).slice(-4)}` : "CA-2001"),
-                        rawId: b.id,
-                        family: b.customerName || "Gia đình khách hàng",
-                        familyPhone: b.customerPhone || "0901 234 567",
-                        familyAddress: b.addressSnapshot || "Địa chỉ nhận chăm sóc",
-                        caregiver: b.nurseName || "Điều dưỡng CareLink",
-                        caregiverPhone: b.nursePhone || "0912 345 678",
-                        caregiverRole: "Điều dưỡng chuyên nghiệp",
-                        service: b.serviceName || "Chăm sóc theo yêu cầu",
-                        date: b.scheduledStart ? new Date(b.scheduledStart).toLocaleDateString("vi-VN") : "Hôm nay",
-                        time: b.scheduledStart ? new Date(b.scheduledStart).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "08:00",
-                        duration: "Theo ca trực",
-                        status,
-                        notes: b.note || "Ca chăm sóc đặt trên sàn CareLink.",
-                        totalAmount: `${Number(b.totalPrice || 500000).toLocaleString("vi-VN")} ₫`,
-                        relative: b.recipientName || "Người thân",
-                        relativeAge: "Cao tuổi",
-                    };
-                });
-                setAppointments(mapped);
-            }
+                // Chi phí đã gồm phí sàn 60.000 VNĐ
+                const totalCalculated = Number(b.totalPaymentAmount || (Number(b.totalPrice || 0) + (b.platformFee || 60000)));
+
+                return {
+                    id: b.bookingCode || (b.id ? `CA-${String(b.id).slice(0, 8).toUpperCase()}` : "CA-NEW"),
+                    rawId: b.id,
+                    family: b.customerName || "Gia đình khách hàng",
+                    familyPhone: b.customerPhone || "Chưa cập nhật",
+                    familyAddress: b.addressSnapshot || "Địa chỉ nhận chăm sóc",
+                    caregiver: b.nurseName || "Điều dưỡng CareLink",
+                    caregiverPhone: b.nursePhone || "Chưa cập nhật",
+                    caregiverRole: "Điều dưỡng chuyên môn",
+                    service: b.serviceName || "Chăm sóc theo yêu cầu",
+                    date: b.scheduledStart ? new Date(b.scheduledStart).toLocaleDateString("vi-VN") : "Hôm nay",
+                    time: b.scheduledStart ? new Date(b.scheduledStart).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "08:00",
+                    duration: "Theo ca trực",
+                    status,
+                    notes: b.note || "Ca chăm sóc đặt trên sàn CareLink.",
+                    totalAmount: `${totalCalculated.toLocaleString("vi-VN")} ₫`,
+                    relative: b.recipientName || "Người thân",
+                    relativeAge: "Người nhận chăm sóc",
+                };
+            });
+            setAppointments(mapped);
         } catch (err) {
-            console.warn("[CareLink Admin] Tải danh sách ca chăm sóc thất bại, dùng fallback:", err);
+            console.warn("[CareLink Admin] Tải danh sách ca chăm sóc thất bại:", err);
+            setAppointments([]);
         } finally {
             setLoading(false);
         }

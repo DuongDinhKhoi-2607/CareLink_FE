@@ -20,10 +20,16 @@ export default function AdminDashboard() {
     const [timeRange, setTimeRange] = useState("30days");
     const [chartMode, setChartMode] = useState("month");
     const [liveSummary, setLiveSummary] = useState(null);
+    const [recentActivities, setRecentActivities] = useState([]);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [activeServices, setActiveServices] = useState([]);
+    const [loadingActivities, setLoadingActivities] = useState(true);
 
-    // Kết nối API thống kê Dashboard & Doanh thu (GET /api/v1/admin/dashboard/summary & /revenue)
+    // Kết nối API thống kê Dashboard, Hồ sơ chờ duyệt, và Hoạt động gần đây từ BE
     useEffect(() => {
         let isMounted = true;
+
+        // 1. Thống kê tổng quan
         adminApi.getDashboardSummary()
             .then((res) => {
                 if (isMounted && res) {
@@ -31,125 +37,130 @@ export default function AdminDashboard() {
                 }
             })
             .catch((err) => {
-                console.warn("[CareLink Admin] Dashboard summary API offline fallback:", err);
+                console.warn("[CareLink Admin] Dashboard summary API error:", err);
             });
-        
+
+        // 2. Doanh thu theo khoảng thời gian
         adminApi.getRevenueMetrics({ range: timeRange })
             .catch(() => {});
+
+        // 3. Hồ sơ điều dưỡng chờ duyệt thực tế
+        adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 20 })
+            .then((res) => {
+                if (isMounted && res) {
+                    const list = res.items || (Array.isArray(res) ? res : []);
+                    const pendingList = list.filter((v) => v.status === 1 || v.status === "Pending" || v.statusName === "Chờ duyệt");
+                    setPendingCount(pendingList.length);
+                }
+            })
+            .catch(() => {});
+
+        // 4. Lấy dịch vụ thực tế từ hệ thống
+        adminApi.getServices()
+            .then((res) => {
+                if (isMounted && res) {
+                    const svList = res.items || (Array.isArray(res) ? res : []);
+                    setActiveServices(svList.slice(0, 5));
+                }
+            })
+            .catch(() => {});
+
+        // 5. Nạp hoạt động gần đây thực tế từ Bookings & Nurse Verifications
+        setLoadingActivities(true);
+        Promise.allSettled([
+            adminApi.getAllBookings({ pageNumber: 1, pageSize: 5 }),
+            adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 5 })
+        ]).then(([bookingsRes, nursesRes]) => {
+            if (!isMounted) return;
+            const acts = [];
+
+            if (bookingsRes.status === "fulfilled" && bookingsRes.value) {
+                const bList = bookingsRes.value.items || (Array.isArray(bookingsRes.value) ? bookingsRes.value : []);
+                bList.forEach((b) => {
+                    const isCompleted = b.status === 4 || b.statusName === "Completed" || b.status === "Completed";
+                    const isInProgress = b.status === 3 || b.statusName === "InProgress" || b.status === "InProgress";
+                    const isPending = b.status === 1 || b.status === 2 || b.statusName === "Pending";
+
+                    acts.push({
+                        id: `booking-${b.id || b.bookingId}`,
+                        type: isCompleted ? "completed" : (isInProgress ? "progress" : "booking"),
+                        title: `Lịch hẹn #${b.bookingCode || (b.id ? String(b.id).slice(0, 8) : "---")}`,
+                        description: `Gia đình ${b.familyName || "Khách hàng"} - Dịch vụ ${b.serviceName || "Chăm sóc y tế"} (${Number(b.totalPrice || 0).toLocaleString("vi-VN")} ₫)`,
+                        time: b.createdAt ? new Date(b.createdAt).toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "Vừa xong",
+                        rawDate: b.createdAt ? new Date(b.createdAt).getTime() : 0,
+                        badge: b.statusName || (isCompleted ? "Hoàn tất" : isInProgress ? "Đang trực" : "Đã đặt"),
+                        badgeColor: isCompleted
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : isInProgress
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-teal-50 text-[#00677c] border-teal-200",
+                        iconColor: isCompleted
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200/60"
+                            : isInProgress
+                            ? "bg-blue-50 text-blue-600 border border-blue-200/60"
+                            : "bg-teal-50 text-[#00677c] border border-teal-200/60",
+                        icon: isCompleted ? <CheckCircle2 className="w-4.5 h-4.5" strokeWidth={2} /> : <CalendarClock className="w-4.5 h-4.5" strokeWidth={2} />,
+                    });
+                });
+            }
+
+            if (nursesRes.status === "fulfilled" && nursesRes.value) {
+                const nList = nursesRes.value.items || (Array.isArray(nursesRes.value) ? nursesRes.value : []);
+                nList.forEach((n) => {
+                    const isPending = n.status === 1 || n.status === "Pending" || n.statusName === "Chờ duyệt";
+                    acts.push({
+                        id: `nurse-${n.id || n.nurseId}`,
+                        type: "verification",
+                        title: `Hồ sơ ĐD. ${n.nurseName || n.fullName || "Điều dưỡng mới"}`,
+                        description: `Nộp hồ sơ chuyên môn: ${n.educationLevel || n.specialty || "Y tế / Chăm sóc"} - CCCD/Chứng chỉ`,
+                        time: n.submittedAt || n.createdAt ? new Date(n.submittedAt || n.createdAt).toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "Gần đây",
+                        rawDate: n.submittedAt || n.createdAt ? new Date(n.submittedAt || n.createdAt).getTime() : 0,
+                        badge: isPending ? "Chờ duyệt" : (n.status === 2 || n.status === "Approved" ? "Đã duyệt" : "Từ chối"),
+                        badgeColor: isPending
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        iconColor: isPending
+                            ? "bg-amber-50 text-amber-600 border border-amber-200/60"
+                            : "bg-emerald-50 text-emerald-600 border border-emerald-200/60",
+                        icon: <FileCheck2 className="w-4.5 h-4.5" strokeWidth={2} />,
+                    });
+                });
+            }
+
+            // Sắp xếp giảm dần theo thời gian
+            acts.sort((a, b) => b.rawDate - a.rawDate);
+            setRecentActivities(acts.slice(0, 5));
+            setLoadingActivities(false);
+        }).catch(() => {
+            if (isMounted) setLoadingActivities(false);
+        });
 
         return () => {
             isMounted = false;
         };
     }, [timeRange]);
 
-    // Dữ liệu mô phỏng KPI theo thời gian
-    const kpiData = {
-        "7days": {
-            revenue: "32.800.000 ₫",
-            revenueGrowth: "+9.4%",
-            completedShifts: "78",
-            shiftsGrowth: "+5.1%",
-            newFamilies: "19",
-            familyGrowth: "+8.3%",
-            activeCaregivers: "142",
-            caregiverNote: "+2 mới tuần này",
-        },
-        "30days": {
-            revenue: "128.500.000 ₫",
-            revenueGrowth: "+14.2%",
-            completedShifts: "324",
-            shiftsGrowth: "+8.5%",
-            newFamilies: "86",
-            familyGrowth: "+12.0%",
-            activeCaregivers: "142",
-            caregiverNote: "+5 mới tháng này",
-        },
-        "3months": {
-            revenue: "385.200.000 ₫",
-            revenueGrowth: "+22.8%",
-            completedShifts: "940",
-            shiftsGrowth: "+16.2%",
-            newFamilies: "240",
-            familyGrowth: "+18.5%",
-            activeCaregivers: "142",
-            caregiverNote: "+18 điều dưỡng tích cực",
-        },
-    };
-
-    const baseKpi = kpiData[timeRange];
+    // Dữ liệu KPI thực tế từ Backend (Không dùng Mock Data)
     const currentKpi = {
         revenue: liveSummary?.totalPlatformFee != null
             ? Number(liveSummary.totalPlatformFee).toLocaleString("vi-VN") + " ₫"
-            : (liveSummary?.totalGmv != null ? Number(liveSummary.totalGmv).toLocaleString("vi-VN") + " ₫" : baseKpi.revenue),
-        revenueGrowth: liveSummary?.totalGmv != null ? `GMV: ${Number(liveSummary.totalGmv).toLocaleString("vi-VN")} ₫` : baseKpi.revenueGrowth,
-        completedShifts: liveSummary?.completedBookings != null ? String(liveSummary.completedBookings) : baseKpi.completedShifts,
-        shiftsGrowth: baseKpi.shiftsGrowth,
-        newFamilies: liveSummary?.totalBookings != null ? String(liveSummary.totalBookings) : baseKpi.newFamilies,
-        familyGrowth: liveSummary?.pendingBookings != null ? `${liveSummary.pendingBookings} ca chờ` : baseKpi.familyGrowth,
+            : (liveSummary?.totalGmv != null ? Number(liveSummary.totalGmv).toLocaleString("vi-VN") + " ₫" : "0 ₫"),
+        revenueGrowth: liveSummary?.totalGmv != null
+            ? `GMV: ${Number(liveSummary.totalGmv).toLocaleString("vi-VN")} ₫`
+            : "Chưa có phát sinh",
+        completedShifts: liveSummary?.completedBookings != null ? String(liveSummary.completedBookings) : "0",
+        shiftsGrowth: liveSummary?.totalBookings
+            ? `${Math.round(((liveSummary.completedBookings || 0) / Math.max(liveSummary.totalBookings, 1)) * 100)}% hoàn thành`
+            : "0% hoàn thành",
+        newFamilies: liveSummary?.totalBookings != null ? String(liveSummary.totalBookings) : "0",
+        familyGrowth: liveSummary?.pendingBookings != null ? `${liveSummary.pendingBookings} ca đang chờ` : "0 ca chờ",
         activeCaregivers: liveSummary?.platformAverageRating != null && Number(liveSummary.platformAverageRating) > 0
             ? `${Number(liveSummary.platformAverageRating).toFixed(1)} ★`
-            : baseKpi.activeCaregivers,
+            : "5.0 ★",
         caregiverNote: liveSummary?.inProgressBookings != null
             ? `${liveSummary.inProgressBookings} ca đang trực`
-            : (liveSummary?.openDisputesCount != null ? `${liveSummary.openDisputesCount} khiếu nại mở` : baseKpi.caregiverNote),
+            : (liveSummary?.openDisputesCount != null ? `${liveSummary.openDisputesCount} khiếu nại` : "0 ca đang trực"),
     };
-
-    // Hoạt động gần đây (Mock data với Lucide icons)
-    const recentActivities = [
-        {
-            id: 1,
-            type: "verification",
-            title: "Hồ sơ xác minh mới",
-            description: "ĐD. Trần Thị Mai (ĐH Y Dược TP.HCM) vừa nộp bằng cấp & CCCD.",
-            time: "10 phút trước",
-            badge: "Chờ duyệt",
-            badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
-            iconColor: "bg-amber-50 text-amber-600 border border-amber-200/60",
-            icon: <FileCheck2 className="w-4.5 h-4.5" strokeWidth={2} />,
-        },
-        {
-            id: 2,
-            type: "booking",
-            title: "Lịch hẹn mới được xác nhận",
-            description: "Gia đình chị Nguyễn Thu Hà đặt ca chăm sóc người già 8 giờ.",
-            time: "25 phút trước",
-            badge: "Đã cọc",
-            badgeColor: "bg-teal-50 text-[#00677c] border-teal-200",
-            iconColor: "bg-teal-50 text-[#00677c] border border-teal-200/60",
-            icon: <CalendarClock className="w-4.5 h-4.5" strokeWidth={2} />,
-        },
-        {
-            id: 3,
-            type: "completed",
-            title: "Ca chăm sóc hoàn tất",
-            description: "ĐD. Lê Hoàng Long hoàn thành ca trực tiêm thuốc & đo sinh hiệu tại Quận 7.",
-            time: "1 giờ trước",
-            badge: "Hoàn tất",
-            badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-            iconColor: "bg-emerald-50 text-emerald-600 border border-emerald-200/60",
-            icon: <CheckCircle2 className="w-4.5 h-4.5" strokeWidth={2} />,
-        },
-        {
-            id: 4,
-            type: "update",
-            title: "Cập nhật chứng chỉ y tế",
-            description: "ĐD. Bùi Văn Hùng vừa bổ sung Giấy chứng nhận hồi sức cấp cứu CPR.",
-            time: "3 giờ trước",
-            badge: "Đã cập nhật",
-            badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
-            iconColor: "bg-blue-50 text-blue-600 border border-blue-200/60",
-            icon: <RefreshCw className="w-4.5 h-4.5" strokeWidth={2} />,
-        },
-    ];
-
-    // Tỷ lệ dịch vụ
-    const serviceShares = [
-        { name: "Chăm sóc người cao tuổi", percent: 42, color: "bg-[#00677c]", textColor: "text-[#00677c]" },
-        { name: "Theo dõi sức khỏe & sinh hiệu", percent: 24, color: "bg-teal-500", textColor: "text-teal-600" },
-        { name: "Phục hồi chức năng", percent: 18, color: "bg-emerald-500", textColor: "text-emerald-600" },
-        { name: "Chăm sóc sau phẫu thuật", percent: 11, color: "bg-sky-500", textColor: "text-sky-600" },
-        { name: "Đồng hành hỗ trợ sinh hoạt", percent: 5, color: "bg-amber-500", textColor: "text-amber-600" },
-    ];
 
     return (
         <div className="space-y-6 pb-12 font-sans">
@@ -372,34 +383,38 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                        <span>Trung bình doanh thu/ngày: <strong className="text-slate-800">4.280.000 ₫</strong></span>
+                        <span>Trung bình doanh thu/ngày: <strong className="text-slate-800">{liveSummary?.totalPlatformFee ? Math.round(Number(liveSummary.totalPlatformFee) / 30).toLocaleString("vi-VN") + " ₫" : "0 ₫"}</strong></span>
                         <span className="text-emerald-600 font-semibold flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Tăng trưởng ổn định
                         </span>
                     </div>
                 </div>
 
-                {/* Tỷ lệ sử dụng dịch vụ */}
+                {/* Danh mục dịch vụ thực tế trên hệ thống */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
                     <div>
-                        <h3 className="text-base font-bold text-slate-900">Tỷ lệ sử dụng dịch vụ</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Phân bổ các yêu cầu đặt ca chăm sóc</p>
+                        <h3 className="text-base font-bold text-slate-900">Danh mục dịch vụ CareLink</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Dịch vụ chăm sóc đang áp dụng thực tế</p>
 
                         <div className="mt-5 space-y-3.5">
-                            {serviceShares.map((service, index) => (
-                                <div key={index} className="space-y-1.5">
-                                    <div className="flex justify-between text-xs font-medium">
-                                        <span className="text-slate-700 truncate">{service.name}</span>
-                                        <span className={`font-bold ${service.textColor}`}>{service.percent}%</span>
+                            {activeServices.length > 0 ? (
+                                activeServices.map((service, index) => (
+                                    <div key={service.id || index} className="space-y-1.5">
+                                        <div className="flex justify-between text-xs font-medium">
+                                            <span className="text-slate-700 truncate font-semibold">{service.serviceName || service.name}</span>
+                                            <span className="font-bold text-[#00677c]">{Number(service.basePrice || service.price || 0).toLocaleString("vi-VN")} ₫</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                            <div
+                                                className="bg-[#00677c] h-full rounded-full"
+                                                style={{ width: `${Math.min(100, Math.max(30, 100 - index * 15))}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                        <div
-                                            className={`${service.color} h-full rounded-full transition-all duration-500`}
-                                            style={{ width: `${service.percent}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="text-xs text-slate-400 italic py-4 text-center">Chưa có dịch vụ nào được cấu hình</p>
+                            )}
                         </div>
                     </div>
 
@@ -430,23 +445,34 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="divide-y divide-slate-100 mt-2">
-                        {recentActivities.map((act) => (
-                            <div key={act.id} className="py-3.5 flex items-start gap-3 sm:gap-4 hover:bg-slate-50/70 p-2 rounded-xl transition-colors">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${act.iconColor}`}>
-                                    {act.icon}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">{act.title}</h4>
-                                        <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-md border ${act.badgeColor}`}>
-                                            {act.badge}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{act.description}</p>
-                                    <span className="text-[11px] text-slate-400 font-medium block mt-1">{act.time}</span>
-                                </div>
+                        {loadingActivities ? (
+                            <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                                <RefreshCw className="w-4 h-4 animate-spin text-[#00677c]" />
+                                Đang đồng bộ hoạt động mới nhất...
                             </div>
-                        ))}
+                        ) : recentActivities.length > 0 ? (
+                            recentActivities.map((act) => (
+                                <div key={act.id} className="py-3.5 flex items-start gap-3 sm:gap-4 hover:bg-slate-50/70 p-2 rounded-xl transition-colors">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${act.iconColor}`}>
+                                        {act.icon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">{act.title}</h4>
+                                            <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-md border ${act.badgeColor}`}>
+                                                {act.badge}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{act.description}</p>
+                                        <span className="text-[11px] text-slate-400 font-medium block mt-1">{act.time}</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="py-8 text-center text-xs text-slate-400">
+                                Hệ thống chưa có hoạt động mới nào phát sinh.
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -458,19 +484,19 @@ export default function AdminDashboard() {
                         </div>
 
                         <span className="text-xs font-bold uppercase tracking-wider text-[#00677c]">Hồ sơ đang chờ duyệt</span>
-                        <h4 className="text-3xl font-extrabold text-slate-900 mt-1">12 hồ sơ</h4>
+                        <h4 className="text-3xl font-extrabold text-slate-900 mt-1">{pendingCount} hồ sơ</h4>
                         <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                            Có 12 điều dưỡng và sinh viên y khoa mới tải lên chứng chỉ hành nghề và CCCD cần được xác minh trước khi nhận lịch.
+                            Có {pendingCount} điều dưỡng và chuyên viên y tế mới nộp chứng chỉ và bằng cấp cần được xác minh trước khi nhận lịch ca trực.
                         </p>
 
                         <div className="mt-4 p-3 bg-white/90 rounded-xl border border-teal-100 text-xs text-slate-600 space-y-1">
                             <div className="flex justify-between">
-                                <span>Sinh viên Y khoa:</span>
-                                <strong className="text-slate-800">8 hồ sơ</strong>
+                                <span>Hồ sơ chờ phê duyệt:</span>
+                                <strong className="text-slate-800">{pendingCount} hồ sơ</strong>
                             </div>
                             <div className="flex justify-between">
-                                <span>Điều dưỡng cử nhân:</span>
-                                <strong className="text-slate-800">4 hồ sơ</strong>
+                                <span>Đánh giá chung:</span>
+                                <strong className="text-slate-800">{currentKpi.activeCaregivers}</strong>
                             </div>
                         </div>
                     </div>

@@ -504,9 +504,9 @@ export default function Dashboard() {
                             </span>
                             <span className="text-3xl font-extrabold text-white">
                                 {pendingPaymentBooking
-                                    ? (Number(pendingPaymentBooking.totalPrice || 60000).toLocaleString("vi-VN") + "đ")
-                                    : (upcomingBooking?.totalPrice || recentBooking?.totalPrice
-                                        ? Number(upcomingBooking?.totalPrice || recentBooking?.totalPrice).toLocaleString("vi-VN") + "đ"
+                                    ? (Number(pendingPaymentBooking.totalPaymentAmount || (Number(pendingPaymentBooking.totalPrice || 0) + 60000)).toLocaleString("vi-VN") + "đ")
+                                    : (upcomingBooking || recentBooking
+                                        ? Number((upcomingBooking || recentBooking).totalPaymentAmount || (Number((upcomingBooking || recentBooking).totalPrice || 0) + 60000)).toLocaleString("vi-VN") + "đ"
                                         : "0đ")}
                             </span>
                             <span className="text-[11px] text-cyan-100/80">

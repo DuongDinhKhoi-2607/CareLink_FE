@@ -18,7 +18,8 @@ import {
     Sparkles,
     AlertCircle,
     Award,
-    Star
+    Star,
+    RefreshCw
 } from "lucide-react";
 import ViewHealthRecordModal from "../components/ViewHealthRecordModal";
 import CreateDisputeModal from "../components/CreateDisputeModal";
