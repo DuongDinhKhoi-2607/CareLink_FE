@@ -101,6 +101,7 @@ export default function CreateProposalModal({
         setSubmitError("");
         setDealPriceError("");
         setCustomDealPrice("");
+        setNotes("");
         setSelectedServiceIds([]); // Để rỗng mặc định để khách tự chọn dịch vụ mong muốn
 
         // Set default date to tomorrow and time to 08:30
