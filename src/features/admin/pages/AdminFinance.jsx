@@ -598,13 +598,13 @@ export default function AdminFinance() {
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                             activeTab === "transactions"
                                 ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
-                                : "bg-white text-slate-600 hover:text-[#00677c] hover:bg-slate-50 border border-slate-200/80 shadow-2xs"
+                                : "bg-teal-50/70 hover:bg-teal-100/80 text-slate-700 hover:text-[#00677c] border border-teal-200/80 shadow-2xs"
                         }`}
                     >
-                        <ArrowUpRight className={`w-4 h-4 ${activeTab === "transactions" ? "text-cyan-200" : "text-slate-400"}`} />
+                        <ArrowUpRight className={`w-4 h-4 ${activeTab === "transactions" ? "text-cyan-200" : "text-[#00677c]"}`} />
                         <span>Nhật ký giao dịch</span>
                         <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
-                            activeTab === "transactions" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 border border-slate-200"
+                            activeTab === "transactions" ? "bg-white/20 text-white" : "bg-teal-100 text-[#00677c] border border-teal-200/80"
                         }`}>
                             {transactions.length}
                         </span>
@@ -615,10 +615,10 @@ export default function AdminFinance() {
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                             activeTab === "withdrawals"
                                 ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
-                                : "bg-white text-slate-600 hover:text-[#00677c] hover:bg-slate-50 border border-slate-200/80 shadow-2xs"
+                                : "bg-teal-50/70 hover:bg-teal-100/80 text-slate-700 hover:text-[#00677c] border border-teal-200/80 shadow-2xs"
                         }`}
                     >
-                        <Banknote className={`w-4 h-4 ${activeTab === "withdrawals" ? "text-cyan-200" : "text-slate-400"}`} />
+                        <Banknote className={`w-4 h-4 ${activeTab === "withdrawals" ? "text-cyan-200" : "text-[#00677c]"}`} />
                         <span>Yêu cầu rút tiền</span>
                         {pendingWithdrawals > 0 ? (
                             <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
@@ -628,7 +628,7 @@ export default function AdminFinance() {
                             </span>
                         ) : (
                             <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
-                                activeTab === "withdrawals" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 border border-slate-200"
+                                activeTab === "withdrawals" ? "bg-white/20 text-white" : "bg-teal-100 text-[#00677c] border border-teal-200/80"
                             }`}>
                                 {withdrawals.length}
                             </span>
