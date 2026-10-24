@@ -160,7 +160,10 @@ export default function CaregiverWallet() {
     const handleCreatePayout = async (e) => {
         e.preventDefault();
         setPayoutError("");
-        const withdrawAmount = Number(payoutForm.amount);
+
+        // Chuẩn hóa và làm sạch số tiền: loại bỏ dấu chấm/phẩy phân cách hàng nghìn (ví dụ "50.000", "50,000", "50000")
+        const cleanAmountStr = String(payoutForm.amount || "").replace(/[\.,\sđ₫]/g, "");
+        const withdrawAmount = Number(cleanAmountStr);
 
         // Quy chuẩn Backend CreatePayoutRequest: Range(50_000, 1_000_000_000)
         if (isNaN(withdrawAmount) || withdrawAmount < 50000) {
@@ -180,13 +183,23 @@ export default function CaregiverWallet() {
             return;
         }
 
+        const cleanAccountHolder = payoutForm.accountHolder.trim().toUpperCase();
+        if (!cleanAccountHolder) {
+            setPayoutError("Vui lòng nhập tên chủ tài khoản ngân hàng!");
+            return;
+        }
+
         setSubmittingPayout(true);
         try {
+            // Gửi đúng tên trường theo DTO C# của Backend: bankAccountNumber & bankAccountName
+            // Đồng thời gửi kèm alias accountNumber & accountHolder để đảm bảo tương thích ngược
             const payload = {
                 amount: withdrawAmount,
                 bankName: payoutForm.bankName,
+                bankAccountNumber: cleanAccNumber,
+                bankAccountName: cleanAccountHolder,
                 accountNumber: cleanAccNumber,
-                accountHolder: payoutForm.accountHolder.trim().toUpperCase(),
+                accountHolder: cleanAccountHolder,
                 note: payoutForm.note?.trim() || "Yêu cầu rút tiền về tài khoản ngân hàng",
             };
 
@@ -200,7 +213,23 @@ export default function CaregiverWallet() {
             showToast("✓ Đã gửi yêu cầu rút tiền thành công! Admin sẽ đối soát và giải ngân.");
         } catch (err) {
             console.error("Lỗi gửi yêu cầu rút tiền:", err);
-            const msg = err?.response?.data?.message || err?.response?.data?.title || "Không thể tạo yêu cầu rút tiền. Vui lòng kiểm tra lại!";
+            let msg = "Không thể tạo yêu cầu rút tiền. Vui lòng kiểm tra lại!";
+
+            // Bóc tách ProblemDetails validation errors từ ASP.NET Core
+            const errorObj = err?.response?.data?.errors;
+            if (errorObj && typeof errorObj === "object") {
+                const errorEntries = Object.values(errorObj);
+                if (errorEntries.length > 0 && Array.isArray(errorEntries[0]) && errorEntries[0].length > 0) {
+                    msg = errorEntries[0][0];
+                }
+            } else if (err?.response?.data?.detail) {
+                msg = err.response.data.detail;
+            } else if (err?.response?.data?.message) {
+                msg = err.response.data.message;
+            } else if (err?.response?.data?.title && err?.response?.data?.title !== "One or more validation errors occurred.") {
+                msg = err.response.data.title;
+            }
+
             setPayoutError(msg);
             showToast(`⚠️ ${msg}`);
         } finally {
