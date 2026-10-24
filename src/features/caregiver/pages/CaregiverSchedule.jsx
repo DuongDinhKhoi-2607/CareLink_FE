@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 import caregiverApi from "../../../api/caregiverApi";
 
 /* ─── Constants & Helpers ─── */
@@ -55,91 +57,6 @@ function SlotCell({ state, onClick, disabled }) {
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />
             )}
         </button>
-    );
-}
-
-/* ─── Booking Request Card ─── */
-function BookingRequest({ id, family, service, date, time, note, source = "direct", onAccept, onReject }) {
-    const isFromChat = source === "chat";
-
-    return (
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-sm p-4 flex flex-col gap-3 transition-all duration-200">
-            {/* Family info */}
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00677c] to-[#004e5f] flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-2xs">
-                    {family[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-[#102030] truncate">{family}</p>
-                    <p className="text-xs text-slate-500 truncate">{service}</p>
-                </div>
-                {isFromChat ? (
-                    <span className="ml-auto flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-[11px] font-semibold text-cyan-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                        Qua Chat
-                    </span>
-                ) : (
-                    <span className="ml-auto flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        Đặt trực tiếp
-                    </span>
-                )}
-            </div>
-
-            {/* Details */}
-            <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-0.5 bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-                        <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                        </svg>
-                        Ngày
-                    </span>
-                    <span className="text-xs font-semibold text-[#102030]">{date}</span>
-                </div>
-                <div className="flex flex-col gap-0.5 bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-                        <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Giờ
-                    </span>
-                    <span className="text-xs font-semibold text-[#102030]">{time}</span>
-                </div>
-            </div>
-
-            {note && (
-                <p className="text-xs text-slate-600 bg-slate-50 rounded-xl px-3 py-2 leading-relaxed border border-slate-100">
-                    💬 {note}
-                </p>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-0.5">
-                <button
-                    id={`accept-${id}`}
-                    type="button"
-                    onClick={() => onAccept(id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#00677c] text-white text-xs font-bold hover:bg-[#005263] active:scale-98 transition-all shadow-sm hover:shadow-md cursor-pointer"
-                >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    Nhận ca
-                </button>
-                <button
-                    id={`reject-${id}`}
-                    type="button"
-                    onClick={() => onReject(id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-50 active:scale-98 transition-all cursor-pointer"
-                >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Từ chối
-                </button>
-            </div>
-        </div>
     );
 }
 
@@ -219,42 +136,7 @@ export default function CaregiverSchedule() {
         return { days, title };
     }, [weekOffset]);
 
-    // Danh sách yêu cầu nhận ca thực tế từ GET /api/v1/bookings
-    const [requests, setRequests] = useState([]);
-    const [responded, setResponded] = useState({});
     const [globalAvailable, setGlobalAvailable] = useState(true);
-
-    const fetchRequests = useCallback(async () => {
-        try {
-            const res = await caregiverApi.getBookings({ PageNumber: 1, PageSize: 20 });
-            const items = res?.items || (Array.isArray(res) ? res : []);
-            // Lấy các ca đang chờ điều dưỡng xác nhận (status = 2 / PendingAcceptance hoặc đã thanh toán)
-            const pendingItems = items.filter((b) => b.status === 2 || b.status === "PendingAcceptance" || (b.status === 1 && (b.paymentStatus === 2 || b.paymentStatus === "Paid")));
-            setRequests(
-                pendingItems.map((b) => {
-                    const start = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
-                    const end = b.scheduledEnd ? new Date(b.scheduledEnd) : null;
-                    return {
-                        id: b.id,
-                        family: b.customerName || "Gia đình khách hàng",
-                        service: b.serviceName || "Chăm sóc tại nhà",
-                        date: start.toLocaleDateString("vi-VN"),
-                        time: end
-                            ? `${start.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
-                            : start.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-                        note: b.notes || null,
-                        source: "direct",
-                    };
-                })
-            );
-        } catch {
-            setRequests([]);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchRequests();
-    }, [fetchRequests]);
 
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -601,30 +483,7 @@ export default function CaregiverSchedule() {
         await handleAddSlot(newSlotForm.dayIndex, newSlotForm.timeSlotIndex);
     };
 
-    const handleAccept = async (id) => {
-        try {
-            await caregiverApi.acceptBooking(id);
-            setResponded((p) => ({ ...p, [id]: "accepted" }));
-            showToast("✓ Đã tiếp nhận ca chăm sóc thành công!");
-            fetchRequests();
-        } catch (err) {
-            showToast(err.response?.data?.detail || "Không thể tiếp nhận ca.");
-        }
-    };
 
-    const handleReject = async (id) => {
-        try {
-            await caregiverApi.rejectBooking(id, { reason: "Bận lịch làm việc" });
-            setResponded((p) => ({ ...p, [id]: "rejected" }));
-            showToast("Đã từ chối nhận ca.");
-            fetchRequests();
-        } catch (err) {
-            showToast(err.response?.data?.detail || "Không thể từ chối ca.");
-        }
-    };
-
-    const pendingRequests = requests.filter((r) => !responded[r.id]);
-    const doneRequests = requests.filter((r) => responded[r.id]);
 
     return (
         <div className="p-5 sm:p-8 max-w-7xl mx-auto animate-page-enter font-sans">
@@ -744,184 +603,137 @@ export default function CaregiverSchedule() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* ── Weekly Calendar ── */}
-                <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col">
-                    {/* Calendar header bar */}
-                    <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h2 className="text-sm font-bold text-[#102030]">Lịch theo tuần</h2>
-                            
-                            {/* Nút điều hướng tuần */}
-                            <div className="flex items-center gap-1 bg-slate-100/80 p-0.5 rounded-xl border border-slate-200/80">
-                                <button
-                                    type="button"
-                                    onClick={() => setWeekOffset((w) => w - 1)}
-                                    className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-[#00677c] hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
-                                    title="Xem tuần trước"
-                                >
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                    </svg>
-                                    Tuần trước
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setWeekOffset(0)}
-                                    className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                                        weekOffset === 0
-                                            ? "bg-[#00677c] text-white shadow-2xs"
-                                            : "text-slate-600 hover:text-[#00677c] hover:bg-white"
-                                    }`}
-                                    title="Quay về tuần hiện tại"
-                                >
-                                    Tuần này
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setWeekOffset((w) => w + 1)}
-                                    className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-[#00677c] hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
-                                    title="Xem tuần sau"
-                                >
-                                    Tuần sau
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                    </svg>
-                                </button>
-                            </div>
+            {/* ── Weekly Calendar (Full-Width Option 1) ── */}
+            <div className="w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col">
+                {/* Calendar header bar */}
+                <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-sm font-bold text-[#102030]">Lịch theo tuần</h2>
+                        
+                        {/* Nút điều hướng tuần */}
+                        <div className="flex items-center gap-1 bg-slate-100/80 p-0.5 rounded-xl border border-slate-200/80">
+                            <button
+                                type="button"
+                                onClick={() => setWeekOffset((w) => w - 1)}
+                                className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-[#00677c] hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                title="Xem tuần trước"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                </svg>
+                                Tuần trước
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setWeekOffset(0)}
+                                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                    weekOffset === 0
+                                        ? "bg-[#00677c] text-white shadow-2xs"
+                                        : "text-slate-600 hover:text-[#00677c] hover:bg-white"
+                                }`}
+                                title="Quay về tuần hiện tại"
+                            >
+                                Tuần này
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setWeekOffset((w) => w + 1)}
+                                className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-[#00677c] hover:bg-white rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                title="Xem tuần sau"
+                            >
+                                Tuần sau
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                </svg>
+                            </button>
+                        </div>
 
-                            {loading && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
-                                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                                    </svg>
-                                    Đang tải...
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <LegendItem color="bg-[#00677c]" label="Đã đặt" />
-                            <LegendItem color="bg-emerald-100 border border-emerald-300" label="Rảnh" />
-                            <LegendItem color="bg-slate-50 border border-slate-200" label="Không nhận" />
-                        </div>
+                        {loading && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
+                                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                </svg>
+                                Đang tải...
+                            </span>
+                        )}
                     </div>
-
-                    {/* Vùng cuộn ngang */}
-                    <div className="overflow-x-auto w-full">
-                        <div className="min-w-[640px] p-3 sm:p-5">
-                            {/* Day headers */}
-                            <div className="grid mb-2" style={{ gridTemplateColumns: "85px repeat(7, 1fr)" }}>
-                                <div />
-                                {weekData.days.map((item) => (
-                                    <div key={item.dayName} className="flex flex-col items-center gap-0.5 pb-1">
-                                        <span className={`text-[10px] font-bold uppercase ${item.isToday ? "text-[#00677c]" : "text-slate-400"}`}>
-                                            {item.dayName}
-                                        </span>
-                                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full transition-all ${
-                                            item.isToday
-                                                ? "bg-[#00677c] text-white shadow-2xs ring-2 ring-teal-200"
-                                                : "text-[#102030]"
-                                        }`}>
-                                            {item.dateLabel}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Slot grid */}
-                            <div className="space-y-1.5">
-                                {TIME_SLOTS.map((slot, t) => (
-                                    <div
-                                        key={slot}
-                                        className="grid gap-1.5"
-                                        style={{ gridTemplateColumns: "85px repeat(7, 1fr)" }}
-                                    >
-                                        <div className="flex items-center justify-end pr-2">
-                                            <span className="text-[9px] font-semibold text-slate-400 text-right leading-tight">
-                                                {slot}
-                                            </span>
-                                        </div>
-                                        {DAYS.map((_, d) => {
-                                            const key = `${d}-${t}`;
-                                            return (
-                                                <SlotCell
-                                                    key={key}
-                                                    state={slots[key] || "off"}
-                                                    onClick={() => toggleSlot(key)}
-                                                    disabled={loading || syncing}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="px-5 py-3 text-[11px] text-slate-400 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
-                        <span>💡 Bấm ô để chuyển đổi giữa <strong>Rảnh (Xanh)</strong> và <strong>Không nhận (Xám)</strong>.</span>
-                        <span className="text-teal-700 font-semibold">Tự động bảo toàn lịch khi đồng bộ.</span>
+                    <div className="flex items-center gap-3">
+                        <LegendItem color="bg-[#00677c]" label="Đã đặt" />
+                        <LegendItem color="bg-emerald-100 border border-emerald-300" label="Rảnh" />
+                        <LegendItem color="bg-slate-50 border border-slate-200" label="Không nhận" />
                     </div>
                 </div>
 
-                {/* ── Booking Requests Panel ── */}
-                <div className="flex flex-col gap-4">
-                    {/* Pending */}
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-bold text-[#102030] flex items-center gap-2">
-                            Yêu cầu nhận ca
-                            {pendingRequests.length > 0 && (
-                                <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                                    {pendingRequests.length}
-                                </span>
-                            )}
-                        </h2>
-                    </div>
-
-                    {pendingRequests.length === 0 ? (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 flex flex-col items-center gap-3 text-center">
-                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <p className="text-sm font-semibold text-slate-400">Không có yêu cầu chờ xử lý</p>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-3">
-                            {pendingRequests.map((r) => (
-                                <BookingRequest key={r.id} {...r} onAccept={handleAccept} onReject={handleReject} />
+                {/* Vùng cuộn ngang / hiển thị lịch 100% full width */}
+                <div className="overflow-x-auto w-full">
+                    <div className="min-w-[720px] p-4 sm:p-6">
+                        {/* Day headers */}
+                        <div className="grid mb-2" style={{ gridTemplateColumns: "90px repeat(7, 1fr)" }}>
+                            <div />
+                            {weekData.days.map((item) => (
+                                <div key={item.dayName} className="flex flex-col items-center gap-0.5 pb-1">
+                                    <span className={`text-[11px] font-bold uppercase ${item.isToday ? "text-[#00677c]" : "text-slate-400"}`}>
+                                        {item.dayName}
+                                    </span>
+                                    <span className={`text-xs font-bold px-3 py-0.5 rounded-full transition-all ${
+                                        item.isToday
+                                            ? "bg-[#00677c] text-white shadow-2xs ring-2 ring-teal-200"
+                                            : "text-[#102030]"
+                                    }`}>
+                                        {item.dateLabel}
+                                    </span>
+                                </div>
                             ))}
                         </div>
-                    )}
 
-                    {/* Responded */}
-                    {doneRequests.length > 0 && (
-                        <>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mt-2">Đã xử lý</p>
-                            <div className="flex flex-col gap-2">
-                                {doneRequests.map((r) => {
-                                    const status = responded[r.id];
-                                    return (
-                                        <div key={r.id} className="bg-white rounded-xl border border-slate-200/80 px-4 py-3 flex items-center justify-between gap-3 shadow-2xs">
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-semibold text-[#102030] truncate">{r.family}</p>
-                                                <p className="text-xs text-slate-400 truncate">{r.date} · {r.time}</p>
-                                            </div>
-                                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                                                status === "accepted"
-                                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                                    : "bg-rose-50 text-rose-700 border border-rose-200"
-                                            }`}>
-                                                {status === "accepted" ? "✓ Đã nhận ca" : "✕ Đã từ chối"}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    )}
+                        {/* Slot grid */}
+                        <div className="space-y-2">
+                            {TIME_SLOTS.map((slot, t) => (
+                                <div
+                                    key={slot}
+                                    className="grid gap-2"
+                                    style={{ gridTemplateColumns: "90px repeat(7, 1fr)" }}
+                                >
+                                    <div className="flex items-center justify-end pr-2.5">
+                                        <span className="text-[10px] font-semibold text-slate-400 text-right leading-tight">
+                                            {slot}
+                                        </span>
+                                    </div>
+                                    {DAYS.map((_, d) => {
+                                        const key = `${d}-${t}`;
+                                        return (
+                                            <SlotCell
+                                                key={key}
+                                                state={slots[key] || "off"}
+                                                onClick={() => toggleSlot(key)}
+                                                disabled={loading || syncing}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Calendar footer & link to Yêu cầu nhận ca */}
+                <div className="px-5 py-3.5 text-xs text-slate-500 bg-slate-50/70 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <span>💡 Bấm trực tiếp vào từng ô để đổi giữa <strong>Rảnh (Xanh)</strong> và <strong>Không nhận (Xám)</strong>.</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-slate-400 text-[11px]">Cần xem đơn nhận việc?</span>
+                        <Link
+                            to="/caregiver/bookings"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#00677c] font-bold text-xs border border-teal-200 transition-all shadow-2xs"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
+                            Mở Tab Yêu cầu nhận ca
+                        </Link>
+                    </div>
                 </div>
             </div>
 
@@ -1031,9 +843,9 @@ export default function CaregiverSchedule() {
             </div>
 
             {/* ── Modal Thêm nhanh khung giờ rảnh (API 57 POST) ── */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            {isAddModalOpen && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 relative my-auto">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                             <div>
                                 <h3 className="text-base font-bold text-[#002045]">Thêm khung giờ rảnh</h3>
@@ -1042,7 +854,7 @@ export default function CaregiverSchedule() {
                             <button
                                 type="button"
                                 onClick={() => setIsAddModalOpen(false)}
-                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -1091,20 +903,21 @@ export default function CaregiverSchedule() {
                                 <button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 transition-colors"
+                                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 transition-colors cursor-pointer"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white font-bold shadow-xs hover:shadow-md transition-all"
+                                    className="px-5 py-2 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
                                 >
                                     Xác nhận thêm
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

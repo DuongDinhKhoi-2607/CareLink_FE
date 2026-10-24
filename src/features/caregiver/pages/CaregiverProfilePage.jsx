@@ -147,7 +147,8 @@ export default function CaregiverProfilePage() {
                     const merged = {
                         ...prev,
                         fullName: data.fullName || data.name || prev.fullName,
-                        title: data.title || data.degree || data.qualification || prev.title,
+                        title: data.educationLevel || data.title || data.degree || data.qualification || prev.title,
+                        educationLevel: data.educationLevel || prev.educationLevel,
                         email: data.email || prev.email,
                         phone: data.phone || data.phoneNumber || prev.phone,
                         avatar: data.avatar || data.avatarUrl || prev.avatar,
@@ -158,8 +159,8 @@ export default function CaregiverProfilePage() {
                         bio: data.bio || data.description || prev.bio,
                         maxDistanceKm: Number(data.maxDistanceKm ?? data.serviceRadiusKm ?? prev.maxDistanceKm ?? 10),
                         serviceRadiusKm: Number(data.serviceRadiusKm ?? data.maxDistanceKm ?? prev.serviceRadiusKm ?? 10),
-                        workDistrict: data.workDistrict || data.district || prev.workDistrict,
-                        baseAddress: data.baseAddress || data.address || prev.baseAddress,
+                        workDistrict: data.workDistrict || data.district || data.baseAddress || prev.workDistrict || "",
+                        baseAddress: data.baseAddress || data.address || data.workDistrict || prev.baseAddress || "",
                         preferredDistricts: Array.isArray(data.preferredDistricts) && data.preferredDistricts.length > 0
                             ? data.preferredDistricts
                             : prev.preferredDistricts,
@@ -209,11 +210,11 @@ export default function CaregiverProfilePage() {
                 bio: draft.bio?.trim() || null,
                 educationLevel: draft.title?.trim() || draft.educationLevel?.trim() || null,
                 title: draft.title?.trim() || null,
-                experienceYears: Number(draft.experienceYears || 0),
+                experienceYears: Number(draft.experienceYears ?? 0),
                 serviceRadiusKm: Number(draft.serviceRadiusKm || draft.maxDistanceKm || 10),
                 maxDistanceKm: Number(draft.maxDistanceKm || draft.serviceRadiusKm || 10),
-                workDistrict: draft.workDistrict?.trim() || null,
-                baseAddress: draft.baseAddress?.trim() || null,
+                workDistrict: draft.workDistrict?.trim() || draft.baseAddress?.trim() || null,
+                baseAddress: draft.baseAddress?.trim() || draft.workDistrict?.trim() || null,
                 preferredDistricts: draft.preferredDistricts || [],
                 skills: draft.skills || [],
             };
@@ -465,7 +466,7 @@ export default function CaregiverProfilePage() {
                                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                                         <span>{profile.completedBookings} ca trực hoàn thành</span>
                                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                        <span>{profile.phone}</span>
+                                        <span className="font-semibold text-slate-700">📞 {profile.phone || "Chưa cập nhật SĐT"}</span>
                                     </div>
                                 </>
                             )}
@@ -486,18 +487,18 @@ export default function CaregiverProfilePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 text-xs">
                         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
                             <span className="text-slate-400 block text-[11px]">Chứng chỉ hành nghề (CCHN):</span>
-                            <strong className="text-sm text-[#002045] font-mono mt-0.5 block">{profile.licenseNumber}</strong>
-                            <span className="text-[10px] text-slate-500">Hiệu lực đến: {profile.licenseExpiry}</span>
+                            <strong className="text-sm text-[#002045] font-mono mt-0.5 block">{profile.licenseNumber || "Chưa có / Sinh viên"}</strong>
+                            <span className="text-[10px] text-slate-500">Hiệu lực: {profile.licenseExpiry || "Dài hạn"}</span>
                         </div>
                         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
                             <span className="text-slate-400 block text-[11px]">Kinh nghiệm lâm sàng:</span>
                             <strong className="text-sm text-teal-700 font-bold mt-0.5 block">{profile.experienceYears} năm kinh nghiệm</strong>
-                            <span className="text-[10px] text-slate-500">Khoa Nội & Phục hồi chức năng</span>
+                            <span className="text-[10px] text-slate-500 truncate block">{profile.title || "Điều dưỡng CareLink"}</span>
                         </div>
                         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
                             <span className="text-slate-400 block text-[11px]">Bán kính nhận ca tối đa:</span>
                             <strong className="text-sm text-emerald-700 font-bold mt-0.5 block">Trong vòng {profile.maxDistanceKm} km</strong>
-                            <span className="text-[10px] text-slate-500">Tính từ trạm thường trú Q. Bình Thạnh</span>
+                            <span className="text-[10px] text-slate-500 truncate block">Tính từ {profile.baseAddress || profile.workDistrict || "trạm thường trú"}</span>
                         </div>
                     </div>
                 </div>
@@ -517,7 +518,7 @@ export default function CaregiverProfilePage() {
                     </div>
 
                     <div className="space-y-4 text-xs">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-slate-700 font-semibold mb-1">Chức danh / Trình độ chuyên môn *</label>
                                 <input
@@ -534,22 +535,38 @@ export default function CaregiverProfilePage() {
                             </div>
 
                             <div>
+                                <label className="block text-slate-700 font-semibold mb-1">Số điện thoại liên hệ *</label>
+                                <input
+                                    type="tel"
+                                    disabled={!isEditing}
+                                    value={isEditing ? draft.phone : (profile.phone || "")}
+                                    placeholder="Ví dụ: 0912 345 678"
+                                    onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
+                                    className={`w-full px-3.5 py-2.5 rounded-xl border text-xs ${
+                                        isEditing
+                                            ? "bg-white border-slate-300 focus:border-teal-600 focus:outline-none"
+                                            : "bg-slate-50 border-slate-200 text-slate-700"
+                                    }`}
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block text-slate-700 font-semibold mb-1">Số năm kinh nghiệm làm nghề *</label>
                                 <div className="flex items-center gap-3">
                                     <input
                                         type="number"
-                                        min="1"
-                                        max="40"
+                                        min="0"
+                                        max="50"
                                         disabled={!isEditing}
                                         value={isEditing ? draft.experienceYears : profile.experienceYears}
-                                        onChange={(e) => setDraft({ ...draft, experienceYears: Number(e.target.value) })}
-                                        className={`w-32 px-3.5 py-2.5 rounded-xl border text-xs font-bold text-teal-800 ${
+                                        onChange={(e) => setDraft({ ...draft, experienceYears: Math.max(0, Number(e.target.value)) })}
+                                        className={`w-28 px-3.5 py-2.5 rounded-xl border text-xs font-bold text-teal-800 ${
                                             isEditing
                                                 ? "bg-white border-slate-300 focus:border-teal-600 focus:outline-none"
                                                 : "bg-slate-50 border-slate-200 text-slate-700"
                                         }`}
                                     />
-                                    <span className="text-slate-500">năm kinh nghiệm thực tế</span>
+                                    <span className="text-slate-500">năm kinh nghiệm</span>
                                 </div>
                             </div>
                         </div>
@@ -972,8 +989,12 @@ export default function CaregiverProfilePage() {
                                     <strong className="text-sm text-slate-700 mt-0.5 block">{profile.licenseExpiry || "Dài hạn / Không thời hạn"}</strong>
                                 </div>
                                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
-                                    <span className="text-slate-400 block text-[11px]">Trình độ & Cơ sở công tác:</span>
-                                    <strong className="text-xs text-slate-800 mt-0.5 block">{profile.title}</strong>
+                                    <span className="text-slate-400 block text-[11px]">
+                                        {profile.practitionerType === 2 ? "Trường đào tạo & Niên khóa:" : "Trình độ & Cơ sở công tác:"}
+                                    </span>
+                                    <strong className="text-xs text-slate-800 mt-0.5 block">
+                                        {profile.title || profile.educationLevel || "Chưa cập nhật nơi công tác"}
+                                    </strong>
                                 </div>
                             </div>
 

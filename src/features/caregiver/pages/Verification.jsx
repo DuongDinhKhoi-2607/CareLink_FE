@@ -3,8 +3,8 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import Header from "../../../components/Header";
 import VerificationStepper from "../components/VerificationStepper";
 import caregiverApi from "../../../api/caregiverApi";
-import { fetchAndSyncUserMe } from "../../../api/authApi";
-import { Stethoscope, ShieldAlert, UserCheck, UserPlus, LogIn, X, CheckCircle2 } from "lucide-react";
+import { authApi, fetchAndSyncUserMe } from "../../../api/authApi";
+import { Stethoscope, ShieldAlert, UserCheck, UserPlus, LogIn, X, CheckCircle2, Clock, ShieldCheck, Check } from "lucide-react";
 
 const PRIMARY = "#087E78";
 const INK = "#102A35";
@@ -422,102 +422,171 @@ function ReviewRow({ label, value }) {
     );
 }
 
+function ApprovedProfileScreen({ role, statusData }) {
+    const isStudent = role === "student" || statusData?.practitionerType === 2;
+    return (
+        <div className="flex min-h-screen flex-col bg-[#F6F8F7]">
+            <Header />
+
+            <main className="flex flex-1 items-center justify-center px-4 py-12">
+                <div className="w-full max-w-xl rounded-3xl border border-teal-100 bg-white p-6 text-center shadow-[0_20px_60px_rgba(8,126,120,0.08)] sm:p-10 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    {/* Ambient glow */}
+                    <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
+                    <div className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-teal-400/10 blur-2xl pointer-events-none" />
+
+                    <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 shadow-sm">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-[#087E78] text-white shadow-md shadow-emerald-500/20">
+                            <ShieldCheck className="h-7 w-7 stroke-[2.2]" />
+                        </div>
+                    </div>
+
+                    <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100/80 text-emerald-800 border border-emerald-200">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        TÀI KHOẢN ĐÃ PHÊ DUYỆT CHÍNH THỨC
+                    </div>
+
+                    <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-[#102A35] sm:text-3xl">
+                        Hồ sơ năng lực đã kích hoạt!
+                    </h1>
+
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
+                        Chúc mừng bạn! Hồ sơ chuyên môn của bạn đã được Ban chuyên môn CareLink xác minh và kích hoạt thành công. Bạn hiện đã sẵn sàng nhận ca chăm sóc tại nhà.
+                    </p>
+
+                    {/* Card thông tin xác thực */}
+                    <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-left space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                            <span className="text-slate-500 font-medium">Đối tượng hành nghề:</span>
+                            <span className="font-bold text-slate-800">
+                                {isStudent ? "🎓 Sinh viên Y khoa" : "👩‍⚕️ Điều dưỡng chính quy"}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                            <span className="text-slate-500 font-medium">Trạng thái nhận việc:</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                Đang sẵn sàng (Online)
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-medium">Chứng chỉ & Giấy tờ:</span>
+                            <span className="font-bold text-teal-700">✓ Đã kiểm duyệt toàn bộ</span>
+                        </div>
+                    </div>
+
+                    {/* Quick navigation actions */}
+                    <div className="mt-7 flex flex-col gap-2.5">
+                        <Link
+                            to="/caregiver/schedule"
+                            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#087E78] to-[#0a948d] px-5 py-3 text-sm font-bold text-white transition-all hover:shadow-md hover:scale-[1.01] shadow-sm cursor-pointer"
+                        >
+                            Quản lý Lịch làm việc & Nhận ca
+                        </Link>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <Link
+                                to="/caregiver/dashboard"
+                                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                            >
+                                Về Bảng điều khiển
+                            </Link>
+                            <Link
+                                to="/caregiver/profile"
+                                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                            >
+                                Xem Hồ sơ & CCHN
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
+}
+
 function InterviewWaiting({ role }) {
     return (
         <div className="flex min-h-screen flex-col bg-[#F6F8F7]">
             <Header />
 
             <main className="flex flex-1 items-center justify-center px-4 py-12">
-                <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_20px_60px_rgba(16,42,53,0.07)] sm:p-10">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F5F2]">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#087E78] text-white">
-                            <CheckIcon className="h-7 w-7" />
+                <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_20px_60px_rgba(16,42,53,0.07)] sm:p-10 relative overflow-hidden">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-50 border border-amber-200 shadow-inner">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20">
+                            <Clock className="h-7 w-7 animate-pulse" />
                         </div>
                     </div>
 
-                    <p className="mt-6 text-xs font-bold uppercase tracking-[0.15em] text-[#087E78]">
-                        CareLink · Xác minh hồ sơ
-                    </p>
+                    <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                        HỒ SƠ ĐANG ĐỐI SOÁT & XÉT DUYỆT
+                    </div>
 
                     <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-[#102A35] sm:text-3xl">
-                        Hồ sơ đã được ghi nhận!
+                        Hồ sơ của bạn đang được xét duyệt
                     </h1>
 
-                    <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-slate-500">
-                        Thông tin đã được ghi nhận trên giao diện. Đội ngũ CareLink
-                        cần kiểm tra hồ sơ trước khi tài khoản được kích hoạt.
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
+                        CareLink đã tiếp nhận thông tin và giấy tờ của bạn. Ban chuyên môn Y tế đang tiến hành đối chiếu hồ sơ năng lực (dự kiến trong 24–48h). Tài khoản sẽ được kích hoạt ngay khi hoàn tất kiểm tra.
                     </p>
 
-                    <div className="mt-8 rounded-2xl border border-slate-200 bg-[#F8FBFA] p-5 text-left">
-                        <p className="text-sm font-bold text-[#102A35]">
-                            Các bước tiếp theo
+                    <div className="mt-7 rounded-2xl border border-slate-200 bg-[#F8FBFA] p-5 text-left">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                            Tiến độ xét duyệt hồ sơ
                         </p>
 
-                        <div className="mt-4 space-y-4">
-                            {[
-                                ["Gửi hồ sơ xác minh", "Bạn đã hoàn thành bước nhập thông tin.", true],
-                                ["Kiểm tra hồ sơ", "Đối chiếu thông tin và tài liệu cung cấp.", false],
-                                ["Phỏng vấn nếu cần", "Thực hiện theo hướng dẫn của CareLink.", false],
-                                ["Kích hoạt tài khoản", "Sau khi hoàn tất quy trình xác minh.", false],
-                            ].map(([title, detail, done]) => (
-                                <div key={title} className="flex items-start gap-3">
-                                    <span
-                                        className={[
-                                            "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                                            done
-                                                ? "bg-[#087E78] text-white"
-                                                : "border border-slate-300 bg-white text-slate-400",
-                                        ].join(" ")}
-                                    >
-                                        {done ? (
-                                            <CheckIcon className="h-3.5 w-3.5" />
-                                        ) : (
-                                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                        )}
-                                    </span>
-
-                                    <div>
-                                        <p className="text-sm font-semibold text-[#102A35]">
-                                            {title}
-                                        </p>
-                                        <p className="mt-1 text-xs leading-5 text-slate-500">
-                                            {detail}
-                                        </p>
-                                    </div>
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3">
+                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+                                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                                </span>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900">Gửi hồ sơ & giấy tờ xác minh</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">Bạn đã gửi đầy đủ biểu mẫu và chứng từ.</p>
                                 </div>
-                            ))}
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs">
+                                    <Clock className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: "3s" }} />
+                                </span>
+                                <div>
+                                    <p className="text-sm font-bold text-amber-900">Ban chuyên môn đối chiếu hồ sơ</p>
+                                    <p className="text-xs text-amber-700 mt-0.5">Đang kiểm tra tính xác thực của CCHN / Thẻ sinh viên và CCCD.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-400">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                </span>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-500">Phê duyệt & Kích hoạt tài khoản</p>
+                                    <p className="text-xs text-slate-400 mt-0.5">Sẵn sàng nhận ca chăm sóc tại nhà ngay sau khi duyệt.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <p className="mt-5 text-xs text-slate-500">
-                        Vai trò đăng ký:{" "}
-                        <span className="font-semibold text-slate-700">
-                            {role === "student"
-                                ? "Sinh viên Y / Điều dưỡng"
-                                : "Điều dưỡng hành nghề"}
-                        </span>
-                    </p>
 
                     <div className="mt-6 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 text-xs text-teal-800 leading-relaxed text-left flex items-start gap-3">
                         <span className="text-lg">💡</span>
                         <div>
-                            <strong className="block font-bold text-teal-900 mb-0.5">Nơi theo dõi hồ sơ:</strong>
-                            Bạn có thể vào mục <span className="font-bold underline">Hồ sơ năng lực</span> hoặc theo dõi tiến độ trực tiếp trên <span className="font-bold underline">Bảng điều khiển Điều dưỡng</span> bất cứ lúc nào.
+                            <strong className="block font-bold text-teal-900 mb-0.5">Nơi theo dõi tiến độ:</strong>
+                            Bạn có thể kiểm tra trạng thái bất cứ lúc nào tại mục <span className="font-bold underline">Hồ sơ năng lực</span> hoặc trên <span className="font-bold underline">Bảng điều khiển Điều dưỡng</span>.
                         </div>
                     </div>
 
                     <div className="mt-7 flex flex-col sm:flex-row items-center gap-3">
                         <Link
                             to="/caregiver/dashboard"
-                            className="inline-flex min-h-12 flex-1 w-full items-center justify-center rounded-xl bg-[#087E78] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#066A65] focus:outline-none focus:ring-4 focus:ring-[#087E78]/20 shadow-sm"
+                            className="inline-flex min-h-12 flex-1 w-full items-center justify-center rounded-xl bg-[#087E78] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#066A65] focus:outline-none shadow-sm"
                         >
-                            Về Bảng điều khiển (Dashboard)
+                            Về Bảng điều khiển
                         </Link>
                         <Link
                             to="/caregiver/profile"
                             className="inline-flex min-h-12 flex-1 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
                         >
-                            Xem hồ sơ & chứng chỉ đã nộp
+                            Xem tài liệu đã gửi
                         </Link>
                     </div>
                 </div>
@@ -599,6 +668,7 @@ export default function Verification() {
 
     const [currentStep, setCurrentStep] = useState(1);
     const [submitted, setSubmitted] = useState(false);
+    const [isApproved, setIsApproved] = useState(false);
     const [errors, setErrors] = useState({});
     const [uploadErrors, setUploadErrors] = useState({});
     const [formData, setFormData] = useState(INITIAL_FORM);
@@ -623,7 +693,9 @@ export default function Verification() {
     const [submitError, setSubmitError] = useState("");
     const [authModal, setAuthModal] = useState({ open: false, type: "unauthenticated" });
 
-    // ── KIỂM TRA QUYỀN ĐĂNG NHẬP & VAI TRÒ ĐIỀU DƯỠNG TRƯỚC KHI XÁC THỰC ──
+    const [hasConfirmedReview, setHasConfirmedReview] = useState(false);
+
+    // ── KIỂM TRA QUYỀN ĐĂNG NHẬP & TỰ ĐỘNG ĐIỀN THÔNG TIN ĐÃ ĐĂNG KÝ VÀO FORM ──
     useEffect(() => {
         const token = localStorage.getItem("carelink_token");
         const rawUser = localStorage.getItem("carelink_user");
@@ -644,6 +716,39 @@ export default function Verification() {
             setAuthModal({ open: true, type: "wrong_role" });
             return;
         }
+
+        // Tự động điền họ tên, số điện thoại, email từ tài khoản ban đầu để người dùng không phải nhập lại
+        if (user) {
+            setFormData((prev) => ({
+                ...prev,
+                fullName: prev.fullName || user.name || user.fullName || "",
+                email: prev.email || user.email || "",
+                phone: prev.phone || user.phone || user.phoneNumber || "",
+            }));
+        }
+
+        // Tự động tải thêm dữ liệu hồ sơ cá nhân hiện tại từ máy chủ (nếu có)
+        caregiverApi
+            .getProfile()
+            .then((res) => {
+                const p = res?.data || res;
+                if (p && typeof p === "object") {
+                    setFormData((prev) => ({
+                        ...prev,
+                        fullName: prev.fullName || p.fullName || "",
+                        phone: prev.phone || p.phone || "",
+                        address: prev.address || p.workDistrict || p.baseAddress || "",
+                        citizenId: prev.citizenId || p.citizenId || "",
+                    }));
+                    if (p.licenseNumber) {
+                        setEduData((prev) => ({
+                            ...prev,
+                            licenseNumber: prev.licenseNumber || p.licenseNumber || "",
+                        }));
+                    }
+                }
+            })
+            .catch(() => {});
     }, []);
 
     // ── TRA CỨU TRẠNG THÁI XÉT DUYỆT HỒ SƠ TỪ BACKEND (GET /api/v1/nurse/verification-status) ──
@@ -674,11 +779,25 @@ export default function Verification() {
                         }
                     }
 
-                    // Nếu đã nộp và đang chờ duyệt (status = 1 hoặc verificationStatus = 1)
-                    if (data.verificationStatus === 1 || data.status === 1) {
+                    // Kiểm tra trạng thái hồ sơ chính xác:
+                    // 1. Đã duyệt thành công (verificationStatus = 2 hoặc status = 1 / Active)
+                    const isNurseApproved =
+                        data.verificationStatus === 2 ||
+                        data.status === 1 ||
+                        data.verificationStatusName === "Approved" ||
+                        data.statusName === "Active";
+
+                    if (isNurseApproved) {
+                        setIsApproved(true);
+                    } else if (
+                        data.verificationStatus === 1 ||
+                        data.verificationStatus === 4 ||
+                        (data.status === 0 && (data.documentsCount > 0 || data.hasDocuments || (Array.isArray(data.documents) && data.documents.length > 0)))
+                    ) {
+                        // 2. Đang chờ duyệt
                         setSubmitted(true);
                     } else if (data.verificationStatus === 3 || data.status === 3) {
-                        // Nếu bị từ chối -> mở chế độ nộp lại (Re-submit)
+                        // 3. Nếu bị từ chối -> mở chế độ nộp lại (Re-submit)
                         setIsReSubmitting(true);
                         if (data.citizenId) {
                             setFormData((prev) => ({ ...prev, citizenId: data.citizenId }));
@@ -1026,15 +1145,49 @@ export default function Verification() {
             // 1. Cập nhật hồ sơ năng lực điều dưỡng (Họ tên, số điện thoại, trình độ, học vấn)
             // để Admin nhận được đầy đủ thông tin thực tế từ Form thay vì username mặc định
             try {
+                const humanSkillLabels = selectedSkills.map(
+                    (id) => skillOptions.find((s) => s.id === id)?.label || id
+                );
+                const parsedExp = isStudent
+                    ? 0
+                    : eduData.experience === "< 1"
+                    ? 0
+                    : eduData.experience === "1-3"
+                    ? 2
+                    : eduData.experience === "3-5"
+                    ? 4
+                    : eduData.experience === "5-10"
+                    ? 7
+                    : eduData.experience === "10+"
+                    ? 10
+                    : Number(eduData.experience) || 1;
+
+                const eduDesc = isStudent
+                    ? [eduData.university, eduData.major ? `Ngành ${eduData.major}` : null, eduData.year ? `Năm ${eduData.year}` : null]
+                          .filter(Boolean)
+                          .join(" - ")
+                    : [eduData.hospital, eduData.department ? `Khoa ${eduData.department}` : null]
+                          .filter(Boolean)
+                          .join(" - ");
+
                 const profilePayload = {
                     fullName: formData.fullName?.trim() || undefined,
                     phone: formData.phone?.trim() || undefined,
-                    bio: selectedSkills.length > 0 ? `Kỹ năng chuyên môn: ${selectedSkills.join(", ")}` : undefined,
-                    educationLevel: eduData.university ? `${eduData.university}${eduData.major ? ` - ${eduData.major}` : ""}` : undefined,
-                    experienceYears: Number(eduData.experience) || (isStudent ? 0 : 1),
+                    bio: humanSkillLabels.length > 0 ? `Kỹ năng: ${humanSkillLabels.join(", ")}` : undefined,
+                    educationLevel: eduDesc || undefined,
+                    experienceYears: parsedExp,
                     workDistrict: formData.address?.trim() || undefined,
                 };
                 await caregiverApi.updateProfile(profilePayload);
+
+                if (formData.fullName || formData.phone) {
+                    try {
+                        await authApi.updateMe({
+                            fullName: formData.fullName?.trim() || undefined,
+                            phone: formData.phone?.trim() || undefined,
+                        });
+                    } catch {}
+                }
             } catch (profErr) {
                 console.warn("[CareLink Verification] Cập nhật thông tin profile kèm theo:", profErr);
             }
@@ -1089,6 +1242,7 @@ export default function Verification() {
         }
     };
 
+    if (isApproved) return <ApprovedProfileScreen role={role} statusData={existingStatus} />;
     if (submitted) return <InterviewWaiting role={role} />;
 
     const today = new Date().toISOString().split("T")[0];
@@ -1882,14 +2036,27 @@ export default function Verification() {
                                             </span>
                                             <div>
                                                 <p className="text-sm font-bold text-[#102A35]">
-                                                    Bạn đã sẵn sàng gửi hồ sơ
+                                                    Kiểm tra kỹ toàn bộ thông tin trước khi gửi
                                                 </p>
                                                 <p className="mt-1 text-xs leading-5 text-slate-600">
-                                                    Hãy xác nhận thông tin khai báo là chính xác
-                                                    và tài liệu cung cấp thuộc về bạn.
+                                                    Hồ sơ sau khi gửi sẽ được Admin đối chiếu giấy tờ chuyên môn và xét duyệt trong 24 giờ. Quý điều dưỡng vui lòng rà soát kỹ bảng tổng hợp bên trên.
                                                 </p>
                                             </div>
                                         </div>
+
+                                        {/* Checkbox cam kết bắt buộc để tránh nộp nhầm / tự động gửi */}
+                                        <label className="flex items-start gap-3 mt-4 p-3.5 rounded-xl border border-teal-200/90 bg-white cursor-pointer select-none hover:bg-teal-50/50 transition-colors shadow-2xs">
+                                            <input
+                                                type="checkbox"
+                                                id="chk-confirm-verification"
+                                                checked={hasConfirmedReview}
+                                                onChange={(e) => setHasConfirmedReview(e.target.checked)}
+                                                className="w-4 h-4 mt-0.5 rounded text-[#087E78] focus:ring-[#087E78] cursor-pointer"
+                                            />
+                                            <span className="text-xs font-semibold text-[#102A35] leading-relaxed">
+                                                Tôi xác nhận đã đọc, đối chiếu và cam kết toàn bộ thông tin cá nhân, văn bằng chứng chỉ và tài liệu đính kèm là hoàn toàn chính xác, trung thực.
+                                            </span>
+                                        </label>
                                     </div>
                                 </div>
                             )}
@@ -1915,27 +2082,34 @@ export default function Verification() {
                                         <ArrowIcon />
                                     </button>
                                 ) : (
-                                    <button
-                                        id="btn-submit-verification"
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#087E78] px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#066A65] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#087E78]/20 disabled:opacity-60"
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <svg className="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                                </svg>
-                                                Đang gửi hồ sơ lên máy chủ...
-                                            </>
-                                        ) : (
-                                            <>
-                                                {isReSubmitting ? "Cập nhật lại hồ sơ xác minh" : "Gửi hồ sơ xác minh"}
-                                                <CheckIcon />
-                                            </>
+                                    <div className="flex flex-col items-end gap-1.5">
+                                        <button
+                                            id="btn-submit-verification"
+                                            type="submit"
+                                            disabled={isSubmitting || !hasConfirmedReview}
+                                            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#087E78] px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#066A65] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#087E78]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <svg className="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                                    </svg>
+                                                    Đang gửi hồ sơ lên máy chủ...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {isReSubmitting ? "Cập nhật lại hồ sơ xác minh" : "Gửi hồ sơ xác minh"}
+                                                    <CheckIcon />
+                                                </>
+                                            )}
+                                        </button>
+                                        {!hasConfirmedReview && (
+                                            <span className="text-[11px] text-amber-700 font-medium">
+                                                ⚠️ Vui lòng tick ô cam kết để kích hoạt nút gửi
+                                            </span>
                                         )}
-                                    </button>
+                                    </div>
                                 )}
                             </div>
 
@@ -2066,27 +2240,31 @@ export default function Verification() {
                     <div
                         role="dialog"
                         aria-modal="true"
-                        className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                        className="relative w-full max-w-[560px] overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-[0_25px_70px_rgba(8,126,120,0.18)] ring-1 ring-slate-900/5 animate-in fade-in zoom-in-95 duration-200"
                     >
                         {/* Header Modal */}
-                        <div className="relative border-b border-slate-100 bg-white p-6 pb-5">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-4">
+                        <div className="relative overflow-hidden bg-gradient-to-br from-teal-50/90 via-emerald-50/30 to-white px-7 pt-6 pb-5 border-b border-slate-100/80">
+                            {/* Decorative ambient background blur */}
+                            <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-teal-400/10 blur-2xl pointer-events-none" />
+                            <div className="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-emerald-400/10 blur-xl pointer-events-none" />
+
+                            <div className="relative flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
                                     <div
-                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${
+                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${
                                             authModal.type === "unauthenticated"
-                                                ? "border-teal-200 bg-teal-50 text-[#087E78]"
-                                                : "border-amber-200 bg-amber-50 text-amber-600"
+                                                ? "border-teal-200/90 bg-gradient-to-br from-teal-500 to-[#087E78] text-white shadow-teal-500/20"
+                                                : "border-amber-200/90 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-500/20"
                                         }`}
                                     >
                                         {authModal.type === "unauthenticated" ? (
-                                            <Stethoscope className="h-6 w-6" />
+                                            <Stethoscope className="h-6 w-6 stroke-[2.2]" />
                                         ) : (
-                                            <ShieldAlert className="h-6 w-6" />
+                                            <ShieldAlert className="h-6 w-6 stroke-[2.2]" />
                                         )}
                                     </div>
                                     <div>
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-50 text-[#087E78] border border-teal-200/60 mb-1.5">
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-teal-100/80 text-[#087E78] border border-teal-200/80 mb-1">
                                             Dành cho Người chăm sóc
                                         </div>
                                         <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
@@ -2102,7 +2280,7 @@ export default function Verification() {
                                 <button
                                     type="button"
                                     onClick={() => setAuthModal((prev) => ({ ...prev, open: false }))}
-                                    className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                                    className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                                 >
                                     <X className="h-5 w-5" />
                                 </button>
@@ -2113,7 +2291,7 @@ export default function Verification() {
                         <div className="p-6 space-y-4">
                             {authModal.type === "unauthenticated" ? (
                                 <>
-                                    <p className="text-sm leading-relaxed text-slate-600">
+                                    <p className="text-sm leading-relaxed text-slate-700">
                                         Để tham gia quy trình xác minh hồ sơ năng lực và nhận ca chăm sóc tại nhà, bạn cần đăng nhập tài khoản <strong>Điều dưỡng</strong> hoặc <strong>Sinh viên Y khoa</strong>.
                                     </p>
 
@@ -2133,7 +2311,7 @@ export default function Verification() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/50 px-3.5 py-2.5 text-xs text-[#065b65]">
+                                    <div className="flex items-center gap-2.5 rounded-xl border border-teal-300 bg-teal-100/90 px-4 py-3 text-xs text-teal-950 font-semibold shadow-2xs">
                                         <UserCheck className="h-4 w-4 shrink-0 text-[#087E78]" />
                                         <span>Chưa có tài khoản? Chỉ mất chưa đầy 1 phút để tạo tài khoản miễn phí.</span>
                                     </div>

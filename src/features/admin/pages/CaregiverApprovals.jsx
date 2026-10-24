@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import ApprovalDetailModal from "../components/ApprovalDetailModal";
+import ApprovalDetailModal, { formatDocumentTypeName } from "../components/ApprovalDetailModal";
 import adminApi from "../../../api/adminApi";
 import {
     Clock,
@@ -106,8 +106,8 @@ export default function CaregiverApprovals() {
             if (detail) {
                 const docs = (detail.documents || []).map((d) => ({
                     id: d.id,
-                    name: d.documentTypeName || "Tài liệu xác minh",
-                    type: d.documentTypeName || "Chứng từ",
+                    name: formatDocumentTypeName(d.documentType, d.documentTypeName),
+                    type: formatDocumentTypeName(d.documentType, d.documentTypeName),
                     status: d.statusName || (d.status === 1 ? "Hợp lệ" : d.status === 2 ? "Từ chối" : "Chờ duyệt"),
                     rawStatus: d.status,
                     url: d.fileUrl,

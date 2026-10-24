@@ -2,6 +2,17 @@ import React, { useState } from "react";
 import { X, FileText, Check, AlertCircle, Eye, ShieldCheck, XCircle, ExternalLink, Loader2 } from "lucide-react";
 import { resolveDocumentUrl } from "../../../api/axiosClient";
 
+export const formatDocumentTypeName = (docType, docTypeName) => {
+    const raw = String(docTypeName || docType || "").toLowerCase();
+    if (raw.includes("selfie") || raw === "5") return "Ảnh chân dung cầm CCCD";
+    if (raw.includes("degree") || raw === "3") return "Bằng cấp y tế / Thẻ sinh viên";
+    if (raw.includes("license") || raw === "4") return "Chứng chỉ hành nghề (CCHN)";
+    if (raw.includes("front") || raw === "cccdfront" || raw === "1") return "Căn cước công dân (Mặt trước)";
+    if (raw.includes("back") || raw === "cccdback" || raw === "2") return "Căn cước công dân (Mặt sau)";
+    if (raw.includes("student") || raw === "6") return "Thẻ sinh viên y khoa / Giấy trường cấp";
+    return docTypeName || "Tài liệu xác minh";
+};
+
 export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onReject }) {
     const [rejectReason, setRejectReason] = useState("");
     const [rejectError, setRejectError] = useState("");
@@ -9,6 +20,13 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
     const [selectedDocPreview, setSelectedDocPreview] = useState(null);
 
     if (!caregiver) return null;
+
+    const isAlreadyApproved =
+        caregiver.status === "Đã duyệt" ||
+        caregiver.rawStatus === 1 ||
+        caregiver.verificationStatus === 2 ||
+        caregiver.verificationStatusName === "Approved" ||
+        caregiver.statusName === "Active";
 
     const handleConfirmReject = () => {
         if (!rejectReason.trim()) {
@@ -184,8 +202,8 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                                                     <FileText className="w-4 h-4" />
                                                 </div>
                                                 <div className="truncate">
-                                                    <div className="text-xs font-bold text-slate-800 truncate">{doc.name}</div>
-                                                    <div className="text-[11px] text-slate-400">{doc.type} • Tải lên ngày {caregiver.submittedDate || "Gần đây"}</div>
+                                                    <div className="text-xs font-bold text-slate-800 truncate">{formatDocumentTypeName(doc.documentType, doc.name)}</div>
+                                                    <div className="text-[11px] text-slate-400">{formatDocumentTypeName(doc.documentType, doc.type)} • Tải lên ngày {caregiver.submittedDate || "Gần đây"}</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
@@ -220,7 +238,7 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                             <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                                 <span className="font-bold flex items-center gap-2 text-teal-300">
                                     <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
-                                    Đang xem: {selectedDocPreview.name} ({selectedDocPreview.type})
+                                    Đang xem: {formatDocumentTypeName(selectedDocPreview.documentType, selectedDocPreview.name)}
                                 </span>
                                 <button
                                     type="button"
@@ -322,26 +340,46 @@ export default function ApprovalDetailModal({ caregiver, onClose, onApprove, onR
                         Đóng lại
                     </button>
 
-                    <div className="flex items-center gap-2.5">
-                        {!isRejecting && (
+                    {isAlreadyApproved ? (
+                        <div className="flex items-center gap-2.5">
+                            <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs">
+                                <Check className="w-4 h-4 text-emerald-600" />
+                                ✓ Hồ sơ đã được phê duyệt hoạt động
+                            </span>
+                            {!isRejecting && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRejecting(true)}
+                                    className="px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                                    title="Thu hồi hoặc từ chối lại hồ sơ nếu phát hiện thông tin không hợp lệ"
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    Từ chối / Thu hồi
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2.5">
+                            {!isRejecting && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRejecting(true)}
+                                    className="px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    Từ chối hồ sơ
+                                </button>
+                            )}
                             <button
                                 type="button"
-                                onClick={() => setIsRejecting(true)}
-                                className="px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                                onClick={() => onApprove(caregiver.id)}
+                                className="px-5 py-2 text-xs font-bold text-white bg-[#00677c] hover:bg-[#005566] rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                             >
-                                <XCircle className="w-4 h-4" />
-                                Từ chối hồ sơ
+                                <Check className="w-4 h-4" strokeWidth={2.5} />
+                                Phê duyệt hồ sơ
                             </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => onApprove(caregiver.id)}
-                            className="px-5 py-2 text-xs font-bold text-white bg-[#00677c] hover:bg-[#005566] rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                        >
-                            <Check className="w-4 h-4" strokeWidth={2.5} />
-                            Phê duyệt hồ sơ
-                        </button>
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
