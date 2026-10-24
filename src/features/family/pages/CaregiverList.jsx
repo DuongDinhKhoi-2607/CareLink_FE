@@ -444,15 +444,6 @@ export default function CaregiverList() {
 
                         <ChevronRightIcon className="w-3.5 h-3.5 text-slate-300" />
 
-                        <Link
-                            to="/services"
-                            className="text-slate-400 hover:text-[#00677c] transition-colors"
-                        >
-                            Dịch vụ
-                        </Link>
-
-                        <ChevronRightIcon className="w-3.5 h-3.5 text-slate-300" />
-
                         <span className="font-semibold text-[#102030]">
                             Tìm điều dưỡng
                         </span>

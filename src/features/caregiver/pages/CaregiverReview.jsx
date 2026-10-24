@@ -239,7 +239,7 @@ function SessionCard({ family, service, date, duration }) {
    REVIEW CRITERION CARD
 ========================================================= */
 
-function CriterionBlock({ criterion, value, onChange }) {
+function CriterionBlock({ criterion, value, onChange, readonly = false }) {
     const isRated = value > 0;
 
     const ratingLabels = {
@@ -324,7 +324,8 @@ function CriterionBlock({ criterion, value, onChange }) {
                     <Rating
                         id={`rating-${criterion.id}`}
                         value={value}
-                        onChange={onChange}
+                        onChange={readonly ? undefined : onChange}
+                        readonly={readonly}
                         size="md"
                         showLabel
                     />
@@ -454,12 +455,16 @@ export default function CaregiverReview() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const bookingId = searchParams.get("bookingId") || location.state?.bookingId || null;
+    const paramBookingId = searchParams.get("bookingId") || location.state?.bookingId || null;
+    const [activeBookingId, setActiveBookingId] = useState(paramBookingId);
+    const [completedBookings, setCompletedBookings] = useState([]);
+    const [loadingBookings, setLoadingBookings] = useState(false);
+
     const [bookingInfo, setBookingInfo] = useState({
-        family: location.state?.family || "Nguyễn Thị Lan",
-        service: location.state?.service || "Chăm sóc người cao tuổi",
-        date: location.state?.date || "18/09/2026",
-        duration: location.state?.duration || "3 giờ",
+        family: location.state?.family || "",
+        service: location.state?.service || "",
+        date: location.state?.date || "",
+        duration: location.state?.duration || "Theo ca",
     });
 
     const [ratings, setRatings] = useState({
@@ -474,26 +479,107 @@ export default function CaregiverReview() {
     const [submitted, setSubmitted] = useState(false);
     const [apiError, setApiError] = useState("");
     const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+    const [existingNurseReview, setExistingNurseReview] = useState(null);
 
+    // 1. Tải danh sách ca hoàn thành nếu mở trang từ sidebar không có sẵn bookingId
     useEffect(() => {
-        if (bookingId && !location.state?.family) {
-            caregiverApi.getBookingDetail(bookingId)
-                .then((res) => {
-                    const data = res.data?.data || res.data;
-                    if (data) {
-                        setBookingInfo({
-                            family: data.customerName || data.patientName || "Gia đình",
-                            service: data.serviceName || "Dịch vụ chăm sóc",
-                            date: data.scheduledAt ? new Date(data.scheduledAt).toLocaleDateString("vi-VN") : "18/09/2026",
-                            duration: data.duration || "Theo ca",
-                        });
+        let isMounted = true;
+        const loadCompletedBookings = async () => {
+            setLoadingBookings(true);
+            try {
+                const res = await caregiverApi.getBookings({ status: 5 });
+                const items = res?.items || res?.data?.items || (Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
+                const completed = items.filter(b => {
+                    const st = typeof b.status === "number" ? b.status : String(b.status || "").toLowerCase();
+                    return st === 5 || st === "completed";
+                });
+                if (isMounted) {
+                    setCompletedBookings(completed);
+                    if (!activeBookingId && completed.length > 0) {
+                        const first = completed[0];
+                        setActiveBookingId(first.id);
                     }
-                })
-                .catch(() => {});
+                }
+            } catch (err) {
+                console.warn("[CareLink] Tải danh sách ca hoàn thành thất bại:", err);
+            } finally {
+                if (isMounted) setLoadingBookings(false);
+            }
+        };
+
+        if (!activeBookingId) {
+            loadCompletedBookings();
         }
-    }, [bookingId, location.state]);
+        return () => {
+            isMounted = false;
+        };
+    }, [activeBookingId]);
+
+    // 2. Khi activeBookingId thay đổi: nạp thông tin chi tiết ca & kiểm tra đánh giá đã lưu
+    useEffect(() => {
+        if (!activeBookingId) return;
+
+        let isMounted = true;
+
+        // Tải chi tiết ca chăm sóc để hiện thông tin khách hàng chính xác
+        caregiverApi.getBookingDetail(activeBookingId)
+            .then((res) => {
+                if (!isMounted) return;
+                const data = res.data?.data || res.data;
+                if (data) {
+                    const start = data.scheduledStart ? new Date(data.scheduledStart) : null;
+                    const end = data.scheduledEnd ? new Date(data.scheduledEnd) : null;
+                    let durationStr = "Theo ca";
+                    if (start && end) {
+                        const diffMin = Math.round((end - start) / 60000);
+                        durationStr = `${Math.floor(diffMin / 60)} giờ${diffMin % 60 > 0 ? ` ${diffMin % 60}p` : ""}`;
+                    } else if (data.duration) {
+                        durationStr = data.duration;
+                    }
+                    setBookingInfo({
+                        family: data.customerName || data.recipientName || "Gia đình khách hàng",
+                        service: data.serviceName || "Dịch vụ chăm sóc",
+                        date: start ? start.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) : "Gần đây",
+                        duration: durationStr,
+                    });
+                }
+            })
+            .catch(() => {});
+
+        // Kiểm tra xem ca này đã được điều dưỡng gửi đánh giá chưa (GET /api/v1/bookings/{id}/reviews)
+        caregiverApi.getBookingReviews(activeBookingId)
+            .then((res) => {
+                if (!isMounted) return;
+                const data = res.data?.data || res.data;
+                if (data?.hasNurseReviewed || data?.nurseReview) {
+                    const nr = data.nurseReview;
+                    setAlreadyReviewed(true);
+                    setExistingNurseReview(nr);
+                    if (nr) {
+                        setRatings({
+                            respect: nr.respectRating || 5,
+                            safety: nr.safetyRating || 5,
+                            supplies: nr.suppliesRating || 5,
+                            payment: nr.paymentRating || 5,
+                        });
+                        setNote(nr.comment || "");
+                    }
+                } else {
+                    setAlreadyReviewed(false);
+                    setExistingNurseReview(null);
+                    setRatings({ respect: 0, safety: 0, supplies: 0, payment: 0 });
+                    setNote("");
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            isMounted = false;
+        };
+    }, [activeBookingId]);
 
     const setRating = (id) => (value) => {
+        if (alreadyReviewed) return;
         setRatings((previous) => ({
             ...previous,
             [id]: value,
@@ -522,8 +608,8 @@ export default function CaregiverReview() {
             return;
         }
 
-        if (!bookingId) {
-            setApiError("Không tìm thấy mã ca chăm sóc (bookingId). Vui lòng chọn ca từ danh sách yêu cầu nhận ca.");
+        if (!activeBookingId) {
+            setApiError("Không tìm thấy mã ca chăm sóc. Vui lòng chọn ca từ danh sách yêu cầu nhận ca.");
             return;
         }
 
@@ -540,7 +626,7 @@ export default function CaregiverReview() {
                 comment: note.trim() || null,
             };
 
-            await caregiverApi.reviewCustomer(bookingId, payload);
+            await caregiverApi.reviewCustomer(activeBookingId, payload);
             setSubmitted(true);
         } catch (err) {
             if (err.response?.status === 409) {
@@ -576,7 +662,7 @@ export default function CaregiverReview() {
     if (submitted) {
         return (
             <div className="min-h-[70vh] bg-slate-50/70 px-4 py-10 sm:px-8">
-                <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm sm:px-10">
+                <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm sm:px-10">
                     <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/60">
                         <CheckIcon className="h-10 w-10" />
                     </div>
@@ -589,13 +675,13 @@ export default function CaregiverReview() {
                         Cảm ơn bạn!
                     </h2>
 
-                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+                    <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
                         Phản hồi của bạn góp phần xây dựng môi trường chăm sóc
                         chuyên nghiệp, an toàn và tôn trọng dành cho cả gia đình
                         lẫn điều dưỡng.
                     </p>
 
-                    <div className="mt-6 w-full max-w-sm">
+                    <div className="mt-6 w-full max-w-xl">
                         <OverallRating
                             ratings={ratings}
                             averageRating={averageRating}
@@ -606,7 +692,7 @@ export default function CaregiverReview() {
                     <button
                         type="button"
                         onClick={resetReview}
-                        className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-[#00677c] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#005263] hover:shadow-md active:translate-y-0"
+                        className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-[#00677c] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#005263] hover:shadow-md active:translate-y-0 cursor-pointer"
                     >
                         <svg
                             className="h-4 w-4"
@@ -684,6 +770,55 @@ export default function CaregiverReview() {
                     </div>
                 </header>
 
+                {/* COMPLETED BOOKINGS SELECTOR (Nếu có nhiều ca hoàn thành) */}
+                {completedBookings.length > 1 && (
+                    <div className="mb-6 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                                Chọn ca chăm sóc đã hoàn tất để đánh giá:
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                                Có {completedBookings.length} ca hoàn thành trong danh mục của bạn
+                            </span>
+                        </div>
+                        <select
+                            value={activeBookingId || ""}
+                            onChange={(e) => setActiveBookingId(e.target.value)}
+                            className="px-3.5 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-[#00677c] cursor-pointer"
+                        >
+                            {completedBookings.map((b) => (
+                                <option key={b.id} value={b.id}>
+                                    {b.customerName || b.recipientName || "Gia đình"} · {b.serviceName || "Dịch vụ"} ({b.scheduledStart ? new Date(b.scheduledStart).toLocaleDateString("vi-VN") : "Gần đây"})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {/* BANNER NẾU ĐÃ GỬI ĐÁNH GIÁ (XEM LẠI ĐÁNH GIÁ) */}
+                {alreadyReviewed && (
+                    <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 shadow-2xs">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-lg shrink-0">
+                                ⭐
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-amber-900">
+                                    Bạn đã hoàn thành đánh giá cho ca chăm sóc này
+                                </h3>
+                                <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                                    {existingNurseReview?.createdAt ? `Đã lưu trên hệ thống vào ${new Date(existingNurseReview.createdAt).toLocaleDateString("vi-VN")}. ` : ""}
+                                    Dưới đây là chi tiết điểm số và nhận xét 2 chiều bạn đã gửi cho gia đình.
+                                </p>
+                            </div>
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-200/80 text-amber-950 font-bold rounded-xl text-xs shrink-0 self-start sm:self-center">
+                            <CheckIcon className="w-3.5 h-3.5 text-amber-800" />
+                            Đã lưu đánh giá
+                        </span>
+                    </div>
+                )}
+
                 {/* SESSION INFORMATION */}
                 <section className="mb-8">
                     <div className="mb-3 flex items-center justify-between gap-3">
@@ -697,9 +832,9 @@ export default function CaregiverReview() {
                             </p>
                         </div>
 
-                        {bookingId ? (
+                        {activeBookingId ? (
                             <span className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-[#00677c] sm:inline-flex">
-                                Mã ca · {bookingId}
+                                Mã ca · {activeBookingId}
                             </span>
                         ) : (
                             <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 sm:inline-flex">
@@ -708,7 +843,7 @@ export default function CaregiverReview() {
                         )}
                     </div>
 
-                    {!bookingId && (
+                    {!activeBookingId && !loadingBookings && (
                         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 flex items-center justify-between gap-3">
                             <span>Vui lòng chọn ca đã hoàn thành từ danh sách để đánh giá chính xác.</span>
                             <Link to="/caregiver/bookings" className="font-bold underline text-[#00677c] shrink-0">
@@ -718,9 +853,9 @@ export default function CaregiverReview() {
                     )}
 
                     <SessionCard
-                        family={bookingInfo.family}
-                        service={bookingInfo.service}
-                        date={bookingInfo.date}
+                        family={bookingInfo.family || "Gia đình khách hàng"}
+                        service={bookingInfo.service || "Dịch vụ chăm sóc"}
+                        date={bookingInfo.date || "Gần đây"}
                         duration={bookingInfo.duration}
                     />
                 </section>
@@ -735,8 +870,9 @@ export default function CaregiverReview() {
                             </h2>
 
                             <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                                Chọn số sao phù hợp với trải nghiệm của bạn ở
-                                từng tiêu chí bên dưới.
+                                {alreadyReviewed
+                                    ? "Chi tiết điểm đánh giá 2 chiều bạn đã gửi cho gia đình khách hàng."
+                                    : "Chọn số sao phù hợp với trải nghiệm của bạn ở từng tiêu chí bên dưới."}
                             </p>
                         </div>
 
@@ -754,6 +890,7 @@ export default function CaregiverReview() {
                                 criterion={criterion}
                                 value={ratings[criterion.id]}
                                 onChange={setRating(criterion.id)}
+                                readonly={alreadyReviewed}
                             />
                         ))}
                     </div>
@@ -793,7 +930,7 @@ export default function CaregiverReview() {
                                 >
                                     Nhận xét thêm
                                     <span className="ml-2 text-xs font-normal text-slate-400">
-                                        Không bắt buộc
+                                        {alreadyReviewed ? "Nội dung đã lưu" : "Không bắt buộc"}
                                     </span>
                                 </label>
 
@@ -809,14 +946,19 @@ export default function CaregiverReview() {
                             rows={4}
                             maxLength={1000}
                             value={note}
-                            onChange={(event) => setNote(event.target.value)}
-                            placeholder="Ví dụ: Gia đình phối hợp tốt, chuẩn bị đầy đủ vật dụng và trao đổi rất rõ ràng..."
-                            className="mt-4 w-full resize-y rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm leading-relaxed text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-[#00677c] focus:bg-white focus:ring-4 focus:ring-[#00677c]/[0.07]"
+                            onChange={(event) => !alreadyReviewed && setNote(event.target.value)}
+                            readOnly={alreadyReviewed}
+                            placeholder={alreadyReviewed ? "Không có nhận xét thêm" : "Ví dụ: Gia đình phối hợp tốt, chuẩn bị đầy đủ vật dụng và trao đổi rất rõ ràng..."}
+                            className={`mt-4 w-full resize-y rounded-xl border border-slate-200 px-4 py-3 text-sm leading-relaxed outline-none transition-all ${
+                                alreadyReviewed
+                                    ? "bg-slate-100/70 text-slate-700 cursor-default"
+                                    : "bg-slate-50/60 text-slate-700 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#00677c] focus:bg-white focus:ring-4 focus:ring-[#00677c]/[0.07]"
+                            }`}
                         />
 
                         <div className="mt-2 flex items-center justify-between gap-3">
                             <p className="text-[11px] leading-relaxed text-slate-400">
-                                Vui lòng giữ nội dung nhận xét lịch sự và khách quan.
+                                {alreadyReviewed ? "Đánh giá đã được ghi nhận trên hệ thống." : "Vui lòng giữ nội dung nhận xét lịch sự và khách quan."}
                             </p>
 
                             <span className="shrink-0 text-xs text-slate-400">
@@ -856,13 +998,17 @@ export default function CaregiverReview() {
 
                             <div>
                                 <p className="text-sm font-semibold text-slate-700">
-                                    {allRated
+                                    {alreadyReviewed
+                                        ? "Đánh giá ca này đã hoàn thành"
+                                        : allRated
                                         ? "Bạn đã hoàn thành tất cả tiêu chí"
                                         : "Hoàn thành đánh giá của bạn"}
                                 </p>
 
                                 <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                                    {allRated
+                                    {alreadyReviewed
+                                        ? "Bạn có thể xem lại chi tiết đánh giá đã gửi ở trên."
+                                        : allRated
                                         ? "Bạn có thể gửi đánh giá ngay bây giờ."
                                         : `Còn ${CRITERIA.length - ratedCount} tiêu chí chưa được đánh giá.`}
                                 </p>
@@ -883,7 +1029,9 @@ export default function CaregiverReview() {
                                 inline-flex w-full shrink-0 items-center justify-center gap-2
                                 rounded-xl px-6 py-3 text-sm font-bold
                                 transition-all duration-200 sm:w-auto
-                                ${allRated && !submitting && !alreadyReviewed
+                                ${alreadyReviewed
+                                    ? "bg-amber-100 text-amber-800 border border-amber-300 cursor-default"
+                                    : allRated && !submitting
                                     ? "bg-[#00677c] text-white shadow-sm hover:-translate-y-0.5 hover:bg-[#005263] hover:shadow-md active:translate-y-0 cursor-pointer"
                                     : "cursor-not-allowed bg-slate-100 text-slate-400"
                                 }
@@ -897,10 +1045,15 @@ export default function CaregiverReview() {
                                     </svg>
                                     Đang gửi...
                                 </span>
+                            ) : alreadyReviewed ? (
+                                <>
+                                    <CheckIcon className="h-4 w-4 text-amber-700" />
+                                    <span>✓ Đã lưu đánh giá</span>
+                                </>
                             ) : (
                                 <>
                                     <CheckIcon className="h-4 w-4" />
-                                    {alreadyReviewed ? "Đã đánh giá" : "Gửi đánh giá"}
+                                    <span>Gửi đánh giá</span>
                                 </>
                             )}
                         </button>

@@ -54,26 +54,6 @@ const experiences = [
     },
 ];
 
-// Đánh giá từ khách hàng
-const reviews = [
-    {
-        initials: "VH",
-        name: "Vũ Hoàng",
-        date: "2 tuần trước",
-        color: "bg-[#102030]",
-        rating: 5,
-        text: "Linh rất nhiệt tình và chuyên nghiệp. Bạn đến rất đúng giờ để hỗ trợ thay băng cho bố tôi. Tay nghề rất vững và tính cách hòa nhã khiến gia đình rất yên tâm.",
-    },
-    {
-        initials: "ML",
-        name: "Mai Lan",
-        date: "1 tháng trước",
-        color: "bg-[#00677c]",
-        rating: 5,
-        text: "Kỹ năng tiêm truyền của Linh rất tốt, không gây đau cho mẹ tôi. Rất hài lòng với dịch vụ của CareLink đã giới thiệu sinh viên chất lượng như thế này.",
-    },
-];
-
 // Lợi ích dịch vụ cột bên phải
 const serviceBenefits = [
     "Bảo hiểm trách nhiệm đầy đủ",
@@ -427,42 +407,71 @@ export default function CaregiverProfile() {
                                     </svg>
                                     <h2 className="text-lg font-bold text-[#102030]">Đánh giá từ khách hàng</h2>
                                 </div>
-                                <button type="button" className="text-xs font-semibold text-[#00677c] hover:underline">
-                                    Xem tất cả
-                                </button>
+                                {reviewSummary && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">
+                                        ⭐ {Number(reviewSummary.averageRating || 5).toFixed(1)} ({reviewSummary.totalReviews || reviews.length} đánh giá)
+                                    </span>
+                                )}
                             </div>
 
-                            <div className="flex flex-col gap-4">
-                                {reviews.map((rev, idx) => (
-                                    <blockquote
-                                        key={idx}
-                                        className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col gap-3"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div
-                                                    className={`w-9 h-9 rounded-full ${rev.color} text-white font-bold text-xs flex items-center justify-center shadow-xs`}
-                                                >
-                                                    {rev.initials}
+                            {reviewsLoading && reviews.length === 0 ? (
+                                <div className="py-8 text-center text-xs text-slate-400">
+                                    Đang tải đánh giá từ khách hàng...
+                                </div>
+                            ) : reviews.length > 0 ? (
+                                <div className="flex flex-col gap-4">
+                                    {reviews.map((rev, idx) => (
+                                        <blockquote
+                                            key={rev.id || idx}
+                                            className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col gap-3"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className={`w-9 h-9 rounded-full ${rev.color || "bg-[#00677c]"} text-white font-bold text-xs flex items-center justify-center shadow-xs`}
+                                                    >
+                                                        {rev.initials}
+                                                    </div>
+                                                    <div>
+                                                        <cite className="not-italic text-sm font-bold text-[#102030] block">
+                                                            {rev.name}
+                                                        </cite>
+                                                        <span className="text-[11px] text-slate-400">{rev.date}</span>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <cite className="not-italic text-sm font-bold text-[#102030] block">
-                                                        {rev.name}
-                                                    </cite>
-                                                    <span className="text-[11px] text-slate-400">{rev.date}</span>
+                                                <div className="flex text-amber-400 text-xs">
+                                                    {"★".repeat(Math.max(1, Math.min(5, rev.rating || 5)))}
                                                 </div>
                                             </div>
-                                            <div className="flex text-amber-400 text-xs">
-                                                {"★".repeat(rev.rating)}
-                                            </div>
-                                        </div>
 
-                                        <p className="text-xs text-slate-600 italic leading-relaxed">
-                                            "{rev.text}"
-                                        </p>
-                                    </blockquote>
-                                ))}
-                            </div>
+                                            <p className="text-xs text-slate-600 italic leading-relaxed">
+                                                "{rev.text}"
+                                            </p>
+                                        </blockquote>
+                                    ))}
+
+                                    {reviewsHasMore && (
+                                        <button
+                                            type="button"
+                                            onClick={() => fetchReviews(reviewsPage + 1)}
+                                            disabled={reviewsLoading}
+                                            className="mt-2 py-2 px-4 rounded-xl border border-slate-200 text-xs font-bold text-[#00677c] hover:bg-slate-50 transition-colors self-center cursor-pointer"
+                                        >
+                                            {reviewsLoading ? "Đang tải thêm..." : "Xem thêm đánh giá"}
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="py-8 px-4 rounded-2xl bg-slate-50 border border-slate-100 text-center flex flex-col items-center gap-2">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg">
+                                        ⭐
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-700">Chưa có đánh giá nào từ khách hàng</p>
+                                    <p className="text-[11px] text-slate-400 max-w-sm">
+                                        Điều dưỡng sẽ nhận được đánh giá sau khi hoàn thành các ca chăm sóc đầu tiên.
+                                    </p>
+                                </div>
+                            )}
                         </article>
                     </section>
 

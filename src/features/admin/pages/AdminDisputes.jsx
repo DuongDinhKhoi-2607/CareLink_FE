@@ -3,97 +3,99 @@ import { createPortal } from "react-dom";
 import { Search, AlertCircle, CheckCircle2, XCircle, RotateCcw, Clock, ShieldAlert, Loader2 } from "lucide-react";
 import adminApi from "../../../api/adminApi";
 
+// ── MOCK DATA KHIẾU NẠI TOÀN SÀN CỐ ĐỊNH (KHỚP DTO BACKEND: DisputeResponseDto, ResolveDisputeDto, RefundPaymentRequest) ──
+const MOCK_DISPUTES = [
+    {
+        id: "DSP-2005",
+        bookingId: "CA-2005",
+        createdAt: "20/09/2026 15:30",
+        service: "Đồng hành hỗ trợ sinh hoạt (8 giờ)",
+        totalAmount: 720000,
+        family: {
+            name: "Võ Thị Thanh",
+            phone: "0944 555 666",
+            avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
+            address: "55 Đinh Tiên Hoàng, P. Đa Kao, Q.1, TP.HCM",
+            relative: "Cụ Võ Văn Nam (82 tuổi)",
+        },
+        caregiver: {
+            name: "Vũ Thị Bích Trâm",
+            phone: "0977 112 233",
+            avatar: "https://images.unsplash.com/photo-1594824813511-667794178550?auto=format&fit=crop&q=80&w=200",
+            title: "Sinh viên Y khoa",
+        },
+        reason: "Điều dưỡng đến muộn 45 phút, không hoàn thành đủ các bài tập hỗ trợ vận động buổi sáng như cam kết ban đầu.",
+        evidence: [
+            "Ảnh chụp camera an ninh ghi nhận điều dưỡng đến lúc 07:45 (lịch hẹn 07:00).",
+            "Ảnh sổ nhật ký uống thuốc buổi sáng bị trễ 40 phút.",
+        ],
+        caregiverExplanation: "Đoạn đường Đinh Tiên Hoàng ngập sâu do triều cường sáng sớm nên em bị kẹt xe. Em đã chủ động gọi điện báo trước 15 phút và xin gia đình được bù thêm 1 tiếng vào cuối ca chiều.",
+        status: "pending", // pending | refunded | rejected
+        statusLabel: "Chờ xử lý",
+        resolutionNotes: "",
+        refundAmount: 0,
+        resolvedAt: null,
+    },
+    {
+        id: "DSP-2004",
+        bookingId: "CA-2004",
+        createdAt: "18/09/2026 11:20",
+        service: "Phục hồi chức năng khớp gối (4 giờ)",
+        totalAmount: 480000,
+        family: {
+            name: "Lê Hoàng Yến",
+            phone: "0912 345 678",
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+            address: "12 Lý Thường Kiệt, Q.10, TP.HCM",
+            relative: "Bà Lê Thị Hoa (68 tuổi)",
+        },
+        caregiver: {
+            name: "Điều dưỡng Nguyễn Thùy Linh",
+            phone: "0912 888 999",
+            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200",
+            title: "Cử nhân Điều dưỡng ĐH Y Dược",
+        },
+        reason: "Gia đình phải hủy ca gấp do người thân nhập viện cấp cứu nhưng hệ thống ban đầu tính hủy sát giờ.",
+        evidence: ["Giấy nhập viện cấp cứu tại BV Chợ Rẫy lúc 08:15 sáng."],
+        caregiverExplanation: "Điều dưỡng xác nhận gia đình đã gọi báo khẩn cấp và hoàn toàn đồng thuận hoàn lại tiền cho gia đình.",
+        status: "refunded",
+        statusLabel: "Đã hoàn tiền 100%",
+        resolutionNotes: "Admin đã xác minh giấy nhập viện khẩn cấp hợp lệ theo chính sách bất khả kháng. Đã hoàn 100% tiền cho khách.",
+        refundAmount: 480000,
+        resolvedAt: "18/09/2026 14:00",
+    },
+    {
+        id: "DSP-2002",
+        bookingId: "CA-2002",
+        createdAt: "12/09/2026 17:00",
+        service: "Theo dõi sinh hiệu & Dùng thuốc (6 giờ)",
+        totalAmount: 540000,
+        family: {
+            name: "Trần Minh Khoa",
+            phone: "0977 111 222",
+            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
+            address: "45 Lê Lợi, Q.1, TP.HCM",
+            relative: "Bà Trần Thị Lan (65 tuổi)",
+        },
+        caregiver: {
+            name: "Trần Thị Mai",
+            phone: "0901 234 567",
+            avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200",
+            title: "Sinh viên Y khoa",
+        },
+        reason: "Gia đình khiếu nại điều dưỡng không đo đường huyết đủ 3 lần trong ca trực.",
+        evidence: ["Sổ theo dõi chỉ ghi 2 lần đo."],
+        caregiverExplanation: "Lần đo thứ 3 vào lúc 16:00 bệnh nhân đang ngủ say sau khi uống thuốc an thần, gia đình có dặn không đánh thức cụ dậy.",
+        status: "rejected",
+        statusLabel: "Đã bác bỏ khiếu nại",
+        resolutionNotes: "Điều dưỡng đã tuân thủ đúng chỉ định không làm gián đoạn giấc ngủ của bệnh nhân cao tuổi. Khiếu nại không đủ căn cứ vi phạm.",
+        refundAmount: 0,
+        resolvedAt: "13/09/2026 09:30",
+    },
+];
+
 export default function AdminDisputes() {
-    // ── MOCK DATA KHIẾU NẠI TOÀN SÀN (KHỚP DTO BACKEND: DisputeResponseDto, ResolveDisputeDto, RefundPaymentRequest) ──
-    const [disputes, setDisputes] = useState([
-        {
-            id: "DSP-2005",
-            bookingId: "CA-2005",
-            createdAt: "20/09/2026 15:30",
-            service: "Đồng hành hỗ trợ sinh hoạt (8 giờ)",
-            totalAmount: 720000,
-            family: {
-                name: "Võ Thị Thanh",
-                phone: "0944 555 666",
-                avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
-                address: "55 Đinh Tiên Hoàng, P. Đa Kao, Q.1, TP.HCM",
-                relative: "Cụ Võ Văn Nam (82 tuổi)",
-            },
-            caregiver: {
-                name: "Vũ Thị Bích Trâm",
-                phone: "0977 112 233",
-                avatar: "https://images.unsplash.com/photo-1594824813511-667794178550?auto=format&fit=crop&q=80&w=200",
-                title: "Sinh viên Y khoa",
-            },
-            reason: "Điều dưỡng đến muộn 45 phút, không hoàn thành đủ các bài tập hỗ trợ vận động buổi sáng như cam kết ban đầu.",
-            evidence: [
-                "Ảnh chụp camera an ninh ghi nhận điều dưỡng đến lúc 07:45 (lịch hẹn 07:00).",
-                "Ảnh sổ nhật ký uống thuốc buổi sáng bị trễ 40 phút.",
-            ],
-            caregiverExplanation: "Đoạn đường Đinh Tiên Hoàng ngập sâu do triều cường sáng sớm nên em bị kẹt xe. Em đã chủ động gọi điện báo trước 15 phút và xin gia đình được bù thêm 1 tiếng vào cuối ca chiều.",
-            status: "pending", // pending | refunded | rejected
-            statusLabel: "Chờ xử lý",
-            resolutionNotes: "",
-            refundAmount: 0,
-            resolvedAt: null,
-        },
-        {
-            id: "DSP-2004",
-            bookingId: "CA-2004",
-            createdAt: "18/09/2026 11:20",
-            service: "Phục hồi chức năng khớp gối (4 giờ)",
-            totalAmount: 480000,
-            family: {
-                name: "Lê Hoàng Yến",
-                phone: "0912 345 678",
-                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
-                address: "12 Lý Thường Kiệt, Q.10, TP.HCM",
-                relative: "Bà Lê Thị Hoa (68 tuổi)",
-            },
-            caregiver: {
-                name: "Điều dưỡng Nguyễn Thùy Linh",
-                phone: "0912 888 999",
-                avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200",
-                title: "Cử nhân Điều dưỡng ĐH Y Dược",
-            },
-            reason: "Gia đình phải hủy ca gấp do người thân nhập viện cấp cứu nhưng hệ thống ban đầu tính hủy sát giờ.",
-            evidence: ["Giấy nhập viện cấp cứu tại BV Chợ Rẫy lúc 08:15 sáng."],
-            caregiverExplanation: "Điều dưỡng xác nhận gia đình đã gọi báo khẩn cấp và hoàn toàn đồng thuận hoàn lại tiền cho gia đình.",
-            status: "refunded",
-            statusLabel: "Đã hoàn tiền 100%",
-            resolutionNotes: "Admin đã xác minh giấy nhập viện khẩn cấp hợp lệ theo chính sách bất khả kháng. Đã hoàn 100% tiền cho khách.",
-            refundAmount: 480000,
-            resolvedAt: "18/09/2026 14:00",
-        },
-        {
-            id: "DSP-2002",
-            bookingId: "CA-2002",
-            createdAt: "12/09/2026 17:00",
-            service: "Theo dõi sinh hiệu & Dùng thuốc (6 giờ)",
-            totalAmount: 540000,
-            family: {
-                name: "Trần Minh Khoa",
-                phone: "0977 111 222",
-                avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
-                address: "45 Lê Lợi, Q.1, TP.HCM",
-                relative: "Bà Trần Thị Lan (65 tuổi)",
-            },
-            caregiver: {
-                name: "Trần Thị Mai",
-                phone: "0901 234 567",
-                avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200",
-                title: "Sinh viên Y khoa",
-            },
-            reason: "Gia đình khiếu nại điều dưỡng không đo đường huyết đủ 3 lần trong ca trực.",
-            evidence: ["Sổ theo dõi chỉ ghi 2 lần đo."],
-            caregiverExplanation: "Lần đo thứ 3 vào lúc 16:00 bệnh nhân đang ngủ say sau khi uống thuốc an thần, gia đình có dặn không đánh thức cụ dậy.",
-            status: "rejected",
-            statusLabel: "Đã bác bỏ khiếu nại",
-            resolutionNotes: "Điều dưỡng đã tuân thủ đúng chỉ định không làm gián đoạn giấc ngủ của bệnh nhân cao tuổi. Khiếu nại không đủ căn cứ vi phạm.",
-            refundAmount: 0,
-            resolvedAt: "13/09/2026 09:30",
-        },
-    ]);
+    const [disputes, setDisputes] = useState(MOCK_DISPUTES);
 
     const [activeTab, setActiveTab] = useState("all"); // 'all' | 'pending' | 'refunded' | 'rejected'
     const [searchQuery, setSearchQuery] = useState("");
@@ -116,50 +118,61 @@ export default function AdminDisputes() {
         setLoading(true);
         try {
             const res = await adminApi.getDisputes();
-            const data = res?.data?.data || res?.data;
-            if (Array.isArray(data) && data.length > 0) {
-                const mapped = data.map((d) => ({
-                    id: d.code || (d.id ? `DSP-${d.id}` : `DSP-${d.bookingId || "2000"}`),
-                    rawId: d.id,
-                    bookingId: d.bookingCode || (d.bookingId ? `CA-${d.bookingId}` : "CA-2000"),
-                    createdAt: d.createdAt ? new Date(d.createdAt).toLocaleString("vi-VN") : "Gần đây",
-                    service: d.serviceName || d.service || "Dịch vụ chăm sóc người cao tuổi",
-                    totalAmount: Number(d.totalAmount || d.bookingAmount || d.amount || 500000),
-                    family: {
-                        name: d.customerName || d.familyName || d.user?.fullName || "Gia đình khách hàng",
-                        phone: d.customerPhone || d.familyPhone || d.user?.phoneNumber || "0912 345 678",
-                        avatar: d.customerAvatar || d.familyAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
-                        address: d.bookingAddress || d.address || "Quận 1, TP.HCM",
-                        relative: d.patientName || "Người thân",
-                    },
-                    caregiver: {
-                        name: d.nurseName || d.caregiverName || "Điều dưỡng CareLink",
-                        phone: d.nursePhone || d.caregiverPhone || "0977 112 233",
-                        avatar: d.nurseAvatar || d.caregiverAvatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200",
-                        title: d.nurseTitle || "Điều dưỡng viên chuyên môn",
-                    },
-                    reason: d.reason || "Khiếu nại về chất lượng ca trực.",
-                    evidence: Array.isArray(d.evidenceUrls) && d.evidenceUrls.length > 0
-                        ? d.evidenceUrls
-                        : Array.isArray(d.evidence) && d.evidence.length > 0
-                        ? d.evidence
-                        : (d.evidence ? [d.evidence] : ["Hình ảnh / Biên bản sự cố đính kèm."]),
-                    caregiverExplanation: d.caregiverExplanation || d.nurseExplanation || "Chưa có văn bản giải trình bổ sung từ điều dưỡng.",
-                    status: String(d.status || "pending").toLowerCase(),
-                    statusLabel:
-                        String(d.status).toLowerCase() === "refunded"
-                            ? "Đã hoàn tiền"
-                            : String(d.status).toLowerCase() === "rejected"
-                            ? "Đã bác bỏ"
-                            : "Chờ xử lý",
-                    resolutionNotes: d.resolutionNotes || d.notes || "",
-                    refundAmount: Number(d.refundAmount || 0),
-                    resolvedAt: d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : null,
-                }));
-                setDisputes(mapped);
+            const rawList = res?.data?.items || res?.data?.data || (Array.isArray(res?.data) ? res.data : []);
+            if (Array.isArray(rawList) && rawList.length > 0) {
+                const mapped = rawList.map((d) => {
+                    let status = "pending";
+                    let statusLabel = "Chờ xử lý";
+                    const st = String(d.status).toLowerCase();
+                    if (st === "2" || st === "refunded" || d.resolutionType === 1) {
+                        status = "refunded";
+                        statusLabel = "Đã hoàn tiền";
+                    } else if (st === "3" || st === "rejected" || st === "dismissed" || d.resolutionType === 2) {
+                        status = "rejected";
+                        statusLabel = "Đã bác bỏ";
+                    }
+
+                    return {
+                        id: d.code || (d.id ? `DSP-${String(d.id).slice(-4)}` : `DSP-${d.bookingId || "2000"}`),
+                        rawId: d.id,
+                        bookingId: d.bookingCode || (d.bookingId ? `CA-${String(d.bookingId).slice(-4)}` : "CA-2000"),
+                        createdAt: d.createdAt ? new Date(d.createdAt).toLocaleString("vi-VN") : "Gần đây",
+                        service: d.serviceName || d.service || "Dịch vụ chăm sóc người cao tuổi",
+                        totalAmount: Number(d.totalAmount || d.bookingAmount || d.amount || 500000),
+                        family: {
+                            name: d.customerName || d.familyName || "Gia đình khách hàng",
+                            phone: d.customerPhone || d.familyPhone || "0912 345 678",
+                            avatar: d.customerAvatar || d.familyAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.customerName || "Gia đình")}&background=087487&color=fff`,
+                            address: d.bookingAddress || d.address || "TP. Hồ Chí Minh",
+                            relative: d.recipientName || d.patientName || "Người nhận chăm sóc",
+                        },
+                        caregiver: {
+                            name: d.nurseName || d.caregiverName || "Điều dưỡng CareLink",
+                            phone: d.nursePhone || d.caregiverPhone || "0977 112 233",
+                            avatar: d.nurseAvatar || d.caregiverAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nurseName || "Điều dưỡng")}&background=00677c&color=fff`,
+                            title: d.nurseTitle || "Điều dưỡng viên chuyên môn",
+                        },
+                        reason: d.reason || "Khiếu nại về chất lượng ca trực.",
+                        evidence: Array.isArray(d.evidenceUrls) && d.evidenceUrls.length > 0
+                            ? d.evidenceUrls
+                            : Array.isArray(d.evidence) && d.evidence.length > 0
+                            ? d.evidence
+                            : (d.evidence ? [d.evidence] : ["Hình ảnh / Biên bản sự cố đính kèm."]),
+                        caregiverExplanation: d.caregiverExplanation || d.nurseExplanation || "Chưa có văn bản giải trình bổ sung từ điều dưỡng.",
+                        status,
+                        statusLabel,
+                        resolutionNotes: d.resolutionNote || d.resolutionNotes || d.notes || "",
+                        refundAmount: Number(d.refundAmount || 0),
+                        resolvedAt: d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : null,
+                    };
+                });
+
+                // Đưa các khiếu nại thật từ DB lên trên đầu và luôn giữ trọn 3 mock data bên dưới!
+                setDisputes([...mapped, ...MOCK_DISPUTES]);
             }
         } catch (err) {
-            console.warn("Không thể lấy danh sách khiếu nại từ server, dùng dữ liệu dự phòng:", err);
+            console.warn("Không thể lấy danh sách khiếu nại từ server, giữ 3 mock data:", err);
+            setDisputes(MOCK_DISPUTES);
         } finally {
             setLoading(false);
         }

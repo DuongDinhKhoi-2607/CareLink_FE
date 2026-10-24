@@ -62,11 +62,15 @@ export const familyApi = {
     createReview: (bookingId, data) =>
         axiosClient.post(`/api/v1/bookings/${bookingId}/reviews`, data),
     getReviewDetail: (id) => axiosClient.get(`/api/v1/reviews/${id}`),
+    getBookingReviews: (bookingId) =>
+        axiosClient.get(`/api/v1/bookings/${bookingId}/reviews`),
     getUserReviews: (userId, params) =>
         axiosClient.get(`/api/v1/reviews/users/${userId}`, { params }),
     createDispute: (bookingId, data) =>
         axiosClient.post(`/api/v1/bookings/${bookingId}/disputes`, data),
     getDisputeDetail: (id) => axiosClient.get(`/api/v1/disputes/${id}`),
+    getBookingDispute: (bookingId) =>
+        axiosClient.get(`/api/v1/bookings/${bookingId}/dispute`),
 
     // ── 8. Gói dịch vụ chăm sóc & Bảng giá Điều dưỡng (Services & Pricing) ──
     getServices: () => axiosClient.get("/api/v1/services"),

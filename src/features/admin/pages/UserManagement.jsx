@@ -156,27 +156,37 @@ export default function UserManagement() {
         const loadRealUsers = async () => {
             setLoadingUsers(true);
             try {
-                const [nursesRes, bookingsRes] = await Promise.all([
+                const [nursesRes, statsRes, bookingsRes] = await Promise.all([
                     adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 50 }).catch(() => null),
+                    adminApi.getNurseStatistics({ pageNumber: 1, pageSize: 50 }).catch(() => null),
                     adminApi.getAllBookings({ pageNumber: 1, pageSize: 50 }).catch(() => null),
                 ]);
 
                 if (!isMounted) return;
 
+                const statsItems = statsRes?.items || (Array.isArray(statsRes) ? statsRes : []);
+                const statsMap = new Map();
+                statsItems.forEach(s => {
+                    if (s.nurseId) statsMap.set(s.nurseId, s);
+                });
+
                 const nurseItems = nursesRes?.items || (Array.isArray(nursesRes) ? nursesRes : null);
                 if (nurseItems && nurseItems.length > 0) {
-                    const realCaregivers = nurseItems.map((n) => ({
-                        id: n.nurseId ? `CG-${n.nurseId.slice(0, 6).toUpperCase()}` : "CG-NEW",
-                        rawId: n.nurseId || n.id,
-                        name: n.fullName || "Điều dưỡng CareLink",
-                        email: n.email || "nurse@carelink.vn",
-                        phone: n.phone || "0900 000 000",
-                        joinDate: n.createdAt ? new Date(n.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
-                        status: n.verificationStatus === 3 ? "Bị từ chối" : "Hoạt động",
-                        role: n.practitionerType === 2 ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
-                        completedShifts: 0,
-                        rating: "5.0",
-                    }));
+                    const realCaregivers = nurseItems.map((n) => {
+                        const nurseStat = statsMap.get(n.nurseId || n.id);
+                        return {
+                            id: n.nurseId ? `CG-${n.nurseId.slice(0, 6).toUpperCase()}` : "CG-NEW",
+                            rawId: n.nurseId || n.id,
+                            name: n.fullName || nurseStat?.fullName || "Điều dưỡng CareLink",
+                            email: n.email || nurseStat?.email || "nurse@carelink.vn",
+                            phone: n.phone || nurseStat?.phoneNumber || "0900 000 000",
+                            joinDate: n.createdAt ? new Date(n.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+                            status: n.verificationStatus === 3 ? "Bị từ chối" : "Hoạt động",
+                            role: n.practitionerType === 2 ? "Sinh viên Y khoa" : "Điều dưỡng chuyên nghiệp",
+                            completedShifts: nurseStat?.bookingStats?.completedBookings ?? 0,
+                            rating: nurseStat?.averageRating ? Number(nurseStat.averageRating).toFixed(1) : (n.averageRating ? Number(n.averageRating).toFixed(1) : "5.0"),
+                        };
+                    });
                     setCaregivers(realCaregivers);
                 }
 
@@ -184,21 +194,28 @@ export default function UserManagement() {
                 if (bookingItems && bookingItems.length > 0) {
                     const mapByCustomer = new Map();
                     bookingItems.forEach((b) => {
+                        const cKey = b.customerId || b.customerName || "customer";
                         const cName = b.customerName || "Gia đình khách hàng";
-                        if (!mapByCustomer.has(cName)) {
-                            mapByCustomer.set(cName, {
+                        const cEmail = b.customerEmail || b.CustomerEmail || "gia_dinh@carelink.vn";
+                        const cPhone = b.customerPhone || b.CustomerPhone || "0901 234 567";
+
+                        if (!mapByCustomer.has(cKey)) {
+                            mapByCustomer.set(cKey, {
                                 id: b.id ? `FAM-${b.id.slice(0, 6).toUpperCase()}` : "FAM-NEW",
                                 rawId: b.customerId,
                                 name: cName,
-                                email: "customer@carelink.vn",
-                                phone: "0901 000 000",
+                                email: cEmail,
+                                phone: cPhone,
                                 joinDate: b.createdAt ? new Date(b.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
                                 status: "Hoạt động",
                                 totalBookings: 1,
-                                location: b.addressSnapshot || "TP.HCM",
+                                location: b.addressSnapshot || "TP. Hồ Chí Minh",
                             });
                         } else {
-                            mapByCustomer.get(cName).totalBookings += 1;
+                            const entry = mapByCustomer.get(cKey);
+                            entry.totalBookings += 1;
+                            if (cPhone && cPhone !== "0901 234 567") entry.phone = cPhone;
+                            if (cEmail && cEmail !== "gia_dinh@carelink.vn") entry.email = cEmail;
                         }
                     });
                     if (mapByCustomer.size > 0) {

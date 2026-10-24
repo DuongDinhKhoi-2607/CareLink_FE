@@ -96,6 +96,19 @@ export default function CaregiverSchedule() {
     const [addingUnavail, setAddingUnavail] = useState(false);
     const [togglingAccepting, setTogglingAccepting] = useState(false);
 
+    // ── Đồng bộ Điểm xuất phát & Bán kính nhận ca (Dispatch Location & Radius) ──
+    const [profileLocation, setProfileLocation] = useState({
+        baseAddress: "",
+        workDistrict: "",
+        serviceRadiusKm: 10,
+    });
+    const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+    const [locationForm, setLocationForm] = useState({
+        baseAddress: "",
+        serviceRadiusKm: 10,
+    });
+    const [savingLocation, setSavingLocation] = useState(false);
+
     // Tính toán ngày thực tế của tuần đang chọn
     const weekData = useMemo(() => {
         const now = new Date();
@@ -161,18 +174,58 @@ export default function CaregiverSchedule() {
         fetchUnavailabilities();
     }, [fetchUnavailabilities]);
 
-    // Đồng bộ trạng thái IsAcceptingBookings từ Profile
+    // Đồng bộ trạng thái IsAcceptingBookings & Vị trí điều phối từ Profile
     useEffect(() => {
         caregiverApi
             .getProfile()
             .then((res) => {
                 const data = res?.data || res;
-                if (data?.isAcceptingBookings !== undefined) {
-                    setGlobalAvailable(Boolean(data.isAcceptingBookings));
+                if (data) {
+                    if (data.isAcceptingBookings !== undefined) {
+                        setGlobalAvailable(Boolean(data.isAcceptingBookings));
+                    }
+                    const addr = data.baseAddress || data.workDistrict || data.address || "";
+                    const radius = data.serviceRadiusKm || 10;
+                    setProfileLocation({
+                        baseAddress: addr,
+                        workDistrict: data.workDistrict || addr,
+                        serviceRadiusKm: radius,
+                    });
+                    setLocationForm({
+                        baseAddress: addr,
+                        serviceRadiusKm: radius,
+                    });
                 }
             })
             .catch(() => {});
     }, []);
+
+    const handleSaveLocation = async (e) => {
+        e.preventDefault();
+        if (!locationForm.baseAddress.trim()) {
+            showToast("⚠️ Vui lòng nhập địa chỉ thường trú / điểm xuất phát!");
+            return;
+        }
+        setSavingLocation(true);
+        try {
+            await caregiverApi.updateProfile({
+                workDistrict: locationForm.baseAddress.trim(),
+                baseAddress: locationForm.baseAddress.trim(),
+                serviceRadiusKm: Number(locationForm.serviceRadiusKm) || 10,
+            });
+            setProfileLocation({
+                baseAddress: locationForm.baseAddress.trim(),
+                workDistrict: locationForm.baseAddress.trim(),
+                serviceRadiusKm: Number(locationForm.serviceRadiusKm) || 10,
+            });
+            setIsLocationModalOpen(false);
+            showToast("✓ Đã đồng bộ điểm xuất phát và bán kính nhận ca thành công!");
+        } catch (err) {
+            showToast("⚠️ Không thể cập nhật vị trí xuất phát. Vui lòng thử lại!");
+        } finally {
+            setSavingLocation(false);
+        }
+    };
 
     // ── Luồng 2: Bật/Tắt chế độ nhận ca (PATCH /api/v1/nurse/status/accepting-bookings) ──
     const handleToggleAcceptingBookings = async () => {
@@ -603,6 +656,64 @@ export default function CaregiverSchedule() {
                 </div>
             </div>
 
+            {/* ── THANH ĐỒNG BỘ ĐỊA CHỈ XUẤT PHÁT & BÁN KÍNH NHẬN CA (DISPATCH & SERVICE RADIUS BAR) ── */}
+            <div className="bg-gradient-to-r from-teal-50/90 via-sky-50/50 to-slate-50 border border-teal-200/80 rounded-2xl p-4 sm:p-4.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+                <div className="flex items-start sm:items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#00677c] text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-[#102030]">Khu vực điều phối & Nhận ca:</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-600 text-white font-extrabold text-[11px] shadow-2xs">
+                                Bán kính {profileLocation.serviceRadiusKm || 10} km
+                            </span>
+                            <span className="text-[11px] text-teal-800 font-semibold bg-white/80 border border-teal-200/70 px-2 py-0.5 rounded-md">
+                                {globalAvailable ? "🟢 Sẵn sàng nhận việc" : "⚪ Tạm dừng nhận việc"}
+                            </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span className="text-slate-400">Điểm xuất phát:</span>
+                            <strong className="text-slate-800">
+                                {profileLocation.baseAddress || profileLocation.workDistrict || "Chưa thiết lập (Mặc định trung tâm TP.HCM)"}
+                            </strong>
+                            <span className="text-[10px] text-slate-400 hidden sm:inline">
+                                · Hệ thống ghép ca dựa trên địa chỉ này và lịch rảnh của bạn
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setLocationForm({
+                                baseAddress: profileLocation.baseAddress || profileLocation.workDistrict || "",
+                                serviceRadiusKm: profileLocation.serviceRadiusKm || 10,
+                            });
+                            setIsLocationModalOpen(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-white hover:bg-teal-50 text-[#00677c] font-bold text-xs border border-teal-200/90 hover:border-teal-300 transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                        <span>Cập nhật vị trí & bán kính</span>
+                    </button>
+                    <Link
+                        to="/caregiver/profile"
+                        className="px-3 py-2 rounded-xl bg-white/80 hover:bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-200/70 transition-colors"
+                        title="Đến trang Hồ sơ năng lực đầy đủ"
+                    >
+                        Hồ sơ →
+                    </Link>
+                </div>
+            </div>
+
             {/* ── Weekly Calendar (Full-Width Option 1) ── */}
             <div className="w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col">
                 {/* Calendar header bar */}
@@ -912,6 +1023,87 @@ export default function CaregiverSchedule() {
                                     className="px-5 py-2 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
                                 >
                                     Xác nhận thêm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ── Modal Cập nhật nhanh Vị trí xuất phát & Bán kính nhận ca ── */}
+            {isLocationModalOpen && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 relative my-auto">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-base font-bold text-[#102030]">Cập nhật khu vực điều phối</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Đồng bộ vị trí xuất phát với Hồ sơ năng lực</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsLocationModalOpen(false)}
+                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveLocation} className="pt-4 space-y-4 text-xs">
+                            <div>
+                                <label className="block text-slate-700 font-bold mb-1.5">
+                                    Địa chỉ thường trú / Điểm xuất phát *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Ví dụ: 123 Đường Gia Trí, Phường 25, Bình Thạnh, TP.HCM"
+                                    value={locationForm.baseAddress}
+                                    onChange={(e) => setLocationForm((prev) => ({ ...prev, baseAddress: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-medium focus:border-teal-600 focus:outline-none"
+                                />
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                    Khoảng cách tới bệnh nhân sẽ được tính toán tự động dựa trên địa chỉ này.
+                                </p>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-slate-700 font-bold">Bán kính nhận ca tối đa:</label>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-teal-600 text-white font-extrabold text-xs">
+                                        {locationForm.serviceRadiusKm} km
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="50"
+                                    step="1"
+                                    value={locationForm.serviceRadiusKm}
+                                    onChange={(e) => setLocationForm((prev) => ({ ...prev, serviceRadiusKm: Number(e.target.value) }))}
+                                    className="w-full accent-[#00677c] cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                                    <span>1 km (Gần trạm)</span>
+                                    <span>25 km</span>
+                                    <span>50 km (Liên quận)</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsLocationModalOpen(false)}
+                                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 transition-colors cursor-pointer"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingLocation}
+                                    className="px-5 py-2 rounded-xl bg-[#00677c] hover:bg-[#005566] text-white font-bold shadow-xs hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    {savingLocation ? "Đang lưu..." : "Lưu thay đổi"}
                                 </button>
                             </div>
                         </form>

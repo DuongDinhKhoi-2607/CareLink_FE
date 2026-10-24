@@ -42,11 +42,15 @@ export const adminApi = {
     toggleServiceStatus: (id, data) =>
         axiosClient.patch(`/api/v1/services/${id}/status`, data),
 
-    // ── 5. Xử lý khiếu nại & Tranh chấp (Disputes) ──
+    // ── 5. Xử lý khiếu nại & Tranh chấp (Disputes) & Đánh giá ──
     getDisputes: (params) =>
         axiosClient.get("/api/v1/admin/disputes", { params }),
     getDisputeDetail: (id) =>
         axiosClient.get(`/api/v1/disputes/${id}`),
+    getBookingDispute: (bookingId) =>
+        axiosClient.get(`/api/v1/bookings/${bookingId}/dispute`),
+    getBookingReviews: (bookingId) =>
+        axiosClient.get(`/api/v1/bookings/${bookingId}/reviews`),
     resolveDispute: (id, data) =>
         axiosClient.put(`/api/v1/admin/disputes/${id}`, data),
 

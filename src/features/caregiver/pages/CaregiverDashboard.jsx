@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { fetchAndSyncUserMe } from "../../../api/authApi";
 import caregiverApi from "../../../api/caregiverApi";
+import CaregiverGuideModal from "../components/CaregiverGuideModal";
 
 /* ─── Stat Card ─── */
 function StatCard({ icon, label, value, sub, color = "#00677c", trend }) {
@@ -126,6 +127,7 @@ export default function CaregiverDashboard() {
     const [wallet, setWallet] = useState(null);
     const [readiness, setReadiness] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
 
     const loadData = useCallback(() => {
         fetchAndSyncUserMe().then((u) => {
@@ -376,12 +378,21 @@ export default function CaregiverDashboard() {
                             Hồ sơ năng lực của bạn đã đạt chuẩn. Bạn có thể sẵn sàng nhận lịch hẹn chăm sóc từ các gia đình.
                         </p>
                     </div>
-                    <Link
-                        to="/caregiver/verification"
-                        className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
-                    >
-                        Chi tiết hồ sơ
-                    </Link>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsGuideOpen(true)}
+                            className="text-xs font-bold text-[#00677c] bg-teal-100/80 hover:bg-teal-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                            📖 Hướng dẫn sử dụng
+                        </button>
+                        <Link
+                            to="/caregiver/verification"
+                            className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition-colors"
+                        >
+                            Chi tiết hồ sơ
+                        </Link>
+                    </div>
                 </div>
             );
         }
@@ -519,6 +530,13 @@ export default function CaregiverDashboard() {
                             >
                                 <span>Kiểm tra hồ sơ & chứng chỉ</span>
                             </Link>
+                            <button
+                                type="button"
+                                onClick={() => setIsGuideOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-4.5 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs border border-white/30 transition-all shadow-xs cursor-pointer"
+                            >
+                                <span>📖 Cẩm nang hướng dẫn toàn diện</span>
+                            </button>
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-teal-100/90">
@@ -721,19 +739,25 @@ export default function CaregiverDashboard() {
 
                     {/* Activity Feed */}
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <h2 className="text-base font-bold text-[#102030] mb-4">Hoạt động gần đây</h2>
-                    <div className="flex flex-col">
-                        {activities.length > 0 ? (
-                            activities.map((a, i) => (
-                                <ActivityItem key={i} {...a} />
-                            ))
-                        ) : (
-                            <p className="text-xs text-slate-400 py-6 text-center">Chưa có hoạt động gần đây</p>
-                        )}
+                        <h2 className="text-base font-bold text-[#102030] mb-4">Hoạt động gần đây</h2>
+                        <div className="flex flex-col">
+                            {activities.length > 0 ? (
+                                activities.map((a, i) => (
+                                    <ActivityItem key={i} {...a} />
+                                ))
+                            ) : (
+                                <p className="text-xs text-slate-400 py-6 text-center">Chưa có hoạt động gần đây</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Modal cẩm nang hướng dẫn sử dụng toàn diện */}
+            <CaregiverGuideModal
+                isOpen={isGuideOpen}
+                onClose={() => setIsGuideOpen(false)}
+            />
         </div>
-    </div>
     );
 }
