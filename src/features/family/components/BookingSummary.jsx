@@ -195,8 +195,8 @@ export default function BookingSummary({
                         )}
                     </div>
 
-                    {/* Nút chỉnh sửa thỏa thuận (chỉ hiện khi chưa hoàn tất thanh toán) */}
-                    {(status === "idle" || status === "family_confirmed") && (
+                    {/* Nút chỉnh sửa thỏa thuận (chỉ hiện khi gia đình đang có đề xuất chờ duyệt) */}
+                    {status === "family_confirmed" && (
                         <div className="px-5 pb-1">
                             <button
                                 type="button"

@@ -555,13 +555,19 @@ export default function CaregiverBookingRequests() {
             fetchBookings();
         } catch (err) {
             console.error("[CareLink] Lỗi khi bắt đầu ca:", err);
+            const rawMsg = err.response?.data?.detail || err.response?.data?.message || "";
+            let userMsg = "Chưa đến thời gian cho phép bắt đầu ca hoặc không thể kết nối đến máy chủ.";
+            if (rawMsg.includes("Check-in is only allowed") || rawMsg.includes("15 minutes") || rawMsg.includes("Chưa đến thời gian")) {
+                userMsg = rawMsg.includes("Chưa đến thời gian")
+                    ? rawMsg
+                    : "Chưa đến thời gian bắt đầu ca. Bạn chỉ có thể check-in trước giờ hẹn tối đa 15 phút. Vui lòng quay lại sau khi gần tới giờ hẹn.";
+            } else if (rawMsg) {
+                userMsg = rawMsg;
+            }
             showToast({
                 type: "error",
-                title: "Không thể bắt đầu ca",
-                message:
-                    err.response?.data?.detail ||
-                    err.response?.data?.message ||
-                    "Không thể kết nối đến máy chủ hoặc chưa đến thời gian cho phép bắt đầu ca.",
+                title: "Chưa thể bắt đầu ca",
+                message: userMsg,
             });
         }
     };

@@ -250,10 +250,21 @@ export default function Chat() {
     }, [messages]);
 
     // 4. Phân tích đề xuất ca gần nhất để hiển thị trạng thái và nút thanh toán
+    // ProposalStatus: 1=Pending, 2=Accepted, 3=Rejected, 4=Superseded, 5=Expired, 6=BookedAndPaid
     const pendingProposal = proposals.find((p) => p.status === 1 || p.status === "Pending");
     const acceptedProposal = [...proposals].reverse().find((p) => p.status === 2 || p.status === "Accepted");
     const rejectedProposal = [...proposals].reverse().find((p) => p.status === 3 || p.status === "Rejected");
-    const activeProposal = pendingProposal || acceptedProposal || rejectedProposal || proposals[proposals.length - 1];
+
+    // Nếu đề xuất gần nhất là Expired (5), Superseded (4) hoặc BookedAndPaid (6):
+    // Ca trước đã hoàn tất hoặc đã hủy, không giữ lại đề xuất cũ làm activeProposal để reset sạch thông tin trên cột chi tiết ca.
+    const latestProposal = proposals.length > 0 ? proposals[proposals.length - 1] : null;
+    const isTerminated = latestProposal && (
+        latestProposal.status === 4 || latestProposal.status === "Superseded" ||
+        latestProposal.status === 5 || latestProposal.status === "Expired" ||
+        latestProposal.status === 6 || latestProposal.status === "BookedAndPaid"
+    );
+
+    const activeProposal = pendingProposal || acceptedProposal || (isTerminated ? null : (rejectedProposal || null));
 
     let currentStatus = "idle";
     let rejectReason = "";
