@@ -289,6 +289,55 @@ export default function Appointments() {
     const [appointments, setAppointments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState(null);
+    const [checkingPaymentId, setCheckingPaymentId] = useState(null);
+
+    // Kiểm tra trực tiếp trạng thái thanh toán từ PayOS cho ca cụ thể
+    const handleCheckPaymentStatus = async (bookingId) => {
+        if (!bookingId) return;
+        setCheckingPaymentId(bookingId);
+        try {
+            const payRes = await familyApi.getPaymentDetail(bookingId);
+            if (payRes?.status === 2) {
+                // Đã thanh toán thành công
+                const paidMap = getConfirmedPaidBookings();
+                paidMap[bookingId] = { paidAt: Date.now(), status: 2 };
+                localStorage.setItem("carelink_confirmed_paid_bookings", JSON.stringify(paidMap));
+
+                setAppointments((prev) =>
+                    prev.map((item) => {
+                        const itemId = item.rawId || item.id;
+                        if (itemId === bookingId) {
+                            const raw = item.rawBackendData || {};
+                            return mapBookingToAppointment({
+                                ...raw,
+                                status: raw.conversationId ? 3 : 2,
+                            });
+                        }
+                        return item;
+                    })
+                );
+
+                if (selectedAppointment && (selectedAppointment.rawId || selectedAppointment.id) === bookingId) {
+                    setSelectedAppointment((prev) => {
+                        const raw = prev.rawBackendData || {};
+                        return mapBookingToAppointment({
+                            ...raw,
+                            status: raw.conversationId ? 3 : 2,
+                        });
+                    });
+                }
+
+                setToastMessage("Xác nhận thành công! Lịch hẹn đã được cập nhật sang trạng thái ĐÃ TIẾP NHẬN.");
+            } else {
+                setToastMessage("Chưa nhận được tín hiệu thanh toán từ PayOS. Nếu bạn vừa chuyển khoản, vui lòng đợi 10-30 giây rồi bấm kiểm tra lại.");
+            }
+        } catch (err) {
+            console.error("Lỗi khi kiểm tra thanh toán:", err);
+            setToastMessage("Chưa thể đối soát cổng PayOS lúc này. Vui lòng kiểm tra lại sau.");
+        } finally {
+            setCheckingPaymentId(null);
+        }
+    };
 
     // 1. Tải danh sách ca chăm sóc từ Backend (GET /api/v1/bookings)
     const fetchAppointments = useCallback(async () => {
@@ -314,8 +363,8 @@ export default function Appointments() {
                                 prev.map((item) => {
                                     if ((item.rawId || item.id) === pb.id) {
                                         return mapBookingToAppointment({
-                                            ...item.rawBackendData,
-                                            status: pb.conversationId ? 3 : 2,
+                                            ...(item.rawBackendData || pb),
+                                            status: (item.rawBackendData?.conversationId || pb.conversationId) ? 3 : 2,
                                         });
                                     }
                                     return item;
@@ -905,16 +954,28 @@ export default function Appointments() {
                                     <div className="flex items-center gap-2.5 sm:self-center shrink-0">
                                         {/* Nút Thanh toán ngay nếu ca đang chờ thanh toán và còn hạn */}
                                         {apt.canPay && (
-                                            <Link
-                                                to="/checkout"
-                                                state={{ bookingId: apt.id, booking: apt }}
-                                                className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-6 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
-                                                </svg>
-                                                <span>Thanh toán ngay</span>
-                                            </Link>
+                                            <div className="flex items-center gap-1.5">
+                                                <Link
+                                                    to="/checkout"
+                                                    state={{ bookingId: apt.id, booking: apt }}
+                                                    className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-6 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
+                                                    </svg>
+                                                    <span>Thanh toán ngay</span>
+                                                </Link>
+                                                <button
+                                                    type="button"
+                                                    disabled={checkingPaymentId === apt.id}
+                                                    onClick={() => handleCheckPaymentStatus(apt.id)}
+                                                    title="Bấm để kiểm tra trạng thái thanh toán từ PayOS"
+                                                    className="px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-[#00677c] border border-teal-200/90 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${checkingPaymentId === apt.id ? "animate-spin text-[#00677c]" : ""}`} />
+                                                    <span className="hidden sm:inline">Kiểm tra</span>
+                                                </button>
+                                            </div>
                                         )}
 
                                         {/* Trạng thái hết hạn 30p */}
@@ -1374,14 +1435,26 @@ export default function Appointments() {
                                     Đóng
                                 </button>
                                 {selectedAppointment.canPay && (
-                                    <Link
-                                        to="/checkout"
-                                        state={{ bookingId: selectedAppointment.id, booking: selectedAppointment }}
-                                        className="px-4.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
-                                    >
-                                        <CreditCard className="w-4 h-4" />
-                                        <span>Thanh toán ngay</span>
-                                    </Link>
+                                    <>
+                                        <button
+                                            type="button"
+                                            disabled={checkingPaymentId === selectedAppointment.id}
+                                            onClick={() => handleCheckPaymentStatus(selectedAppointment.id)}
+                                            title="Bấm để kiểm tra trạng thái thanh toán từ PayOS"
+                                            className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-[#00677c] border border-teal-200/90 font-semibold rounded-xl text-xs sm:text-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                        >
+                                            <RefreshCw className={`w-4 h-4 ${checkingPaymentId === selectedAppointment.id ? "animate-spin text-[#00677c]" : ""}`} />
+                                            <span>Kiểm tra thanh toán</span>
+                                        </button>
+                                        <Link
+                                            to="/checkout"
+                                            state={{ bookingId: selectedAppointment.id, booking: selectedAppointment }}
+                                            className="px-4.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
+                                        >
+                                            <CreditCard className="w-4 h-4" />
+                                            <span>Thanh toán ngay</span>
+                                        </Link>
+                                    </>
                                 )}
                                 <Link
                                     to="/dashboard/messages"
