@@ -24,6 +24,7 @@ import {
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
+import adminApi from "../api/adminApi";
 
 const adminNavItems = [
     {
@@ -36,7 +37,6 @@ const adminNavItems = [
         path: "/admin/approvals",
         aliases: ["/admin/approvals"],
         label: "Duyệt điều dưỡng",
-        badge: 12,
         icon: <UserCheck className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
     },
     {
@@ -55,7 +55,6 @@ const adminNavItems = [
         path: "/admin/disputes",
         aliases: ["/admin/disputes"],
         label: "Khiếu nại",
-        badge: 3,
         icon: <ShieldAlert className="w-5 h-5 shrink-0" strokeWidth={1.9} />,
     },
     {
@@ -107,6 +106,8 @@ export default function AdminLayout() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+    const [openDisputesCount, setOpenDisputesCount] = useState(0);
 
     // Dynamic Admin User from localStorage / API
     const [currentUser, setCurrentUser] = useState(() => {
@@ -133,8 +134,33 @@ export default function AdminLayout() {
             if (u) setCurrentUser(u);
         });
 
-        return () => window.removeEventListener("storage", handleSync);
-    }, []);
+        // Hàm lấy số lượng đếm thực tế từ Database
+        const fetchRealCounts = () => {
+            // Tải số lượng hồ sơ đang chờ duyệt thực tế (verificationStatus === 1 hoặc 4)
+            adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 100 }).then((res) => {
+                const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+                const pending = list.filter(item => item.verificationStatus === 1 || item.verificationStatus === 4).length;
+                setPendingApprovalsCount(pending);
+            }).catch(() => {});
+
+            // Tải số lượng khiếu nại đang mở thực tế (status === 1: Open / Đang xác minh)
+            adminApi.getDisputes({ pageNumber: 1, pageSize: 100 }).then((res) => {
+                const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+                const open = list.filter(item => item.status === 1 || item.status === "Open" || item.status === "Đang xác minh").length;
+                setOpenDisputesCount(open);
+            }).catch(() => {});
+        };
+
+        fetchRealCounts();
+
+        // Lắng nghe sự kiện phát ra khi Admin thực hiện thao tác duyệt/từ chối hoặc giải quyết khiếu nại
+        window.addEventListener("carelink:admin-refresh-badges", fetchRealCounts);
+
+        return () => {
+            window.removeEventListener("storage", handleSync);
+            window.removeEventListener("carelink:admin-refresh-badges", fetchRealCounts);
+        };
+    }, [location.pathname]);
 
     const handleLogout = async () => {
         try {
@@ -359,17 +385,25 @@ export default function AdminLayout() {
                                     {!isCollapsed && <span className="truncate">{item.label}</span>}
 
                                     {/* Badge count */}
-                                    {item.badge && (
-                                        <span
-                                            className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
-                                                isCollapsed
-                                                    ? "absolute top-1 right-1 w-2 h-2 p-0 bg-rose-500 rounded-full"
-                                                    : "ml-auto bg-teal-500/25 text-teal-300 border border-teal-400/30"
-                                            }`}
-                                        >
-                                            {!isCollapsed && item.badge}
-                                        </span>
-                                    )}
+                                    {(() => {
+                                        const count = item.path === "/admin/approvals" 
+                                            ? pendingApprovalsCount 
+                                            : item.path === "/admin/disputes" 
+                                            ? openDisputesCount 
+                                            : item.badge;
+                                        if (!count) return null;
+                                        return (
+                                            <span
+                                                className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                    isCollapsed
+                                                        ? "absolute top-1 right-1 w-2 h-2 p-0 bg-rose-500 rounded-full"
+                                                        : "ml-auto bg-teal-500/25 text-teal-300 border border-teal-400/30"
+                                                }`}
+                                            >
+                                                {!isCollapsed && count}
+                                            </span>
+                                        );
+                                    })()}
 
                                     {/* Active border indicator */}
                                     {active && (
@@ -440,11 +474,19 @@ export default function AdminLayout() {
                                                 <span className={active ? "text-teal-400" : "text-slate-400"}>{item.icon}</span>
                                                 <span>{item.label}</span>
                                             </div>
-                                            {item.badge && (
-                                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-500/25 text-teal-300 border border-teal-400/30">
-                                                    {item.badge}
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const count = item.path === "/admin/approvals" 
+                                                    ? pendingApprovalsCount 
+                                                    : item.path === "/admin/disputes" 
+                                                    ? openDisputesCount 
+                                                    : item.badge;
+                                                if (!count) return null;
+                                                return (
+                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-500/25 text-teal-300 border border-teal-400/30">
+                                                        {count}
+                                                    </span>
+                                                );
+                                            })()}
                                         </Link>
                                     );
                                 })}

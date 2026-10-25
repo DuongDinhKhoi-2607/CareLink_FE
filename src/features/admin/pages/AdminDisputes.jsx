@@ -285,6 +285,7 @@ export default function AdminDisputes() {
                 })
             );
             setSelectedDispute(null);
+            window.dispatchEvent(new Event("carelink:admin-refresh-badges"));
         }
     };
 
