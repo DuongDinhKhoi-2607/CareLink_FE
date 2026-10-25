@@ -228,8 +228,8 @@ export default function HandbookDetail() {
                     {/* Metadata Hàng ngang */}
                     <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200/80 text-xs sm:text-sm text-slate-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#00677c] text-white flex items-center justify-center font-bold text-sm shadow-2xs">
-                                CL
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00677c] to-[#102030] text-white flex items-center justify-center shadow-2xs">
+                                <Stethoscope className="w-5 h-5 text-teal-200" />
                             </div>
                             <div>
                                 <div className="font-bold text-slate-900">

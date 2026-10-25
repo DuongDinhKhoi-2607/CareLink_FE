@@ -417,11 +417,6 @@ export default function CreateProposalModal({
                                                             <Clock className="w-3 h-3" />
                                                             {s.durationMinutes} phút
                                                         </span>
-                                                        {s.requiresLicense && (
-                                                            <span className="text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded text-[10px] font-semibold border border-amber-200">
-                                                                Yêu cầu CCHN
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     {s.description && (
                                                         <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">

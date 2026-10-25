@@ -160,7 +160,7 @@ export default function CaregiverProfile() {
                 initials: (r.reviewerName ? r.reviewerName.charAt(0) : "K").toUpperCase(),
                 date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
                 rating: Math.round(Number(r.overallRating || 5)),
-                text: r.comment || "Dịch vụ tận tâm, chăm sóc chu đáo.",
+                text: r.comment ? r.comment : "(Khách hàng không để lại nhận xét bằng lời)",
                 color: i % 2 === 0 ? "bg-[#102030]" : "bg-[#00677c]",
             }));
             if (page === 1) {
