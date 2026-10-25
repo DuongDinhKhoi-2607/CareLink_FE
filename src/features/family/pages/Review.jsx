@@ -146,6 +146,17 @@ export default function Review() {
 
             await familyApi.createReview(bookingId, payload);
 
+            // Cập nhật ngay dữ liệu review vừa gửi vào state để hiển thị chính xác
+            setExistingReview({
+                overallRating: payload.overallRating,
+                expertiseRating: payload.expertiseRating || payload.overallRating,
+                communicationRating: payload.communicationRating || payload.overallRating,
+                punctualityRating: payload.punctualityRating || payload.overallRating,
+                careQualityRating: payload.careQualityRating || payload.overallRating,
+                wouldRehire: payload.wouldRehire,
+                comment: payload.comment || "",
+            });
+
             // Xóa sessionStorage sau khi gửi thành công
             sessionStorage.removeItem("pendingReviewBookingId");
             setSubmitted(true);
@@ -325,75 +336,9 @@ export default function Review() {
                         <div>
                             <span className="text-xs font-bold text-slate-700 block mb-1.5">Nhận xét của bạn:</span>
                             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs text-slate-700 italic leading-relaxed">
-                                "{existingReview?.comment || "Dịch vụ tận tâm, chăm sóc chu đáo và đúng quy trình chuyên môn."}"
+                                {existingReview?.comment ? `"${existingReview.comment}"` : <span className="text-slate-400 not-italic">(Gia đình không để lại nhận xét bằng lời)</span>}
                             </div>
                         </div>
-                    </div>
-
-                    {/* 2. ĐÁNH GIÁ 2 CHIỀU TỪ ĐIỀU DƯỠNG */}
-                    <div className="p-6 sm:p-7 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div>
-                                <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">
-                                    Nghiệm thu 2 chiều
-                                </span>
-                                <h3 className="text-base font-bold text-slate-900">
-                                    Đánh giá từ Điều dưỡng dành cho Gia đình
-                                </h3>
-                            </div>
-                            {nurseReview ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 font-bold text-sm">
-                                    <span>⭐</span>
-                                    <span>{Number(nurseReview.overallRating || 5).toFixed(1)} / 5</span>
-                                </div>
-                            ) : (
-                                <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold">
-                                    Chờ điều dưỡng gửi
-                                </span>
-                            )}
-                        </div>
-
-                        {nurseReview ? (
-                            <>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
-                                        <span className="text-[10px] text-slate-400 font-medium block">Tôn trọng</span>
-                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
-                                            ⭐ {nurseReview.respectRating || 5}/5
-                                        </span>
-                                    </div>
-                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
-                                        <span className="text-[10px] text-slate-400 font-medium block">An toàn</span>
-                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
-                                            ⭐ {nurseReview.safetyRating || 5}/5
-                                        </span>
-                                    </div>
-                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
-                                        <span className="text-[10px] text-slate-400 font-medium block">Vật tư</span>
-                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
-                                            ⭐ {nurseReview.suppliesRating || 5}/5
-                                        </span>
-                                    </div>
-                                    <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-100">
-                                        <span className="text-[10px] text-slate-400 font-medium block">Thanh toán</span>
-                                        <span className="text-sm font-bold text-teal-900 mt-1 block">
-                                            ⭐ {nurseReview.paymentRating || 5}/5
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <span className="text-xs font-bold text-slate-700 block mb-1.5">Nhận xét từ điều dưỡng:</span>
-                                    <div className="p-4 bg-teal-50/40 rounded-2xl border border-teal-100 text-xs text-slate-700 italic leading-relaxed">
-                                        "{nurseReview.comment || "Gia đình hợp tác tốt, tạo điều kiện thuận lợi trong suốt quá trình chăm sóc."}"
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center text-xs text-slate-500">
-                                Điều dưỡng phụ trách ca chưa gửi đánh giá phản hồi cho gia đình. Khi có đánh giá, nội dung sẽ tự động cập nhật tại đây.
-                            </div>
-                        )}
                     </div>
 
                     <div className="flex justify-center pt-2">

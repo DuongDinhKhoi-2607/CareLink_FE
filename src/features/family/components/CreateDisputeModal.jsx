@@ -149,28 +149,28 @@ export default function CreateDisputeModal({
                 className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col animate-[fadeIn_180ms_ease-out]"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* ── HEADER SANG TRỌNG (Deep Slate-Navy Palette) ── */}
-                <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-[#102030] to-slate-900 text-white flex items-start justify-between border-b border-slate-800 shrink-0">
+                {/* ── HEADER SANG TRỌNG (Healthcare Warm Palette, không dùng màu đen) ── */}
+                <div className="px-6 py-5 bg-gradient-to-r from-slate-50 via-teal-50/30 to-slate-50 text-slate-900 flex items-start justify-between border-b border-slate-200/80 shrink-0">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
-                            <ShieldAlert className="w-5 h-5 text-rose-400" />
+                        <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600 shrink-0 shadow-2xs">
+                            <ShieldAlert className="w-5 h-5 text-rose-600" />
                         </div>
                         <div>
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30 mb-1">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 mb-1">
                                 Bảo vệ quyền lợi khách hàng
                             </div>
-                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                                 Báo cáo sự cố &amp; Khiếu nại ca trực
                             </h2>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                                Ca #{appointment.id} · Điều dưỡng: <strong className="text-slate-200">{appointment.caregiver?.name || appointment.caregiver}</strong>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Ca #{appointment.id} · Điều dưỡng: <strong className="text-slate-700">{appointment.caregiver?.name || appointment.caregiver}</strong>
                             </p>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+                        className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shrink-0"
                     >
                         <X className="w-4 h-4" />
                     </button>

@@ -177,6 +177,7 @@ export default function CaregiverApprovals() {
             );
             setSelectedCaregiver(null);
             showToast("Đã phê duyệt hồ sơ thành công! Thông báo kích hoạt tài khoản đã được gửi.", "success");
+            window.dispatchEvent(new Event("carelink:admin-refresh-badges"));
         } catch (err) {
             console.error("[CareLink Admin] Gọi API duyệt hồ sơ thất bại:", err);
             const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể phê duyệt hồ sơ trên máy chủ.";
@@ -200,6 +201,7 @@ export default function CaregiverApprovals() {
             );
             setSelectedCaregiver(null);
             showToast(`Đã từ chối hồ sơ #${id}. Lý do: "${reason}"`, "success");
+            window.dispatchEvent(new Event("carelink:admin-refresh-badges"));
         } catch (err) {
             console.error("[CareLink Admin] Gọi API từ chối hồ sơ thất bại:", err);
             const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể từ chối hồ sơ trên máy chủ.";

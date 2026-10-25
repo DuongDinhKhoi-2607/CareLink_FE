@@ -37,7 +37,7 @@ const CRITERIA = [
         id: "safety",
         label: "Môi trường an toàn",
         description:
-            "Không gian chăm sóc gọn gàng, sạch sẽ và hạn chế các nguy cơ mất an toàn.",
+            "Không gian chăm sóc gọn gàng, sạch sẽ và đảm bảo an toàn.",
         icon: (
             <svg
                 className="w-5 h-5"
@@ -356,10 +356,10 @@ function OverallRating({ ratings, averageRating, ratedCount }) {
     const progress = (ratedCount / CRITERIA.length) * 100;
 
     return (
-        <section className="overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-sm">
-            <div className="grid grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)]">
+        <section className="overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-sm w-full">
+            <div className="flex flex-col sm:flex-row">
                 {/* Score */}
-                <div className="flex flex-col items-center justify-center border-b border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50/50 px-5 py-6 text-center sm:border-b-0 sm:border-r">
+                <div className="flex flex-col items-center justify-center border-b sm:border-b-0 sm:border-r border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50/50 p-6 text-center sm:w-44 shrink-0">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-100 bg-white text-amber-500 shadow-sm">
                         <StarIcon className="h-6 w-6" />
                     </div>
@@ -385,18 +385,18 @@ function OverallRating({ ratings, averageRating, ratedCount }) {
                 </div>
 
                 {/* Progress and description */}
-                <div className="flex flex-col justify-center p-5 sm:p-6">
+                <div className="flex-1 flex flex-col justify-center p-5 sm:p-6 text-left">
                     <div className="flex items-center justify-between gap-3">
                         <h3 className="text-sm font-bold text-slate-800">
                             Tổng quan đánh giá
                         </h3>
 
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 shrink-0">
                             {ratedCount}/{CRITERIA.length} tiêu chí
                         </span>
                     </div>
 
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                    <p className="mt-2 text-xs sm:text-sm leading-relaxed text-slate-500">
                         {ratedCount === 0
                             ? "Bắt đầu chấm điểm để xem kết quả đánh giá tổng thể."
                             : ratedCount < CRITERIA.length
@@ -405,7 +405,7 @@ function OverallRating({ ratings, averageRating, ratedCount }) {
                     </p>
 
                     <div className="mt-4">
-                        <div className="mb-2 flex items-center justify-between text-xs">
+                        <div className="mb-1.5 flex items-center justify-between text-xs">
                             <span className="font-medium text-slate-500">
                                 Tiến độ hoàn thành
                             </span>
@@ -424,18 +424,18 @@ function OverallRating({ ratings, averageRating, ratedCount }) {
                     </div>
 
                     {ratedCount > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {CRITERIA.filter((criterion) => ratings[criterion.id] > 0).map(
                                 (criterion) => (
-                                    <span
+                                    <div
                                         key={criterion.id}
-                                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${criterion.bg} ${criterion.color} ${criterion.border}`}
+                                        className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-semibold ${criterion.bg} ${criterion.color} ${criterion.border}`}
                                     >
-                                        <span>{criterion.label}</span>
-                                        <span>
+                                        <span className="truncate mr-2 font-medium">{criterion.label}</span>
+                                        <span className="shrink-0 font-bold bg-white/90 px-2 py-0.5 rounded-md shadow-2xs">
                                             {ratings[criterion.id]}/5
                                         </span>
-                                    </span>
+                                    </div>
                                 )
                             )}
                         </div>
@@ -628,6 +628,11 @@ export default function CaregiverReview() {
 
             await caregiverApi.reviewCustomer(activeBookingId, payload);
             setSubmitted(true);
+            setAlreadyReviewed(true);
+            setExistingNurseReview({
+                ...payload,
+                createdAt: new Date().toISOString()
+            });
         } catch (err) {
             if (err.response?.status === 409) {
                 setAlreadyReviewed(true);
