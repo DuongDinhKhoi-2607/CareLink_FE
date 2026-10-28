@@ -122,3 +122,24 @@ Khi gặp mâu thuẫn giữa các tài liệu hoặc giữa tài liệu với c
    - Các file như `FE_BE_GAP_ANALYSIS.md` là tài liệu ghi nhận đợt kiểm tra ban đầu cũ.
    - **Tuyệt đối KHÔNG** tự ý xem các ghi chú cũ của đồng đội là quy tắc cứng bắt buộc cho tính năng mới.
    - Khi phát hiện mâu thuẫn giữa tài liệu cũ và chính sách hiện hành, phải báo cáo người dùng để xác nhận.
+
+
+---
+
+## 📂 VI. QUY ƯỚC QUẢN LÝ & TỔ CHỨC THƯ MỤC TÀI LIỆU (DOCUMENTATION GOVERNANCE)
+
+Để tránh ô nhiễm ngữ cảnh (context pollution) và bảo đảm tính ngăn nắp cho toàn bộ thành viên và AI, dự án phân chia cấu trúc tài liệu thành 4 khu vực độc lập:
+
+1. **`docs/ai/` (AI Core Context - Bất biến & Quy chuẩn):**
+   - Chỉ chứa 6 tệp chuẩn mực bắt buộc: `AI_WORKING_RULES.md`, `API_INTEGRATION_MATRIX.md`, `ARCHITECTURE_DECISIONS.md`, `TESTING_AND_ACCEPTANCE.md`, `DOCUMENTATION_INDEX.md`, `WORK_STATUS.md`.
+   - **CẤM** tạo file task tạm hay ghi chú ngắn ngày vào thư mục này.
+2. **`docs/specs/` (System Specifications & Blueprints):**
+   - Chứa tài liệu đặc tả kỹ thuật, thiết kế nâng cấp UI/UX, hướng dẫn tích hợp từ BE.
+   - Mọi tài liệu thiết kế tính năng mới hoặc kế hoạch phân công **BẮT BUỘC** lưu tại đây.
+3. **`docs/presentations/` (Demo & Exam Presentation Scripts):**
+   - Chứa kịch bản thuyết trình, hướng dẫn demo multi-tab phục vụ bảo vệ đồ án.
+4. **`docs/archive/` (Tài liệu lưu trữ lịch sử):**
+   - Chứa các phân tích GAP cũ, checklist đã hết hạn (`FE_BE_GAP_ANALYSIS.md`).
+   - **CẤM AI** đọc các tài liệu trong archive để làm căn cứ lập trình tính năng mới. Không tạo file mới vào archive.
+
+> **Quy định tuyệt đối:** Cấm tạo file Markdown rải rác ngoài thư mục gốc (`root`) của repository. Mọi tài liệu mới được tạo phải đăng ký đường dẫn vào `docs/ai/DOCUMENTATION_INDEX.md`.
