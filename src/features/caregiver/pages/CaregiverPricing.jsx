@@ -91,6 +91,17 @@ export default function CaregiverPricing() {
         );
     };
 
+    const handleDurationChange = (serviceId, value) => {
+        const num = Math.max(15, Math.min(480, parseInt(value, 10) || 60));
+        setPricings((prev) =>
+            prev.map((item) =>
+                item.serviceId === serviceId
+                    ? { ...item, customDurationMinutes: num }
+                    : item
+            )
+        );
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setIsSaving(true);
@@ -101,6 +112,7 @@ export default function CaregiverPricing() {
                 pricings: pricings.map((p) => ({
                     serviceId: p.serviceId,
                     customPrice: Number(p.customPrice) || Number(p.basePrice) || 0,
+                    customDurationMinutes: Number(p.customDurationMinutes) || Number(p.durationMinutes) || 60,
                     isOffered: Boolean(p.isOffered),
                 })),
             };
@@ -570,17 +582,42 @@ export default function CaregiverPricing() {
                                     </div>
 
                                     {/* Right: Pricing configuration */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-6 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                                        <div className="text-left sm:text-right">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                                        <div className="text-left md:text-right min-w-[110px]">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                                Giá sàn hệ thống
+                                                Giá niêm yết CareLink
                                             </span>
                                             <span className="text-xs font-semibold text-slate-600">
                                                 {basePrice.toLocaleString("vi-VN")} đ
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center gap-2.5">
+                                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                                            {/* Thời lượng mong muốn do điều dưỡng cài đặt */}
+                                            <div>
+                                                <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block mb-1">
+                                                    Thời lượng ước tính
+                                                </label>
+                                                <div className="relative flex items-center">
+                                                    <input
+                                                        type="number"
+                                                        min="15"
+                                                        max="480"
+                                                        step="15"
+                                                        disabled={!item.isOffered}
+                                                        value={item.customDurationMinutes || item.durationMinutes || 60}
+                                                        onChange={(e) =>
+                                                            handleDurationChange(item.serviceId, e.target.value)
+                                                        }
+                                                        className="w-28 sm:w-30 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white text-xs font-bold text-slate-900 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400 text-right pr-11 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-2xs"
+                                                    />
+                                                    <span className="absolute right-2.5 text-[11px] text-slate-400 font-bold pointer-events-none">
+                                                        phút
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Đơn giá riêng của điều dưỡng */}
                                             <div>
                                                 <label className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block mb-1">
                                                     Đơn giá của bạn (VNĐ)
@@ -595,7 +632,7 @@ export default function CaregiverPricing() {
                                                         onChange={(e) =>
                                                             handlePriceChange(item.serviceId, e.target.value)
                                                         }
-                                                        className="w-36 sm:w-44 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-900 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400 text-right pr-7"
+                                                        className="w-32 sm:w-36 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white text-xs font-bold text-slate-900 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400 text-right pr-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-2xs"
                                                     />
                                                     <span className="absolute right-2.5 text-xs text-slate-400 font-bold pointer-events-none">
                                                         đ
