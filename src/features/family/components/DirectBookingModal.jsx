@@ -562,7 +562,7 @@ export default function DirectBookingModal({
 
                                                 <div className="text-right shrink-0">
                                                     <div className="text-xs font-extrabold text-slate-900">
-                                                        {price.toLocaleString("vi-VN")} đ
+                                                        {price.toLocaleString("vi-VN")} VNĐ
                                                     </div>
                                                     <div className="text-[10px] text-slate-400 font-medium">
                                                         Đơn giá điều dưỡng
@@ -626,7 +626,7 @@ export default function DirectBookingModal({
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <span className="w-3.5 h-3.5 rounded-md bg-slate-100 border border-slate-300"></span>
-                                        <span>Đã có người đặt / Đệm di chuyển</span>
+                                        <span>Đã qua giờ / Đã có người đặt / Đệm 60p</span>
                                     </div>
                                 </div>
 
@@ -667,7 +667,15 @@ export default function DirectBookingModal({
                                                             ? "text-emerald-700"
                                                             : "text-slate-400"
                                                     }`}>
-                                                        {isSelected ? "Đã chọn" : isAvailable ? "Còn trống" : (slot.reason?.includes("đệm") ? "Đệm 60p" : "Đã kín")}
+                                                        {isSelected
+                                                            ? "Đã chọn"
+                                                            : isAvailable
+                                                            ? "Còn trống"
+                                                            : slot.reason?.toLowerCase().includes("qua")
+                                                            ? "Đã qua giờ"
+                                                            : slot.reason?.toLowerCase().includes("đệm")
+                                                            ? "Đệm 60p"
+                                                            : "Đã kín"}
                                                     </span>
                                                     {!isAvailable && (
                                                         <Lock className="w-3 h-3 absolute top-1.5 right-1.5 text-slate-400" />
@@ -718,7 +726,7 @@ export default function DirectBookingModal({
                             <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-teal-50/30 border border-slate-200/90 space-y-2 text-xs">
                                 <div className="flex items-center justify-between text-slate-600">
                                     <span>Tổng tiền dịch vụ chăm sóc ({selectedServiceIds.length} dịch vụ):</span>
-                                    <span className="font-bold text-slate-900">{baseServicesPrice.toLocaleString("vi-VN")} đ</span>
+                                    <span className="font-bold text-slate-900">{baseServicesPrice.toLocaleString("vi-VN")} VNĐ</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600">
                                     <span className="flex items-center gap-1">
@@ -727,12 +735,12 @@ export default function DirectBookingModal({
                                             <HelpCircle className="w-3.5 h-3.5" />
                                         </span>
                                     </span>
-                                    <span className="font-bold text-slate-900">{platformFee.toLocaleString("vi-VN")} đ</span>
+                                    <span className="font-bold text-slate-900">{platformFee.toLocaleString("vi-VN")} VNĐ</span>
                                 </div>
                                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-sm sm:text-base font-black text-slate-900">
-                                    <span className="text-[#00677C]">Tổng thanh toán tạm giữ (Escrow):</span>
+                                    <span className="text-[#00677C]">Tổng thanh toán tạm giữ:</span>
                                     <span className="text-[#00677C] text-base sm:text-lg">
-                                        {grandTotal.toLocaleString("vi-VN")} đ
+                                        {grandTotal.toLocaleString("vi-VN")} VNĐ
                                     </span>
                                 </div>
                             </div>
@@ -786,7 +794,7 @@ export default function DirectBookingModal({
                                 Thanh toán ca trực CareLink
                             </h3>
                             <p className="text-xs text-slate-500 mt-1">
-                                Mã ca trực: <strong className="text-slate-800">{bookingSuccessData.id?.slice(0, 8)}</strong> • Số tiền: <strong className="text-[#00677C]">{grandTotal.toLocaleString("vi-VN")} đ</strong>
+                                Mã ca trực: <strong className="text-slate-800">{bookingSuccessData.id?.slice(0, 8)}</strong> • Số tiền: <strong className="text-[#00677C]">{grandTotal.toLocaleString("vi-VN")} VNĐ</strong>
                             </p>
                         </div>
 

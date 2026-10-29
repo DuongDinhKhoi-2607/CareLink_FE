@@ -454,8 +454,8 @@ export default function CaregiverPricing() {
 
             {/* Top KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                <div className="p-4.5 rounded-2xl bg-gradient-to-br from-teal-50/80 via-emerald-50/30 to-white border border-teal-200/90 shadow-2xs">
+                    <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider block">
                         Dịch vụ sẵn sàng tiếp nhận
                     </span>
                     <div className="flex items-baseline gap-2 mt-1">
@@ -467,28 +467,28 @@ export default function CaregiverPricing() {
                     </p>
                 </div>
 
-                <div className="bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                <div className="p-4.5 rounded-2xl bg-gradient-to-br from-sky-50/80 via-blue-50/30 to-white border border-sky-200/90 shadow-2xs">
+                    <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider block">
                         Đơn giá trung bình của bạn
                     </span>
                     <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-2xl font-extrabold text-[#00677c]">
                             {avgPrice.toLocaleString("vi-VN")}
                         </span>
-                        <span className="text-xs text-slate-500 font-semibold">đ / ca</span>
+                        <span className="text-xs text-slate-500 font-semibold">VNĐ / ca</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-sky-700 mt-1">
                         Dựa trên các dịch vụ đang được kích hoạt
                     </p>
                 </div>
 
-                <div className="bg-white p-4.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                <div className="p-4.5 rounded-2xl bg-gradient-to-br from-slate-50/90 via-slate-50/40 to-white border border-slate-200/90 shadow-2xs">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         Chính sách phí nền tảng CareLink
                     </span>
                     <div className="flex items-baseline gap-1 mt-1">
                         <span className="text-2xl font-extrabold text-slate-700">60.000</span>
-                        <span className="text-xs text-slate-500 font-semibold">đ / ca</span>
+                        <span className="text-xs text-slate-500 font-semibold">VNĐ / ca</span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">
                         Cố định theo quyết định vận hành (ADR-002)
@@ -583,13 +583,13 @@ export default function CaregiverPricing() {
 
                                     {/* Right: Pricing configuration */}
                                     <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                                        <div className="text-left md:text-right min-w-[110px]">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                        <div className="text-left md:text-right min-w-[125px]">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                                                 Giá niêm yết chuẩn
                                             </span>
-                                            <span className="text-xs font-semibold text-slate-600">
-                                                {basePrice.toLocaleString("vi-VN")} đ
-                                            </span>
+                                            <div className="inline-flex items-center px-2.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 shadow-2xs">
+                                                {basePrice.toLocaleString("vi-VN")} VNĐ
+                                            </div>
                                         </div>
 
                                         <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
@@ -617,25 +617,27 @@ export default function CaregiverPricing() {
                                                 </div>
                                             </div>
 
-                                            {/* Đơn giá riêng của điều dưỡng */}
+                                            {/* Đơn giá riêng của điều dưỡng (hỗ trợ nhập 200000, 200.000, 200,000) */}
                                             <div>
                                                 <label className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block mb-1">
                                                     Đơn giá của bạn (VNĐ)
                                                 </label>
                                                 <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-all">
                                                     <input
-                                                        type="number"
-                                                        min="0"
-                                                        step="10000"
+                                                        type="text"
+                                                        inputMode="numeric"
                                                         disabled={!item.isOffered}
-                                                        value={item.customPrice || ""}
-                                                        onChange={(e) =>
-                                                            handlePriceChange(item.serviceId, e.target.value)
-                                                        }
-                                                        className="w-28 sm:w-32 px-3 py-2 text-xs font-bold text-slate-900 text-right outline-none bg-transparent disabled:bg-slate-100 disabled:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        value={item.customPrice ? Number(item.customPrice).toLocaleString("vi-VN") : ""}
+                                                        onChange={(e) => {
+                                                            const raw = e.target.value.replace(/[^\d]/g, "");
+                                                            const num = raw ? parseInt(raw, 10) : 0;
+                                                            handlePriceChange(item.serviceId, num);
+                                                        }}
+                                                        placeholder="200.000"
+                                                        className="w-28 sm:w-32 px-3 py-2 text-xs font-bold text-slate-900 text-right outline-none bg-transparent disabled:bg-slate-100 disabled:text-slate-400"
                                                     />
                                                     <span className="pr-3 text-xs text-slate-500 font-bold select-none border-l border-slate-100 pl-2">
-                                                        đ
+                                                        VNĐ
                                                     </span>
                                                 </div>
                                             </div>

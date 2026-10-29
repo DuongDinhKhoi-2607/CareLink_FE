@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import BookingSummary from "../components/BookingSummary";
 import CreateProposalModal from "../components/CreateProposalModal";
+import DirectBookingModal from "../components/DirectBookingModal";
 import conversationApi from "../../../api/conversationApi";
 import familyApi from "../../../api/familyApi";
 
@@ -86,6 +87,7 @@ export default function Chat() {
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [convError, setConvError] = useState("");
     const [showProposalModal, setShowProposalModal] = useState(false);
+    const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
 
     // Tải điểm đánh giá thật của điều dưỡng
@@ -861,6 +863,7 @@ export default function Chat() {
                             status={currentStatus}
                             rejectReason={rejectReason}
                             bookingInfo={bookingInfoForSummary}
+                            onDirectBooking={currentNurseId ? () => setShowDirectBookingModal(true) : null}
                             onConfirmBooking={handleOpenProposalModal}
                             onRevokeBooking={handleOpenProposalModal}
                             onAcceptCounter={handleAcceptCounterProposal}
@@ -869,6 +872,17 @@ export default function Chat() {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL ĐẶT LỊCH CA TRỰC NHANH (XEM LỊCH RẢNH THỰC TẾ) */}
+            {currentNurseId && (
+                <DirectBookingModal
+                    isOpen={showDirectBookingModal}
+                    onClose={() => setShowDirectBookingModal(false)}
+                    nurseId={currentNurseId}
+                    nurseName={displayName}
+                    nurseAvatar={displayAvatar}
+                />
+            )}
 
             {/* MODAL TẠO ĐỀ XUẤT CA CHĂM SÓC MỚI (POST /api/v1/conversations/{id}/proposals) */}
             {conversation?.id && (

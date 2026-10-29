@@ -236,8 +236,8 @@ export default function CaregiverSchedule() {
             await caregiverApi.setAcceptingBookings(next);
             showToast(
                 next
-                    ? "✓ Đã BẬT nhận ca (Online). Hồ sơ sẽ hiển thị khi khách tìm kiếm."
-                    : "✓ Đã TẮT nhận ca (Offline). Hồ sơ tạm ẩn khỏi kết quả tìm kiếm."
+                    ? "✓ Đã BẬT chế độ nhận ca. Hồ sơ sẽ hiển thị khi khách tìm kiếm."
+                    : "✓ Đã TẠM TẮT nhận ca. Hồ sơ tạm ẩn khỏi kết quả tìm kiếm."
             );
         } catch (err) {
             setGlobalAvailable(!next); // Hoàn tác
@@ -626,7 +626,7 @@ export default function CaregiverSchedule() {
                         <div>
                             <p className="text-xs font-bold text-[#102030]">Nhận ca mới</p>
                             <p className="text-[11px] text-slate-400">
-                                {togglingAccepting ? "Đang lưu..." : globalAvailable ? "Đang bật (Online)" : "Đang tắt (Offline)"}
+                                {togglingAccepting ? "Đang lưu..." : globalAvailable ? "Sẵn sàng nhận việc" : "Tạm ngưng nhận việc"}
                             </p>
                         </div>
                         <button
@@ -634,7 +634,7 @@ export default function CaregiverSchedule() {
                             type="button"
                             disabled={togglingAccepting}
                             onClick={handleToggleAcceptingBookings}
-                            title="Bật/Tắt chế độ nhận ca (Online/Offline)"
+                            title="Bật/Tắt chế độ nhận ca"
                             className={`relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none cursor-pointer disabled:opacity-50 ${
                                 globalAvailable ? "bg-[#00677c]" : "bg-slate-200"
                             }`}
