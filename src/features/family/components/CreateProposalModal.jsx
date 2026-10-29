@@ -411,7 +411,7 @@ export default function CreateProposalModal({
                                                             {s.serviceName}
                                                         </p>
                                                         <span className="text-xs font-extrabold text-[#00677c] shrink-0">
-                                                            {price.toLocaleString("vi-VN")} đ
+                                                            {price.toLocaleString("vi-VN")} VNĐ
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
@@ -510,18 +510,19 @@ export default function CreateProposalModal({
                                         Giá đề xuất thương lượng (VNĐ)
                                     </label>
                                     <span className="text-[11px] text-slate-400">
-                                        Mặc định: {totalServiceBasePrice.toLocaleString("vi-VN")} đ
+                                        Mặc định: {totalServiceBasePrice.toLocaleString("vi-VN")} VNĐ
                                     </span>
                                 </div>
                                 <div className="relative">
                                     <input
-                                        type="number"
-                                        min="0"
-                                        step="any"
-                                        placeholder={`Tổng giá niêm yết: ${totalServiceBasePrice.toLocaleString("vi-VN")} đ`}
-                                        value={customDealPrice}
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder={`Tổng giá niêm yết: ${totalServiceBasePrice.toLocaleString("vi-VN")} VNĐ`}
+                                        value={customDealPrice ? Number(customDealPrice).toLocaleString("vi-VN") : ""}
                                         onChange={(e) => {
-                                            setCustomDealPrice(e.target.value);
+                                            // Hỗ trợ nhập 200000, 200.000, 200,000
+                                            const raw = e.target.value.replace(/[^\d]/g, "");
+                                            setCustomDealPrice(raw);
                                             setDealPriceError("");
                                         }}
                                         className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-xs text-slate-800 font-medium focus:outline-none transition-all placeholder:text-slate-400 ${
@@ -595,13 +596,13 @@ export default function CreateProposalModal({
                                     </span>
                                 </div>
                                 <div className="pt-2 border-t border-teal-200/60 flex items-center justify-between text-xs font-bold text-slate-800">
-                                    <span>Tổng thanh toán dự kiến (PayOS Escrow):</span>
+                                    <span>Tổng thanh toán dự kiến:</span>
                                     <span className="text-sm sm:text-base font-extrabold text-[#00677c]">
                                         {finalCalculatedTotal.toLocaleString("vi-VN")} VNĐ
                                     </span>
                                 </div>
                                 <p className="text-[11px] text-teal-700/90 italic pt-1">
-                                    * Phí nền tảng 60.000 VNĐ được quản lý tập trung theo chính sách CareLink (ADR-002). Số tiền sẽ được giữ an toàn trên PayOS Escrow cho đến khi nghiệm thu hoàn tất.
+                                    * Phí nền tảng 60.000 VNĐ được quản lý tập trung theo chính sách CareLink (ADR-002). Số tiền sẽ được giữ an toàn qua cổng PayOS cho đến khi nghiệm thu hoàn tất.
                                 </p>
                             </div>
                         </form>
