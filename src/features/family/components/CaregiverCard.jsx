@@ -186,9 +186,15 @@ export default function CaregiverCard({
 
                         </div>
 
-                        {/* Location + experience */}
+                        {/* Location + experience + Distance badge */}
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3">
+
+                            {caregiver.distanceKm != null && !isNaN(caregiver.distanceKm) && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                    📍 Cách {Number(caregiver.distanceKm).toFixed(1)} km
+                                </span>
+                            )}
 
                             <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
                                 <MapPinIcon />

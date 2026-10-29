@@ -254,6 +254,7 @@ export default function Chat() {
     const pendingProposal = proposals.find((p) => p.status === 1 || p.status === "Pending");
     const acceptedProposal = [...proposals].reverse().find((p) => p.status === 2 || p.status === "Accepted");
     const rejectedProposal = [...proposals].reverse().find((p) => p.status === 3 || p.status === "Rejected");
+    const counterProposal = [...proposals].reverse().find((p) => p.status === 7 || p.status === "CounterOffered");
 
     // Nếu đề xuất gần nhất là Expired (5), Superseded (4) hoặc BookedAndPaid (6):
     // Ca trước đã hoàn tất hoặc đã hủy, không giữ lại đề xuất cũ làm activeProposal để reset sạch thông tin trên cột chi tiết ca.
@@ -269,7 +270,10 @@ export default function Chat() {
     let currentStatus = "idle";
     let rejectReason = "";
 
-    if (pendingProposal) {
+    if (counterProposal && (!activeProposal || activeProposal.id === counterProposal.id)) {
+        currentStatus = "counter_offered";
+        rejectReason = counterProposal.responseNote || `Điều dưỡng đề xuất mức giá: ${Number(counterProposal.proposedTotalPrice).toLocaleString("vi-VN")} đ`;
+    } else if (pendingProposal) {
         currentStatus = "family_confirmed";
     } else if (acceptedProposal && (!activeProposal || activeProposal.id === acceptedProposal.id)) {
         currentStatus = "caregiver_accepted";
@@ -434,6 +438,21 @@ export default function Chat() {
     // Khi người dùng bấm "Xác nhận muốn đặt lịch" ở cột phải
     const handleOpenProposalModal = () => {
         setShowProposalModal(true);
+    };
+
+    const handleAcceptCounterProposal = async () => {
+        if (!conversation?.id || !counterProposal?.id) return;
+        try {
+            const res = await conversationApi.acceptCounterProposal(conversation.id, counterProposal.id);
+            setToastMessage("Đã chấp nhận mức giá mới! Đang mở trang thanh toán...");
+            fetchMessagesAndProposals(conversation.id, false);
+            if (res?.bookingId) {
+                navigate(`/checkout?bookingId=${res.bookingId}`);
+            }
+        } catch (err) {
+            console.error("Lỗi chấp nhận đề xuất giá mới:", err);
+            setToastMessage("Không thể chấp nhận mức giá mới. Vui lòng thử lại!");
+        }
     };
 
     return (
@@ -844,6 +863,7 @@ export default function Chat() {
                             bookingInfo={bookingInfoForSummary}
                             onConfirmBooking={handleOpenProposalModal}
                             onRevokeBooking={handleOpenProposalModal}
+                            onAcceptCounter={handleAcceptCounterProposal}
                             onCloseChat={() => navigate("/caregivers")}
                         />
                     </div>

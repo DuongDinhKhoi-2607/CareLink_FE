@@ -22,6 +22,12 @@ export const familyApi = {
 
     // ── 3. Tìm kiếm & Xem thông tin điều dưỡng (Nurses Search) ──
     searchNurses: (params) => axiosClient.get("/api/v1/nurses/search", { params }),
+    getAvailableSlots: (nurseId, date, customerId) =>
+        axiosClient.get(`/api/v1/nurses/${nurseId}/available-slots`, {
+            params: { date, customerId },
+        }),
+    getNurseDistance: (nurseId, params) =>
+        axiosClient.get(`/api/v1/nurses/${nurseId}/distance`, { params }),
     getNurseReviews: (nurseId, params) =>
         axiosClient.get(`/api/v1/nurses/${nurseId}/reviews`, { params }),
     getNurseRatingSummary: (nurseId) =>

@@ -152,11 +152,11 @@ export default function DashboardLayout() {
                     /* Trạng thái thu gọn: Chỉ hiện icon logo và nút mở rộng */
                     <div className="p-3.5 border-b border-slate-200/60 flex flex-col items-center gap-3">
                         <Link to="/" className="group cursor-pointer" title="Về trang chủ CareLink">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                            </div>
+                            <img
+                                src="/images/logo_remove.png"
+                                alt="CareLink Logo"
+                                className="w-9 h-9 object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0"
+                            />
                         </Link>
 
                         {/* Notification Bell khi thu gọn */}
@@ -178,11 +178,11 @@ export default function DashboardLayout() {
                     /* Trạng thái mở rộng: Hiện đầy đủ Logo và nút Thu gọn nằm sát mép phải */
                     <div className="p-4 border-b border-slate-200/60 flex items-center justify-between">
                         <Link to="/" className="flex items-center gap-2 group cursor-pointer overflow-hidden">
-                            <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                            </div>
+                            <img
+                                src="/images/logo_remove.png"
+                                alt="CareLink Logo"
+                                className="w-8.5 h-8.5 object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0"
+                            />
                             <div className="flex flex-col min-w-0">
                                 <span className="text-lg font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none truncate">
                                     Care<span className="text-teal-600">Link</span>

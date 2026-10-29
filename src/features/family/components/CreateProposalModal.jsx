@@ -84,6 +84,7 @@ export default function CreateProposalModal({
     const [notes, setNotes] = useState("");
 
     const [dealPriceError, setDealPriceError] = useState("");
+    const [consentShareMedical, setConsentShareMedical] = useState(true);
 
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -271,6 +272,7 @@ export default function CreateProposalModal({
             addressId: addressId || null,
             scheduledStart: startDateTime.toISOString(),
             proposedTotalPrice: finalDealPrice, // Tiền công dịch vụ thỏa thuận (phí sàn 60k được quản lý tập trung)
+            consentShareMedicalRecords: consentShareMedical,
             notes: notes.trim() || null,
         };
 
@@ -555,6 +557,19 @@ export default function CreateProposalModal({
                                     maxLength={500}
                                 />
                             </div>
+
+                            {/* Checkbox xin ý kiến chia sẻ hồ sơ sức khỏe & tiền sử bệnh */}
+                            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-teal-50/50 border border-teal-200/80 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={consentShareMedical}
+                                    onChange={(e) => setConsentShareMedical(e.target.checked)}
+                                    className="mt-0.5 rounded border-teal-300 text-teal-600 focus:ring-teal-500"
+                                />
+                                <span className="text-xs text-slate-700 leading-relaxed font-medium">
+                                    ☑ Đồng ý chia sẻ tóm tắt hồ sơ sức khỏe & tiền sử bệnh của người bệnh cho Điều dưỡng phụ trách ca này.
+                                </span>
+                            </label>
 
                             {/* 7. BẢNG TÍNH REALTIME CHI PHÍ */}
                             <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100 space-y-2.5">

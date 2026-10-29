@@ -305,6 +305,64 @@ function UploadCard({
             return;
         }
 
+        // Tích hợp kiểm tra độ nét & độ phân giải trực tiếp bằng Canvas HTML5 (Tránh ảnh mờ nộp hồ sơ)
+        if (selected.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = (loadEvt) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 1. Kiểm tra độ phân giải tối thiểu (CCCD / Chứng chỉ tối thiểu 600x400)
+                    if (img.width < 600 || img.height < 400) {
+                        onUploadError(
+                            name,
+                            `⚠️ Ảnh có độ phân giải quá nhỏ (${img.width}x${img.height}px). Yêu cầu tối thiểu 600x400px để đọc rõ chữ.`
+                        );
+                        return;
+                    }
+
+                    // 2. Kiểm tra độ tương phản / thiếu nét (Laplacian / Standard Deviation)
+                    try {
+                        const canvas = document.createElement("canvas");
+                        const ctx = canvas.getContext("2d");
+                        const testW = 200;
+                        const testH = Math.round((img.height / img.width) * testW);
+                        canvas.width = testW;
+                        canvas.height = testH;
+                        ctx.drawImage(img, 0, 0, testW, testH);
+                        const imgData = ctx.getImageData(0, 0, testW, testH);
+                        const data = imgData.data;
+
+                        let total = 0;
+                        for (let i = 0; i < data.length; i += 4) {
+                            total += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                        }
+                        const mean = total / (data.length / 4);
+                        let variance = 0;
+                        for (let i = 0; i < data.length; i += 4) {
+                            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                            variance += (gray - mean) * (gray - mean);
+                        }
+                        const stdDev = Math.sqrt(variance / (data.length / 4));
+
+                        if (stdDev < 16) {
+                            onUploadError(
+                                name,
+                                "⚠️ Ảnh có dấu hiệu bị mờ hoặc quá tối/mất nét. Vui lòng chụp lại rõ ràng hơn để không bị từ chối xét duyệt."
+                            );
+                            return;
+                        }
+                    } catch {}
+
+                    onUploadError(name, "");
+                    onFile(name, selected);
+                };
+                img.src = loadEvt.target.result;
+            };
+            reader.readAsDataURL(selected);
+            event.target.value = "";
+            return;
+        }
+
         onUploadError(name, "");
         onFile(name, selected);
         event.target.value = "";
