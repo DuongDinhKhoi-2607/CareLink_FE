@@ -827,3 +827,4 @@ export default function DirectBookingModal({
         </div>
     );
 }
+
