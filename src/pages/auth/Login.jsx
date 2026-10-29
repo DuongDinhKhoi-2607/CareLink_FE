@@ -346,21 +346,11 @@ export default function Login() {
                         className="flex items-center gap-2.5 group shrink-0"
                         title="Về trang chủ CareLink"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#087287] to-[#123248] flex items-center justify-center text-white shadow-sm group-hover:scale-[1.03] transition-transform duration-200">
-                            <svg
-                                className="w-[18px] h-[18px]"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M12 4.5v15m7.5-7.5h-15"
-                                />
-                            </svg>
-                        </div>
+                        <img
+                            src="/images/logo_remove.png"
+                            alt="CareLink Logo"
+                            className="w-10 h-10 object-contain drop-shadow-xs group-hover:scale-[1.03] transition-transform duration-200 shrink-0"
+                        />
 
                         <div className="flex flex-col">
                             <span className="text-xl font-bold text-[#002045] tracking-tight leading-none">

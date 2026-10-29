@@ -164,8 +164,8 @@ export default function Checkout() {
         setPaymentStatus(`Đang khởi tạo liên kết thanh toán PayOS (${chargeAmount.toLocaleString("vi-VN")} VNĐ)...`);
         try {
             const currentOrigin = window.location.origin;
+            // Bảo vệ tài chính: Không gửi amount tự chế, Backend tự tính chính xác từ Database
             const res = await familyApi.createPaymentLink(bookingId, {
-                amount: chargeAmount,
                 returnUrl: `${currentOrigin}/payment/success`,
                 cancelUrl: `${currentOrigin}/payment/cancel`,
             });

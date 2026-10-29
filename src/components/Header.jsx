@@ -152,11 +152,11 @@ export default function Header() {
 
                 {/* 1. Logo CareLink nổi bật và tinh tế ở sát bên trái */}
                 <Link to="/" className="flex items-center gap-2.5 group shrink-0" title="Về trang chủ CareLink">
-                    <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-[#00677c] to-[#102030] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                        <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                    </div>
+                    <img
+                        src="/images/logo_remove.png"
+                        alt="CareLink Medical Care Logo"
+                        className="w-10 h-10 object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0"
+                    />
                     <div className="flex flex-col">
                         <span className="text-xl font-bold text-[#002045] tracking-tight group-hover:text-teal-600 transition-colors leading-none">
                             Care<span className="text-teal-600">Link</span>

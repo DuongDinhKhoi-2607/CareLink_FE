@@ -65,9 +65,16 @@ const axiosClient = axios.create({
     timeout: isInitialLocal ? 3000 : 25000,
 });
 
+
+
 // 1. Request Interceptor: Tự động gắn Bearer Token & tinh chỉnh timeout tối ưu
 axiosClient.interceptors.request.use(
     (config) => {
+        if (isSessionExpired()) {
+            clearSessionAndNotify();
+            return Promise.reject(new Error("Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại."));
+        }
+        recordUserActivity();
         const token = localStorage.getItem("carelink_token");
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -250,3 +257,109 @@ export const resolveDocumentUrl = (rawUrl) => {
 };
 
 export default axiosClient;
+
+// ════════════════════════════════════════════════════════════════════
+// QUẢN LÝ PHIÊN HOẠT ĐỘNG (INACTIVITY SESSION TIMEOUT - CHUẨN Y TẾ 4 GIỜ)
+// ════════════════════════════════════════════════════════════════════
+const SESSION_INACTIVITY_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 tiếng
+const LAST_ACTIVE_KEY = "carelink_last_active";
+
+export function recordUserActivity() {
+    try {
+        if (typeof window !== "undefined") {
+            localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+        }
+    } catch {}
+}
+
+export function isSessionExpired() {
+    try {
+        const token = localStorage.getItem("carelink_token");
+        if (!token) return false;
+
+        const lastActiveStr = localStorage.getItem(LAST_ACTIVE_KEY);
+        if (!lastActiveStr) {
+            recordUserActivity();
+            return false;
+        }
+
+        const lastActive = parseInt(lastActiveStr, 10);
+        if (isNaN(lastActive)) {
+            recordUserActivity();
+            return false;
+        }
+
+        return Date.now() - lastActive > SESSION_INACTIVITY_LIMIT_MS;
+    } catch {
+        return false;
+    }
+}
+
+export function clearSessionAndNotify(reason = "Phiên đăng nhập đã hết hạn sau 4 giờ không hoạt động để bảo vệ thông tin y tế.") {
+    try {
+        localStorage.removeItem("carelink_token");
+        localStorage.removeItem("carelink_refresh_token");
+        localStorage.removeItem("carelink_user");
+        localStorage.removeItem(LAST_ACTIVE_KEY);
+
+        if (typeof window !== "undefined") {
+            window.dispatchEvent(
+                new CustomEvent("carelink:session-expired", {
+                    detail: { message: reason }
+                })
+            );
+
+            const currentPath = window.location.pathname;
+            const isProtected =
+                currentPath.startsWith("/dashboard") ||
+                currentPath.startsWith("/caregiver/dashboard") ||
+                currentPath.startsWith("/caregiver/schedule") ||
+                currentPath.startsWith("/caregiver/booking-requests") ||
+                currentPath.startsWith("/caregiver/pricing") ||
+                currentPath.startsWith("/caregiver/wallet") ||
+                currentPath.startsWith("/admin");
+
+            if (isProtected) {
+                sessionStorage.setItem("carelink_session_expired_msg", reason);
+                window.location.href = "/login?expired=true";
+            }
+        }
+    } catch {}
+}
+
+export function initSessionActivityTracker() {
+    if (typeof window === "undefined") return;
+
+    if (isSessionExpired()) {
+        clearSessionAndNotify();
+        return;
+    }
+
+    recordUserActivity();
+
+    let lastThrottledTime = 0;
+    const handleActivity = () => {
+        const now = Date.now();
+        if (now - lastThrottledTime > 30000) {
+            lastThrottledTime = now;
+            if (isSessionExpired()) {
+                clearSessionAndNotify();
+            } else {
+                recordUserActivity();
+            }
+        }
+    };
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, handleActivity, { passive: true }));
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            if (isSessionExpired()) {
+                clearSessionAndNotify();
+            } else {
+                recordUserActivity();
+            }
+        }
+    });
+}

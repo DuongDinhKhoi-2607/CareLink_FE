@@ -4,12 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 export default function BookingSummary({
     details = [],
     safetyCommitments = [],
-    status = "idle", // 'idle' | 'family_confirmed' | 'caregiver_accepted' | 'caregiver_rejected' | 'closed'
+    status = "idle", // 'idle' | 'family_confirmed' | 'caregiver_accepted' | 'caregiver_rejected' | 'counter_offered' | 'closed'
     rejectReason = "",
     bookingInfo = {},
     onUpdateBookingInfo,
     onConfirmBooking,
     onRevokeBooking,
+    onAcceptCounter,
     onCloseChat,
     onResetDemo,
 }) {
@@ -294,6 +295,35 @@ export default function BookingSummary({
                                     </svg>
                                 </span>
                             </Link>
+                        )}
+
+                        {/* 3.5. Trạng thái ĐIỀU DƯỠNG ĐỀ XUẤT MỨC GIÁ KHÁC (Counter-Offer) */}
+                        {status === "counter_offered" && (
+                            <div className="flex flex-col gap-2.5">
+                                <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                                        Điều dưỡng đề xuất mức giá mới
+                                    </div>
+                                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                        {rejectReason || "Điều dưỡng đã đề xuất lại mức chi phí phù hợp hơn cho ca chăm sóc này."}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={onAcceptCounter}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-800 cursor-pointer"
+                                >
+                                    ✓ Chấp nhận giá đề xuất mới
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onConfirmBooking}
+                                    className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline transition-all cursor-pointer text-center"
+                                >
+                                    Thương lượng lại giá khác
+                                </button>
+                            </div>
                         )}
 
                         {/* 4. Trạng thái ĐIỀU DƯỠNG TỪ CHỐI */}

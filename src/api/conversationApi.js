@@ -46,6 +46,19 @@ export const conversationApi = {
             `/api/v1/conversations/${conversationId}/proposals/${proposalId}/reject`,
             data
         ),
+
+    // 10. Caregiver đề xuất mức giá mới (Counter-Offer)
+    counterProposal: (conversationId, proposalId, data) =>
+        axiosClient.put(
+            `/api/v1/conversations/${conversationId}/proposals/${proposalId}/counter`,
+            data
+        ),
+
+    // 11. Family chấp nhận mức giá mới từ Điều dưỡng (Accept Counter-Offer)
+    acceptCounterProposal: (conversationId, proposalId) =>
+        axiosClient.put(
+            `/api/v1/conversations/${conversationId}/proposals/${proposalId}/accept-counter`
+        ),
 };
 
 export default conversationApi;

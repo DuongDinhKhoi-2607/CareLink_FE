@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
-import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2, Sparkles, Calendar } from "lucide-react";
+import DirectBookingModal from "../components/DirectBookingModal";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -91,6 +92,52 @@ export default function CaregiverProfile() {
     const [saved, setSaved] = useState(false);
     const [contacted, setContacted] = useState(false);
     const [authModal, setAuthModal] = useState({ open: false, type: "unauthenticated" });
+    const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
+    const [selectedBookingDate, setSelectedBookingDate] = useState(null);
+
+    const handleOpenBooking = (targetDate = null) => {
+        const token = localStorage.getItem("carelink_token");
+        const rawUser = localStorage.getItem("carelink_user");
+        let user = null;
+        try {
+            user = rawUser ? JSON.parse(rawUser) : null;
+        } catch {}
+
+        // 1. Kiểm tra nếu khách vãng lai chưa đăng nhập
+        if (!token) {
+            setAuthModal({ open: true, type: "unauthenticated" });
+            return;
+        }
+
+        // 2. Kiểm tra nếu đang đăng nhập bằng tài khoản Điều dưỡng
+        const role = user?.role?.toLowerCase();
+        const roleIdNum = Number(user?.roleId);
+        if (role === "nurse" || role === "caregiver" || roleIdNum === 3) {
+            setAuthModal({ open: true, type: "nurse_role" });
+            return;
+        }
+
+        setSelectedBookingDate(targetDate);
+        setShowDirectBookingModal(true);
+    };
+
+    // Hàm tính ngày tương ứng trong tuần khi bấm vào thứ (T2, T3, T4...)
+    const handleDayClick = (dayCode) => {
+        const dayMap = { T2: 1, T3: 2, T4: 3, T5: 4, T6: 5, T7: 6, CN: 0 };
+        const targetDayIndex = dayMap[dayCode];
+        if (targetDayIndex === undefined) {
+            handleOpenBooking();
+            return;
+        }
+        const now = new Date();
+        const currentDay = now.getDay();
+        let diff = targetDayIndex - currentDay;
+        if (diff < 0) diff += 7; // Nếu đã qua ngày đó trong tuần thì chuyển sang tuần sau
+        const targetDate = new Date();
+        targetDate.setDate(now.getDate() + diff);
+        const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
+        handleOpenBooking(dateStr);
+    };
 
     // Fallback ảnh online chất lượng cao, bền vững (dùng chung avatar ĐD. Nguyễn Thùy Linh)
     const avatarUrl = caregiver?.image || caregiver?.avatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
@@ -514,21 +561,31 @@ export default function CaregiverProfile() {
 
                             {/* Nhóm nút hành động */}
                             <div className="flex flex-col gap-2.5 pt-2">
+                                {/* 1. Nút Primary: Đặt lịch ca trực ngay (Cinema Slot Picker) */}
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenBooking()}
+                                    className="w-full py-3.5 px-4 rounded-xl text-sm font-extrabold bg-gradient-to-r from-[#00677c] to-[#008ba3] text-white hover:from-[#005566] hover:to-[#007489] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer group"
+                                >
+                                    <Sparkles className="w-4 h-4 text-teal-200 group-hover:scale-110 transition-transform" />
+                                    <span>Đặt lịch ca trực ngay</span>
+                                </button>
+
+                                {/* 2. Nút Secondary: Nhắn tin trao đổi trước */}
                                 <button
                                     type="button"
                                     onClick={handleContact}
-                                    className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold transition-all shadow-sm ${contacted
-                                        ? "bg-slate-100 text-slate-500 cursor-default"
-                                        : "bg-[#00677c] text-white hover:bg-[#005263] hover:shadow-md"
-                                        }`}
+                                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
-                                    {contacted ? "Đã gửi yêu cầu liên hệ" : "Liên hệ ngay"}
+                                    <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
+                                    <span>{contacted ? "Đã mở hộp thoại" : "Nhắn tin trao đổi trước"}</span>
                                 </button>
 
+                                {/* 3. Nút Lưu hồ sơ */}
                                 <button
                                     type="button"
                                     onClick={() => setSaved(!saved)}
-                                    className={`w-full py-3 px-4 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 ${saved
+                                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${saved
                                         ? "bg-rose-50 text-rose-600 border-rose-200"
                                         : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                                         }`}
@@ -545,26 +602,35 @@ export default function CaregiverProfile() {
 
                         {/* Box Thời gian rảnh tuần này */}
                         <div className="bg-[#e6f3f5] p-6 rounded-3xl border border-[#00677c33] flex flex-col gap-4">
-                            <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                </svg>
-                                <h3 className="text-xs font-bold text-[#00677c] uppercase tracking-wider">
-                                    Thời gian rảnh tuần này
-                                </h3>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-[#00677c]" />
+                                    <h3 className="text-xs font-bold text-[#00677c] uppercase tracking-wider">
+                                        Thời gian rảnh tuần này
+                                    </h3>
+                                </div>
+                                <span className="text-[10px] text-teal-800 font-semibold bg-white/70 px-2 py-0.5 rounded-full border border-teal-200/50">
+                                    Chạm để đặt ngày
+                                </span>
                             </div>
 
                             <div className="grid grid-cols-7 gap-1.5 text-center">
                                 {availability.map((item) => (
                                     <div
                                         key={item.day}
-                                        className="p-2 rounded-xl bg-white/80 border border-slate-200/60 flex flex-col items-center gap-1.5"
+                                        onClick={() => item.available && handleDayClick(item.day)}
+                                        className={`p-2 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
+                                            item.available
+                                                ? "bg-white/90 border-teal-200 hover:border-teal-400 hover:bg-teal-50/50 cursor-pointer shadow-2xs hover:scale-105"
+                                                : "bg-white/60 border-slate-200/60 opacity-60 cursor-not-allowed"
+                                        }`}
+                                        title={item.available ? `Bấm để chọn đặt lịch ca trực ${item.day}` : "Bận"}
                                     >
-                                        <span className="text-xs font-bold text-slate-600">{item.day}</span>
+                                        <span className="text-xs font-bold text-slate-700">{item.day}</span>
                                         <span
-                                            className={`w-2 h-2 rounded-full ${item.available ? "bg-[#00677c]" : "bg-slate-300"
-                                                }`}
-                                            title={item.available ? "Có lịch trống" : "Bận"}
+                                            className={`w-2.5 h-2.5 rounded-full ${
+                                                item.available ? "bg-[#00677c]" : "bg-slate-300"
+                                            }`}
                                         />
                                     </div>
                                 ))}
@@ -752,6 +818,14 @@ export default function CaregiverProfile() {
                     </div>
                 </div>
             )}
+
+            {/* Modal Đặt lịch ca trực trực tiếp với Cinema Slots */}
+            <DirectBookingModal
+                isOpen={showDirectBookingModal}
+                onClose={() => setShowDirectBookingModal(false)}
+                caregiver={caregiver}
+                initialDate={selectedBookingDate}
+            />
         </div>
     );
 }

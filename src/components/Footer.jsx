@@ -39,11 +39,11 @@ export default function Footer() {
                     {/* Cột 1 (Logo, Mô tả & Hotline) */}
                     <div className="lg:col-span-2 flex flex-col gap-3">
                         <Link to="/" className="inline-flex items-center gap-2.5 group w-fit" title="Về trang chủ CareLink">
-                            <div className="w-9 h-9 rounded-xl bg-[#1a5f70] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                            </div>
+                            <img
+                                src="/images/logo_remove_white.png"
+                                alt="CareLink Logo"
+                                className="w-10 h-10 object-contain drop-shadow-sm group-hover:scale-105 transition-transform shrink-0"
+                            />
                             <span className="text-2xl font-bold tracking-tight text-white">
                                 Care<span className="text-[#38c1dc]">Link</span>
                             </span>

@@ -326,9 +326,11 @@ export default function AdminLayout() {
                         {!isCollapsed ? (
                             <>
                                 <Link to="/admin" className="flex items-center gap-2.5 overflow-hidden group">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00677c] to-[#008ba3] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
-                                        <Plus className="w-4.5 h-4.5 text-white" strokeWidth={2.6} />
-                                    </div>
+                                    <img
+                                        src="/images/logo_remove_white.png"
+                                        alt="CareLink Logo"
+                                        className="w-9 h-9 object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0"
+                                    />
                                     <div className="flex flex-col truncate leading-tight">
                                         <span className="text-lg font-bold text-white tracking-tight group-hover:text-teal-300 transition-colors leading-none">
                                             Care<span className="text-teal-400">Link</span>
@@ -446,9 +448,11 @@ export default function AdminLayout() {
                         <div className="relative w-72 bg-[#1c2a38] text-white h-full flex flex-col shadow-2xl z-10 border-r border-[#2a3c4e]">
                             <div className="h-16 flex items-center justify-between px-5 border-b border-[#2a3c4e]/80">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00677c] to-[#008ba3] flex items-center justify-center text-white shadow-xs">
-                                        <Plus className="w-4 h-4 text-white" strokeWidth={2.6} />
-                                    </div>
+                                    <img
+                                        src="/images/logo_remove_white.png"
+                                        alt="CareLink Logo"
+                                        className="w-8 h-8 object-contain drop-shadow-xs shrink-0"
+                                    />
                                     <div>
                                         <div className="text-base font-bold text-white">Care<span className="text-teal-400">Link</span></div>
                                         <div className="text-[9px] font-bold text-teal-400 uppercase">ADMIN PORTAL</div>
