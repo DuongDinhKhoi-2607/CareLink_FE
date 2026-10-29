@@ -585,7 +585,7 @@ export default function CaregiverPricing() {
                                     <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                                         <div className="text-left md:text-right min-w-[110px]">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                                Giá niêm yết CareLink
+                                                Giá niêm yết chuẩn
                                             </span>
                                             <span className="text-xs font-semibold text-slate-600">
                                                 {basePrice.toLocaleString("vi-VN")} đ
@@ -598,7 +598,7 @@ export default function CaregiverPricing() {
                                                 <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block mb-1">
                                                     Thời lượng ước tính
                                                 </label>
-                                                <div className="relative flex items-center">
+                                                <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-all">
                                                     <input
                                                         type="number"
                                                         min="15"
@@ -609,9 +609,9 @@ export default function CaregiverPricing() {
                                                         onChange={(e) =>
                                                             handleDurationChange(item.serviceId, e.target.value)
                                                         }
-                                                        className="w-28 sm:w-30 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white text-xs font-bold text-slate-900 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400 text-right pr-11 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-2xs"
+                                                        className="w-20 px-3 py-2 text-xs font-bold text-slate-900 text-center outline-none bg-transparent disabled:bg-slate-100 disabled:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     />
-                                                    <span className="absolute right-2.5 text-[11px] text-slate-400 font-bold pointer-events-none">
+                                                    <span className="pr-3 text-[11px] text-slate-500 font-bold select-none border-l border-slate-100 pl-2">
                                                         phút
                                                     </span>
                                                 </div>
@@ -622,7 +622,7 @@ export default function CaregiverPricing() {
                                                 <label className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block mb-1">
                                                     Đơn giá của bạn (VNĐ)
                                                 </label>
-                                                <div className="relative flex items-center">
+                                                <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-all">
                                                     <input
                                                         type="number"
                                                         min="0"
@@ -632,9 +632,9 @@ export default function CaregiverPricing() {
                                                         onChange={(e) =>
                                                             handlePriceChange(item.serviceId, e.target.value)
                                                         }
-                                                        className="w-32 sm:w-36 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white text-xs font-bold text-slate-900 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400 text-right pr-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-2xs"
+                                                        className="w-28 sm:w-32 px-3 py-2 text-xs font-bold text-slate-900 text-right outline-none bg-transparent disabled:bg-slate-100 disabled:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                     />
-                                                    <span className="absolute right-2.5 text-xs text-slate-400 font-bold pointer-events-none">
+                                                    <span className="pr-3 text-xs text-slate-500 font-bold select-none border-l border-slate-100 pl-2">
                                                         đ
                                                     </span>
                                                 </div>
