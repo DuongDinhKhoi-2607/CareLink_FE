@@ -41,11 +41,11 @@ const mapBackendToCaregiverBooking = (b) => {
     const sStr = String(b.status || "").toLowerCase();
     let status = "pending";
     if (sStr === "2" || sStr === "pendingacceptance" || sStr === "pending") status = "pending";
+    else if (sStr === "1" || sStr === "pendingpayment") status = "pending_payment";
     else if (sStr === "3" || sStr === "accepted") status = "accepted";
     else if (sStr === "4" || sStr === "inprogress" || sStr === "in_progress") status = "in_progress";
     else if (sStr === "5" || sStr === "completed") status = "completed";
     else if (sStr === "6" || sStr === "canceled" || sStr === "rejected") status = "rejected";
-    else if (sStr === "1" || sStr === "pendingpayment") status = "pending";
 
     const pad = (n) => String(n).padStart(2, "0");
     const startDate = b.scheduledStart ? new Date(b.scheduledStart) : new Date();
@@ -119,11 +119,12 @@ const mapBackendToCaregiverBooking = (b) => {
 
 /* ─── Helpers ─── */
 const STATUS_MAP = {
-    pending:     { label: "Chờ xác nhận", bg: "bg-amber-50",   text: "text-amber-600",  dot: "bg-amber-400",  border: "border-amber-200" },
-    accepted:    { label: "Đã chấp nhận", bg: "bg-sky-50",     text: "text-sky-600",    dot: "bg-sky-500",    border: "border-sky-200" },
-    in_progress: { label: "Đang thực hiện", bg: "bg-teal-50",   text: "text-teal-700",   dot: "bg-teal-500 animate-pulse", border: "border-teal-200" },
-    completed:   { label: "Đã hoàn thành", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-200" },
-    rejected:    { label: "Đã từ chối",   bg: "bg-red-50",     text: "text-red-500",    dot: "bg-red-400",    border: "border-red-200" },
+    pending:         { label: "Chờ xác nhận", bg: "bg-amber-50",   text: "text-amber-600",  dot: "bg-amber-400",  border: "border-amber-200" },
+    pending_payment: { label: "Chờ thanh toán", bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-400 animate-pulse", border: "border-orange-200" },
+    accepted:        { label: "Đã chấp nhận", bg: "bg-sky-50",     text: "text-sky-600",    dot: "bg-sky-500",    border: "border-sky-200" },
+    in_progress:     { label: "Đang thực hiện", bg: "bg-teal-50",   text: "text-teal-700",   dot: "bg-teal-500 animate-pulse", border: "border-teal-200" },
+    completed:       { label: "Đã hoàn thành", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-200" },
+    rejected:        { label: "Đã từ chối",   bg: "bg-red-50",     text: "text-red-500",    dot: "bg-red-400",    border: "border-red-200" },
 };
 
 function StarRow({ rating }) {
@@ -402,6 +403,20 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                         </div>
                     )}
 
+                    {status === "pending_payment" && (
+                        <div className="flex flex-col gap-2 mt-auto">
+                            <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-200 text-center space-y-1">
+                                <span className="text-xs font-bold text-amber-800 flex items-center justify-center gap-1.5">
+                                    <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+                                    Đã tiếp nhận · Chờ gia đình thanh toán PayOS
+                                </span>
+                                <p className="text-[11px] text-amber-700 font-medium">
+                                    Hệ thống đang giữ slot 30 phút. Khi khách hàng quét mã PayOS thành công, ca sẽ chuyển sang ĐÃ TIẾP NHẬN.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {status === "accepted" && (
                         <div className="flex flex-col gap-2 mt-auto">
                             <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-center justify-between">
@@ -676,14 +691,18 @@ export default function CaregiverBookingRequests() {
 
     const counts = {
         all:         bookings.length,
-        pending:     bookings.filter((b) => b.status === "pending").length,
+        pending:     bookings.filter((b) => b.status === "pending" || b.status === "pending_payment").length,
         accepted:    bookings.filter((b) => b.status === "accepted").length,
         in_progress: bookings.filter((b) => b.status === "in_progress").length,
         completed:   bookings.filter((b) => b.status === "completed").length,
         rejected:    bookings.filter((b) => b.status === "rejected").length,
     };
 
-    const filtered = filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
+    const filtered = filter === "all"
+        ? bookings
+        : filter === "pending"
+        ? bookings.filter((b) => b.status === "pending" || b.status === "pending_payment")
+        : bookings.filter((b) => b.status === filter);
 
     const TABS = [
         { key: "all",         label: "Tất cả" },

@@ -521,7 +521,11 @@ export default function DirectBookingModal({
             let targetConvId = conversationId;
             if (!targetConvId && nurseId) {
                 // Tự động tìm hoặc tạo hội thoại với điều dưỡng này nếu mở từ Profile
-                const convRes = await conversationApi.getOrCreateConversation({ caregiverId: nurseId });
+                const convRes = await conversationApi.getOrCreateConversation({
+                    nurseId: nurseId,
+                    NurseId: nurseId,
+                    caregiverId: nurseId,
+                });
                 targetConvId = convRes?.id || convRes?.data?.id;
             }
 
@@ -536,7 +540,7 @@ export default function DirectBookingModal({
 
             // Nếu mở ngoài phòng chat, chuyển hướng vào phòng chat để theo dõi tiến độ đàm phán
             if (!conversationId) {
-                navigate("/chat", {
+                navigate(`/chat?nurseId=${nurseId}`, {
                     state: {
                         conversationId: targetConvId,
                         nurseId,

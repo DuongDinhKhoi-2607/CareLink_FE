@@ -855,6 +855,9 @@ export default function CaregiverProfile() {
                 isOpen={showDirectBookingModal}
                 onClose={() => setShowDirectBookingModal(false)}
                 caregiver={caregiver}
+                nurseId={nurseId}
+                nurseName={caregiver?.name || caregiver?.fullName || "Điều dưỡng CareLink"}
+                nurseAvatar={caregiver?.image || caregiver?.avatar}
                 initialDate={selectedBookingDate}
             />
         </div>
