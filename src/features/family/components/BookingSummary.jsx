@@ -241,17 +241,17 @@ export default function BookingSummary({
                                     onClick={onDirectBooking || onConfirmBooking}
                                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] px-4 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-md shadow-[#00677c]/20 transition-all duration-200 hover:from-[#005566] hover:to-[#007489] hover:shadow-lg active:scale-[0.99] cursor-pointer"
                                 >
-                                    <svg className="h-4 w-4 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                                    <svg className="h-4 w-4 text-teal-100" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                                     </svg>
                                     <span>Đặt lịch ca trực (Xem lịch rảnh)</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowCloseModal(true)}
-                                    className="w-full py-2 px-3 text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50/60 rounded-xl transition-colors cursor-pointer text-center"
+                                    className="w-full py-2 px-3 text-xs font-semibold text-slate-500 hover:text-[#00677c] hover:bg-teal-50/60 rounded-xl transition-colors cursor-pointer text-center"
                                 >
-                                    Không tiếp tục trao đổi
+                                    Rời cuộc trò chuyện (Quay lại danh sách)
                                 </button>
                             </>
                         )}
@@ -383,17 +383,17 @@ export default function BookingSummary({
                         className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200 flex flex-col gap-4"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center mx-auto sm:mx-0">
+                        <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-100 text-[#00677c] flex items-center justify-center mx-auto sm:mx-0">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376L13.303 3.623a1.5 1.5 0 00-2.606 0L2.697 16.126a1.5 1.5 0 001.303 2.249h16a1.5 1.5 0 001.303-2.249zM12 16.5h.008v.008H12V16.5z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
                             </svg>
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">
-                                Bạn muốn kết thúc trao đổi?
+                                Quay lại danh sách điều dưỡng?
                             </h3>
                             <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                                Bạn có chắc chắn không tiếp tục trao đổi với điều dưỡng này? Chưa có đơn đặt lịch nào được tạo và bạn có thể quay lại tìm điều dưỡng khác phù hợp hơn.
+                                Bạn có thể quay lại tìm kiếm điều dưỡng khác bất cứ lúc nào. Lịch sử cuộc trò chuyện này vẫn được lưu lại an toàn để bạn tiếp tục trao đổi khi cần.
                             </p>
                         </div>
                         <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -402,14 +402,14 @@ export default function BookingSummary({
                                 onClick={() => setShowCloseModal(false)}
                                 className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                                Tiếp tục trao đổi
+                                Ở lại trò chuyện
                             </button>
                             <button
                                 type="button"
                                 onClick={handleConfirmClose}
-                                className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-xs sm:text-sm font-bold hover:bg-rose-700 transition-colors cursor-pointer shadow-sm"
+                                className="px-4 py-2.5 rounded-xl bg-[#00677c] text-white text-xs sm:text-sm font-bold hover:bg-[#005263] transition-colors cursor-pointer shadow-sm"
                             >
-                                Kết thúc trao đổi
+                                Quay lại danh sách
                             </button>
                         </div>
                     </div>
