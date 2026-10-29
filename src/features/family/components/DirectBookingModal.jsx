@@ -319,7 +319,8 @@ export default function DirectBookingModal({
     const handleProposedPriceChange = (e) => {
         const input = e.target;
         const rawVal = input.value;
-        const selStart = input.selectionStart || 0;
+        const selStart = input.selectionStart ?? rawVal.length;
+        const isAtEnd = selStart >= rawVal.length - 1;
 
         // Trích xuất các chữ số thuần túy
         const digits = rawVal.replace(/\D/g, "");
@@ -329,35 +330,62 @@ export default function DirectBookingModal({
             return;
         }
 
-        // Giới hạn tối đa 9 chữ số (dưới 1 tỷ VNĐ)
-        const trimmed = digits.slice(0, 9);
-        const num = parseInt(trimmed, 10);
+        // Giới hạn tối đa 8 chữ số (dưới 100 triệu VNĐ)
+        const trimmed = digits.slice(0, 8);
+        const num = Math.min(parseInt(trimmed, 10), 50000000);
 
         // Định dạng phân tách hàng nghìn bằng dấu chấm chuẩn Việt Nam
         const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-        // Đếm số chữ số nằm trước vị trí con trỏ trước khi format
-        const digitsBeforeCaret = rawVal.slice(0, selStart).replace(/\D/g, "").length;
-
         setProposedPrice(formatted);
 
-        // Đặt lại con trỏ chuột chính xác ngay sau chữ số tương ứng
+        // Khôi phục con trỏ chuột: nếu gõ ở cuối (phổ biến nhất) -> luôn đặt ở cuối
         requestAnimationFrame(() => {
             if (!input) return;
-            let newPos = 0;
-            let count = 0;
-            for (let i = 0; i < formatted.length; i++) {
-                if (/\d/.test(formatted[i])) {
-                    count++;
+            if (isAtEnd) {
+                input.setSelectionRange(formatted.length, formatted.length);
+            } else {
+                const digitsBeforeCaret = rawVal.slice(0, selStart).replace(/\D/g, "").length;
+                let count = 0;
+                let newPos = formatted.length;
+                for (let i = 0; i < formatted.length; i++) {
+                    if (/\d/.test(formatted[i])) {
+                        count++;
+                    }
+                    if (count === digitsBeforeCaret) {
+                        newPos = i + 1;
+                        break;
+                    }
                 }
-                if (count === digitsBeforeCaret) {
-                    newPos = i + 1;
-                    break;
-                }
+                if (digitsBeforeCaret === 0) newPos = 0;
+                input.setSelectionRange(newPos, newPos);
             }
-            if (digitsBeforeCaret === 0) newPos = 0;
-            input.setSelectionRange(newPos, newPos);
         });
+    };
+
+    const handlePriceKeyDown = (e) => {
+        if (e.key === "Backspace") {
+            const input = e.target;
+            const selStart = input.selectionStart;
+            const selEnd = input.selectionEnd;
+            if (selStart === selEnd && selStart > 0 && input.value[selStart - 1] === ".") {
+                e.preventDefault();
+                const raw = input.value;
+                const updated = raw.slice(0, selStart - 2) + raw.slice(selStart);
+                const digits = updated.replace(/\D/g, "");
+                if (!digits) {
+                    setProposedPrice("");
+                    return;
+                }
+                const num = parseInt(digits.slice(0, 8), 10);
+                const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                setProposedPrice(formatted);
+                requestAnimationFrame(() => {
+                    const newPos = Math.max(0, selStart - 2);
+                    input.setSelectionRange(newPos, newPos);
+                });
+            }
+        }
     };
 
     // ── 5. THUẬT TOÁN CHỌN SUẤT TRỰC THÔNG MINH (SMART CINEMA SLOTS) ──
@@ -569,12 +597,19 @@ export default function DirectBookingModal({
             setShowPrivacyPopup(false);
             onClose();
 
-            if (targetBookingId) {
+            if (targetBookingId && (createdBooking?.status === 1 || createdBooking?.status === "PendingPayment")) {
                 navigate(`/checkout?bookingId=${targetBookingId}`, {
                     state: { bookingId: targetBookingId, booking: createdBooking },
                 });
             } else {
-                navigate("/dashboard/appointments");
+                // Theo chuẩn ADR-003: Ca trực tiếp ban đầu ở trạng thái PendingAcceptance (Chờ điều dưỡng nhận).
+                // Điều dưỡng bấm nhận ca -> chuyển sang PendingPayment -> Gia đình mở thanh toán PayOS.
+                navigate("/dashboard/appointments", {
+                    state: {
+                        newBookingId: targetBookingId,
+                        notice: `Yêu cầu ca trực đã được gửi thành công tới Điều dưỡng ${nurseName}! Vui lòng đợi Điều dưỡng xác nhận nhận ca trước khi tiến hành thanh toán giữ chỗ.`,
+                    },
+                });
             }
         } catch (err) {
             console.error("[CareLink] Lỗi đặt ca trực:", err);
@@ -1114,6 +1149,7 @@ export default function DirectBookingModal({
                                             inputMode="numeric"
                                             value={proposedPrice}
                                             onChange={handleProposedPriceChange}
+                                            onKeyDown={handlePriceKeyDown}
                                             placeholder={`Ví dụ: ${baseServicesPrice > 0 ? baseServicesPrice.toLocaleString("vi-VN") : "200.000"} VNĐ`}
                                             className="w-full px-3.5 py-2.5 rounded-xl border border-teal-300 bg-white text-xs font-black text-slate-800 outline-none focus:ring-2 focus:ring-teal-500/20 tracking-wide"
                                         />
@@ -1261,8 +1297,8 @@ export default function DirectBookingModal({
                                         </>
                                     ) : (
                                         <>
-                                            <CreditCard className="w-4 h-4" />
-                                            <span>Xác nhận đặt lịch &amp; Thanh toán</span>
+                                            <CalendarCheck className="w-4 h-4" />
+                                            <span>Gửi yêu cầu đặt ca trực</span>
                                         </>
                                     )}
                                 </button>
@@ -1426,12 +1462,12 @@ export default function DirectBookingModal({
                                 {isSubmitting ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Đang chuyển cổng PayOS...</span>
+                                        <span>Đang gửi yêu cầu...</span>
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle2 className="w-4 h-4" />
-                                        <span>Tiếp tục thanh toán</span>
+                                        <span>Xác nhận gửi yêu cầu</span>
                                     </>
                                 )}
                             </button>
