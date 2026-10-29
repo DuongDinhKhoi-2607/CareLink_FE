@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     X,
     Calendar,
+    CalendarCheck,
     Clock,
     User,
     MapPin,
@@ -316,16 +317,30 @@ export default function DirectBookingModal({
     };
 
     // ── XỬ LÝ NHẬP MỨC GIÁ ĐỀ XUẤT MƯỢT MÀ (CHỐNG NHẢY CON TRỎ / NHẢY LOẠN SỐ) ──
+    const priceInputRef = useRef(null);
+    const priceCaretRef = useRef(null);
+
+    useLayoutEffect(() => {
+        if (priceCaretRef.current !== null && priceInputRef.current) {
+            const pos = priceCaretRef.current;
+            priceInputRef.current.setSelectionRange(pos, pos);
+            priceCaretRef.current = null;
+        }
+    }, [proposedPrice]);
+
     const handleProposedPriceChange = (e) => {
         const input = e.target;
         const rawVal = input.value;
         const selStart = input.selectionStart ?? rawVal.length;
-        const isAtEnd = selStart >= rawVal.length - 1;
+
+        // Đếm số chữ số đứng trước con trỏ chuột trước khi format
+        const digitsBeforeCaret = rawVal.slice(0, selStart).replace(/\D/g, "").length;
 
         // Trích xuất các chữ số thuần túy
         const digits = rawVal.replace(/\D/g, "");
 
         if (!digits) {
+            priceCaretRef.current = 0;
             setProposedPrice("");
             return;
         }
@@ -337,30 +352,23 @@ export default function DirectBookingModal({
         // Định dạng phân tách hàng nghìn bằng dấu chấm chuẩn Việt Nam
         const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-        setProposedPrice(formatted);
-
-        // Khôi phục con trỏ chuột: nếu gõ ở cuối (phổ biến nhất) -> luôn đặt ở cuối
-        requestAnimationFrame(() => {
-            if (!input) return;
-            if (isAtEnd) {
-                input.setSelectionRange(formatted.length, formatted.length);
-            } else {
-                const digitsBeforeCaret = rawVal.slice(0, selStart).replace(/\D/g, "").length;
-                let count = 0;
-                let newPos = formatted.length;
-                for (let i = 0; i < formatted.length; i++) {
-                    if (/\d/.test(formatted[i])) {
-                        count++;
-                    }
-                    if (count === digitsBeforeCaret) {
-                        newPos = i + 1;
-                        break;
-                    }
+        // Tính vị trí con trỏ mới trong chuỗi formatted:
+        // Đếm tới khi gặp đúng số chữ số như trước con trỏ
+        let count = 0;
+        let newPos = formatted.length;
+        for (let i = 0; i < formatted.length; i++) {
+            if (/\d/.test(formatted[i])) {
+                count++;
+                if (count === digitsBeforeCaret) {
+                    newPos = i + 1;
+                    break;
                 }
-                if (digitsBeforeCaret === 0) newPos = 0;
-                input.setSelectionRange(newPos, newPos);
             }
-        });
+        }
+        if (digitsBeforeCaret === 0) newPos = 0;
+
+        priceCaretRef.current = newPos;
+        setProposedPrice(formatted);
     };
 
     const handlePriceKeyDown = (e) => {
@@ -374,16 +382,14 @@ export default function DirectBookingModal({
                 const updated = raw.slice(0, selStart - 2) + raw.slice(selStart);
                 const digits = updated.replace(/\D/g, "");
                 if (!digits) {
+                    priceCaretRef.current = 0;
                     setProposedPrice("");
                     return;
                 }
                 const num = parseInt(digits.slice(0, 8), 10);
                 const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                priceCaretRef.current = Math.max(0, selStart - 2);
                 setProposedPrice(formatted);
-                requestAnimationFrame(() => {
-                    const newPos = Math.max(0, selStart - 2);
-                    input.setSelectionRange(newPos, newPos);
-                });
             }
         }
     };
@@ -1145,6 +1151,7 @@ export default function DirectBookingModal({
                                             </span>
                                         </div>
                                         <input
+                                            ref={priceInputRef}
                                             type="text"
                                             inputMode="numeric"
                                             value={proposedPrice}
