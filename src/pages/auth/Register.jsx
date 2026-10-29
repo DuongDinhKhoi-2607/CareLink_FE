@@ -778,21 +778,11 @@ export default function Register() {
                         className="group flex shrink-0 items-center gap-2.5"
                         title="Về trang chủ CareLink"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#087287] to-[#123248] text-white shadow-sm transition-transform duration-200 group-hover:scale-[1.03]">
-                            <svg
-                                className="h-[18px] w-[18px]"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M12 4.5v15m7.5-7.5h-15"
-                                />
-                            </svg>
-                        </div>
+                        <img
+                            src="/images/logo_remove.png"
+                            alt="CareLink Logo"
+                            className="h-10 w-10 object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-[1.03] shrink-0"
+                        />
 
                         <div className="flex flex-col">
                             <span className="text-xl font-bold leading-none tracking-tight text-[#002045]">
