@@ -171,8 +171,29 @@ export default function CaregiverList() {
             : []
     );
     const [selectedAvailability, setSelectedAvailability] = useState([]);
-    const [priceRange, setPriceRange] = useState(275000);
+    const [onlyFavorites, setOnlyFavorites] = useState(false);
     const [sort, setSort] = useState("Đánh giá cao nhất");
+
+    // Quản lý danh sách hồ sơ điều dưỡng đã lưu yêu thích (đồng bộ localStorage)
+    const [favoriteIds, setFavoriteIds] = useState(() => {
+        try {
+            const raw = localStorage.getItem("carelink_favorite_caregivers");
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    });
+
+    const handleToggleFavorite = (caregiverId) => {
+        const sId = String(caregiverId);
+        setFavoriteIds((prev) => {
+            const next = prev.includes(sId) ? prev.filter((id) => id !== sId) : [...prev, sId];
+            try {
+                localStorage.setItem("carelink_favorite_caregivers", JSON.stringify(next));
+            } catch {}
+            return next;
+        });
+    };
 
     const [activeService, setActiveService] = useState(
         serviceFromState || null
@@ -289,7 +310,7 @@ export default function CaregiverList() {
                 : []
         );
         setSelectedAvailability([]);
-        setPriceRange(275000);
+        setOnlyFavorites(false);
         setPageNumber(1);
         setSearchTrigger((prev) => prev + 1);
     };
@@ -353,27 +374,47 @@ export default function CaregiverList() {
     // ========================================================
     const filteredCaregivers = nurses
         .filter((caregiver) => {
-            if (
-                selectedSpecialties.length > 0 &&
-                !selectedSpecialties.includes(caregiver.specialty)
-            ) {
+            // Lọc hồ sơ yêu thích
+            if (onlyFavorites && !favoriteIds.includes(String(caregiver.id))) {
                 return false;
             }
 
-            if (
-                selectedQualifications.length > 0 &&
-                !selectedQualifications.includes(caregiver.qualifications)
-            ) {
-                return false;
+            // Lọc theo Chuyên môn (Fuzzy keyword match vào specialty, bio, skills, role)
+            if (selectedSpecialties.length > 0) {
+                const sText = (
+                    (caregiver.specialty || "") + " " +
+                    (caregiver.bio || "") + " " +
+                    (caregiver.quote || "") + " " +
+                    (caregiver.role || "") + " " +
+                    (Array.isArray(caregiver.skills) ? caregiver.skills.join(" ") : "")
+                ).toLowerCase();
+                const matchSpec = selectedSpecialties.some((s) => sText.includes(s.toLowerCase()));
+                if (!matchSpec) return false;
             }
 
-            if (
-                caregiver.rateNumber &&
-                caregiver.rateNumber > priceRange
-            ) {
-                return false;
+            // Lọc theo Trình độ chuyên môn (Match học vấn, chức danh và practitionerType)
+            if (selectedQualifications.length > 0) {
+                const qText = (
+                    (caregiver.qualifications || "") + " " +
+                    (caregiver.role || "") + " " +
+                    (caregiver.educationLevel || "")
+                ).toLowerCase();
+                const matchQual = selectedQualifications.some((q) => {
+                    if (q.includes("Sinh viên")) {
+                        return caregiver.practitionerType === 2 || qText.includes("sinh viên") || qText.includes("thực tập");
+                    }
+                    if (q.includes("chính quy")) {
+                        return caregiver.practitionerType === 1 || qText.includes("cử nhân") || qText.includes("đại học") || qText.includes("chính quy") || qText.includes("cao đẳng");
+                    }
+                    if (q.includes("Y tá")) {
+                        return qText.includes("y tá") || qText.includes("trung cấp") || qText.includes("thực hành");
+                    }
+                    return qText.includes(q.toLowerCase());
+                });
+                if (!matchQual) return false;
             }
 
+            // Lọc theo thời gian sẵn sàng
             if (selectedAvailability.length > 0) {
                 const hasMatchAvailability =
                     selectedAvailability.some((option) =>
@@ -406,14 +447,6 @@ export default function CaregiverList() {
 
             if (sort === "Kinh nghiệm nhiều nhất") {
                 return (b.experienceYears || 0) - (a.experienceYears || 0);
-            }
-
-            if (sort === "Giá thấp nhất") {
-                return (a.rateNumber || 0) - (b.rateNumber || 0);
-            }
-
-            if (sort === "Giá cao nhất") {
-                return (b.rateNumber || 0) - (a.rateNumber || 0);
             }
 
             return 0;
@@ -610,8 +643,6 @@ export default function CaregiverList() {
                         setSelectedQualifications={setSelectedQualifications}
                         selectedSpecialties={selectedSpecialties}
                         setSelectedSpecialties={setSelectedSpecialties}
-                        priceRange={priceRange}
-                        setPriceRange={setPriceRange}
                         selectedAvailability={selectedAvailability}
                         setSelectedAvailability={setSelectedAvailability}
                         minRating={minRating}
@@ -627,6 +658,9 @@ export default function CaregiverList() {
                         }}
                         resetFilters={resetFilters}
                         toggleItem={toggleItem}
+                        onlyFavorites={onlyFavorites}
+                        setOnlyFavorites={setOnlyFavorites}
+                        favoriteCount={favoriteIds.length}
                     />
 
 
@@ -707,12 +741,25 @@ export default function CaregiverList() {
                             selectedAvailability.length > 0 ||
                             minRating != null ||
                             activeService ||
-                            priceRange < 275000) && (
+                            onlyFavorites) && (
                                 <div className="flex flex-wrap items-center gap-2 mb-5">
 
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
                                         Đang lọc:
                                     </span>
+
+                                    {onlyFavorites && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                                            Đã lưu yêu thích
+                                            <button
+                                                type="button"
+                                                onClick={() => setOnlyFavorites(false)}
+                                                className="ml-1 text-slate-400 hover:text-rose-700 cursor-pointer"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
 
                                     {activeService && (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00677c]/10 text-[#00677c] text-[10px] font-bold">
@@ -828,6 +875,8 @@ export default function CaregiverList() {
                                             caregiver={caregiver}
                                             onProfile={handleProfile}
                                             onBook={handleBook}
+                                            isFavorite={favoriteIds.includes(String(caregiver.id))}
+                                            onToggleFavorite={handleToggleFavorite}
                                         />
                                     ))}
                                 </div>
