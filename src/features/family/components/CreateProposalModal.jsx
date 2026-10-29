@@ -296,8 +296,13 @@ export default function CreateProposalModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div
+            className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/65 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget && !isSubmitting) onClose();
+            }}
+        >
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-xl overflow-hidden flex flex-col my-auto m-auto max-h-[92vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-gradient-to-r from-teal-50/70 to-white">
                     <div className="flex items-center gap-3">

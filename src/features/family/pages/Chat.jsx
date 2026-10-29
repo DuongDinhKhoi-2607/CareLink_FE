@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import BookingSummary from "../components/BookingSummary";
-import CreateProposalModal from "../components/CreateProposalModal";
 import DirectBookingModal from "../components/DirectBookingModal";
 import conversationApi from "../../../api/conversationApi";
 import familyApi from "../../../api/familyApi";
@@ -86,12 +85,18 @@ export default function Chat() {
     const [isLoadingConv, setIsLoadingConv] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [convError, setConvError] = useState("");
-    const [showProposalModal, setShowProposalModal] = useState(false);
     const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
 
     // Tải điểm đánh giá thật của điều dưỡng
-    const currentNurseId = conversation?.nurseId || targetNurseId;
+    const currentNurseId =
+        conversation?.nurseId ||
+        (conversation?.otherPartyRole === "Nurse" ? conversation?.otherPartyId : null) ||
+        conversation?.otherPartyId ||
+        passedCaregiver?.nurseId ||
+        passedCaregiver?.id ||
+        targetNurseId;
+
     useEffect(() => {
         if (!currentNurseId) return;
         familyApi.getNurseRatingSummary(currentNurseId)
@@ -115,12 +120,14 @@ export default function Chat() {
     // Thông tin hiển thị điều dưỡng
     const displayName =
         conversation?.nurseName ||
+        conversation?.otherPartyName ||
         passedCaregiver?.fullName ||
         passedCaregiver?.name ||
         "Điều dưỡng CareLink";
 
     const avatarUrl =
         conversation?.nurseAvatar ||
+        conversation?.otherPartyAvatar ||
         passedCaregiver?.avatarUrl ||
         passedCaregiver?.image ||
         "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
@@ -864,8 +871,8 @@ export default function Chat() {
                             rejectReason={rejectReason}
                             bookingInfo={bookingInfoForSummary}
                             onDirectBooking={currentNurseId ? () => setShowDirectBookingModal(true) : null}
-                            onConfirmBooking={handleOpenProposalModal}
-                            onRevokeBooking={handleOpenProposalModal}
+                            onConfirmBooking={currentNurseId ? () => setShowDirectBookingModal(true) : null}
+                            onRevokeBooking={currentNurseId ? () => setShowDirectBookingModal(true) : null}
                             onAcceptCounter={handleAcceptCounterProposal}
                             onCloseChat={() => navigate("/caregivers")}
                         />
@@ -873,26 +880,19 @@ export default function Chat() {
                 </div>
             </div>
 
-            {/* MODAL ĐẶT LỊCH CA TRỰC NHANH (XEM LỊCH RẢNH THỰC TẾ) */}
+            {/* MODAL ĐẶT LỊCH CA TRỰC DUY NHẤT & CHUẨN HOÁ (XEM LỊCH RẢNH THỰC TẾ & ĐỀ XUẤT ĐÀM PHÁN) */}
             {currentNurseId && (
                 <DirectBookingModal
                     isOpen={showDirectBookingModal}
                     onClose={() => setShowDirectBookingModal(false)}
                     nurseId={currentNurseId}
                     nurseName={displayName}
-                    nurseAvatar={displayAvatar}
-                />
-            )}
-
-            {/* MODAL TẠO ĐỀ XUẤT CA CHĂM SÓC MỚI (POST /api/v1/conversations/{id}/proposals) */}
-            {conversation?.id && (
-                <CreateProposalModal
-                    isOpen={showProposalModal}
-                    onClose={() => setShowProposalModal(false)}
-                    conversationId={conversation.id}
-                    caregiverName={displayName}
-                    caregiverId={currentNurseId}
-                    onProposalCreated={handleProposalCreated}
+                    nurseAvatar={avatarUrl}
+                    conversationId={activeConversationId}
+                    onProposalCreated={() => {
+                        loadProposals();
+                        loadMessages();
+                    }}
                 />
             )}
 

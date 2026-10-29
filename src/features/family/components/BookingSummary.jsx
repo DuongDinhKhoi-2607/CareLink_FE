@@ -233,34 +233,18 @@ export default function BookingSummary({
                         NHÓM NÚT HÀNH ĐỘNG DYNAMIC (Action Area)
                     ==================================================== */}
                     <div className="flex flex-col gap-2.5 pt-1">
-                        {/* 1. Trạng thái IDLE: Khách bấm gửi yêu cầu */}
+                        {/* 1. Trạng thái IDLE: Khách bấm đặt lịch ca trực */}
                         {status === "idle" && (
                             <>
-                                {onDirectBooking && (
-                                    <button
-                                        type="button"
-                                        onClick={onDirectBooking}
-                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] px-4 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-md shadow-[#00677c]/20 transition-all duration-200 hover:from-[#005566] hover:to-[#007489] hover:shadow-lg active:scale-[0.99] cursor-pointer"
-                                    >
-                                        <svg className="h-4 w-4 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                                        </svg>
-                                        ⚡ Đặt ca trực nhanh (Xem lịch rảnh)
-                                    </button>
-                                )}
                                 <button
                                     type="button"
-                                    onClick={onConfirmBooking}
-                                    className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
-                                        onDirectBooking
-                                            ? "border border-teal-600/40 text-[#00677c] bg-teal-50/50 hover:bg-teal-100/60"
-                                            : "bg-[#00677c] text-white hover:bg-[#005566] shadow-sm"
-                                    }`}
+                                    onClick={onDirectBooking || onConfirmBooking}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] px-4 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-md shadow-[#00677c]/20 transition-all duration-200 hover:from-[#005566] hover:to-[#007489] hover:shadow-lg active:scale-[0.99] cursor-pointer"
                                 >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                    <svg className="h-4 w-4 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                                     </svg>
-                                    📝 Gửi đề xuất thương lượng giá
+                                    <span>Đặt lịch ca trực (Xem lịch rảnh)</span>
                                 </button>
                                 <button
                                     type="button"
