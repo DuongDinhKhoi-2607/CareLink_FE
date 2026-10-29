@@ -134,46 +134,33 @@ dotnet test --filter "FullyQualifiedName=CareLinkAPI.Tests.DemoDbSeeder.ResetAnd
 ### 📍 BƯỚC 4: KHÁCH HÀNG TÌM KIẾM, PHIẾU ĐẶT LỊCH NHANH, DEAL GIÁ TRONG CHAT & THANH TOÁN VIETQR PAYOS (2 PHÚT)
 * **Vị trí màn hình:** Chuyển đổi giữa **Tab 1 (Khách hàng Long)** và **Tab 2 (Điều dưỡng Lan)**
 
-#### 🖱️ Thao tác 1 (Tại Tab 1 - Khách hàng Long):
-1. Vào mục **"Tìm điều dưỡng"** (`/caregivers`):
-   - Giải thích: Thuật toán Haversine chỉ hiển thị những điều dưỡng **đã được Admin xác minh**, **đang online nhận việc** và **nằm trong bán kính di chuyển**.
-   - Thấy hồ sơ cô **Đặng Thị Thu Thảo** hoặc **Nguyễn Thị Mai Lan** (5.0 ⭐, Cử nhân ĐH Y Dược TP.HCM).
-2. Bấm vào hồ sơ để xem chi tiết:
-   - Thấy bảng giá minh bạch, các dịch vụ nhận làm và đánh giá từ các gia đình khác.
-   - Bấm nút **"Đặt ca chăm sóc ngay"**:
-     - Modal chuẩn hóa **"Phiếu đặt lịch nhanh • Chọn giờ linh hoạt"** mở ra:
-       - **Mục 1 (Người thân):** Chọn cụ *Nguyễn Văn An (82 tuổi)*. Bấm nút **`(i)`** bên cạnh: Xem tóm tắt y tế (tiền sử dị ứng, khả năng di chuyển).
-       - **Mục 2 (Địa chỉ):** Chọn địa chỉ nhà riêng tại Quận 1.
-       - **Mục 3 (Dịch vụ):** Bấm chọn *Chăm sóc người cao tuổi*, bấm dấu `+` tăng 2 ca hoặc chọn thêm gói phụ, chọn chăm sóc tăng cường `+30p`.
-       - **Mục 4 (Khung giờ trực khả dụng):** Hệ thống gọi API realtime `available-slots`, hiển thị các ô giờ còn trống (màu xanh lá) và khóa các ô đã kín/quá giờ. Chọn khung giờ mong muốn.
-       - **Mục 5 (Giờ yêu cầu & Cam kết y tế):** Nhập giờ cụ thể (ví dụ: `Có mặt lúc 17:15`), tích chọn cam kết chia sẻ tóm tắt bệnh án y tế.
-       - **Mục 6 (Tài chính minh bạch):** Hiển thị rõ tổng tiền dịch vụ + **60.000 VNĐ phí nền tảng CareLink**.
-3. **Thử nghiệm tính năng Trao đổi & Đàm phán trực tiếp trong Chat:**
-   - Đóng modal, bấm nút **"Nhắn tin & Trao đổi"** (`/chat`):
-   - Mở cuộc trò chuyện 2 chiều bảo mật giữa anh Long và Điều dưỡng.
-   - Góc phải màn hình: Tóm tắt tiến trình thỏa thuận, nguyên tắc bảo vệ quyền lợi.
-   - Nút **"Đặt lịch ca trực (Xem lịch rảnh)"** với icon lịch hẹn y tế chuẩn. Nút **"Rời cuộc trò chuyện (Quay lại danh sách)"** giúp khách an tâm quay lại tìm điều dưỡng khác khi cần mà không mất tin nhắn cũ.
-   - Bấm nút đặt lịch trong chat: Bật công tắc **"Thương lượng giá theo thỏa thuận (Proposal)"** -> Nhập mức giá đề xuất (ví dụ: `280.000 VNĐ`) kèm ghi chú dặn dò -> Bấm **"Gửi đề xuất thỏa thuận"**.
-   - Thẻ đề xuất ca trực lập tức xuất hiện ngay trong luồng tin nhắn!
+#### 💡 Hệ thống CareLink hỗ trợ 2 kịch bản Đặt lịch chuẩn hóa theo State Machine (Chọn 1 trong 2):
 
----
+* **Kịch bản A (Khuyên dùng): Đàm phán giá & Đề xuất ca trực tiếp trong Chat (Proposal Workflow)**
+  1. **Tại Tab 1 (Khách Long):**
+     - Vào chi tiết hồ sơ Điều dưỡng Lan (`/caregivers/profile`) -> Bấm nút **"Nhắn tin trao đổi trước"** (hoặc tích chọn *"Thương lượng giá theo thỏa thuận"* ngay trên Modal đặt lịch).
+     - Trong phòng Chat (`/chat`), bấm nút **"Đặt lịch ca trực"**: Chọn Cụ An (82 tuổi), dịch vụ Chăm sóc người cao tuổi, nhập mức giá mong muốn (ví dụ: `250.000 VNĐ`) -> Bấm **"Gửi đề xuất thỏa thuận qua Chat"**.
+     - Thẻ đề xuất ca trực lập tức xuất hiện ngay trong luồng hội thoại!
+  2. **Tại Tab 2 (Điều dưỡng Lan):**
+     - Mở mục **"Tin nhắn & Trao đổi"** (`/caregiver/messages`): Nhận được Thẻ đề xuất từ anh Long.
+     - Điều dưỡng có 3 nút hành động chuẩn: *Chấp thuận ca*, *Đề xuất giá mới (Counter-offer)* hoặc *Từ chối*.
+     - Cô Lan bấm **"Chấp thuận ca trực"**.
+     - Hệ thống tự động kích hoạt máy trạng thái chuyển sang **`PendingPayment`** và khóa giữ chỗ trong vòng 30 phút!
+  3. **Tại Tab 1 (Khách Long thanh toán PayOS):**
+     - Ngay tại cột tóm tắt tiến trình bên phải phòng Chat, nút **"Tiến hành thanh toán"** sáng đèn!
+     - Anh Long bấm thanh toán -> Mở cổng **VietQR PayOS** (250.000đ tiền công + 60.000đ phí sàn cố định CareLink).
+     - Sau khi quét mã thanh toán thành công -> Ca chuyển sang **`Accepted (ĐÃ TIẾP NHẬN)`**!
 
-#### 🖱️ Thao tác 2 (Tại Tab 2 - Điều dưỡng Lan chấp thuận đề xuất):
-1. Chuyển sang **Tab 2 (Điều dưỡng Lan)** -> Mục **"Tin nhắn & Trao đổi"**:
-   - Nhận được thẻ đề xuất ca từ anh Long.
-   - Điều dưỡng có 3 nút hành động chuẩn: *Chấp nhận ca*, *Đề xuất giá mới (Counter-offer)* hoặc *Từ chối*.
-   - Cô Lan bấm **"Chấp thuận ca trực"**.
-   - Hệ thống tự động chuyển trạng thái ca sang `PendingPayment` và giữ chỗ độc quyền trong vòng 30 phút.
-
----
-
-#### 🖱️ Thao tác 3 (Tại Tab 1 - Khách thanh toán VietQR PayOS):
-1. Quay lại Tab anh Long: Nút **"Thanh toán ngay qua PayOS"** kích hoạt.
-2. Bấm thanh toán -> Chuyển sang màn hình **Thanh toán VietQR PayOS**:
-   - Hiển thị mã QR ngân hàng tự động, đúng số tiền (tiền dịch vụ + 60.000đ phí sàn).
-   - Nội dung chuyển khoản chuẩn theo mã đơn.
-3. Sau khi thanh toán hoàn tất, chuyển về trang **Lịch hẹn của tôi** (`/appointments`):
-   - Ca trực của cụ An xuất hiện ngay trên đầu với trạng thái màu xanh ngọc: **`ĐÃ TIẾP NHẬN`**!
+* **Kịch bản B: Đặt ca trực tiếp 1-chạm ngoài Profile (Direct Booking Workflow)**
+  1. **Tại Tab 1 (Khách Long):**
+     - Tại trang Profile Điều dưỡng Lan, bấm **"Đặt lịch ca trực ngay"**.
+     - Chọn Cụ An, gói dịch vụ, khung giờ 22:00 -> Bấm **"Xác nhận gửi yêu cầu"**.
+     - Đơn được gửi tới Điều dưỡng ở trạng thái **`PendingAcceptance (Chờ điều dưỡng nhận)`**.
+  2. **Tại Tab 2 (Điều dưỡng Lan):**
+     - Mở mục **"Yêu cầu nhận ca"** (`/caregiver/bookings`): Thấy ca trực của Anh Long -> Bấm **"Chấp nhận ca"**.
+     - Ca chuyển sang trạng thái **`Chờ thanh toán (PendingPayment)`** (hiện rõ badge giữ chỗ 30 phút, chống bấm lặp).
+  3. **Tại Tab 1 (Khách Long thanh toán):**
+     - Anh Long vào **"Lịch hẹn"** (`/dashboard/appointments`) -> Thấy nút **"Thanh toán ngay"** -> Quét mã VietQR PayOS -> Hoàn tất!
 
 #### 🎙️ Lời thoại Bước 4:
 > *"Thưa Thầy/Cô, CareLink mang đến trải nghiệm 2 trong 1: Khách hàng có thể **Đặt lịch nhanh 1 chạm** theo lịch rảnh thực tế, hoặc **Đàm phán trong Chat** nếu ca bệnh phức tạp cần thương lượng giá.*  
