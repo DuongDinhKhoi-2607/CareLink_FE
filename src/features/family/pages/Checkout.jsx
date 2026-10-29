@@ -945,27 +945,6 @@ export default function Checkout() {
                         </div>
                     </aside>
                 </div>
-
-                {/* Chân trang */}
-                <footer className="mt-10 border-t border-[#E3E9E1] pt-6">
-                    <div className="flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#E6F0E7] text-[#087E78]">
-                                <Icon className="h-4 w-4">
-                                    <path d="M12 3 19 6v5c0 4.5-3 7.5-7 10-4-2.5-7-5.5-7-10V6l7-3Z" />
-                                    <path d="m9 12 2 2 4-4" />
-                                </Icon>
-                            </span>
-                            <span className="text-xs font-bold tracking-wide text-[#53685A]">
-                                CareLink
-                            </span>
-                        </div>
-
-                        <p className="text-[10px] leading-5 text-[#9AA39A]">
-                            Kết nối yêu thương · Chăm sóc tận tâm
-                        </p>
-                    </div>
-                </footer>
             </div>
         </div>
     );

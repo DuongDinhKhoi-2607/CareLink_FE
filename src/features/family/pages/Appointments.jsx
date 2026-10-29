@@ -208,6 +208,8 @@ const mapBookingToAppointment = (b) => {
         hasNurseReviewed: Boolean(b.hasNurseReviewed ?? b.HasNurseReviewed),
         nurseRating: b.nurseRating ?? b.NurseRating ?? null,
         nurseReviewComment: b.nurseReviewComment ?? b.NurseReviewComment ?? null,
+        cancelReason: b.cancelReason || b.cancellationReason || b.rejectionReason || null,
+        canceledBy: b.canceledBy || null,
         dispute: b.dispute || (rawStatus === 7 ? {
             id: b.disputeId || `DSP-${b.id}`,
             code: `DSP-${b.id}`,
@@ -917,6 +919,26 @@ export default function Appointments() {
                                     </div>
                                 )}
 
+                                {/* Thông báo điều dưỡng báo bận / ca bị hủy (FE-07) */}
+                                {apt.tab === "cancelled" && apt.cancelReason && (
+                                    <div className="bg-rose-50/90 border border-rose-200/90 rounded-xl p-3 text-xs text-rose-800 my-1 flex items-start gap-2.5">
+                                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="font-bold text-rose-950">
+                                                {apt.canceledBy === "Nurse" || apt.canceledBy === 2
+                                                    ? "Điều dưỡng đã báo bận đột xuất cho ca trực này"
+                                                    : "Ca trực đã bị hủy"}
+                                            </p>
+                                            <p className="text-[11px] text-rose-800 mt-0.5 leading-relaxed">
+                                                <strong>Lý do: </strong>{apt.cancelReason}
+                                            </p>
+                                            <p className="text-[11px] text-emerald-700 font-semibold mt-1">
+                                                ✓ Tiền tạm giữ (nếu có) đã được hoàn trả 100% vào tài khoản của bạn.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* ======================================================== */}
                                 {/* ĐƯỜNG GẠCH PHÂN CÁCH NGAY DƯỚI CHỖ NGƯỜI NHẬN CHĂM SÓC   */}
                                 {/* ======================================================== */}
@@ -999,6 +1021,16 @@ export default function Appointments() {
                                                     Đặt lại ca mới
                                                 </Link>
                                             </div>
+                                        )}
+
+                                        {/* Ca bị hủy / điều dưỡng báo bận: Nút tìm điều dưỡng thay thế (FE-07) */}
+                                        {apt.tab === "cancelled" && !apt.isPaymentExpired && (
+                                            <Link
+                                                to="/caregivers"
+                                                className="px-3.5 py-1.5 bg-[#00677c] hover:bg-[#005566] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5"
+                                            >
+                                                <span>Tìm điều dưỡng thay thế</span>
+                                            </Link>
                                         )}
 
                                         {/* Nút Hủy ca (nếu được phép) */}
