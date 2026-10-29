@@ -32,6 +32,7 @@ export default function CaregiverBookingDetailPanel({
     booking,
     handleAcceptRequest,
     handleOpenRejectModal,
+    handleConfirmCounterOffer,
     showRejectModal,
     setShowRejectModal,
     rejectReason,
@@ -47,6 +48,40 @@ export default function CaregiverBookingDetailPanel({
     DetailItem,
 }) {
     const [showPatientModal, setShowPatientModal] = React.useState(false);
+    const [showCounterModal, setShowCounterModal] = React.useState(false);
+    const [counterPrice, setCounterPrice] = React.useState("");
+    const [counterNote, setCounterNote] = React.useState("");
+    const [counterError, setCounterError] = React.useState("");
+    const [isSubmittingCounter, setIsSubmittingCounter] = React.useState(false);
+
+    const handleOpenCounter = () => {
+        setCounterError("");
+        setCounterPrice(booking?.fee ? String(booking.fee).replace(/[^0-9]/g, "") : "");
+        setCounterNote("");
+        setShowCounterModal(true);
+    };
+
+    const handleSubmitCounter = async (e) => {
+        e.preventDefault();
+        setCounterError("");
+        const numPrice = Number(counterPrice);
+        if (!numPrice || isNaN(numPrice) || numPrice < 10000) {
+            setCounterError("Vui lòng nhập mức giá đề xuất từ 10.000 VNĐ trở lên.");
+            return;
+        }
+
+        setIsSubmittingCounter(true);
+        try {
+            if (handleConfirmCounterOffer) {
+                await handleConfirmCounterOffer(numPrice, counterNote.trim());
+            }
+            setShowCounterModal(false);
+        } catch (err) {
+            setCounterError(err?.message || "Không thể gửi đề xuất giá mới.");
+        } finally {
+            setIsSubmittingCounter(false);
+        }
+    };
 
     return (
         <>
@@ -245,7 +280,7 @@ export default function CaregiverBookingDetailPanel({
                                 <button
                                     type="button"
                                     onClick={handleAcceptRequest}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#087487] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#066274] active:scale-[0.99]"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#087487] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#066274] active:scale-[0.99] cursor-pointer"
                                 >
                                     <CheckCircle2 className="h-4 w-4" />
                                     Đồng ý nhận ca
@@ -253,8 +288,17 @@ export default function CaregiverBookingDetailPanel({
 
                                 <button
                                     type="button"
+                                    onClick={handleOpenCounter}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-xs font-bold text-teal-800 transition hover:bg-teal-100 hover:border-teal-300 cursor-pointer shadow-2xs"
+                                >
+                                    <Clock className="h-4 w-4 text-teal-600" />
+                                    Đề xuất mức giá khác (Counter-Offer)
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={handleOpenRejectModal}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
                                 >
                                     <XCircle className="h-4 w-4" />
                                     Từ chối yêu cầu
@@ -582,6 +626,109 @@ export default function CaregiverBookingDetailPanel({
                                 Đã xem và hiểu rõ
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Điều dưỡng đề xuất mức giá mới (Counter-Offer) */}
+            {showCounterModal && (
+                <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs animate-[fadeIn_150ms_ease-out]"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget && !isSubmittingCounter) {
+                            setShowCounterModal(false);
+                        }
+                    }}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl p-6 space-y-4"
+                    >
+                        <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                                    Đàm phán ca trực • BE-06
+                                </span>
+                                <h3 className="text-base font-extrabold text-slate-900 mt-1">
+                                    Đề xuất mức giá mới (Counter-Offer)
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Gửi mức giá và lý do điều chỉnh để gia đình xem xét và phê duyệt.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowCounterModal(false)}
+                                disabled={isSubmittingCounter}
+                                className="p-1 rounded-xl text-slate-400 hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {counterError && (
+                            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+                                {counterError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmitCounter} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Mức giá đề xuất mới (VNĐ) <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="number"
+                                        min="10000"
+                                        step="10000"
+                                        required
+                                        placeholder="Ví dụ: 350000"
+                                        value={counterPrice}
+                                        onChange={(e) => setCounterPrice(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none pr-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <span className="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none">
+                                        đ
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                    Giá gốc gia đình yêu cầu: {booking.fee || "Thỏa thuận"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Ghi chú / Lý do điều chỉnh chi phí
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    placeholder="Ví dụ: Bệnh nhân có vết thương hở phức tạp cần thêm vật tư sát khuẩn chuyên dụng..."
+                                    value={counterNote}
+                                    onChange={(e) => setCounterNote(e.target.value)}
+                                    className="w-full p-3 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none resize-none"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCounterModal(false)}
+                                    disabled={isSubmittingCounter}
+                                    className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingCounter}
+                                    className="px-5 py-2.5 rounded-xl bg-[#087487] text-white text-xs font-bold shadow-md hover:bg-[#066274] transition cursor-pointer disabled:opacity-50"
+                                >
+                                    {isSubmittingCounter ? "Đang gửi..." : "Gửi đề xuất giá"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

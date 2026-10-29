@@ -770,6 +770,39 @@ export default function CaregiverMessages() {
         setCustomReason("");
     };
 
+    // Điều dưỡng gửi đề xuất mức giá mới (Counter-Offer theo BE-06)
+    const handleConfirmCounterOffer = async (counterPrice, counterNote) => {
+        if (!counterPrice || isNaN(counterPrice) || Number(counterPrice) <= 0) {
+            throw new Error("Vui lòng nhập mức giá đề xuất hợp lệ (lớn hơn 0).");
+        }
+
+        if (demoState.activeProposalId && demoState.activeConversationId) {
+            try {
+                await conversationApi.counterProposal(
+                    demoState.activeConversationId,
+                    demoState.activeProposalId,
+                    {
+                        counterPrice: Number(counterPrice),
+                        counterNote: counterNote || "Điều dưỡng gửi đề xuất điều chỉnh chi phí ca trực.",
+                    }
+                );
+                showToast("Đã gửi đề xuất mức giá mới cho gia đình thành công!");
+                if (demoState.activeConversationId) {
+                    loadChatConversation(demoState.activeConversationId);
+                }
+                return true;
+            } catch (err) {
+                console.error("[CareLink] Lỗi khi gửi Counter-Offer:", err);
+                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất giá mới. Vui lòng thử lại!";
+                showToast(msg);
+                throw new Error(msg);
+            }
+        } else {
+            showToast(`Đã ghi nhận đề xuất mức giá mới: ${Number(counterPrice).toLocaleString("vi-VN")} đ`);
+            return true;
+        }
+    };
+
     // Reset dữ liệu demo sau khi người dùng xác nhận.
     const handleResetDemo = () => {
         resetDemoChat();
@@ -1076,6 +1109,7 @@ export default function CaregiverMessages() {
                                 booking={booking}
                                 handleAcceptRequest={handleAcceptRequest}
                                 handleOpenRejectModal={handleOpenRejectModal}
+                                handleConfirmCounterOffer={handleConfirmCounterOffer}
                                 showRejectModal={showRejectModal}
                                 setShowRejectModal={setShowRejectModal}
                                 rejectReason={rejectReason}

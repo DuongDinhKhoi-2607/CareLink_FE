@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { XCircle, X, Loader2, Calendar, Clock, User, AlertCircle } from "lucide-react";
 
 const REJECT_REASONS = [
-    "Bận lịch trùng ca khác",
+    "Có ca cấp cứu khác đột xuất",
+    "Việc gia đình gấp không thể sắp xếp",
+    "Sức khỏe cá nhân không đảm bảo",
     "Địa chỉ nằm ngoài bán kính di chuyển",
-    "Yêu cầu chăm sóc vượt ngoài chuyên môn hiện tại",
-    "Lý do cá nhân đột xuất",
+    "Lý do khác",
 ];
 
 export default function RejectBookingModal({
