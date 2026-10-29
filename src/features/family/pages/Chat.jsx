@@ -387,10 +387,10 @@ export default function Chat() {
                   icon: defaultIcons.address,
               },
               {
-                  label: "CHI PHÍ CA",
+                  label: "CHI PHÍ CA (ADR-002)",
                   value: activeProposal.totalPrice
-                      ? `${Number(activeProposal.totalPrice).toLocaleString("vi-VN")} đ + 60.000 đ phí sàn = ${Number(activeProposal.totalPaymentAmount || (Number(activeProposal.totalPrice) + 60000)).toLocaleString("vi-VN")} đ`
-                      : "Theo thỏa thuận",
+                      ? `${Number(activeProposal.totalPrice).toLocaleString("vi-VN")} đ (dịch vụ) + 60.000 đ (phí sàn) = ${Number(activeProposal.totalPaymentAmount || (Number(activeProposal.totalPrice) + 60000)).toLocaleString("vi-VN")} đ`
+                      : "Theo thỏa thuận + 60.000 đ phí sàn",
                   icon: defaultIcons.service,
               },
           ]
@@ -419,6 +419,11 @@ export default function Chat() {
                   label: "ĐỊA ĐIỂM",
                   value: "Chưa chọn địa chỉ chăm sóc",
                   icon: defaultIcons.address,
+              },
+              {
+                  label: "PHÍ NỀN TẢNG CỐ ĐỊNH",
+                  value: "60.000 VNĐ / ca (Phí vận hành & bảo hiểm y tế CareLink theo ADR-002)",
+                  icon: defaultIcons.service,
               },
           ];
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { Heart } from "lucide-react";
 
 function CheckIcon({ className = "w-4 h-4" }) {
     return (
@@ -26,8 +27,6 @@ export default function CaregiverFilterSidebar({
     setSelectedQualifications,
     selectedSpecialties,
     setSelectedSpecialties,
-    priceRange,
-    setPriceRange,
     selectedAvailability,
     setSelectedAvailability,
     minRating = null,
@@ -37,6 +36,9 @@ export default function CaregiverFilterSidebar({
     setActiveService,
     resetFilters,
     toggleItem,
+    onlyFavorites = false,
+    setOnlyFavorites,
+    favoriteCount = 0,
 }) {
     return (
         <aside className="lg:sticky lg:top-5">
@@ -61,6 +63,31 @@ export default function CaregiverFilterSidebar({
                 </div>
 
                 <div className="p-5 space-y-6">
+                    {/* HỒ SƠ YÊU THÍCH / SAVED */}
+                    {setOnlyFavorites && (
+                        <div className="pb-5 border-b border-[#edf1ef]">
+                            <label className="flex items-center justify-between cursor-pointer group select-none p-2.5 rounded-xl border border-rose-100 bg-rose-50/50 hover:bg-rose-50 transition-colors">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={onlyFavorites}
+                                        onChange={(e) => setOnlyFavorites(e.target.checked)}
+                                        className="w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500/20"
+                                    />
+                                    <Heart className={`w-3.5 h-3.5 transition-colors ${onlyFavorites ? "fill-rose-500 text-rose-500" : "text-rose-400"}`} />
+                                    <span className="text-xs font-bold text-slate-800">
+                                        Đã lưu yêu thích
+                                    </span>
+                                </div>
+                                {favoriteCount > 0 && (
+                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                                        {favoriteCount}
+                                    </span>
+                                )}
+                            </label>
+                        </div>
+                    )}
+
                     {/* QUALIFICATION */}
                     <div>
                         <h3 className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400 mb-3">

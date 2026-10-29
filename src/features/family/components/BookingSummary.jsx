@@ -213,6 +213,35 @@ export default function BookingSummary({
                         </div>
                     )}
 
+                    {/* BẢNG TỔNG KẾT PHÍ NỀN TẢNG CỐ ĐỊNH & CHI PHÍ CA (ADR-002) */}
+                    <div className="rounded-xl border border-teal-200/80 bg-gradient-to-br from-slate-50 to-teal-50/60 p-3.5 space-y-2 text-xs">
+                        <div className="flex items-center justify-between text-slate-600">
+                            <span className="flex items-center gap-1 font-medium">
+                                <span>Phí nền tảng &amp; Bảo hiểm (cố định):</span>
+                            </span>
+                            <span className="font-extrabold text-slate-900">60.000 VNĐ</span>
+                        </div>
+                        {bookingInfo?.totalPrice > 0 && (
+                            <>
+                                <div className="flex items-center justify-between text-slate-600">
+                                    <span className="font-medium">Tiền dịch vụ chăm sóc:</span>
+                                    <span className="font-extrabold text-slate-900">{Number(bookingInfo.totalPrice).toLocaleString("vi-VN")} VNĐ</span>
+                                </div>
+                                <div className="pt-2 border-t border-teal-200/80 flex items-center justify-between text-xs sm:text-sm font-black text-[#00677c]">
+                                    <span>Tổng thanh toán dự kiến:</span>
+                                    <span className="text-sm sm:text-base font-black">
+                                        {(Number(bookingInfo.totalPaymentAmount || (Number(bookingInfo.totalPrice) + 60000))).toLocaleString("vi-VN")} VNĐ
+                                    </span>
+                                </div>
+                            </>
+                        )}
+                        {(!bookingInfo?.totalPrice || bookingInfo?.totalPrice === 0) && (
+                            <p className="text-[10px] text-slate-500 italic leading-snug">
+                                * Phí nền tảng 60.000 VNĐ áp dụng cố định mỗi ca trực theo quyết định vận hành ADR-002 (đã bao gồm bảo hiểm y tế CareLink).
+                            </p>
+                        )}
+                    </div>
+
                     {/* Lưu ý nhỏ */}
                     <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3">
                         <div className="mb-1 flex items-center gap-1.5">
@@ -329,26 +358,59 @@ export default function BookingSummary({
 
                         {/* 4. Trạng thái ĐIỀU DƯỠNG TỪ CHỐI */}
                         {status === "caregiver_rejected" && (
-                            <Link
-                                to="/caregivers"
-                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs sm:text-sm font-bold text-white transition-all hover:bg-slate-800 cursor-pointer shadow-sm"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                                </svg>
-                                Quay lại tìm điều dưỡng khác
-                            </Link>
+                            <div className="flex flex-col gap-2.5">
+                                <div className="rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 space-y-1">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-rose-900">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                                        Điều dưỡng chưa thể nhận ca trực này
+                                    </div>
+                                    <p className="text-xs text-rose-800 leading-relaxed">
+                                        Lý do: <em>"{rejectReason || "Khung giờ hoặc mức chi phí chưa phù hợp."}"</em>
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                                        Bạn có thể bấm bên dưới để điều chỉnh lại giá / khung giờ hoặc quay lại tìm điều dưỡng khác phù hợp hơn.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={onDirectBooking || onConfirmBooking}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] px-4 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:from-[#005566] hover:to-[#007489] transition-all cursor-pointer"
+                                >
+                                    <svg className="w-4 h-4 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                    </svg>
+                                    <span>Điều chỉnh & Gửi đề xuất mới</span>
+                                </button>
+                                <Link
+                                    to="/caregivers"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 cursor-pointer text-center"
+                                >
+                                    Quay lại tìm điều dưỡng khác
+                                </Link>
+                            </div>
                         )}
 
-                        {/* 5. Trạng thái ĐÃ DỪNG TRAO ĐỔI */}
-                        {status === "closed" && (
-                            <button
-                                type="button"
-                                onClick={() => navigate("/caregivers")}
-                                className="w-full py-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer"
-                            >
-                                Quay lại danh sách điều dưỡng
-                            </button>
+                        {/* 5. Trạng thái HOÀN TẤT HOẶC ĐÃ DỪNG: Cho phép đặt lại ca trong tương lai */}
+                        {(status === "completed" || status === "closed") && (
+                            <div className="flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={onDirectBooking || onConfirmBooking}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] px-4 py-3 text-xs sm:text-sm font-bold text-white shadow-md hover:from-[#005566] hover:to-[#007489] transition-all cursor-pointer"
+                                >
+                                    <svg className="w-4 h-4 text-teal-100" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    <span>Tạo đề xuất ca mới với điều dưỡng này</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/caregivers")}
+                                    className="w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer text-center"
+                                >
+                                    Quay lại danh sách điều dưỡng
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>

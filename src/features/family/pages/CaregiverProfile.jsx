@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
-import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2, Sparkles, Calendar } from "lucide-react";
+import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2, Sparkles, Calendar, Heart, CalendarCheck } from "lucide-react";
 import DirectBookingModal from "../components/DirectBookingModal";
 
 // Dữ liệu mục xác minh
@@ -94,6 +94,37 @@ export default function CaregiverProfile() {
     const [authModal, setAuthModal] = useState({ open: false, type: "unauthenticated" });
     const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
     const [selectedBookingDate, setSelectedBookingDate] = useState(null);
+
+    // Đồng bộ trạng thái Lưu hồ sơ yêu thích từ localStorage
+    useEffect(() => {
+        if (!nurseId) return;
+        try {
+            const raw = localStorage.getItem("carelink_favorite_caregivers");
+            const favorites = raw ? JSON.parse(raw) : [];
+            if (favorites.includes(String(nurseId))) {
+                setSaved(true);
+            }
+        } catch {}
+    }, [nurseId]);
+
+    const handleToggleFavorite = () => {
+        if (!nurseId) return;
+        try {
+            const raw = localStorage.getItem("carelink_favorite_caregivers");
+            let favorites = raw ? JSON.parse(raw) : [];
+            let nextState = false;
+            const idStr = String(nurseId);
+            if (favorites.includes(idStr)) {
+                favorites = favorites.filter((id) => id !== idStr);
+                nextState = false;
+            } else {
+                favorites.push(idStr);
+                nextState = true;
+            }
+            localStorage.setItem("carelink_favorite_caregivers", JSON.stringify(favorites));
+            setSaved(nextState);
+        } catch {}
+    };
 
     const handleOpenBooking = (targetDate = null) => {
         const token = localStorage.getItem("carelink_token");
@@ -559,15 +590,15 @@ export default function CaregiverProfile() {
                                 ))}
                             </ul>
 
-                            {/* Nhóm nút hành động */}
+                            {/* Nhóm nút hành động được thiết kế lại sang trọng chuẩn y tế */}
                             <div className="flex flex-col gap-2.5 pt-2">
-                                {/* 1. Nút Primary: Đặt lịch ca trực ngay (Cinema Slot Picker) */}
+                                {/* 1. Nút Primary: Đặt lịch ca trực ngay */}
                                 <button
                                     type="button"
                                     onClick={() => handleOpenBooking()}
-                                    className="w-full py-3.5 px-4 rounded-xl text-sm font-extrabold bg-gradient-to-r from-[#00677c] to-[#008ba3] text-white hover:from-[#005566] hover:to-[#007489] transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer group"
+                                    className="w-full py-3.5 px-4 rounded-xl text-sm font-extrabold bg-gradient-to-r from-[#00677c] via-[#00748b] to-[#008ba3] text-white hover:from-[#005566] hover:to-[#007489] transition-all shadow-md shadow-[#00677c]/20 hover:shadow-lg hover:shadow-[#00677c]/30 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer group tracking-wide"
                                 >
-                                    <Sparkles className="w-4 h-4 text-teal-200 group-hover:scale-110 transition-transform" />
+                                    <CalendarCheck className="w-4 h-4 text-teal-200 group-hover:scale-110 transition-transform" />
                                     <span>Đặt lịch ca trực ngay</span>
                                 </button>
 
@@ -575,23 +606,23 @@ export default function CaregiverProfile() {
                                 <button
                                     type="button"
                                     onClick={handleContact}
-                                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                    className="w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-bold bg-[#f0f9fa] border border-[#a2d8e0] text-[#00677c] hover:bg-[#e2f4f7] hover:border-[#008ba3] hover:text-[#005566] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs active:scale-[0.99]"
                                 >
-                                    <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
+                                    <MessageSquare className="w-4 h-4 text-[#00677c]" />
                                     <span>{contacted ? "Đã mở hộp thoại" : "Nhắn tin trao đổi trước"}</span>
                                 </button>
 
-                                {/* 3. Nút Lưu hồ sơ */}
+                                {/* 3. Nút Lưu hồ sơ yêu thích */}
                                 <button
                                     type="button"
-                                    onClick={() => setSaved(!saved)}
-                                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${saved
-                                        ? "bg-rose-50 text-rose-600 border-rose-200"
-                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                    onClick={handleToggleFavorite}
+                                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] group ${saved
+                                        ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100/80 shadow-2xs"
+                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
                                         }`}
                                 >
-                                    <span>{saved ? "♥" : "♡"}</span>
-                                    <span>{saved ? "Đã lưu hồ sơ" : "Lưu hồ sơ"}</span>
+                                    <Heart className={`w-4 h-4 transition-colors ${saved ? "fill-rose-500 text-rose-500" : "text-slate-400 group-hover:text-rose-500"}`} />
+                                    <span>{saved ? "Đã lưu hồ sơ yêu thích" : "Lưu vào danh sách yêu thích"}</span>
                                 </button>
                             </div>
 

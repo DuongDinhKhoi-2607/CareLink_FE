@@ -1,4 +1,5 @@
 import React from "react";
+import { Heart } from "lucide-react";
 
 function StarIcon() {
     return (
@@ -77,6 +78,8 @@ export default function CaregiverCard({
     caregiver,
     onProfile,
     onBook,
+    isFavorite = false,
+    onToggleFavorite,
 }) {
     return (
         <article
@@ -177,11 +180,28 @@ export default function CaregiverCard({
 
                             </div>
 
-                            <div className="text-right shrink-0">
+                            <div className="text-right shrink-0 flex items-center gap-1.5">
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold tracking-tight shadow-2xs">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     Sẵn sàng nhận ca
                                 </span>
+                                {onToggleFavorite && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleFavorite(caregiver.id);
+                                        }}
+                                        title={isFavorite ? "Bỏ lưu yêu thích" : "Lưu vào yêu thích"}
+                                        className={`p-1.5 rounded-full border transition-all cursor-pointer ${
+                                            isFavorite
+                                                ? "bg-rose-50 border-rose-200 text-rose-600 shadow-2xs"
+                                                : "bg-white border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50/50"
+                                        }`}
+                                    >
+                                        <Heart className={`w-3.5 h-3.5 ${isFavorite ? "fill-rose-500 text-rose-500" : ""}`} />
+                                    </button>
+                                )}
                             </div>
 
                         </div>
