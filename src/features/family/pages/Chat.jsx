@@ -888,10 +888,11 @@ export default function Chat() {
                     nurseId={currentNurseId}
                     nurseName={displayName}
                     nurseAvatar={avatarUrl}
-                    conversationId={activeConversationId}
+                    conversationId={conversation?.id}
                     onProposalCreated={() => {
-                        loadProposals();
-                        loadMessages();
+                        if (conversation?.id) {
+                            fetchMessagesAndProposals(conversation.id, false);
+                        }
                     }}
                 />
             )}

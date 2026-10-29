@@ -573,7 +573,7 @@ export default function CaregiverSchedule() {
                             className="px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold transition-all border border-teal-200/80 cursor-pointer shadow-2xs"
                             title="Bật rảnh toàn bộ các ngày từ Thứ 2 đến Chủ nhật"
                         >
-                            ⚡ Bật rảnh cả tuần (06:00 – 22:00)
+                            Bật rảnh cả tuần (06:00 – 22:00)
                         </button>
                         <button
                             type="button"
@@ -581,7 +581,7 @@ export default function CaregiverSchedule() {
                             className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200/80 cursor-pointer shadow-2xs"
                             title="Bật rảnh toàn bộ khung giờ cho ngày hôm nay"
                         >
-                            📅 Bật rảnh hôm nay
+                            Bật rảnh hôm nay
                         </button>
 
                     </div>
