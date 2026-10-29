@@ -367,8 +367,8 @@ export default function DashboardLayout() {
             </aside>
 
             {/* Vùng nội dung chính: Tự động mở rộng khi sidebar thu gọn và cuộn mượt mà */}
-            <main ref={mainRef} className="flex-1 min-w-0 w-full overflow-y-auto transition-all duration-300">
-                <div key={location.pathname} className="animate-dashboard-tab w-full">
+            <main ref={mainRef} className="flex-1 min-w-0 w-full h-full flex flex-col overflow-y-auto md:overflow-hidden transition-all duration-300">
+                <div key={location.pathname} className="animate-dashboard-tab w-full h-full flex-1 flex flex-col min-h-0">
                     <Outlet />
                 </div>
             </main>

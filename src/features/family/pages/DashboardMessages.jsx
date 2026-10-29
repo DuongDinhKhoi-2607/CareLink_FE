@@ -29,9 +29,9 @@ function formatMessageDateDivider(dateValue) {
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import conversationApi from "../../../api/conversationApi";
-import CreateProposalModal from "../components/CreateProposalModal";
+import DirectBookingModal from "../components/DirectBookingModal";
 
 // Gợi ý tin nhắn y tế nhanh 1 chạm (Quick Smart Chips)
 const quickReplies = [
@@ -53,7 +53,7 @@ export default function DashboardMessages() {
     const [showRightDrawer, setShowRightDrawer] = useState(false);
     const [mobileView, setMobileView] = useState("chat"); // 'list' | 'chat'
     const [toastMessage, setToastMessage] = useState(null);
-    const [showProposalModal, setShowProposalModal] = useState(false);
+    const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
 
     const showToast = (msg) => {
         setToastMessage(msg);
@@ -82,6 +82,8 @@ export default function DashboardMessages() {
                     lastTime: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "",
                     vitals: null,
                     isRealApi: true,
+                    nurseId: c.nurseId || c.caregiverId || (c.otherPartyRole === "Nurse" ? (c.otherPartyId || c.otherUserId || c.userId) : null),
+                    otherUserId: c.otherPartyId || c.otherUserId || c.nurseId,
                 }));
                 setConversations(mapped);
                 setActiveChatId((prev) => (prev && mapped.some((m) => m.id === prev) ? prev : mapped[0].id));
@@ -225,9 +227,9 @@ export default function DashboardMessages() {
     };
 
     return (
-        <div className="flex-1 flex flex-col font-sans bg-[#f7fafc] min-h-[calc(100vh-80px)] animate-page-enter">
+        <div className="w-full h-full flex-1 flex flex-col min-h-0 overflow-hidden font-sans bg-[#f7fafc] animate-page-enter">
             {/* Header thanh điều hướng trang Chat trong Dashboard */}
-            <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-teal-50 text-[#00677c] flex items-center justify-center border border-teal-100 shadow-2xs">
                         <svg className="w-5 h-5 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -275,9 +277,9 @@ export default function DashboardMessages() {
             </div>
 
             {/* Bố cục chính 2 hoặc 3 cột chuẩn App Chat Premium */}
-            <div className="flex-1 flex overflow-hidden h-[calc(100vh-145px)]">
+            <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* ═══ CỘT TRÁI: DANH SÁCH CUỘC TRÒ CHUYỆN (310px - 360px) ═══ */}
-                <div className={`${mobileView === "list" ? "flex" : "hidden sm:flex"} w-full sm:w-80 md:w-[340px] bg-white border-r border-slate-200/80 flex-col shrink-0`}>
+                <div className={`${mobileView === "list" ? "flex" : "hidden sm:flex"} w-full sm:w-80 md:w-[340px] bg-white border-r border-slate-200/80 flex-col shrink-0 h-full min-h-0`}>
                     {/* Ô tìm kiếm & bộ lọc */}
                     <div className="p-3.5 border-b border-slate-100 flex flex-col gap-2.5">
                         <div className="relative">
@@ -420,7 +422,7 @@ export default function DashboardMessages() {
                 </div>
 
                 {/* ═══ CỘT GIỮA: VÙNG TRÒ CHUYỆN CHÍNH ═══ */}
-                <div className={`${mobileView === "chat" ? "flex" : "hidden sm:flex"} flex-1 flex-col bg-[#f8fafc] overflow-hidden min-w-0`}>
+                <div className={`${mobileView === "chat" ? "flex" : "hidden sm:flex"} flex-1 h-full min-h-0 flex-col bg-[#f8fafc] overflow-hidden min-w-0`}>
                     {!activeConv ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#f8fafc]">
                             <div className="w-16 h-16 rounded-2xl bg-teal-50 text-[#00677c] flex items-center justify-center mb-3">
@@ -442,7 +444,7 @@ export default function DashboardMessages() {
                     ) : (
                         <>
                             {/* Header cuộc trò chuyện đang chọn */}
-                            <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-200/80 flex items-center justify-between gap-3 shadow-2xs z-10">
+                            <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-200/80 flex items-center justify-between gap-3 shadow-2xs z-10 shrink-0">
                                 <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                     {/* Nút quay lại danh sách trên Mobile */}
                                     <button
@@ -497,16 +499,16 @@ export default function DashboardMessages() {
 
                                 {/* Các nút công cụ thao tác */}
                                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                                    {/* Nút Tạo đề xuất ca chăm sóc mới */}
-                                    {activeConv?.isRealApi && (
+                                    {/* Nút Đặt lịch ca trực chuẩn duy nhất */}
+                                    {(activeConv?.nurseId || activeConv?.otherUserId || activeConv?.isRealApi) && (
                                         <button
                                             type="button"
-                                            onClick={() => setShowProposalModal(true)}
-                                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-[#00677c] text-white hover:from-teal-700 hover:to-[#005566] font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-                                            title="Tạo đề xuất ca chăm sóc mới gửi cho điều dưỡng"
+                                            onClick={() => setShowDirectBookingModal(true)}
+                                            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] text-white hover:from-[#005566] hover:to-[#007489] font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                                            title="Đặt lịch ca trực từ bảng giờ rảnh thực tế của điều dưỡng"
                                         >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Tạo đề xuất ca</span>
+                                            <Sparkles className="w-3.5 h-3.5" />
+                                            <span>Đặt lịch ca trực</span>
                                         </button>
                                     )}
 
@@ -900,15 +902,20 @@ export default function DashboardMessages() {
                 </div>
             </div>
 
-            {/* Modal tạo đề xuất ca chăm sóc mới (Kết nối API thực) */}
-            <CreateProposalModal
-                isOpen={showProposalModal}
-                onClose={() => setShowProposalModal(false)}
-                conversationId={activeChatId}
-                caregiverName={activeConv?.name}
-                caregiverId={activeConv?.nurseId || activeConv?.otherUserId || activeConv?.userId}
-                onProposalCreated={handleProposalCreated}
-            />
+            {/* Modal đặt lịch ca trực nhanh (Xem lịch rảnh thực tế & Đề xuất đàm phán) */}
+            {showDirectBookingModal && (activeConv?.nurseId || activeConv?.otherUserId) && (
+                <DirectBookingModal
+                    isOpen={showDirectBookingModal}
+                    onClose={() => setShowDirectBookingModal(false)}
+                    nurseId={activeConv.nurseId || activeConv.otherUserId}
+                    nurseName={activeConv?.name}
+                    nurseAvatar={activeConv?.avatar}
+                    conversationId={activeConv?.id}
+                    onProposalCreated={() => {
+                        showToast("Đã gửi đề xuất ca trực thành công vào cuộc trò chuyện!");
+                    }}
+                />
+            )}
 
             {/* Toast feedback */}
             {toastMessage && (
