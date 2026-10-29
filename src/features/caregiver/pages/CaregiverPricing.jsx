@@ -17,6 +17,7 @@ import {
     MapPin,
     Calendar,
     FileCheck2,
+    RotateCcw,
 } from "lucide-react";
 import caregiverApi from "../../../api/caregiverApi";
 import Toast from "../../../components/Toast";
@@ -80,23 +81,63 @@ export default function CaregiverPricing() {
         );
     };
 
-    const handlePriceChange = (serviceId, value) => {
-        const num = Math.max(0, parseInt(value, 10) || 0);
+    const handlePriceChange = (serviceId, rawValue) => {
+        // Chỉ lấy chữ số; cho phép rỗng khi đang gõ/xóa
+        const digits = String(rawValue).replace(/[^\d]/g, "");
         setPricings((prev) =>
             prev.map((item) =>
                 item.serviceId === serviceId
-                    ? { ...item, customPrice: num }
+                    ? { ...item, customPrice: digits }
                     : item
             )
         );
     };
 
-    const handleDurationChange = (serviceId, value) => {
-        const num = Math.max(15, Math.min(480, parseInt(value, 10) || 60));
+    const handlePriceBlur = (serviceId, basePrice) => {
+        setPricings((prev) =>
+            prev.map((item) => {
+                if (item.serviceId !== serviceId) return item;
+                if (item.customPrice === "" || item.customPrice === null || item.customPrice === undefined) {
+                    return { ...item, customPrice: basePrice };
+                }
+                const digits = String(item.customPrice).replace(/[^\d]/g, "");
+                const num = digits ? parseInt(digits, 10) : basePrice;
+                return { ...item, customPrice: num };
+            })
+        );
+    };
+
+    const handleDurationChange = (serviceId, rawValue) => {
+        // Chỉ lấy chữ số; cho phép rỗng khi đang gõ/xóa
+        const digits = String(rawValue).replace(/[^\d]/g, "");
         setPricings((prev) =>
             prev.map((item) =>
                 item.serviceId === serviceId
-                    ? { ...item, customDurationMinutes: num }
+                    ? { ...item, customDurationMinutes: digits }
+                    : item
+            )
+        );
+    };
+
+    const handleDurationBlur = (serviceId, defaultDuration) => {
+        setPricings((prev) =>
+            prev.map((item) => {
+                if (item.serviceId !== serviceId) return item;
+                if (item.customDurationMinutes === "" || item.customDurationMinutes === null || item.customDurationMinutes === undefined) {
+                    return { ...item, customDurationMinutes: defaultDuration };
+                }
+                const digits = String(item.customDurationMinutes).replace(/[^\d]/g, "");
+                const num = digits ? Math.max(15, Math.min(480, parseInt(digits, 10))) : defaultDuration;
+                return { ...item, customDurationMinutes: num };
+            })
+        );
+    };
+
+    const handleResetToDefault = (serviceId, basePrice, defaultDuration) => {
+        setPricings((prev) =>
+            prev.map((item) =>
+                item.serviceId === serviceId
+                    ? { ...item, customPrice: basePrice, customDurationMinutes: defaultDuration }
                     : item
             )
         );
@@ -109,12 +150,16 @@ export default function CaregiverPricing() {
 
         try {
             const payload = {
-                pricings: pricings.map((p) => ({
-                    serviceId: p.serviceId,
-                    customPrice: Number(p.customPrice) || Number(p.basePrice) || 0,
-                    customDurationMinutes: Number(p.customDurationMinutes) || Number(p.durationMinutes) || 60,
-                    isOffered: Boolean(p.isOffered),
-                })),
+                pricings: pricings.map((p) => {
+                    const rawPrice = String(p.customPrice ?? "").replace(/[^\d]/g, "");
+                    const rawDuration = String(p.customDurationMinutes ?? "").replace(/[^\d]/g, "");
+                    return {
+                        serviceId: p.serviceId,
+                        customPrice: rawPrice ? Number(rawPrice) : Number(p.basePrice) || 0,
+                        customDurationMinutes: rawDuration ? Number(rawDuration) : Number(p.durationMinutes) || 60,
+                        isOffered: Boolean(p.isOffered),
+                    };
+                }),
             };
 
             await caregiverApi.updateMyPricing(payload);
@@ -582,66 +627,97 @@ export default function CaregiverPricing() {
                                     </div>
 
                                     {/* Right: Pricing configuration */}
-                                    <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                                        <div className="text-left md:text-right min-w-[125px]">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                                                Giá niêm yết chuẩn
+                                    <div className="flex flex-wrap sm:flex-nowrap items-end gap-3 sm:gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                                        {/* Giá chuẩn hệ thống */}
+                                        <div className="min-w-[110px] text-left sm:text-right">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                                                Giá chuẩn hệ thống
                                             </span>
-                                            <div className="inline-flex items-center px-2.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 shadow-2xs">
-                                                {basePrice.toLocaleString("vi-VN")} VNĐ
+                                            <div className="h-10 flex items-center justify-start sm:justify-end">
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs font-bold text-slate-700">
+                                                    {basePrice.toLocaleString("vi-VN")} đ
+                                                </span>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
-                                            {/* Thời lượng mong muốn do điều dưỡng cài đặt */}
-                                            <div>
-                                                <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block mb-1">
-                                                    Thời lượng ước tính
-                                                </label>
-                                                <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-all">
-                                                    <input
-                                                        type="number"
-                                                        min="15"
-                                                        max="480"
-                                                        step="15"
-                                                        disabled={!item.isOffered}
-                                                        value={item.customDurationMinutes || item.durationMinutes || 60}
-                                                        onChange={(e) =>
-                                                            handleDurationChange(item.serviceId, e.target.value)
-                                                        }
-                                                        className="w-20 px-3 py-2 text-xs font-bold text-slate-900 text-center outline-none bg-transparent disabled:bg-slate-100 disabled:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                    />
-                                                    <span className="pr-3 text-[11px] text-slate-500 font-bold select-none border-l border-slate-100 pl-2">
-                                                        phút
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Đơn giá riêng của điều dưỡng (hỗ trợ nhập 200000, 200.000, 200,000) */}
-                                            <div>
-                                                <label className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block mb-1">
-                                                    Đơn giá của bạn (VNĐ)
-                                                </label>
-                                                <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-all">
-                                                    <input
-                                                        type="text"
-                                                        inputMode="numeric"
-                                                        disabled={!item.isOffered}
-                                                        value={item.customPrice ? Number(item.customPrice).toLocaleString("vi-VN") : ""}
-                                                        onChange={(e) => {
-                                                            const raw = e.target.value.replace(/[^\d]/g, "");
-                                                            const num = raw ? parseInt(raw, 10) : 0;
-                                                            handlePriceChange(item.serviceId, num);
-                                                        }}
-                                                        placeholder="200.000"
-                                                        className="w-28 sm:w-32 px-3 py-2 text-xs font-bold text-slate-900 text-right outline-none bg-transparent disabled:bg-slate-100 disabled:text-slate-400"
-                                                    />
-                                                    <span className="pr-3 text-xs text-slate-500 font-bold select-none border-l border-slate-100 pl-2">
-                                                        VNĐ
-                                                    </span>
-                                                </div>
+                                        {/* Thời lượng ước tính */}
+                                        <div className="w-28 sm:w-32">
+                                            <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block mb-1.5 truncate">
+                                                Thời lượng ước tính
+                                            </label>
+                                            <div className={`h-10 flex items-center rounded-xl border bg-white px-2.5 shadow-2xs transition-all ${
+                                                item.isOffered
+                                                    ? "border-slate-200 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-500/20"
+                                                    : "border-slate-200 bg-slate-100/80 opacity-60"
+                                            }`}>
+                                                <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 mr-1.5" />
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    disabled={!item.isOffered}
+                                                    value={item.customDurationMinutes !== undefined && item.customDurationMinutes !== null ? item.customDurationMinutes : (item.durationMinutes || 60)}
+                                                    onChange={(e) =>
+                                                        handleDurationChange(item.serviceId, e.target.value)
+                                                    }
+                                                    onBlur={() =>
+                                                        handleDurationBlur(item.serviceId, item.durationMinutes || 60)
+                                                    }
+                                                    placeholder={String(item.durationMinutes || 60)}
+                                                    className="w-full text-xs font-black text-slate-900 text-center outline-none bg-transparent disabled:text-slate-400"
+                                                />
+                                                <span className="text-[11px] font-bold text-slate-400 select-none shrink-0 pl-1">
+                                                    phút
+                                                </span>
                                             </div>
                                         </div>
+
+                                        {/* Đơn giá riêng của điều dưỡng */}
+                                        <div className="w-36 sm:w-40">
+                                            <label className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block mb-1.5 truncate">
+                                                Đơn giá của bạn (VNĐ)
+                                            </label>
+                                            <div className={`h-10 flex items-center rounded-xl border bg-white px-3 shadow-2xs transition-all ${
+                                                item.isOffered
+                                                    ? "border-slate-200 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-500/20"
+                                                    : "border-slate-200 bg-slate-100/80 opacity-60"
+                                            }`}>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    disabled={!item.isOffered}
+                                                    value={
+                                                        item.customPrice === ""
+                                                            ? ""
+                                                            : item.customPrice !== undefined && item.customPrice !== null
+                                                            ? Number(String(item.customPrice).replace(/[^\d]/g, "") || 0).toLocaleString("vi-VN")
+                                                            : Number(basePrice).toLocaleString("vi-VN")
+                                                    }
+                                                    onChange={(e) =>
+                                                        handlePriceChange(item.serviceId, e.target.value)
+                                                    }
+                                                    onBlur={() =>
+                                                        handlePriceBlur(item.serviceId, basePrice)
+                                                    }
+                                                    placeholder={Number(basePrice).toLocaleString("vi-VN")}
+                                                    className="w-full text-xs font-black text-[#00677C] text-right outline-none bg-transparent disabled:text-slate-400"
+                                                />
+                                                <span className="text-[11px] font-bold text-slate-400 select-none shrink-0 pl-1.5">
+                                                    đ
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Nút đặt lại về giá gốc & thời lượng chuẩn */}
+                                        <button
+                                            type="button"
+                                            disabled={!item.isOffered}
+                                            onClick={() => handleResetToDefault(item.serviceId, basePrice, item.durationMinutes || 60)}
+                                            className="h-10 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-400 hover:text-teal-700 transition disabled:opacity-30 cursor-pointer shadow-2xs flex items-center justify-center gap-1 shrink-0"
+                                            title="Khôi phục thời lượng và đơn giá chuẩn của CareLink"
+                                        >
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                            <span className="hidden xl:inline text-[10px] font-bold">Chuẩn</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
