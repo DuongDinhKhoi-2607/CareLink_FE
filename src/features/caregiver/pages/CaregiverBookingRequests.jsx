@@ -8,12 +8,33 @@ import {
     Eye,
     Star,
     AlertTriangle,
+    Clock,
+    ShieldCheck,
 } from "lucide-react";
 import SubmitHealthRecordModal from "../components/SubmitHealthRecordModal";
 import RejectBookingModal from "../components/RejectBookingModal";
 import ViewHealthRecordModal from "../../family/components/ViewHealthRecordModal";
 import Toast from "../../../components/Toast";
 import caregiverApi from "../../../api/caregiverApi";
+
+const calculateAge = (dobString) => {
+    if (!dobString) return null;
+    const dob = new Date(dobString);
+    if (isNaN(dob.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age > 0 ? age : null;
+};
+
+const formatGender = (genderVal) => {
+    if (genderVal === 1 || String(genderVal).toLowerCase() === "male" || String(genderVal) === "nam") return "Nam";
+    if (genderVal === 2 || String(genderVal).toLowerCase() === "female" || String(genderVal) === "nữ") return "Nữ";
+    return "Khác";
+};
 
 // Adapter chuyển đổi dữ liệu BookingResponse từ Backend sang DTO hiển thị của Điều dưỡng
 const mapBackendToCaregiverBooking = (b) => {
@@ -38,6 +59,14 @@ const mapBackendToCaregiverBooking = (b) => {
     const endTime = endDate ? `${pad(endDate.getHours())}:${pad(endDate.getMinutes())}` : "";
     const timeStr = endTime ? `${startTime} – ${endTime}` : startTime;
 
+    // Tính tổng thời lượng combo
+    let totalMinutes = 0;
+    if (Array.isArray(b.services) && b.services.length > 0) {
+        totalMinutes = b.services.reduce((acc, s) => acc + (s.durationMinutes || 60) * (s.quantity || 1), 0);
+    }
+    if (b.extraMinutes) totalMinutes += b.extraMinutes;
+    const durationLabel = totalMinutes > 0 ? `${totalMinutes} phút` : "Theo ca";
+
     return {
         id: b.id,
         rawId: b.id,
@@ -56,21 +85,27 @@ const mapBackendToCaregiverBooking = (b) => {
         },
         patient: {
             name: b.recipientName || "Người nhận chăm sóc",
-            age: 70,
-            gender: "Chưa rõ",
-            condition: "Theo yêu cầu ca chăm sóc",
+            age: calculateAge(b.recipientDateOfBirth) ?? 70,
+            dateOfBirth: b.recipientDateOfBirth,
+            gender: formatGender(b.recipientGender),
+            condition: b.recipientMedicalHistory || "Theo dõi và chăm sóc sức khỏe theo ca.",
             mobility: "Bình thường",
-            allergies: "Không có",
-            notes: "Ca chăm sóc đặt qua hệ thống CareLink.",
+            allergies: "Theo dõi theo chỉ định chuyên môn",
+            notes: b.customerNotes || b.recipientSpecialNotes || "Ca chăm sóc đặt qua hệ thống CareLink.",
+            isMedicalRecordShared: b.isMedicalRecordShared ?? true,
         },
         service: {
             type: b.serviceName || "Chăm sóc theo yêu cầu",
             date: formattedDate,
             time: timeStr,
-            duration: "Theo ca",
+            duration: durationLabel,
             fee: b.totalPrice ? Number(b.totalPrice).toLocaleString("vi-VN") + " VNĐ" : "350.000 VNĐ",
             tasks: ["Theo dõi sinh hiệu", "Chăm sóc theo chỉ định", "Ghi nhật ký ca trực"],
         },
+        services: Array.isArray(b.services) ? b.services : [],
+        extraMinutes: b.extraMinutes || 0,
+        requestedArrivalTime: b.requestedArrivalTime,
+        customerNotes: b.customerNotes,
         hasNurseReviewed: Boolean(b.hasNurseReviewed),
         nurseRating: b.nurseRating,
         nurseReviewComment: b.nurseReviewComment,
@@ -125,6 +160,12 @@ function PatientCard({ patient }) {
                             <span className="w-1 h-1 rounded-full bg-slate-300" />
                             <span className="text-xs text-slate-400">{ageLabel}</span>
                         </div>
+                        {patient.isMedicalRecordShared && (
+                            <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-teal-50 border border-teal-200 text-[10px] font-bold text-[#00677c]">
+                                <ShieldCheck className="w-3 h-3 text-[#00677c]" />
+                                Chia sẻ bệnh án y tế: Đã đồng ý
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -267,7 +308,33 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Chi tiết ca chăm sóc</p>
                         <div className="bg-gradient-to-br from-[#00677c] to-[#102030] rounded-xl p-4 text-white">
+                            {booking.requestedArrivalTime && (
+                                <div className="mb-3 p-2.5 rounded-lg bg-teal-500/20 border border-teal-300/40 text-xs text-teal-100 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-teal-200 shrink-0" />
+                                    <span>Yêu cầu có mặt tại nhà: <strong className="text-white font-black">{booking.requestedArrivalTime}</strong></span>
+                                </div>
+                            )}
+
                             <p className="text-sm font-bold mb-3">{service.type}</p>
+
+                            {booking.services && booking.services.length > 0 && (
+                                <div className="mb-3 flex flex-col gap-1.5 bg-white/10 rounded-lg p-2.5">
+                                    <p className="text-[10px] text-white/60 font-bold uppercase tracking-wide">Chi tiết gói dịch vụ combo ({booking.services.length}):</p>
+                                    {booking.services.map((svc, idx) => (
+                                        <div key={idx} className="flex items-center justify-between text-xs text-white/90 border-b border-white/10 pb-1 last:border-0 last:pb-0">
+                                            <span className="font-semibold">{svc.serviceName} {svc.quantity > 1 ? `(x${svc.quantity})` : ""}</span>
+                                            <span className="text-teal-200 font-bold">{svc.durationMinutes}p · {Number(svc.price).toLocaleString("vi-VN")} đ</span>
+                                        </div>
+                                    ))}
+                                    {booking.extraMinutes > 0 && (
+                                        <div className="flex items-center justify-between text-xs text-amber-200 pt-1 font-semibold border-t border-white/10">
+                                            <span>Chăm sóc tăng cường (Extra time):</span>
+                                            <span>+{booking.extraMinutes} phút</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-2 mb-3">
                                 <div className="bg-white/10 rounded-lg p-2.5">
                                     <p className="text-[10px] text-white/60 font-bold uppercase tracking-wide">Ngày</p>
@@ -299,6 +366,13 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                                     ))}
                                 </ul>
                             </div>
+
+                            {booking.customerNotes && (
+                                <div className="mt-3 p-2.5 rounded-lg bg-amber-500/15 border border-amber-300/30 text-xs text-amber-100">
+                                    <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wide block mb-0.5">Dặn dò từ gia đình:</span>
+                                    <p className="italic text-white/95">{booking.customerNotes}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
