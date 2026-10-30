@@ -585,19 +585,19 @@ export default function CaregiverBookingRequests() {
             await caregiverApi.acceptBooking(id);
             showToast({
                 type: "success",
-                title: "Đã tiếp nhận ca thành công",
-                message: "Ca chăm sóc đã chuyển sang trạng thái sẵn sàng thực hiện.",
+                title: "Tiếp nhận ca hẹn thành công",
+                message: "Yêu cầu đã được chuyển sang Chờ thanh toán. Hệ thống đã gửi thông báo đến gia đình để tiến hành thanh toán giữ chỗ 30 phút qua PayOS.",
             });
             fetchBookings();
         } catch (err) {
             console.error("[CareLink] Lỗi khi tiếp nhận ca:", err);
+            const errorDetail = err.response?.data?.detail || err.response?.data?.message;
             showToast({
                 type: "error",
                 title: "Không thể tiếp nhận ca",
                 message:
-                    err.response?.data?.detail ||
-                    err.response?.data?.message ||
-                    "Không thể kết nối đến máy chủ hoặc ca không ở trạng thái chờ duyệt.",
+                    errorDetail ||
+                    "Ca hẹn này đã được tiếp nhận hoặc đang ở trạng thái chờ thanh toán từ phía gia đình.",
             });
         }
     };
@@ -650,24 +650,26 @@ export default function CaregiverBookingRequests() {
             await caregiverApi.startBooking(id, payload);
             showToast({
                 type: "success",
-                title: "Đã bắt đầu ca chăm sóc (Check-in thành công)",
-                message: "Ca chăm sóc đã chuyển sang trạng thái Đang thực hiện. Bạn có thể tiến hành theo dõi và ghi bệnh án.",
+                title: "Check-in bắt đầu ca thành công",
+                message: "Hệ thống đã ghi nhận thời gian bắt đầu ca trực. Bạn có thể tiến hành chăm sóc và ghi nhận bệnh án lâm sàng cho người bệnh.",
             });
             fetchBookings();
         } catch (err) {
             console.error("[CareLink] Lỗi khi bắt đầu ca:", err);
             const rawMsg = err.response?.data?.detail || err.response?.data?.message || "";
             let userMsg = "Chưa đến thời gian cho phép bắt đầu ca hoặc không thể kết nối đến máy chủ.";
-            if (rawMsg.includes("Check-in is only allowed") || rawMsg.includes("15 minutes") || rawMsg.includes("Chưa đến thời gian")) {
+            if (rawMsg.includes("Check-in is only allowed") || rawMsg.includes("15 minutes") || rawMsg.includes("Chưa đến thời gian") || rawMsg.includes("earliest")) {
                 userMsg = rawMsg.includes("Chưa đến thời gian")
                     ? rawMsg
-                    : "Chưa đến thời gian bắt đầu ca. Bạn chỉ có thể check-in trước giờ hẹn tối đa 15 phút. Vui lòng quay lại sau khi gần tới giờ hẹn.";
+                    : "Chưa đến thời gian bắt đầu ca. Theo quy định chuyên môn CareLink, Điều dưỡng chỉ có thể check-in tối đa 15 phút trước giờ hẹn.";
+            } else if (rawMsg.includes("trạng thái") || rawMsg.includes("chuyển trạng thái") || rawMsg.includes("Transition")) {
+                userMsg = "Ca hẹn chưa thể bắt đầu do gia đình chưa hoàn tất thanh toán hoặc ca trực không ở trạng thái sẵn sàng.";
             } else if (rawMsg) {
                 userMsg = rawMsg;
             }
             showToast({
                 type: "error",
-                title: "Chưa thể bắt đầu ca",
+                title: "Chưa thể bắt đầu ca trực",
                 message: userMsg,
             });
         }
@@ -685,7 +687,11 @@ export default function CaregiverBookingRequests() {
                     : b
             )
         );
-        showToast("Bệnh án đã được lưu thành công vào hồ sơ! Ca chăm sóc đã hoàn tất.");
+        showToast({
+            type: "success",
+            title: "Lưu bệnh án & hoàn tất ca thành công",
+            message: "Hồ sơ theo dõi sức khỏe và chỉ số sinh hiệu đã được nộp thành công. Ca trực hoàn tất và sẵn sàng để nghiệm thu giải ngân.",
+        });
         fetchBookings();
     };
 
