@@ -70,6 +70,8 @@ export default function DashboardLayout() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const mainRef = useRef(null);
 
+    const isMessagesTab = location.pathname.startsWith("/dashboard/messages");
+
     // Thông tin người dùng hiện tại từ localStorage
     const [currentUser, setCurrentUser] = useState(() => {
         try {
@@ -366,9 +368,19 @@ export default function DashboardLayout() {
                 )}
             </aside>
 
-            {/* Vùng nội dung chính: Tự động mở rộng khi sidebar thu gọn và cuộn mượt mà */}
-            <main ref={mainRef} className="flex-1 min-w-0 w-full h-full flex flex-col overflow-y-auto md:overflow-hidden transition-all duration-300">
-                <div key={location.pathname} className="animate-dashboard-tab w-full h-full flex-1 flex flex-col min-h-0">
+            {/* Vùng nội dung chính: Tab tin nhắn giữ cố định màn hình, các tab khác cuộn tự nhiên mượt mà */}
+            <main
+                ref={mainRef}
+                className={`flex-1 min-w-0 w-full h-full flex flex-col ${
+                    isMessagesTab ? "overflow-hidden" : "overflow-y-auto"
+                } transition-all duration-300`}
+            >
+                <div
+                    key={location.pathname}
+                    className={`animate-dashboard-tab w-full ${
+                        isMessagesTab ? "h-full flex-1 flex flex-col min-h-0" : "min-h-full flex-1 flex flex-col"
+                    }`}
+                >
                     <Outlet />
                 </div>
             </main>

@@ -546,10 +546,6 @@ export default function DirectBookingModal({
                 quantity: serviceQuantities[id] || 1,
             }));
 
-            const fullNotes = requestedArrivalTime.trim()
-                ? `[Giờ yêu cầu có mặt: ${requestedArrivalTime.trim()}] ${customerNotes.trim()}`
-                : customerNotes.trim();
-
             const payload = {
                 nurseId,
                 recipientId: selectedRecipientId,
@@ -562,7 +558,7 @@ export default function DirectBookingModal({
                 requestedArrivalTime: requestedArrivalTime.trim() || null,
                 addressId: selectedAddressId || null,
                 consentShareMedicalRecords: consentMedical,
-                customerNotes: fullNotes || null,
+                customerNotes: customerNotes.trim() || null,
             };
 
             const createdBooking = await familyApi.createBooking(payload);

@@ -88,7 +88,8 @@ export default function Toast({
 
     if (!toast) return null;
 
-    const { type = "info", title, message } = toast;
+    const normalizedToast = typeof toast === "string" ? { message: toast, type: "info" } : toast;
+    const { type = "info", title, message } = normalizedToast;
     const config = TOAST_CONFIG[type] || TOAST_CONFIG.info;
     const Icon = config.icon;
 
