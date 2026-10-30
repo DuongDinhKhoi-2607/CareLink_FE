@@ -67,6 +67,17 @@ const mapBackendToCaregiverBooking = (b) => {
     if (b.extraMinutes) totalMinutes += b.extraMinutes;
     const durationLabel = totalMinutes > 0 ? `${totalMinutes} phút` : "Theo ca";
 
+    // Trích xuất và làm sạch ghi chú dặn dò để không bao giờ bị lặp thẻ giờ có mặt
+    const rawCustomerNotes = b.customerNotes || "";
+    let arrivalTime = b.requestedArrivalTime || "";
+    const arrivalMatch = rawCustomerNotes.match(/\[Giờ yêu cầu có mặt:\s*([^\]]+)\]/i);
+    if (!arrivalTime && arrivalMatch) {
+        arrivalTime = arrivalMatch[1].trim();
+    }
+    const cleanedCustomerNotes = rawCustomerNotes
+        .replace(/\[Giờ yêu cầu có mặt:[^\]]+\]/gi, "")
+        .trim();
+
     return {
         id: b.id,
         rawId: b.id,
@@ -91,7 +102,7 @@ const mapBackendToCaregiverBooking = (b) => {
             condition: b.recipientMedicalHistory || "Theo dõi và chăm sóc sức khỏe theo ca.",
             mobility: "Bình thường",
             allergies: "Theo dõi theo chỉ định chuyên môn",
-            notes: b.customerNotes || b.recipientSpecialNotes || "Ca chăm sóc đặt qua hệ thống CareLink.",
+            notes: b.recipientSpecialNotes || "",
             isMedicalRecordShared: b.isMedicalRecordShared ?? true,
         },
         service: {
@@ -104,8 +115,8 @@ const mapBackendToCaregiverBooking = (b) => {
         },
         services: Array.isArray(b.services) ? b.services : [],
         extraMinutes: b.extraMinutes || 0,
-        requestedArrivalTime: b.requestedArrivalTime,
-        customerNotes: b.customerNotes,
+        requestedArrivalTime: arrivalTime,
+        customerNotes: cleanedCustomerNotes,
         hasNurseReviewed: Boolean(b.hasNurseReviewed),
         nurseRating: b.nurseRating,
         nurseReviewComment: b.nurseReviewComment,
@@ -161,43 +172,59 @@ function PatientCard({ patient }) {
                             <span className="w-1 h-1 rounded-full bg-slate-300" />
                             <span className="text-xs text-slate-400">{ageLabel}</span>
                         </div>
-                        {patient.isMedicalRecordShared && (
+                        {patient.isMedicalRecordShared ? (
                             <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-teal-50 border border-teal-200 text-[10px] font-bold text-[#00677c]">
                                 <ShieldCheck className="w-3 h-3 text-[#00677c]" />
                                 Chia sẻ bệnh án y tế: Đã đồng ý
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-500">
+                                <ShieldAlert className="w-3 h-3 text-slate-400" />
+                                Bệnh án: Chưa kích hoạt chia sẻ
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* Condition */}
-                <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tình trạng</span>
-                    <p className="text-xs font-semibold text-[#102030] leading-snug">{patient.condition}</p>
-                </div>
+                {patient.isMedicalRecordShared ? (
+                    <>
+                        {/* Condition */}
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Tình trạng</span>
+                            <p className="text-xs font-semibold text-[#102030] leading-snug">{patient.condition}</p>
+                        </div>
 
-                {/* Mobility + Allergies */}
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white rounded-lg p-2.5 border border-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Di chuyển</p>
-                        <p className="text-xs text-[#102030] leading-snug">{patient.mobility}</p>
-                    </div>
-                    <div className={`rounded-lg p-2.5 border ${patient.allergies === "Không có" ? "bg-white border-slate-100" : "bg-red-50 border-red-100"}`}>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Dị ứng</p>
-                        <p className={`text-xs font-semibold leading-snug ${patient.allergies === "Không có" ? "text-slate-400" : "text-red-600"}`}>
-                            {patient.allergies}
-                        </p>
-                    </div>
-                </div>
+                        {/* Mobility + Allergies */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-white rounded-lg p-2.5 border border-slate-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Di chuyển</p>
+                                <p className="text-xs text-[#102030] leading-snug">{patient.mobility}</p>
+                            </div>
+                            <div className={`rounded-lg p-2.5 border ${patient.allergies === "Không có" ? "bg-white border-slate-100" : "bg-red-50 border-red-100"}`}>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Dị ứng</p>
+                                <p className={`text-xs font-semibold leading-snug ${patient.allergies === "Không có" ? "text-slate-400" : "text-red-600"}`}>
+                                    {patient.allergies}
+                                </p>
+                            </div>
+                        </div>
 
-                {/* Notes */}
-                {patient.notes && (
-                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5">
-                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide mb-1 flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            Lưu ý quan trọng
+                        {/* Notes */}
+                        {patient.notes && (
+                            <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5">
+                                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                    Lưu ý sức khỏe người bệnh
+                                </p>
+                                <p className="text-xs text-amber-900 leading-relaxed">{patient.notes}</p>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="p-3 rounded-xl bg-slate-100/90 border border-slate-200 text-xs text-slate-600 space-y-1">
+                        <p className="font-bold text-slate-700">Chính sách bảo mật y tế CareLink:</p>
+                        <p className="text-[11px] text-slate-500 italic leading-relaxed">
+                            Gia đình không kích hoạt chia sẻ chi tiết hồ sơ bệnh án. Điều dưỡng chăm sóc theo quy chuẩn chuyên môn của gói dịch vụ đã đăng ký.
                         </p>
-                        <p className="text-xs text-amber-800 leading-relaxed">{patient.notes}</p>
                     </div>
                 )}
             </div>
@@ -310,9 +337,9 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Chi tiết ca chăm sóc</p>
                         <div className="bg-gradient-to-br from-[#00677c] to-[#102030] rounded-xl p-4 text-white">
                             {booking.requestedArrivalTime && (
-                                <div className="mb-3 p-2.5 rounded-lg bg-teal-500/20 border border-teal-300/40 text-xs text-teal-100 flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-teal-200 shrink-0" />
-                                    <span>Yêu cầu có mặt tại nhà: <strong className="text-white font-black">{booking.requestedArrivalTime}</strong></span>
+                                <div className="mb-3.5 p-3 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-2.5 shadow-sm">
+                                    <Clock className="w-4 h-4 text-slate-950 shrink-0" />
+                                    <span>Yêu cầu có mặt tại nhà: <strong className="font-black underline underline-offset-2">{booking.requestedArrivalTime}</strong></span>
                                 </div>
                             )}
 
@@ -369,9 +396,13 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                             </div>
 
                             {booking.customerNotes && (
-                                <div className="mt-3 p-2.5 rounded-lg bg-amber-500/15 border border-amber-300/30 text-xs text-amber-100">
-                                    <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wide block mb-0.5">Dặn dò từ gia đình:</span>
-                                    <p className="italic text-white/95">{booking.customerNotes}</p>
+                                <div className="mt-3.5 p-3 rounded-xl bg-amber-500/20 border border-amber-300/40 text-xs text-amber-100">
+                                    <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block mb-1">
+                                        Ghi chú &amp; Dặn dò từ gia đình:
+                                    </span>
+                                    <p className="italic text-white font-medium leading-relaxed">
+                                        "{booking.customerNotes}"
+                                    </p>
                                 </div>
                             )}
                         </div>

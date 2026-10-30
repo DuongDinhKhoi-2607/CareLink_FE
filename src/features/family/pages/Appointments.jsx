@@ -334,13 +334,25 @@ export default function Appointments() {
                     });
                 }
 
-                setToastMessage("Xác nhận thành công! Lịch hẹn đã được cập nhật sang trạng thái ĐÃ TIẾP NHẬN.");
+                setToastMessage({
+                    type: "success",
+                    title: "Thanh toán thành công!",
+                    message: "Hệ thống đã nhận diện giao dịch PayOS. Lịch hẹn đã chuyển sang trạng thái ĐÃ TIẾP NHẬN.",
+                });
             } else {
-                setToastMessage("Chưa nhận được tín hiệu thanh toán từ PayOS. Nếu bạn vừa chuyển khoản, vui lòng đợi 10-30 giây rồi bấm kiểm tra lại.");
+                setToastMessage({
+                    type: "info",
+                    title: "Chưa ghi nhận thanh toán",
+                    message: "Chưa nhận được tín hiệu thanh toán từ PayOS. Nếu bạn vừa chuyển khoản, vui lòng đợi 10-30 giây rồi bấm kiểm tra lại.",
+                });
             }
         } catch (err) {
             console.error("Lỗi khi kiểm tra thanh toán:", err);
-            setToastMessage("Chưa thể đối soát cổng PayOS lúc này. Vui lòng kiểm tra lại sau.");
+            setToastMessage({
+                type: "warning",
+                title: "Đối soát PayOS",
+                message: "Chưa thể đối soát cổng PayOS lúc này. Vui lòng kiểm tra lại sau hoặc làm mới trang.",
+            });
         } finally {
             setCheckingPaymentId(null);
         }
@@ -1296,18 +1308,37 @@ export default function Appointments() {
                                     </div>
                                 </div>
 
-                                {/* Thẻ Chi phí dịch vụ */}
-                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
-                                        <CreditCard className="w-4 h-4 text-slate-400" />
-                                        <span>Chi phí dịch vụ:</span>
+                                {/* Thẻ Chi phí dịch vụ & Phí sàn minh bạch (ADR-002) */}
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 flex flex-col gap-2">
+                                    <div className="flex items-center justify-between text-slate-500 text-xs">
+                                        <span className="flex items-center gap-1.5 font-medium">
+                                            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>Tiền dịch vụ:</span>
+                                        </span>
+                                        <span className="font-bold text-slate-800">
+                                            {detailData?.totalPrice
+                                                ? Number(detailData.totalPrice).toLocaleString("vi-VN") + " đ"
+                                                : selectedAppointment.price}
+                                        </span>
                                     </div>
-                                    <div className="text-base font-extrabold text-[#00677c]">
-                                        {detailData?.totalPrice ? Number(detailData.totalPrice).toLocaleString("vi-VN") + "đ" : selectedAppointment.price}
+                                    <div className="flex items-center justify-between text-slate-500 text-xs">
+                                        <span className="flex items-center gap-1.5 font-medium">
+                                            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>Phí nền tảng:</span>
+                                        </span>
+                                        <span className="font-bold text-slate-800">60.000 đ</span>
                                     </div>
-                                    <div className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                                        <span className="text-xs font-bold text-[#00677c]">Tổng thanh toán:</span>
+                                        <span className="text-base font-black text-[#00677c]">
+                                            {(
+                                                Number(detailData?.totalPaymentAmount || (Number(detailData?.totalPrice || 0) + 60000))
+                                            ).toLocaleString("vi-VN")} đ
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] font-medium text-emerald-600 flex items-center gap-1 pt-0.5">
                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                        <span>Thanh toán đảm bảo CareLink PayOS</span>
+                                        <span>Bảo hiểm y tế &amp; Thanh toán qua PayOS</span>
                                     </div>
                                 </div>
 
