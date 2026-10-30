@@ -433,9 +433,12 @@ export default function CaregiverMessages() {
                 const isProposalPending = pendingProposal && (pendingProposal.status === 1 || pendingProposal.status === "Pending");
                 const isProposalAccepted = latestProposal && (latestProposal.status === 2 || latestProposal.status === "Accepted" || latestProposal.status === 6 || latestProposal.status === "BookedAndPaid");
                 const isProposalRejected = latestProposal && (latestProposal.status === 3 || latestProposal.status === "Rejected");
+                const isProposalCounterOffered = latestProposal && (latestProposal.status === 7 || latestProposal.status === "CounterOffered");
 
                 const computedStatus = isProposalPending
                     ? "family_confirmed"
+                    : isProposalCounterOffered
+                    ? "counter_offered"
                     : isProposalAccepted
                     ? "caregiver_accepted"
                     : isProposalRejected
@@ -754,11 +757,21 @@ export default function CaregiverMessages() {
                 showToast("Đã từ chối đề xuất nhận ca.");
                 setDemoStatus("caregiver_rejected", finalReason);
                 setShowRejectModal(false);
+                if (demoState.activeConversationId) {
+                    loadChatConversation(demoState.activeConversationId);
+                }
                 return;
             } catch (err) {
                 console.error("[CareLink] Lỗi khi từ chối đề xuất ca:", err);
-                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi từ chối ca.";
+                const msg = err.response?.data?.detail 
+                    || err.response?.data?.message 
+                    || (err.response?.data?.title && err.response.data.title !== "One or more validation errors occurred." ? err.response.data.title : null)
+                    || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null)
+                    || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi từ chối ca.";
                 showToast(msg);
+                if (demoState.activeConversationId) {
+                    loadChatConversation(demoState.activeConversationId);
+                }
                 return;
             }
         }
@@ -787,18 +800,27 @@ export default function CaregiverMessages() {
                     }
                 );
                 showToast("Đã gửi đề xuất mức giá mới cho gia đình thành công!");
+                setDemoStatus("counter_offered");
                 if (demoState.activeConversationId) {
                     loadChatConversation(demoState.activeConversationId);
                 }
                 return true;
             } catch (err) {
                 console.error("[CareLink] Lỗi khi gửi Counter-Offer:", err);
-                const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất giá mới. Vui lòng thử lại!";
+                const msg = err.response?.data?.detail 
+                    || err.response?.data?.message 
+                    || (err.response?.data?.title && err.response.data.title !== "One or more validation errors occurred." ? err.response.data.title : null)
+                    || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null)
+                    || "Không thể gửi đề xuất giá mới. Vui lòng thử lại!";
                 showToast(msg);
+                if (demoState.activeConversationId) {
+                    loadChatConversation(demoState.activeConversationId);
+                }
                 throw new Error(msg);
             }
         } else {
             showToast(`Đã ghi nhận đề xuất mức giá mới: ${Number(counterPrice).toLocaleString("vi-VN")} đ`);
+            setDemoStatus("counter_offered");
             return true;
         }
     };
