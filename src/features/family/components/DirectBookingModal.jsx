@@ -318,29 +318,17 @@ export default function DirectBookingModal({
 
     // ── XỬ LÝ NHẬP MỨC GIÁ ĐỀ XUẤT MƯỢT MÀ (CHỐNG NHẢY CON TRỎ / NHẢY LOẠN SỐ) ──
     const priceInputRef = useRef(null);
-    const priceCaretRef = useRef(null);
-
-    useLayoutEffect(() => {
-        if (priceCaretRef.current !== null && priceInputRef.current) {
-            const pos = priceCaretRef.current;
-            priceInputRef.current.setSelectionRange(pos, pos);
-            priceCaretRef.current = null;
-        }
-    }, [proposedPrice]);
 
     const handleProposedPriceChange = (e) => {
         const input = e.target;
         const rawVal = input.value;
-        const selStart = input.selectionStart ?? rawVal.length;
-
-        // Đếm số chữ số đứng trước con trỏ chuột trước khi format
-        const digitsBeforeCaret = rawVal.slice(0, selStart).replace(/\D/g, "").length;
+        const selStart = input.selectionStart || rawVal.length;
+        const offsetFromEnd = rawVal.length - selStart;
 
         // Trích xuất các chữ số thuần túy
         const digits = rawVal.replace(/\D/g, "");
 
         if (!digits) {
-            priceCaretRef.current = 0;
             setProposedPrice("");
             return;
         }
@@ -350,48 +338,17 @@ export default function DirectBookingModal({
         const num = Math.min(parseInt(trimmed, 10), 50000000);
 
         // Định dạng phân tách hàng nghìn bằng dấu chấm chuẩn Việt Nam
-        const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        const formatted = num.toLocaleString("vi-VN");
 
-        // Tính vị trí con trỏ mới trong chuỗi formatted:
-        // Đếm tới khi gặp đúng số chữ số như trước con trỏ
-        let count = 0;
-        let newPos = formatted.length;
-        for (let i = 0; i < formatted.length; i++) {
-            if (/\d/.test(formatted[i])) {
-                count++;
-                if (count === digitsBeforeCaret) {
-                    newPos = i + 1;
-                    break;
-                }
+        // Giữ vị trí con trỏ tính từ cuối chuỗi để không bao giờ bị nhảy về đầu hoặc giữa chuỗi
+        requestAnimationFrame(() => {
+            if (input) {
+                const newPos = Math.max(0, formatted.length - offsetFromEnd);
+                input.setSelectionRange(newPos, newPos);
             }
-        }
-        if (digitsBeforeCaret === 0) newPos = 0;
+        });
 
-        priceCaretRef.current = newPos;
         setProposedPrice(formatted);
-    };
-
-    const handlePriceKeyDown = (e) => {
-        if (e.key === "Backspace") {
-            const input = e.target;
-            const selStart = input.selectionStart;
-            const selEnd = input.selectionEnd;
-            if (selStart === selEnd && selStart > 0 && input.value[selStart - 1] === ".") {
-                e.preventDefault();
-                const raw = input.value;
-                const updated = raw.slice(0, selStart - 2) + raw.slice(selStart);
-                const digits = updated.replace(/\D/g, "");
-                if (!digits) {
-                    priceCaretRef.current = 0;
-                    setProposedPrice("");
-                    return;
-                }
-                const num = parseInt(digits.slice(0, 8), 10);
-                const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                priceCaretRef.current = Math.max(0, selStart - 2);
-                setProposedPrice(formatted);
-            }
-        }
     };
 
     // ── 5. THUẬT TOÁN CHỌN SUẤT TRỰC THÔNG MINH (SMART CINEMA SLOTS) ──
@@ -481,13 +438,7 @@ export default function DirectBookingModal({
             return;
         }
 
-        // Nếu đang ở chế độ Đề xuất giá đàm phán: Gửi thẳng proposal không qua PayOS
-        if (isProposalMode) {
-            handleSubmitProposal();
-            return;
-        }
-
-        // Tất cả hợp lệ -> Mở popup Quyền riêng tư y tế
+        // Tất cả hợp lệ -> Mở popup Quyền riêng tư & Bảo mật Y tế trước khi gửi (áp dụng cho cả 2 luồng)
         setShowPrivacyPopup(true);
     };
 
@@ -504,9 +455,15 @@ export default function DirectBookingModal({
 
             const parsedCustomPrice = proposedPrice ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10) : null;
 
-            const fullNotes = requestedArrivalTime.trim()
+            let fullNotes = requestedArrivalTime.trim()
                 ? `[Giờ yêu cầu có mặt: ${requestedArrivalTime.trim()}] ${customerNotes.trim()}`
                 : customerNotes.trim();
+
+            if (consentMedical) {
+                fullNotes = fullNotes
+                    ? `${fullNotes}\n[Đồng ý chia sẻ hồ sơ sức khỏe & tiền sử bệnh án]`
+                    : "[Đồng ý chia sẻ hồ sơ sức khỏe & tiền sử bệnh án]";
+            }
 
             const proposalPayload = {
                 serviceIds: selectedServiceIds,
@@ -535,6 +492,7 @@ export default function DirectBookingModal({
 
             await conversationApi.createProposal(targetConvId, proposalPayload);
 
+            setShowPrivacyPopup(false);
             onProposalCreated?.();
             onClose();
 
@@ -552,6 +510,7 @@ export default function DirectBookingModal({
             console.error("[CareLink] Lỗi gửi đề xuất ca trực:", err);
             const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất ca qua Chat lúc này. Vui lòng thử lại!";
             setValidationError(msg);
+            setShowPrivacyPopup(false);
         } finally {
             setIsSubmitting(false);
         }
@@ -559,6 +518,11 @@ export default function DirectBookingModal({
 
     // ── 8. BƯỚC 2: GỬI LỊCH ĐẶT VÀ CHUYỂN TỚI CHECKOUT (PAYOS VIETQR) ──
     const handleFinalConfirmBooking = async () => {
+        if (isProposalMode) {
+            await handleSubmitProposal();
+            return;
+        }
+
         setIsSubmitting(true);
         setValidationError("");
 
@@ -1119,31 +1083,40 @@ export default function DirectBookingModal({
                             </div>
 
                             {/* 6. TÙY CHỌN ĐÀM PHÁN GIÁ THEO THỎA THUẬN (PROPOSAL) */}
-                            <div className="p-3.5 rounded-2xl bg-teal-50/70 border border-teal-200/90 space-y-2.5 text-xs">
-                                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                            <div className={`p-4 rounded-2xl border transition-all duration-200 ${
+                                isProposalMode
+                                    ? "bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50/80 border-2 border-amber-400 shadow-sm ring-2 ring-amber-400/20"
+                                    : "bg-amber-50/30 border-amber-200/80 hover:border-amber-300 hover:bg-amber-50/50"
+                            }`}>
+                                <label className="flex items-start gap-3 cursor-pointer select-none">
                                     <input
                                         type="checkbox"
                                         checked={isProposalMode}
                                         onChange={(e) => setIsProposalMode(e.target.checked)}
-                                        className="w-4 h-4 mt-0.5 text-teal-600 rounded border-teal-300 focus:ring-teal-500 cursor-pointer shrink-0"
+                                        className="w-4.5 h-4.5 mt-0.5 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer shrink-0"
                                     />
-                                    <div>
-                                        <span className="font-black text-[#00677C] block">
-                                            Thương lượng giá theo thỏa thuận (Gửi đề xuất trực tiếp cho điều dưỡng)
-                                        </span>
-                                        <span className="text-[11px] text-slate-500 block mt-0.5 leading-snug">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`font-black text-xs sm:text-sm block ${isProposalMode ? "text-amber-950" : "text-slate-800"}`}>
+                                                Thương lượng giá theo thỏa thuận
+                                            </span>
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                                                Tùy chọn thỏa thuận giá
+                                            </span>
+                                        </div>
+                                        <span className="text-[11px] text-slate-500 block mt-1 leading-snug">
                                             Gửi phiếu đề xuất ca kèm mức giá mong muốn để điều dưỡng {nurseName} xem xét và chấp thuận trong phòng chat trước khi bạn thanh toán.
                                         </span>
                                     </div>
                                 </label>
 
                                 {isProposalMode && (
-                                    <div className="pt-2 border-t border-teal-100 space-y-2 animate-in fade-in duration-150">
+                                    <div className="pt-2 border-t border-amber-200/80 space-y-2 animate-in fade-in duration-150">
                                         <div className="flex items-center justify-between">
                                             <label className="block font-bold text-slate-700">
                                                 Mức giá bạn mong muốn đề xuất (VNĐ)
                                             </label>
-                                            <span className="text-[11px] font-semibold text-teal-700">
+                                            <span className="text-[11px] font-semibold text-amber-800">
                                                 Giá niêm yết: {baseServicesPrice.toLocaleString("vi-VN")} đ
                                             </span>
                                         </div>
@@ -1153,9 +1126,8 @@ export default function DirectBookingModal({
                                             inputMode="numeric"
                                             value={proposedPrice}
                                             onChange={handleProposedPriceChange}
-                                            onKeyDown={handlePriceKeyDown}
                                             placeholder={`Ví dụ: ${baseServicesPrice > 0 ? baseServicesPrice.toLocaleString("vi-VN") : "200.000"} VNĐ`}
-                                            className="w-full px-3.5 py-2.5 rounded-xl border border-teal-300 bg-white text-xs font-black text-slate-800 outline-none focus:ring-2 focus:ring-teal-500/20 tracking-wide"
+                                            className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white text-xs font-black text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/20 tracking-wide"
                                         />
 
                                         {/* Gợi ý nhanh mức giá */}
@@ -1163,8 +1135,8 @@ export default function DirectBookingModal({
                                             <span className="text-[10px] text-slate-400 font-semibold mr-0.5">Gợi ý:</span>
                                             <button
                                                 type="button"
-                                                onClick={() => setProposedPrice(baseServicesPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."))}
-                                                className="px-2 py-0.5 rounded-lg border border-teal-200 bg-white text-[10px] font-bold text-teal-700 hover:bg-teal-50 transition-colors cursor-pointer"
+                                                onClick={() => setProposedPrice(baseServicesPrice.toLocaleString("vi-VN"))}
+                                                className="px-2 py-0.5 rounded-lg border border-amber-200 bg-white text-[10px] font-bold text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
                                             >
                                                 Giá niêm yết
                                             </button>
@@ -1173,7 +1145,7 @@ export default function DirectBookingModal({
                                                 onClick={() => {
                                                     const current = proposedPrice ? parseInt(proposedPrice.replace(/\D/g, ""), 10) : baseServicesPrice;
                                                     const updated = Math.max(50000, current - 20000);
-                                                    setProposedPrice(updated.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+                                                    setProposedPrice(updated.toLocaleString("vi-VN"));
                                                 }}
                                                 className="px-2 py-0.5 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                                             >
@@ -1184,7 +1156,7 @@ export default function DirectBookingModal({
                                                 onClick={() => {
                                                     const current = proposedPrice ? parseInt(proposedPrice.replace(/\D/g, ""), 10) : baseServicesPrice;
                                                     const updated = current + 30000;
-                                                    setProposedPrice(updated.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+                                                    setProposedPrice(updated.toLocaleString("vi-VN"));
                                                 }}
                                                 className="px-2 py-0.5 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                                             >
@@ -1195,7 +1167,7 @@ export default function DirectBookingModal({
                                                 onClick={() => {
                                                     const current = proposedPrice ? parseInt(proposedPrice.replace(/\D/g, ""), 10) : baseServicesPrice;
                                                     const updated = current + 50000;
-                                                    setProposedPrice(updated.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+                                                    setProposedPrice(updated.toLocaleString("vi-VN"));
                                                 }}
                                                 className="px-2 py-0.5 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                                             >
@@ -1244,8 +1216,8 @@ export default function DirectBookingModal({
 
                                 {/* PHÍ NỀN TẢNG LUÔN HIỆN DIỆN MINH BẠCH THEO ADR-002 */}
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1">
-                                        <span>Phí bảo hiểm y tế &amp; Nền tảng CareLink (cố định):</span>
+                                    <span className="flex items-center gap-1 font-medium">
+                                        <span>Phí nền tảng cố định:</span>
                                         <span title="Bảo hiểm trách nhiệm y tế + Vận hành hệ thống giữ chỗ PayOS 30 phút theo quyết định ADR-002" className="cursor-help text-slate-400">
                                             <HelpCircle className="w-3.5 h-3.5" />
                                         </span>
@@ -1255,7 +1227,7 @@ export default function DirectBookingModal({
 
                                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-sm sm:text-base font-black text-slate-900">
                                     <span className="text-[#00677C]">
-                                        {isProposalMode ? "Tổng thanh toán sau khi duyệt (PayOS):" : "Tổng thanh toán tạm giữ (PayOS):"}
+                                        {isProposalMode ? "Tổng thanh toán sau khi duyệt (PayOS):" : "Tổng thanh toán dự kiến (PayOS):"}
                                     </span>
                                     <span className="text-[#00677C] text-base sm:text-xl font-black">
                                         {(isProposalMode && proposedPrice

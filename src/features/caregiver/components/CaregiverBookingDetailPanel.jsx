@@ -77,7 +77,13 @@ export default function CaregiverBookingDetailPanel({
             }
             setShowCounterModal(false);
         } catch (err) {
-            setCounterError(err?.message || "Không thể gửi đề xuất giá mới.");
+            const errDetail = err?.response?.data?.detail 
+                || err?.response?.data?.message 
+                || (err?.response?.data?.title && err.response.data.title !== "One or more validation errors occurred." ? err.response.data.title : null)
+                || (err?.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null)
+                || err?.message 
+                || "Không thể gửi đề xuất giá mới. Vui lòng kiểm tra lại.";
+            setCounterError(errDetail);
         } finally {
             setIsSubmittingCounter(false);
         }
@@ -347,6 +353,22 @@ export default function CaregiverBookingDetailPanel({
                                     {demoState.rejectReason ||
                                         "Điều dưỡng bận lịch."}
                                 </p>
+                            </div>
+                        )}
+
+                        {demoState.status === "counter_offered" && (
+                            <div className="space-y-3">
+                                <div className="rounded-xl border border-teal-200 bg-teal-50 p-3.5">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-4 w-4 shrink-0 text-teal-600" />
+                                        <p className="text-xs font-bold text-teal-900">
+                                            Đã gửi đề xuất mức giá mới
+                                        </p>
+                                    </div>
+                                    <p className="mt-2 text-xs leading-relaxed text-teal-800">
+                                        Bạn đã gửi đề xuất điều chỉnh chi phí ca trực cho gia đình. Đang chờ khách hàng xem xét, chấp thuận hoặc trao đổi thêm.
+                                    </p>
+                                </div>
                             </div>
                         )}
 
