@@ -134,6 +134,23 @@ export default function Checkout() {
         booking?.totalPaymentAmount || servicePrice + platformFee
     );
 
+    // Số dư ví CareLink của gia đình & tùy chọn cấn trừ
+    const [walletBalance, setWalletBalance] = useState(() => {
+        try {
+            const saved = localStorage.getItem("carelink_family_wallet_balance");
+            return saved !== null ? Number(saved) : 60000;
+        } catch {
+            return 60000;
+        }
+    });
+    const [useWalletBalance, setUseWalletBalance] = useState(false);
+    const [customWalletDeduct, setCustomWalletDeduct] = useState("");
+
+    const maxDeductible = Math.min(walletBalance, chargeAmount);
+    const parsedCustomDeduct = customWalletDeduct.trim() !== "" ? Number(customWalletDeduct.replace(/\D/g, "")) : 0;
+    const walletDeductAmount = useWalletBalance ? Math.min(maxDeductible, Math.max(0, parsedCustomDeduct)) : 0;
+    const finalPayAmount = Math.max(0, chargeAmount - walletDeductAmount);
+
     // Lấy thông tin lịch hẹn từ API.
     useEffect(() => {
         if (!bookingId) return;
@@ -200,8 +217,45 @@ export default function Checkout() {
         }
 
         setIsSubmitting(true);
+
+        // ── KHẤU TRỪ SỐ DƯ VÍ CARELINK (NẾU CHỌN) ──
+        if (useWalletBalance && walletDeductAmount > 0) {
+            const newBal = Math.max(0, walletBalance - walletDeductAmount);
+            setWalletBalance(newBal);
+            localStorage.setItem("carelink_family_wallet_balance", String(newBal));
+
+            const savedWd = JSON.parse(localStorage.getItem("carelink_family_withdraw_requests") || "[]");
+            savedWd.unshift({
+                id: `TXN-W-${Date.now().toString().slice(-6)}`,
+                amount: walletDeductAmount,
+                bank: "Ví CareLink",
+                accountNumber: `Ca hẹn #${(bookingId || "").slice(0, 8).toUpperCase()}`,
+                accountName: "Gia đình",
+                date: new Date().toLocaleDateString("vi-VN"),
+                time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                timestamp: Date.now(),
+                status: "Đã cấn trừ đặt ca",
+                reason: `Cấn trừ ${walletDeductAmount.toLocaleString("vi-VN")}đ thanh toán ca trực #${(bookingId || "").slice(0, 8).toUpperCase()}`,
+            });
+            localStorage.setItem("carelink_family_withdraw_requests", JSON.stringify(savedWd));
+            window.dispatchEvent(new Event("storage"));
+
+            // Nếu số dư ví thanh toán trọn vẹn 100%
+            if (finalPayAmount === 0) {
+                setPaymentStatus("Đã thanh toán trọn vẹn bằng số dư Ví CareLink!");
+                setTimeout(() => {
+                    navigate("/dashboard/appointments", {
+                        state: {
+                            notice: `Thanh toán thành công trọn vẹn ca chăm sóc bằng số dư Ví CareLink (${formatMoney(walletDeductAmount)} VNĐ)!`,
+                        },
+                    });
+                }, 600);
+                return;
+            }
+        }
+
         setPaymentStatus(
-            `Đang khởi tạo liên kết thanh toán PayOS (${formatMoney(chargeAmount)} VNĐ)...`
+            `Đang khởi tạo liên kết thanh toán PayOS (${formatMoney(finalPayAmount)} VNĐ)...`
         );
 
         try {
@@ -341,7 +395,7 @@ export default function Checkout() {
                         <div className="overflow-hidden rounded-[24px] border border-[#E6EAE4] bg-white shadow-[0_8px_30px_rgba(35,61,48,0.035)]">
                             <div className="flex items-center justify-between gap-3 border-b border-[#EEF0EB] px-5 py-5 sm:px-7">
                                 <SectionHeading
-                                    eyebrow="Booking overview"
+                                    eyebrow="Tổng quan ca chăm sóc"
                                     title="Thông tin ca chăm sóc"
                                     description="Chi tiết lịch hẹn và chi phí được hiển thị bên dưới."
                                 />
@@ -458,13 +512,113 @@ export default function Checkout() {
                         <div className="overflow-hidden rounded-[24px] border border-[#DCE8DE] bg-white shadow-[0_8px_30px_rgba(35,61,48,0.035)]">
                             <div className="border-b border-[#EDF0E9] px-5 py-5 sm:px-7">
                                 <SectionHeading
-                                    eyebrow="Transparent pricing"
+                                    eyebrow="Minh bạch chi phí"
                                     title="Chi tiết thanh toán"
                                     description="Các khoản phí được tách riêng để gia đình dễ dàng theo dõi."
                                 />
                             </div>
 
                             <div className="p-5 sm:p-7">
+                                {/* KHẤU TRỪ TỪ SỐ DƯ VÍ CARELINK (NẾU CÓ SỐ DƯ) */}
+                                {walletBalance > 0 && (
+                                    <div className="mb-5 rounded-[20px] border border-emerald-200/90 bg-gradient-to-br from-[#ECFDF5] to-[#F0FDF4] p-4 sm:p-5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={useWalletBalance}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked;
+                                                        setUseWalletBalance(checked);
+                                                        if (checked) {
+                                                            setCustomWalletDeduct(formatMoney(maxDeductible));
+                                                        } else {
+                                                            setCustomWalletDeduct("");
+                                                        }
+                                                    }}
+                                                    className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-300 cursor-pointer"
+                                                />
+                                                <span className="text-sm font-bold text-[#1F4133] flex items-center gap-1.5">
+                                                    <span>Dùng số dư Ví CareLink để thanh toán</span>
+                                                </span>
+                                            </label>
+                                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                Khả dụng: {formatMoney(walletBalance)} VNĐ
+                                            </span>
+                                        </div>
+
+                                        {useWalletBalance && (
+                                            <div className="mt-3 pt-3 border-t border-emerald-200/60 space-y-2.5">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="text-[11px] text-slate-500 font-medium">Chọn nhanh:</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomWalletDeduct(formatMoney(maxDeductible))}
+                                                        className="px-2.5 py-1 rounded-lg border border-emerald-300 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                                                    >
+                                                        Dùng tối đa ({formatMoney(maxDeductible)} đ)
+                                                    </button>
+                                                    {maxDeductible >= 50000 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCustomWalletDeduct("50.000")}
+                                                            className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                                        >
+                                                            50.000 đ
+                                                        </button>
+                                                    )}
+                                                    {maxDeductible >= 100000 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCustomWalletDeduct("100.000")}
+                                                            className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                                        >
+                                                            100.000 đ
+                                                        </button>
+                                                    )}
+                                                    {customWalletDeduct && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCustomWalletDeduct("")}
+                                                            className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-100 text-[11px] font-medium text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                                                        >
+                                                            Xóa số tiền
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={customWalletDeduct}
+                                                        onChange={(e) => {
+                                                            const raw = e.target.value.replace(/\D/g, "");
+                                                            if (!raw) {
+                                                                setCustomWalletDeduct("");
+                                                                return;
+                                                            }
+                                                            const num = Number(raw);
+                                                            setCustomWalletDeduct(formatMoney(num));
+                                                        }}
+                                                        onBlur={() => {
+                                                            if (customWalletDeduct) {
+                                                                const num = Number(customWalletDeduct.replace(/\D/g, ""));
+                                                                const clamped = Math.min(num, maxDeductible);
+                                                                setCustomWalletDeduct(clamped > 0 ? formatMoney(clamped) : "");
+                                                            }
+                                                        }}
+                                                        placeholder="Nhập số tiền muốn trừ (VNĐ)"
+                                                        className="w-full pl-3.5 pr-14 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                    />
+                                                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">
+                                                        VNĐ
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-5">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
@@ -493,6 +647,18 @@ export default function Checkout() {
                                             +{formatMoney(platformFee)} VNĐ
                                         </span>
                                     </div>
+
+                                    {useWalletBalance && walletDeductAmount > 0 && (
+                                        <div className="flex items-start justify-between gap-4 text-emerald-800 bg-emerald-50/90 p-3 rounded-xl border border-emerald-200/80">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold">Khấu trừ từ Số dư Ví CareLink</p>
+                                                <p className="mt-0.5 text-xs text-emerald-600">Đã trừ trực tiếp từ số dư ví của gia đình</p>
+                                            </div>
+                                            <span className="shrink-0 text-sm font-bold tabular-nums text-emerald-700">
+                                                -{formatMoney(walletDeductAmount)} VNĐ
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="my-6 border-t border-dashed border-[#DDE5DC]" />
@@ -509,19 +675,27 @@ export default function Checkout() {
                                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                                         <div>
                                             <p className="text-sm font-semibold text-[#496052]">
-                                                Tổng thanh toán
+                                                {finalPayAmount === 0 && useWalletBalance ? "Số tiền thanh toán thêm" : "Tổng thanh toán"}
                                             </p>
                                             <p className="mt-1 text-[11px] text-[#84968A]">
-                                                Đã bao gồm các khoản phí hiển thị
+                                                {finalPayAmount === 0 && useWalletBalance
+                                                    ? "Đã cấn trừ 100% bằng số dư ví"
+                                                    : "Đã bao gồm các khoản phí hiển thị"}
                                             </p>
                                         </div>
                                         <p className="text-[27px] font-bold leading-tight tracking-[-0.04em] text-[#087E78] sm:text-[32px]">
-                                            {formatMoney(chargeAmount)}
+                                            {formatMoney(finalPayAmount)}
                                             <span className="ml-1.5 text-sm font-semibold tracking-normal">
                                                 VNĐ
                                             </span>
                                         </p>
                                     </div>
+
+                                    {useWalletBalance && walletDeductAmount > 0 && finalPayAmount === 0 && (
+                                        <div className="mt-3 p-2.5 rounded-xl bg-emerald-100/80 border border-emerald-300 text-emerald-800 text-xs font-semibold text-center">
+                                            🎉 Số dư ví đã chi trả trọn vẹn 100%! Bạn không cần chuyển khoản qua PayOS.
+                                        </div>
+                                    )}
                                 </div>
 
                                 <p className="mt-4 flex items-start gap-2 text-[11px] leading-5 text-[#849087]">
@@ -538,7 +712,7 @@ export default function Checkout() {
                         <div className="rounded-[24px] border border-[#E6EAE4] bg-white p-5 shadow-[0_8px_30px_rgba(35,61,48,0.035)] sm:p-7">
                             <div className="mb-5 flex items-start justify-between gap-3">
                                 <SectionHeading
-                                    eyebrow="Payment methods"
+                                    eyebrow="Cổng thanh toán y tế"
                                     title="Phương thức thanh toán"
                                     description="Lựa chọn phương thức phù hợp với bạn."
                                 />
@@ -712,7 +886,17 @@ export default function Checkout() {
                                     {isSubmitting ? (
                                         <>
                                             <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                            Đang kết nối PayOS...
+                                            {useWalletBalance && finalPayAmount === 0 ? "Đang xử lý trừ số dư ví..." : "Đang kết nối PayOS..."}
+                                        </>
+                                    ) : useWalletBalance && walletDeductAmount > 0 && finalPayAmount === 0 ? (
+                                        <>
+                                            <Icon className="h-5 w-5 text-emerald-300">
+                                                <path d="M12 3 19 6v5c0 4.5-3 7.5-7 10-4-2.5-7-5.5-7-10V6l7-3Z" />
+                                                <path d="m9 12 2 2 4-4" />
+                                            </Icon>
+                                            <span>
+                                                Xác nhận thanh toán bằng Số dư Ví CareLink (0đ phát sinh)
+                                            </span>
                                         </>
                                     ) : (
                                         <>
@@ -721,7 +905,7 @@ export default function Checkout() {
                                                 <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                                             </Icon>
                                             <span>
-                                                Thanh toán {formatMoney(chargeAmount)} VNĐ
+                                                Thanh toán {formatMoney(finalPayAmount)} VNĐ qua PayOS
                                             </span>
                                             <Icon className="h-4 w-4 transition-transform group-hover:translate-x-1">
                                                 <path d="M5 12h14m-6-6 6 6-6 6" />

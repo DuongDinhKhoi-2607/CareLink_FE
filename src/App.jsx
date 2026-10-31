@@ -15,6 +15,7 @@ import Dashboard from "./features/family/pages/Dashboard";
 import Appointments from "./features/family/pages/Appointments";
 import Relatives from "./features/family/pages/Relatives";
 import HealthReports from "./features/family/pages/HealthReports";
+import FamilyWallet from "./features/family/pages/Wallet";
 import FamilyProfile from "./features/family/pages/FamilyProfile";
 import Review from "./features/family/pages/Review";
 import Login from "./pages/auth/Login";
@@ -90,6 +91,7 @@ export default function App() {
             <Route path="/dashboard/appointments" element={<Appointments />} />
             <Route path="/dashboard/relatives" element={<Relatives />} />
             <Route path="/dashboard/health-reports" element={<HealthReports />} />
+            <Route path="/dashboard/wallet" element={<FamilyWallet />} />
             <Route path="/dashboard/messages" element={<DashboardMessages />} />
             <Route path="/dashboard/chat" element={<DashboardMessages />} />
             <Route path="/dashboard/settings" element={<FamilyProfile />} />
