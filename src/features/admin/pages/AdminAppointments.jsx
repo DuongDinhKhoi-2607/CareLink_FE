@@ -80,7 +80,7 @@ export default function AdminAppointments() {
     const fetchBookings = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await adminApi.getAllBookings({ pageNumber: 1, pageSize: 100 });
+            const res = await adminApi.getAllBookings({ PageNumber: 1, PageSize: 50 });
             const list = Array.isArray(res)
                 ? res
                 : Array.isArray(res?.items)
@@ -140,6 +140,23 @@ export default function AdminAppointments() {
 
     useEffect(() => {
         fetchBookings();
+
+        // Tự động đồng bộ lịch hẹn ngầm mỗi 5 giây cho Admin Portal
+        const interval = setInterval(() => {
+            if (document.visibilityState === "visible") {
+                fetchBookings();
+            }
+        }, 5000);
+
+        const handleFocus = () => {
+            fetchBookings();
+        };
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", handleFocus);
+        };
     }, [fetchBookings]);
 
     const handleResolveDispute = (appointmentId, resolution) => {
