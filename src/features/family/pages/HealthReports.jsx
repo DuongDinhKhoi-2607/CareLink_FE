@@ -16,11 +16,15 @@ export default function HealthReports() {
             .then((res) => {
                 const list = res?.data?.data || res?.data || (Array.isArray(res) ? res : []);
                 if (Array.isArray(list) && list.length > 0) {
-                    const mappedRecipients = list.map((r) => ({
-                        id: String(r.id),
-                        name: r.fullName || r.name || "Người thân",
-                        relation: r.relationship || r.relation || "Người nhận chăm sóc",
-                    }));
+                    const mappedRecipients = list.map((r) => {
+                        const rawRel = r.relationship || r.relation || "";
+                        const cleanRel = (rawRel && rawRel.trim().toLowerCase() !== "người nhận chăm sóc") ? rawRel.trim() : "";
+                        return {
+                            id: String(r.id),
+                            name: r.fullName || r.name || "Người thân",
+                            relation: cleanRel,
+                        };
+                    });
                     setRecipientsList(mappedRecipients);
                     if (!mappedRecipients.some((r) => r.id === selectedRelativeId)) {
                         setSelectedRelativeId(mappedRecipients[0].id);
@@ -44,7 +48,7 @@ export default function HealthReports() {
 
                 const currentRelative = recipientsList.find((r) => r.id === recipientId) || {
                     name: "Người thân",
-                    relation: "Người nhận chăm sóc",
+                    relation: "",
                 };
 
                 const mappedSummary = {
@@ -288,7 +292,7 @@ export default function HealthReports() {
                     >
                         {recipientsList.map((r) => (
                             <option key={r.id} value={r.id}>
-                                {r.name} ({r.relation})
+                                {r.name}{r.relation ? ` (${r.relation})` : ""}
                             </option>
                         ))}
                     </select>

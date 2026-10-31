@@ -16,6 +16,7 @@ import {
     MessageCircle,
     CircleX,
     ShieldCheck,
+    ShieldAlert,
     CircleCheck,
     X,
     FileText,
@@ -77,13 +78,23 @@ export default function CaregiverBookingDetailPanel({
             }
             setShowCounterModal(false);
         } catch (err) {
-            const errDetail = err?.response?.data?.detail 
-                || err?.response?.data?.message 
+            const rawDetail = err?.response?.data?.detail || "";
+            let errDetail = err?.response?.data?.message 
                 || (err?.response?.data?.title && err.response.data.title !== "One or more validation errors occurred." ? err.response.data.title : null)
                 || (err?.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null)
-                || err?.message 
-                || "Không thể gửi đề xuất giá mới. Vui lòng kiểm tra lại.";
-            setCounterError(errDetail);
+                || err?.message;
+
+            if (rawDetail) {
+                if (rawDetail.toLowerCase().includes("unexpected error")) {
+                    errDetail = "Hệ thống đang cập nhật tính năng thương lượng giá (thiếu cột counter_price trên CSDL Supabase). Vui lòng cập nhật SQL hoặc thử lại.";
+                } else {
+                    errDetail = rawDetail;
+                }
+            }
+            if (errDetail && errDetail.toLowerCase().includes("unexpected error")) {
+                errDetail = "Hệ thống đang bận hoặc cơ sở dữ liệu chưa sẵn sàng cho giá thương lượng mới. Vui lòng thử lại sau.";
+            }
+            setCounterError(errDetail || "Không thể gửi đề xuất giá mới. Vui lòng kiểm tra lại.");
         } finally {
             setIsSubmittingCounter(false);
         }
@@ -165,15 +176,27 @@ export default function CaregiverBookingDetailPanel({
                                 </p>
                             </div>
 
-                            {/* Nút xem bệnh án chi tiết từ BookingProposalResponse */}
-                            <button
-                                type="button"
-                                onClick={() => setShowPatientModal(true)}
-                                className="mt-2.5 w-full py-2 px-3 text-xs font-bold text-[#087487] bg-[#edf7f9] hover:bg-[#e0f1f4] rounded-xl border border-[#c9e4e9] transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                            >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Xem bệnh án & tiền sử y tế</span>
-                            </button>
+                            {/* Quyền xem bệnh án chi tiết từ BookingProposalResponse */}
+                            {booking.isMedicalRecordShared ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPatientModal(true)}
+                                    className="mt-2.5 w-full py-2 px-3 text-xs font-bold text-[#087487] bg-[#edf7f9] hover:bg-[#e0f1f4] rounded-xl border border-[#c9e4e9] transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>Xem bệnh án & tiền sử y tế</span>
+                                </button>
+                            ) : (
+                                <div className="mt-2.5 w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 flex items-start gap-2">
+                                    <ShieldAlert className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-bold text-slate-700">Bệnh án: Chưa kích hoạt chia sẻ</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                                            Gia đình chưa cấp quyền truy cập chi tiết bệnh án cho ca làm này nhằm bảo vệ quyền riêng tư y tế.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </section>
 
                         <div className="h-px bg-slate-100" />
@@ -274,40 +297,43 @@ export default function CaregiverBookingDetailPanel({
                     {/* Action area */}
                     <div className="border-t border-slate-100 bg-[#fbfcfd] p-4 sm:p-5">
                         {demoState.status === "family_confirmed" && (
-                            <div className="space-y-3">
-                                <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+                            <div className="space-y-2.5">
+                                <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/90 bg-amber-50/80 p-3">
                                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
 
-                                    <p className="text-xs leading-relaxed text-amber-900">
-                                        Gia đình đã gửi yêu cầu. Vui lòng kiểm tra thông tin trước khi quyết định nhận ca.
+                                    <p className="text-xs leading-relaxed text-amber-900 font-medium">
+                                        Gia đình đã gửi yêu cầu ca. Vui lòng rà soát điều kiện chăm sóc trước khi phản hồi.
                                     </p>
                                 </div>
 
+                                {/* Nút 1: Đồng ý nhận ca (Primary Action) */}
                                 <button
                                     type="button"
                                     onClick={handleAcceptRequest}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#087487] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#066274] active:scale-[0.99] cursor-pointer"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] px-4 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md hover:from-[#005566] hover:to-[#007489] active:scale-[0.99] cursor-pointer"
                                 >
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    Đồng ý nhận ca
+                                    <CheckCircle2 className="h-4.5 w-4.5 text-emerald-300" />
+                                    <span>Đồng ý nhận ca</span>
                                 </button>
 
+                                {/* Nút 2: Đề xuất mức giá khác (Thương lượng không có tiếng Anh) */}
                                 <button
                                     type="button"
                                     onClick={handleOpenCounter}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-xs font-bold text-teal-800 transition hover:bg-teal-100 hover:border-teal-300 cursor-pointer shadow-2xs"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-2.5 text-xs font-bold text-[#00677c] transition-all duration-200 hover:bg-teal-100 hover:border-teal-300 cursor-pointer shadow-2xs"
                                 >
-                                    <Clock className="h-4 w-4 text-teal-600" />
-                                    Đề xuất mức giá khác (Counter-Offer)
+                                    <Clock className="h-4 w-4 text-[#00677c]" />
+                                    <span>Đề xuất mức giá khác</span>
                                 </button>
 
+                                {/* Nút 3: Từ chối yêu cầu */}
                                 <button
                                     type="button"
                                     onClick={handleOpenRejectModal}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition-all duration-200 hover:border-rose-300 hover:bg-rose-50/70 hover:text-rose-700 cursor-pointer shadow-2xs"
                                 >
-                                    <XCircle className="h-4 w-4" />
-                                    Từ chối yêu cầu
+                                    <XCircle className="h-4 w-4 text-slate-400" />
+                                    <span>Từ chối yêu cầu</span>
                                 </button>
                             </div>
                         )}
@@ -613,22 +639,34 @@ export default function CaregiverBookingDetailPanel({
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Tiền sử bệnh án</span>
-                                <p className="text-xs text-slate-800 leading-relaxed font-medium">
-                                    {booking.recipientMedicalHistory || "Không ghi nhận tiền sử bệnh đặc biệt."}
-                                </p>
-                            </div>
+                            {booking.isMedicalRecordShared ? (
+                                <>
+                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Tiền sử bệnh án</span>
+                                        <p className="text-xs text-slate-800 leading-relaxed font-medium">
+                                            {booking.recipientMedicalHistory || "Không ghi nhận tiền sử bệnh đặc biệt."}
+                                        </p>
+                                    </div>
 
-                            <div className="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200/80 space-y-1">
-                                <span className="text-[10px] font-bold text-amber-800 uppercase flex items-center gap-1">
-                                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                                    Lưu ý đặc biệt / Dị ứng thuốc
-                                </span>
-                                <p className="text-xs text-amber-900 leading-relaxed font-medium">
-                                    {booking.recipientSpecialNotes || "Không có lưu ý dị ứng hoặc chống chỉ định."}
-                                </p>
-                            </div>
+                                    <div className="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200/80 space-y-1">
+                                        <span className="text-[10px] font-bold text-amber-800 uppercase flex items-center gap-1">
+                                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                            Lưu ý đặc biệt / Dị ứng thuốc
+                                        </span>
+                                        <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                                            {booking.recipientSpecialNotes || "Không có lưu ý dị ứng hoặc chống chỉ định."}
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-slate-600 space-y-1.5 text-center">
+                                    <ShieldAlert className="w-6 h-6 text-slate-400 mx-auto" />
+                                    <p className="font-bold text-slate-800 text-xs">Bệnh án chưa kích hoạt chia sẻ</p>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        Gia đình giữ quyền riêng tư y tế cho ca làm này. Các thông tin bệnh lý chi tiết và lưu ý nội khoa không được hiển thị.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Địa chỉ chăm sóc</span>
@@ -670,10 +708,10 @@ export default function CaregiverBookingDetailPanel({
                         <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                             <div>
                                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
-                                    Đàm phán ca trực • BE-06
+                                    Đàm phán ca trực • Thỏa thuận chi phí
                                 </span>
                                 <h3 className="text-base font-extrabold text-slate-900 mt-1">
-                                    Đề xuất mức giá mới (Counter-Offer)
+                                    Đề xuất mức giá mới
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
                                     Gửi mức giá và lý do điều chỉnh để gia đình xem xét và phê duyệt.

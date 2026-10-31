@@ -178,7 +178,7 @@ const mapBookingToAppointment = (b) => {
         platformFee: b.platformFee ?? 60000,
         serviceCategory: "health_care",
         recipient: b.recipientName || "Người thân",
-        recipientRelation: "Người nhận chăm sóc",
+        recipientRelation: b.recipientRelation || b.relationship || "",
         date: formattedDate,
         time: timeDisplay,
         duration: "Theo ca",
@@ -415,6 +415,30 @@ export default function Appointments() {
 
     useEffect(() => {
         fetchAppointments();
+
+        // Cập nhật ngầm danh sách ca hẹn mỗi 4 giây khi tab đang active (Realtime Sync)
+        const interval = setInterval(() => {
+            if (document.visibilityState === "visible") {
+                familyApi.getBookings({ PageNumber: 1, PageSize: 50 })
+                    .then((res) => {
+                        const items = res?.items || (Array.isArray(res) ? res : []);
+                        if (items.length > 0) {
+                            setAppointments(items.map(mapBookingToAppointment));
+                        }
+                    })
+                    .catch(() => {});
+            }
+        }, 4000);
+
+        const handleFocus = () => {
+            fetchAppointments();
+        };
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", handleFocus);
+        };
     }, [fetchAppointments]);
 
     // Xử lý Hủy ca hẹn qua Backend API (PUT /api/v1/bookings/{id}/cancel) từ CancelBookingModal
@@ -882,8 +906,10 @@ export default function Appointments() {
                                                 </svg>
                                                 <span>
                                                     Người nhận chăm sóc:{" "}
-                                                    <strong className="text-slate-900 font-bold">{apt.recipient}</strong>{" "}
-                                                    <span className="text-slate-500">({apt.recipientRelation})</span>
+                                                    <strong className="text-slate-900 font-bold">{apt.recipient}</strong>
+                                                    {apt.recipientRelation && apt.recipientRelation !== "Người nhận chăm sóc" && (
+                                                        <span className="text-slate-500 ml-1">({apt.recipientRelation})</span>
+                                                    )}
                                                 </span>
                                             </div>
                                         </div>
@@ -1304,7 +1330,7 @@ export default function Appointments() {
                                         {detailData?.recipientName || selectedAppointment.recipient}
                                     </div>
                                     <div className="text-xs text-slate-500">
-                                        Đối tượng: <span className="font-medium text-slate-700">{selectedAppointment.recipientRelation || "Người nhận chăm sóc"}</span>
+                                        Quan hệ: <span className="font-medium text-slate-700">{selectedAppointment.recipientRelation || "Người thân trong gia đình"}</span>
                                     </div>
                                 </div>
 

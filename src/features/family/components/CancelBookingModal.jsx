@@ -189,13 +189,59 @@ export default function CancelBookingModal({
                         )}
                     </div>
 
-                    {/* Chính sách hủy (Luồng 6: Non-refundable holding fee) */}
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2">
-                        <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div className="leading-relaxed">
-                            <strong>Chính sách hủy ca:</strong> Gia đình có thể hủy ca trước khi ca bắt đầu để giải phóng lịch cho điều dưỡng. Lưu ý: Phí giữ chỗ nền tảng PayOS là khoản phí kỹ thuật không hoàn lại (Non-refundable). Khoản tiền công dịch vụ chính sẽ do gia đình và điều dưỡng tự đối soát trực tiếp khi thực hiện ca.
-                        </div>
-                    </div>
+                    {/* Chính sách hủy ca và hoàn tiền minh bạch (ADR-002) */}
+                    {(() => {
+                        const isUnpaid = booking.status === "pending_acceptance" || booking.status === "pending_payment";
+                        if (isUnpaid) {
+                            return (
+                                <div className="p-3.5 rounded-2xl bg-teal-50/80 border border-teal-200/90 text-teal-900 text-xs flex items-start gap-2.5">
+                                    <ShieldAlert className="w-4.5 h-4.5 text-teal-600 shrink-0 mt-0.5" />
+                                    <div className="leading-relaxed">
+                                        <p className="font-bold text-teal-950">Hủy ca không tính phí:</p>
+                                        <p className="mt-0.5 text-teal-800">
+                                            Ca chăm sóc này chưa phát sinh giao dịch thanh toán PayOS. Bạn có thể xác nhận hủy ca ngay mà không bị tính bất kỳ chi phí nào.
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        let scheduledDate = null;
+                        if (booking.rawBackendData?.scheduledStart) {
+                            scheduledDate = new Date(booking.rawBackendData.scheduledStart);
+                        }
+                        const now = new Date();
+                        const hoursUntilStart = scheduledDate ? (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60) : 999;
+                        const isLateCancel = hoursUntilStart < 12;
+
+                        return (
+                            <div className={`p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 ${
+                                isLateCancel 
+                                    ? "bg-rose-50/80 border-rose-200 text-rose-900" 
+                                    : "bg-amber-50/80 border-amber-200 text-amber-900"
+                            }`}>
+                                <ShieldAlert className={`w-4.5 h-4.5 shrink-0 mt-0.5 ${
+                                    isLateCancel ? "text-rose-600" : "text-amber-600"
+                                }`} />
+                                <div className="leading-relaxed">
+                                    <p className={`font-bold ${isLateCancel ? "text-rose-950" : "text-amber-950"}`}>
+                                        {isLateCancel 
+                                            ? "Cảnh báo hủy ca sát giờ (Dưới 12 tiếng):" 
+                                            : "Chính sách hoàn tiền tiêu chuẩn (Trước 12 tiếng):"}
+                                    </p>
+                                    <p className="mt-0.5">
+                                        {isLateCancel
+                                            ? "Do bạn hủy ca trước giờ bắt đầu dưới 12 tiếng, để bồi thường lịch trình cho điều dưỡng đã chuẩn bị dụng cụ, hệ thống sẽ khấu trừ 50% tiền công dịch vụ để chi trả cho điều dưỡng. 50% còn lại sẽ được hoàn vào Ví tiền của bạn."
+                                            : "Bạn đang hủy ca trước giờ bắt đầu hơn 12 tiếng. Toàn bộ tiền công dịch vụ sẽ được hoàn trả 100% vào Ví tiền của bạn (khấu trừ phí nền tảng 60.000đ theo quy định điều phối y tế)."}
+                                    </p>
+                                    <div className="mt-2 pt-2 border-t border-slate-200/50 text-[11px] font-medium flex items-center gap-1.5 opacity-90">
+                                        <span>💡</span>
+                                        <span>Tiền hoàn sẽ được ghi nhận tại mục <strong>Ví tiền</strong> của gia đình. Bạn có thể dùng đặt ca mới hoặc rút về ngân hàng.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Buttons */}
                     <div className="flex items-center justify-end gap-3 pt-2">
