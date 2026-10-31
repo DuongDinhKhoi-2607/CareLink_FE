@@ -259,13 +259,13 @@ function ApproveModal({ withdrawal, onClose, onConfirm }) {
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-md"
+                className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-md overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="p-6 pb-4 border-b border-slate-100 flex items-start justify-between">
+                <div className="p-6 pb-4 border-b border-slate-100 flex items-start justify-between bg-gradient-to-r from-emerald-50/70 to-white">
                     <div>
-                        <h2 className="text-lg font-extrabold text-slate-900">Duyệt lệnh rút tiền</h2>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <h2 className="text-lg font-extrabold text-slate-900">Duyệt lệnh chuyển tiền</h2>
+                        <p className="text-xs text-slate-500 mt-0.5">
                             Mã yêu cầu: <strong className="text-emerald-700">{withdrawal.id}</strong> · {withdrawal.caregiver}
                         </p>
                     </div>
@@ -278,9 +278,20 @@ function ApproveModal({ withdrawal, onClose, onConfirm }) {
                 </div>
 
                 <div className="p-6 space-y-4">
-                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800 space-y-1">
-                        <p className="font-bold">Số tiền: {formatVND(withdrawal.amount)}</p>
-                        <p>Ngân hàng: {withdrawal.bank} — STK: {withdrawal.accountNumber} ({withdrawal.accountName || withdrawal.caregiver})</p>
+                    <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200 text-xs text-emerald-900 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm text-emerald-950">Số tiền chi: {formatVND(withdrawal.amount)}</span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                                withdrawal.role === "Khách hàng"
+                                    ? "bg-purple-100 text-purple-800 border-purple-200"
+                                    : "bg-teal-100 text-[#00677c] border-teal-200"
+                            }`}>
+                                {withdrawal.role || "Điều dưỡng"}
+                            </span>
+                        </div>
+                        <p><strong>Người thụ hưởng:</strong> {withdrawal.accountName || withdrawal.caregiver}</p>
+                        <p><strong>Lý do chi:</strong> {withdrawal.reason || "Rút tiền tài khoản CareLink"}</p>
+                        <p><strong>Ngân hàng:</strong> {withdrawal.bank} — <strong>STK:</strong> {withdrawal.accountNumber}</p>
                     </div>
 
                     <div>
@@ -292,7 +303,7 @@ function ApproveModal({ withdrawal, onClose, onConfirm }) {
                             value={bankReferenceCode}
                             onChange={(e) => setBankReferenceCode(e.target.value)}
                             placeholder="Ví dụ: FT2409228899 hoặc mã giao dịch..."
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-500"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-500 font-mono"
                         />
                     </div>
 
@@ -320,7 +331,7 @@ function ApproveModal({ withdrawal, onClose, onConfirm }) {
                     <button
                         onClick={() => bankReferenceCode.trim() && onConfirm(withdrawal.id, { bankReferenceCode: bankReferenceCode.trim(), adminNote: adminNote.trim() || undefined })}
                         disabled={!bankReferenceCode.trim()}
-                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm ${
                             bankReferenceCode.trim()
                                 ? "bg-emerald-600 text-white hover:bg-emerald-700"
                                 : "bg-slate-100 text-slate-400 cursor-not-allowed"
@@ -373,6 +384,61 @@ export default function AdminFinance() {
     };
 
     // ── 64. GET /api/v1/admin/payouts (Admin xem danh sách yêu cầu rút tiền) ─────────
+    const [summaryMetrics, setSummaryMetrics] = useState(null);
+
+    const fetchFinancialData = useCallback(async () => {
+        try {
+            const summaryRes = await adminApi.getDashboardSummary();
+            const s = summaryRes?.data || summaryRes;
+            if (s && s.totalGmv !== undefined) {
+                setSummaryMetrics(s);
+            }
+        } catch {
+            // ignore
+        }
+
+        try {
+            const bookingsRes = await adminApi.getAllBookings({ PageNumber: 1, PageSize: 50 });
+            const items = bookingsRes?.items || bookingsRes?.data || (Array.isArray(bookingsRes) ? bookingsRes : []);
+            if (Array.isArray(items) && items.length > 0) {
+                const realTxs = items.map((b) => {
+                    const rawSt = typeof b.status === "number" ? b.status : 1;
+                    const isCompleted = rawSt === 5;
+                    const isCanceled = rawSt === 6;
+                    const isPaid = rawSt >= 2 && rawSt !== 6;
+                    let type = "Gia đình thanh toán";
+                    let status = isCompleted ? "Thành công" : isCanceled ? "Hoàn tiền" : isPaid ? "Đang giữ cọc" : "Chờ thanh toán";
+                    if (b.refundedAmount && Number(b.refundedAmount) > 0) {
+                        type = "Hoàn tiền";
+                        status = "Hoàn tiền";
+                    }
+
+                    const totalAmt = Number(b.totalPaymentAmount || (Number(b.totalPrice || 0) + (b.platformFee || 60000)));
+                    const fee = Number(b.platformFee || 60000);
+                    const caregiverPay = Math.max(0, totalAmt - fee);
+                    const dateObj = b.createdAt ? new Date(b.createdAt) : new Date();
+
+                    return {
+                        id: `TXN-${(b.id || "").substring(0, 8).toUpperCase()}`,
+                        family: b.customerName || "Gia đình",
+                        caregiver: b.nurseName || "Điều dưỡng",
+                        type,
+                        amount: totalAmt,
+                        platformFee: fee,
+                        caregiverPay,
+                        date: dateObj.toLocaleDateString("vi-VN"),
+                        time: dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                        status,
+                        shiftId: `CA-${(b.id || "").substring(0, 6).toUpperCase()}`,
+                    };
+                });
+                setTransactions(realTxs);
+            }
+        } catch {
+            // ignore
+        }
+    }, []);
+
     const fetchPayouts = useCallback(async () => {
         setLoadingWithdrawals(true);
         try {
@@ -384,28 +450,58 @@ export default function AdminFinance() {
                 : Array.isArray(res?.items)
                 ? res.items
                 : [];
-            if (list.length > 0) {
-                setWithdrawals(
-                    list.map((w) => {
-                        // Backend PayoutRequestStatus: 1 = Pending, 2 = Approved, 3 = Rejected
-                        const rawSt = typeof w.status === "number" ? w.status : (w.status === "Approved" ? 2 : w.status === "Rejected" ? 3 : 1);
-                        const isApproved = rawSt === 2;
-                        const isRejected = rawSt === 3;
-                        const statusText = isApproved ? "Đã duyệt" : isRejected ? "Từ chối" : "Chờ duyệt";
-                        return {
-                            id: w.id || `WD-${w.code || "N/A"}`,
-                            caregiver: w.nurseName || w.caregiverName || w.user?.fullName || w.caregiver || "Điều dưỡng",
-                            caregiverPhone: w.nursePhone || w.caregiverPhone || w.user?.phoneNumber || "—",
-                            amount: Number(w.amount || 0),
-                            bank: w.bankName || w.bank || "Ngân hàng",
-                            accountNumber: w.bankAccountNumber || w.accountNumber || "—",
-                            accountName: w.bankAccountName || w.accountName || "",
-                            requestDate: w.createdAt ? new Date(w.createdAt).toLocaleDateString("vi-VN") : w.requestDate || "Hôm nay",
-                            status: statusText,
-                            note: w.adminNote || w.rejectReason || w.note || "",
-                        };
-                    })
-                );
+
+            const nursePayouts = list.map((w) => {
+                // Backend PayoutRequestStatus: 1 = Pending, 2 = Approved, 3 = Rejected
+                const rawSt = typeof w.status === "number" ? w.status : (w.status === "Approved" ? 2 : w.status === "Rejected" ? 3 : 1);
+                const isApproved = rawSt === 2;
+                const isRejected = rawSt === 3;
+                const statusText = isApproved ? "Đã duyệt" : isRejected ? "Từ chối" : "Chờ duyệt";
+                return {
+                    id: w.id || `WD-${w.code || "N/A"}`,
+                    role: "Điều dưỡng",
+                    caregiver: w.nurseName || w.caregiverName || w.user?.fullName || w.caregiver || "Điều dưỡng",
+                    caregiverPhone: w.nursePhone || w.caregiverPhone || w.user?.phoneNumber || "—",
+                    amount: Number(w.amount || 0),
+                    bank: w.bankName || w.bank || "Ngân hàng",
+                    accountNumber: w.bankAccountNumber || w.accountNumber || "—",
+                    accountName: w.bankAccountName || w.accountName || "",
+                    requestDate: w.createdAt ? new Date(w.createdAt).toLocaleDateString("vi-VN") : w.requestDate || "Hôm nay",
+                    reason: "Rút thu nhập tiền công chăm sóc",
+                    status: statusText,
+                    note: w.adminNote || w.rejectReason || w.note || "",
+                };
+            });
+
+            // Tải thêm các yêu cầu rút tiền / hoàn tiền của Khách hàng từ localStorage
+            const customerPayouts = [];
+            try {
+                const savedCustomerWd = JSON.parse(localStorage.getItem("carelink_family_withdraw_requests") || "[]");
+                savedCustomerWd.forEach((cw) => {
+                    const st = cw.status === "Đã duyệt" || cw.status === "Đã giải ngân" ? "Đã duyệt" : cw.status === "Từ chối" ? "Từ chối" : "Chờ duyệt";
+                    customerPayouts.push({
+                        id: cw.id,
+                        role: "Khách hàng",
+                        caregiver: cw.accountName || "Khách hàng (Gia đình)",
+                        caregiverPhone: "Tài khoản gia đình",
+                        amount: Number(cw.amount || 0),
+                        bank: cw.bank || "Ngân hàng",
+                        accountNumber: cw.accountNumber || "—",
+                        accountName: cw.accountName || "",
+                        requestDate: cw.date || "Hôm nay",
+                        reason: cw.reason || "Rút tiền hoàn từ số dư ví ca hủy",
+                        status: st,
+                        note: cw.adminNote || cw.note || "",
+                        isLocalCustomer: true,
+                    });
+                });
+            } catch {
+                // ignore
+            }
+
+            const combined = [...customerPayouts, ...nursePayouts];
+            if (combined.length > 0) {
+                setWithdrawals(combined);
             }
         } catch (err) {
             console.warn("Lỗi tải danh sách yêu cầu rút tiền của Admin:", err);
@@ -416,18 +512,39 @@ export default function AdminFinance() {
 
     useEffect(() => {
         fetchPayouts();
-    }, [fetchPayouts]);
+        fetchFinancialData();
+
+        const interval = setInterval(() => {
+            if (document.visibilityState === "visible") {
+                fetchPayouts();
+                fetchFinancialData();
+            }
+        }, 5000);
+
+        const handleFocus = () => {
+            fetchPayouts();
+            fetchFinancialData();
+        };
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", handleFocus);
+        };
+    }, [fetchPayouts, fetchFinancialData]);
 
     // KPI
-    const totalRevenue = transactions
+    const totalRevenue = summaryMetrics?.totalGmv ?? transactions
         .filter((t) => t.status === "Thành công")
         .reduce((sum, t) => sum + t.amount, 0);
-    const totalPlatformFee = transactions
+    const totalPlatformFee = summaryMetrics?.totalPlatformFee ?? transactions
         .filter((t) => t.status === "Thành công")
         .reduce((sum, t) => sum + t.platformFee, 0);
-    const totalCaregiverPay = transactions
-        .filter((t) => t.status === "Thành công")
-        .reduce((sum, t) => sum + t.caregiverPay, 0);
+    const totalCaregiverPay = summaryMetrics 
+        ? Math.max(0, summaryMetrics.totalGmv - summaryMetrics.totalPlatformFee)
+        : transactions
+            .filter((t) => t.status === "Thành công")
+            .reduce((sum, t) => sum + t.caregiverPay, 0);
     const pendingWithdrawals = withdrawals.filter((w) => w.status === "Chờ duyệt").length;
 
     // Transaction status config
@@ -458,7 +575,9 @@ export default function AdminFinance() {
         const q = searchQuery.toLowerCase();
         return (
             w.id.toLowerCase().includes(q) ||
+            (w.role || "").toLowerCase().includes(q) ||
             w.caregiver.toLowerCase().includes(q) ||
+            (w.reason || "").toLowerCase().includes(q) ||
             w.bank.toLowerCase().includes(q)
         );
     });
@@ -467,6 +586,20 @@ export default function AdminFinance() {
     const handleApprove = async (id, payload) => {
         setActionLoadingId(id);
         try {
+            // Kiểm tra xem có phải yêu cầu rút tiền của khách hàng không
+            const savedCustomerWd = JSON.parse(localStorage.getItem("carelink_family_withdraw_requests") || "[]");
+            const idx = savedCustomerWd.findIndex((cw) => cw.id === id);
+            if (idx >= 0) {
+                savedCustomerWd[idx].status = "Đã duyệt";
+                savedCustomerWd[idx].adminNote = payload?.adminNote || "Đã giải ngân chuyển khoản thành công qua ngân hàng.";
+                savedCustomerWd[idx].bankReferenceCode = payload?.bankReferenceCode || `REF-${Date.now().toString().slice(-6)}`;
+                localStorage.setItem("carelink_family_withdraw_requests", JSON.stringify(savedCustomerWd));
+                showToast(`✓ Đã duyệt chi và chuyển khoản thành công cho khách hàng ${id}!`, "success");
+                setApproveTarget(null);
+                await fetchPayouts();
+                return;
+            }
+
             await adminApi.approvePayout(id, {
                 bankReferenceCode: payload?.bankReferenceCode || `REF-${Date.now().toString().slice(-6)}`,
                 adminNote: payload?.adminNote || "Đã duyệt chi giải ngân thành công",
@@ -487,6 +620,26 @@ export default function AdminFinance() {
     const handleReject = async (id, reason) => {
         setActionLoadingId(id);
         try {
+            // Kiểm tra xem có phải yêu cầu rút tiền của khách hàng không
+            const savedCustomerWd = JSON.parse(localStorage.getItem("carelink_family_withdraw_requests") || "[]");
+            const idx = savedCustomerWd.findIndex((cw) => cw.id === id);
+            if (idx >= 0) {
+                const refundAmt = Number(savedCustomerWd[idx].amount || 0);
+                savedCustomerWd[idx].status = "Từ chối";
+                savedCustomerWd[idx].note = reason;
+                savedCustomerWd[idx].adminNote = reason;
+                localStorage.setItem("carelink_family_withdraw_requests", JSON.stringify(savedCustomerWd));
+
+                // Hoàn lại tiền vào ví của khách hàng
+                const curBal = Number(localStorage.getItem("carelink_family_wallet_balance") || 110000);
+                localStorage.setItem("carelink_family_wallet_balance", String(curBal + refundAmt));
+
+                showToast(`Đã từ chối yêu cầu ${id} và hoàn trả ${formatVND(refundAmt)} về ví của khách hàng.`, "error");
+                setRejectTarget(null);
+                await fetchPayouts();
+                return;
+            }
+
             await adminApi.rejectPayout(id, { adminNote: reason });
             showToast(`Đã từ chối yêu cầu rút tiền ${id}. Thông báo đã được gửi đến điều dưỡng.`, "error");
             setRejectTarget(null);
@@ -746,7 +899,9 @@ export default function AdminFinance() {
                             <thead>
                                 <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                     <th className="py-3.5 px-4 sm:px-5 w-24 whitespace-nowrap">Mã yêu cầu</th>
-                                    <th className="py-3.5 px-4 min-w-[140px]">Điều dưỡng</th>
+                                    <th className="py-3.5 px-4 min-w-[140px]">Người thụ hưởng</th>
+                                    <th className="py-3.5 px-4 whitespace-nowrap">Đối tượng</th>
+                                    <th className="py-3.5 px-4 min-w-[160px]">Lý do duyệt chi</th>
                                     <th className="py-3.5 px-4 whitespace-nowrap">Số tiền</th>
                                     <th className="py-3.5 px-4 min-w-[150px]">Ngân hàng & Số TK</th>
                                     <th className="py-3.5 px-4 whitespace-nowrap">Ngày yêu cầu</th>
@@ -757,15 +912,16 @@ export default function AdminFinance() {
                             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                                 {filteredWd.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="py-16 text-center text-slate-400">
+                                        <td colSpan={9} className="py-16 text-center text-slate-400">
                                             <Banknote className="w-10 h-10 mx-auto mb-3 opacity-30" />
                                             <p className="font-semibold">Không tìm thấy yêu cầu rút tiền nào</p>
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredWd.map((w) => {
-                                        const sc = WD_STATUS[w.status];
+                                        const sc = WD_STATUS[w.status] || WD_STATUS["Chờ duyệt"];
                                         const isPending = w.status === "Chờ duyệt";
+                                        const isCustomer = w.role === "Khách hàng";
                                         return (
                                             <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
                                                 <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
@@ -773,13 +929,27 @@ export default function AdminFinance() {
                                                 </td>
                                                 <td className="py-3.5 px-4">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 font-bold flex items-center justify-center border border-sky-100 shrink-0 text-[11px]">
+                                                        <div className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center shrink-0 text-[11px] ${
+                                                            isCustomer ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-teal-50 text-[#00677c] border border-teal-200"
+                                                        }`}>
                                                             {w.caregiver.charAt(0)}
                                                         </div>
                                                         <div>
                                                             <div className="font-bold text-slate-900 whitespace-nowrap">{w.caregiver}</div>
                                                             <div className="text-[10px] text-slate-400">{w.caregiverPhone}</div>
                                                         </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3.5 px-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                                                        isCustomer ? "bg-purple-50 text-purple-800 border-purple-200" : "bg-teal-50 text-[#00677c] border-teal-200"
+                                                    }`}>
+                                                        {w.role || "Điều dưỡng"}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5 px-4">
+                                                    <div className="font-medium text-slate-800 text-[11px]">
+                                                        {w.reason || (isCustomer ? "Rút tiền hoàn từ số dư ca hủy" : "Rút thu nhập tiền công chăm sóc")}
                                                     </div>
                                                 </td>
                                                 <td className="py-3.5 px-4 whitespace-nowrap">

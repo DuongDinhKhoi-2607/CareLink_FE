@@ -44,6 +44,15 @@ const navigationItems = [
         ),
     },
     {
+        path: "/dashboard/wallet",
+        label: "Ví tiền",
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12V7.5a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 7.5v9a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 16.5V12zm0 0h-4.5a1.5 1.5 0 000 3H21v-3z" />
+            </svg>
+        ),
+    },
+    {
         path: "/dashboard/messages",
         label: "Tin nhắn",
         icon: (

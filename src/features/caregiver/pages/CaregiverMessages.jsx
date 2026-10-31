@@ -466,6 +466,9 @@ export default function CaregiverMessages() {
                         recipientAddress: targetProposal.recipientAddress || targetProposal.addressSnapshot || "",
                         relation: targetProposal.recipientGenderName || "",
                         condition: targetProposal.notes || targetProposal.recipientSpecialNotes || "Chăm sóc theo nhu cầu gia đình",
+                        isMedicalRecordShared: targetProposal.isMedicalRecordShared !== undefined
+                            ? Boolean(targetProposal.isMedicalRecordShared)
+                            : Boolean(targetProposal.recipientMedicalHistory),
                         scheduledDate: formattedDate || "Đang thỏa thuận",
                         scheduledTime: formattedTime || "Đang thỏa thuận",
                         address: targetProposal.addressSnapshot || "Địa chỉ gia đình",
@@ -758,19 +761,27 @@ export default function CaregiverMessages() {
                 setDemoStatus("caregiver_rejected", finalReason);
                 setShowRejectModal(false);
                 if (demoState.activeConversationId) {
-                    loadChatConversation(demoState.activeConversationId);
+                    loadConversationDetails(demoState.activeConversationId);
                 }
                 return;
             } catch (err) {
                 console.error("[CareLink] Lỗi khi từ chối đề xuất ca:", err);
-                const msg = err.response?.data?.detail 
-                    || err.response?.data?.message 
+                const rawDetail = err.response?.data?.detail || "";
+                let msg = err.response?.data?.message 
                     || (err.response?.data?.title && err.response.data.title !== "One or more validation errors occurred." ? err.response.data.title : null)
-                    || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null)
-                    || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi từ chối ca.";
+                    || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null);
+
+                if (rawDetail) {
+                    if (rawDetail.toLowerCase().includes("unexpected error")) {
+                        msg = "Hệ thống máy chủ đang bận xử lý dữ liệu. Vui lòng thử lại sau ít phút.";
+                    } else {
+                        msg = rawDetail;
+                    }
+                }
+                msg = msg || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi từ chối ca.";
                 showToast(msg);
                 if (demoState.activeConversationId) {
-                    loadChatConversation(demoState.activeConversationId);
+                    loadConversationDetails(demoState.activeConversationId);
                 }
                 return;
             }
@@ -783,7 +794,7 @@ export default function CaregiverMessages() {
         setCustomReason("");
     };
 
-    // Điều dưỡng gửi đề xuất mức giá mới (Counter-Offer theo BE-06)
+    // Điều dưỡng gửi đề xuất mức giá mới (Counter-Offer)
     const handleConfirmCounterOffer = async (counterPrice, counterNote) => {
         if (!counterPrice || isNaN(counterPrice) || Number(counterPrice) <= 0) {
             throw new Error("Vui lòng nhập mức giá đề xuất hợp lệ (lớn hơn 0).");
@@ -802,19 +813,27 @@ export default function CaregiverMessages() {
                 showToast("Đã gửi đề xuất mức giá mới cho gia đình thành công!");
                 setDemoStatus("counter_offered");
                 if (demoState.activeConversationId) {
-                    loadChatConversation(demoState.activeConversationId);
+                    loadConversationDetails(demoState.activeConversationId);
                 }
                 return true;
             } catch (err) {
-                console.error("[CareLink] Lỗi khi gửi Counter-Offer:", err);
-                const msg = err.response?.data?.detail 
-                    || err.response?.data?.message 
+                console.error("[CareLink] Lỗi khi gửi đề xuất giá mới:", err);
+                const rawDetail = err.response?.data?.detail || "";
+                let msg = err.response?.data?.message 
                     || (err.response?.data?.title && err.response.data.title !== "One or more validation errors occurred." ? err.response.data.title : null)
-                    || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null)
-                    || "Không thể gửi đề xuất giá mới. Vui lòng thử lại!";
+                    || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().filter(Boolean).join("; ") : null);
+
+                if (rawDetail) {
+                    if (rawDetail.toLowerCase().includes("unexpected error")) {
+                        msg = "Hệ thống đang cập nhật tính năng thương lượng giá (thiếu cột counter_price trên CSDL Supabase). Vui lòng cập nhật SQL hoặc thử lại.";
+                    } else {
+                        msg = rawDetail;
+                    }
+                }
+                msg = msg || err.message || "Không thể gửi đề xuất giá mới. Vui lòng thử lại!";
                 showToast(msg);
                 if (demoState.activeConversationId) {
-                    loadChatConversation(demoState.activeConversationId);
+                    loadConversationDetails(demoState.activeConversationId);
                 }
                 throw new Error(msg);
             }

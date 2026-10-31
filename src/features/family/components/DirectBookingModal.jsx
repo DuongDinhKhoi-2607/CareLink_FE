@@ -24,6 +24,7 @@ import {
     Info,
     Send,
     MessageSquare,
+    Wallet,
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
@@ -94,6 +95,18 @@ export default function DirectBookingModal({
     // ── THƯƠNG LƯỢNG GIÁ QUA CHAT (NẾU MỞ TỪ PHÒNG CHAT) ──
     const [isProposalMode, setIsProposalMode] = useState(false);
     const [proposedPrice, setProposedPrice] = useState("");
+
+    // ── SỐ DƯ VÍ CARELINK & TÙY CHỌN CẤN TRỪ KHI ĐẶT CA TRỰC ──
+    const [walletBalance, setWalletBalance] = useState(() => {
+        try {
+            const saved = localStorage.getItem("carelink_family_wallet_balance");
+            return saved !== null ? Number(saved) : 60000;
+        } catch {
+            return 60000;
+        }
+    });
+    const [useWalletBalance, setUseWalletBalance] = useState(false);
+    const [customWalletDeduct, setCustomWalletDeduct] = useState("");
 
     // ── MODAL XEM CHI TIẾT HỒ SƠ Y TẾ NGƯỜI THÂN (NÚT I) ──
     const [selectedViewingRecipient, setSelectedViewingRecipient] = useState(null);
@@ -288,6 +301,16 @@ export default function DirectBookingModal({
 
     const totalServicePrice = baseServicesPrice + extraMinutesPrice;
     const grandTotal = totalServicePrice > 0 ? totalServicePrice + platformFee : platformFee;
+
+    // ── TÍNH TOÁN CẤN TRỪ SỐ DƯ VÍ CARELINK ──
+    const actualTotalBeforeDeduction = isProposalMode && proposedPrice
+        ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10) + platformFee
+        : grandTotal;
+
+    const maxDeductible = Math.min(walletBalance, actualTotalBeforeDeduction);
+    const parsedCustomDeduct = customWalletDeduct.trim() !== "" ? Number(customWalletDeduct.replace(/\D/g, "")) : 0;
+    const walletDeductAmount = useWalletBalance ? Math.min(maxDeductible, Math.max(0, parsedCustomDeduct)) : 0;
+    const finalPayAmount = Math.max(0, actualTotalBeforeDeduction - walletDeductAmount);
 
     // ── 4. CHỌN/BỎ CHỌN DỊCH VỤ & TĂNG/GIẢM SỐ LƯỢNG CA (SLOT) ──
     const handleToggleService = (serviceId) => {
@@ -563,6 +586,29 @@ export default function DirectBookingModal({
 
             const createdBooking = await familyApi.createBooking(payload);
             const targetBookingId = createdBooking?.id || createdBooking?.bookingId;
+
+            // ── CẤN TRỪ SỐ DƯ VÍ CARELINK (NẾU GIA ĐÌNH CHỌN) ──
+            if (useWalletBalance && walletDeductAmount > 0) {
+                const newBal = Math.max(0, walletBalance - walletDeductAmount);
+                setWalletBalance(newBal);
+                localStorage.setItem("carelink_family_wallet_balance", String(newBal));
+
+                const savedWd = JSON.parse(localStorage.getItem("carelink_family_withdraw_requests") || "[]");
+                savedWd.unshift({
+                    id: `TXN-W-${Date.now().toString().slice(-6)}`,
+                    amount: walletDeductAmount,
+                    bank: "Ví CareLink",
+                    accountNumber: `Ca hẹn #${(targetBookingId || "").slice(0, 8).toUpperCase()}`,
+                    accountName: "Gia đình",
+                    date: new Date().toLocaleDateString("vi-VN"),
+                    time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+                    timestamp: Date.now(),
+                    status: "Đã cấn trừ đặt ca",
+                    reason: `Cấn trừ ${walletDeductAmount.toLocaleString("vi-VN")}đ vào ca trực với điều dưỡng ${nurseName}`,
+                });
+                localStorage.setItem("carelink_family_withdraw_requests", JSON.stringify(savedWd));
+                window.dispatchEvent(new Event("storage"));
+            }
 
             setShowPrivacyPopup(false);
             onClose();
@@ -1187,7 +1233,108 @@ export default function DirectBookingModal({
                                 )}
                             </div>
 
-                            {/* 7. BẢNG TỔNG KẾT CHI PHÍ MINH BẠCH (ADR-002) */}
+                            {/* 7. KHẤU TRỪ TỪ SỐ DƯ VÍ CARELINK (NẾU CÓ SỐ DƯ & KHÔNG PHẢI THƯƠNG LƯỢNG QUA CHAT) */}
+                            {walletBalance > 0 && !isProposalMode && (
+                                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 to-teal-50/40 border border-emerald-200/90 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={useWalletBalance}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setUseWalletBalance(checked);
+                                                    if (checked) {
+                                                        setCustomWalletDeduct(maxDeductible.toLocaleString("vi-VN"));
+                                                    } else {
+                                                        setCustomWalletDeduct("");
+                                                    }
+                                                }}
+                                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-300 cursor-pointer"
+                                            />
+                                            <span className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                                <Wallet className="w-4 h-4 text-emerald-600" />
+                                                <span>Dùng số dư Ví CareLink để thanh toán</span>
+                                            </span>
+                                        </label>
+                                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100/80 text-emerald-800 border border-emerald-200">
+                                            Khả dụng: {walletBalance.toLocaleString("vi-VN")} đ
+                                        </span>
+                                    </div>
+
+                                    {useWalletBalance && (
+                                        <div className="pt-2 border-t border-emerald-200/60 space-y-2.5 animate-in fade-in duration-150">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="text-[11px] text-slate-500 font-medium">Chọn nhanh:</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomWalletDeduct(maxDeductible.toLocaleString("vi-VN"))}
+                                                    className="px-2.5 py-1 rounded-lg border border-emerald-300 bg-emerald-50 text-[10px] sm:text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                                                >
+                                                    Dùng tối đa ({maxDeductible.toLocaleString("vi-VN")} đ)
+                                                </button>
+                                                {maxDeductible >= 50000 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomWalletDeduct((50000).toLocaleString("vi-VN"))}
+                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[10px] sm:text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                                    >
+                                                        50.000 đ
+                                                    </button>
+                                                )}
+                                                {maxDeductible >= 100000 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomWalletDeduct((100000).toLocaleString("vi-VN"))}
+                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[10px] sm:text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                                    >
+                                                        100.000 đ
+                                                    </button>
+                                                )}
+                                                {customWalletDeduct && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomWalletDeduct("")}
+                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-100 text-[10px] sm:text-[11px] font-medium text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                                                    >
+                                                        Xóa số tiền
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={customWalletDeduct}
+                                                    onChange={(e) => {
+                                                        const raw = e.target.value.replace(/\D/g, "");
+                                                        if (!raw) {
+                                                            setCustomWalletDeduct("");
+                                                            return;
+                                                        }
+                                                        const num = Number(raw);
+                                                        setCustomWalletDeduct(num.toLocaleString("vi-VN"));
+                                                    }}
+                                                    onBlur={() => {
+                                                        if (customWalletDeduct) {
+                                                            const num = Number(customWalletDeduct.replace(/\D/g, ""));
+                                                            const clamped = Math.min(num, maxDeductible);
+                                                            setCustomWalletDeduct(clamped > 0 ? clamped.toLocaleString("vi-VN") : "");
+                                                        }
+                                                    }}
+                                                    placeholder="Nhập số tiền muốn trừ (VNĐ)"
+                                                    className="w-full pl-3 pr-12 py-1.5 rounded-xl border border-emerald-200 bg-white text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                />
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">
+                                                    VNĐ
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 8. BẢNG TỔNG KẾT CHI PHÍ MINH BẠCH (ADR-002) */}
                             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-teal-50/40 border border-slate-200/90 space-y-2 text-xs">
                                 <div className="flex items-center justify-between text-slate-600">
                                     <span>
@@ -1212,29 +1359,41 @@ export default function DirectBookingModal({
 
                                 {/* PHÍ NỀN TẢNG LUÔN HIỆN DIỆN MINH BẠCH THEO ADR-002 */}
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1 font-medium">
-                                        <span>Phí nền tảng cố định:</span>
-                                        <span title="Bảo hiểm trách nhiệm y tế + Vận hành hệ thống giữ chỗ PayOS 30 phút theo quyết định ADR-002" className="cursor-help text-slate-400">
-                                            <HelpCircle className="w-3.5 h-3.5" />
-                                        </span>
-                                    </span>
+                                    <span className="font-medium">Phí nền tảng cố định:</span>
                                     <span className="font-bold text-slate-900">{platformFee.toLocaleString("vi-VN")} VNĐ</span>
                                 </div>
 
+                                {useWalletBalance && walletDeductAmount > 0 && !isProposalMode && (
+                                    <div className="flex items-center justify-between text-emerald-700 font-bold bg-emerald-50/90 px-3 py-1.5 rounded-xl border border-emerald-200/80">
+                                        <span>Khấu trừ từ Số dư Ví CareLink:</span>
+                                        <span>-{walletDeductAmount.toLocaleString("vi-VN")} VNĐ</span>
+                                    </div>
+                                )}
+
                                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-sm sm:text-base font-black text-slate-900">
                                     <span className="text-[#00677C]">
-                                        {isProposalMode ? "Tổng thanh toán sau khi duyệt (PayOS):" : "Tổng thanh toán dự kiến (PayOS):"}
+                                        {isProposalMode
+                                            ? "Tổng thanh toán sau khi duyệt (PayOS):"
+                                            : finalPayAmount === 0 && useWalletBalance
+                                            ? "Số tiền thanh toán thêm (PayOS):"
+                                            : "Tổng thanh toán dự kiến (PayOS):"}
                                     </span>
                                     <span className="text-[#00677C] text-base sm:text-xl font-black">
-                                        {(isProposalMode && proposedPrice
-                                            ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10) + platformFee
-                                            : (grandTotal > 0 ? grandTotal : (totalServicePrice > 0 ? totalServicePrice + platformFee : platformFee))
-                                        ).toLocaleString("vi-VN")} VNĐ
+                                        {isProposalMode
+                                            ? `${(proposedPrice ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10) + platformFee : platformFee).toLocaleString("vi-VN")} VNĐ`
+                                            : `${finalPayAmount.toLocaleString("vi-VN")} VNĐ`}
                                     </span>
                                 </div>
+
+                                {useWalletBalance && walletDeductAmount > 0 && finalPayAmount === 0 && !isProposalMode && (
+                                    <div className="p-2.5 rounded-xl bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                        <span>Đã cấn trừ 100% bằng số dư ví! Bạn không cần thanh toán thêm qua PayOS.</span>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* 8. HIỂN THỊ THÔNG BÁO LỖI (ĐẶT NGAY DƯỚI TỔNG TIỀN THEO YÊU CẦU USER) */}
+                            {/* 9. HIỂN THỊ THÔNG BÁO LỖI (ĐẶT NGAY DƯỚI TỔNG TIỀN THEO YÊU CẦU USER) */}
                             {validationError && (
                                 <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm animate-in fade-in duration-200">
                                     <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
@@ -1242,7 +1401,7 @@ export default function DirectBookingModal({
                                 </div>
                             )}
 
-                            {/* 9. NÚT XÁC NHẬN ĐẶT LỊCH / GỬI ĐỀ XUẤT */}
+                            {/* 10. NÚT XÁC NHẬN ĐẶT LỊCH / GỬI ĐỀ XUẤT */}
                             <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
                                 <button
                                     type="button"
@@ -1266,6 +1425,11 @@ export default function DirectBookingModal({
                                         <>
                                             <Send className="w-4 h-4" />
                                             <span>Gửi đề xuất thỏa thuận qua Chat</span>
+                                        </>
+                                    ) : useWalletBalance && walletDeductAmount > 0 && finalPayAmount === 0 ? (
+                                        <>
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                                            <span>Đặt ca bằng Số dư Ví (0đ qua PayOS)</span>
                                         </>
                                     ) : (
                                         <>

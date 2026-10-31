@@ -608,6 +608,30 @@ export default function CaregiverBookingRequests() {
 
     useEffect(() => {
         fetchBookings();
+
+        // Cập nhật ngầm danh sách yêu cầu ca mỗi 4 giây khi tab đang active (Realtime Sync)
+        const interval = setInterval(() => {
+            if (document.visibilityState === "visible") {
+                caregiverApi.getBookings({ PageNumber: 1, PageSize: 50 })
+                    .then((res) => {
+                        const items = res?.items || (Array.isArray(res) ? res : []);
+                        if (items.length > 0) {
+                            setBookings(items.map(mapBackendToCaregiverBooking));
+                        }
+                    })
+                    .catch(() => {});
+            }
+        }, 4000);
+
+        const handleFocus = () => {
+            fetchBookings();
+        };
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", handleFocus);
+        };
     }, [fetchBookings]);
 
     // 2. Điều dưỡng chấp nhận ca (PUT /api/v1/bookings/{id}/accept)
