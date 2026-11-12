@@ -90,24 +90,25 @@ export default function AdminAppointments() {
                 : [];
 
             const mapped = list.map((b) => {
-                const rawStatus = typeof b.status === "number" ? b.status : 1;
+                const rawSt = b.status;
+                const stLower = String(rawSt ?? "").toLowerCase();
                 let status = "Chờ xác nhận";
-                if (rawStatus === 7) {
+                if (rawSt === 7 || stLower === "disputed") {
                     status = "Có khiếu nại";
                 } else if (b.refundedAmount && Number(b.refundedAmount) > 0) {
                     status = "Đã hoàn tiền";
-                } else if (rawStatus === 1 || rawStatus === 2) {
+                } else if (rawSt === 1 || rawSt === 2 || stLower === "pendingpayment" || stLower === "pendingacceptance") {
                     status = "Chờ xác nhận";
-                } else if (rawStatus === 3 || rawStatus === 4) {
+                } else if (rawSt === 3 || rawSt === 4 || stLower === "accepted" || stLower === "inprogress") {
                     status = "Đang thực hiện";
-                } else if (rawStatus === 5) {
+                } else if (rawSt === 5 || stLower === "completed") {
                     status = "Hoàn thành";
-                } else if (rawStatus === 6) {
+                } else if (rawSt === 6 || stLower === "canceled") {
                     status = "Đã hủy";
                 }
 
-                // Chi phí đã gồm phí sàn 60.000 VNĐ
-                const totalCalculated = Number(b.totalPaymentAmount || (Number(b.totalPrice || 0) + (b.platformFee || 60000)));
+                // Chi phí đã gồm phí sàn (hiện hành 60.000 VNĐ; ca lịch sử giữ nguyên giá trị lưu trong DB)
+                const totalCalculated = Number(b.totalPaymentAmount ?? (Number(b.totalPrice || 0) + Number(b.platformFee ?? 60000)));
 
                 return {
                     id: b.bookingCode || (b.id ? `CA-${String(b.id).slice(0, 8).toUpperCase()}` : "CA-NEW"),
@@ -159,19 +160,36 @@ export default function AdminAppointments() {
         };
     }, [fetchBookings]);
 
-    const handleResolveDispute = (appointmentId, resolution) => {
+    const handleResolveDispute = async (appointmentId, resolution) => {
+        const target = appointments.find((a) => a.id === appointmentId);
+        if (!target?.rawId) {
+            throw new Error("Không tìm thấy mã ca chăm sóc để đối soát khiếu nại.");
+        }
+
+        const disputeRes = await adminApi.getBookingDispute(target.rawId);
+        const dispute = disputeRes?.data && !disputeRes?.id ? disputeRes.data : disputeRes;
+        if (!dispute?.id) {
+            throw new Error("Không tìm thấy hồ sơ khiếu nại tương ứng trên hệ thống.");
+        }
+
+        await adminApi.resolveDispute(dispute.id, {
+            resolutionType: resolution.resolutionType,
+            refundAmount: resolution.resolutionType === 1 ? Number(resolution.refundAmount) : 0,
+            resolutionNote: resolution.resolutionNote,
+        });
+
+        const isRefund = resolution.resolutionType === 1;
         setAppointments((prev) =>
             prev.map((app) => {
                 if (app.id !== appointmentId) return app;
-                const isRefund = resolution.resolutionType === 1;
                 const updatedDispute = {
                     ...app.dispute,
-                    status: isRefund ? "Đã giải quyết" : "Bác bỏ",
-                    statusNote: `Admin kết luận: ${isRefund ? `Hoàn trả ${Number(resolution.refundAmount).toLocaleString("vi-VN")} ₫.` : "Bác bỏ khiếu nại."} Ghi chú: ${resolution.resolutionNote}`,
+                    status: isRefund ? "Đã duyệt hoàn · Chờ chuyển khoản" : "Bác bỏ",
+                    statusNote: `Admin kết luận: ${isRefund ? `Chấp thuận hoàn ${Number(resolution.refundAmount).toLocaleString("vi-VN")} ₫ (đang chờ chuyển khoản cho gia đình).` : "Bác bỏ khiếu nại."} Ghi chú: ${resolution.resolutionNote}`,
                 };
                 const updatedApp = {
                     ...app,
-                    status: isRefund ? "Đã hoàn tiền" : "Hoàn thành",
+                    status: "Hoàn thành",
                     dispute: updatedDispute,
                 };
                 if (selectedAppointment?.id === appointmentId) {
@@ -180,6 +198,8 @@ export default function AdminAppointments() {
                 return updatedApp;
             })
         );
+        window.dispatchEvent(new Event("carelink:admin-refresh-badges"));
+        fetchBookings();
     };
 
     const countByStatus = (s) => appointments.filter((a) => a.status === s).length;

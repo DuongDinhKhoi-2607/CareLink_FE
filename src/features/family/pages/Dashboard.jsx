@@ -189,10 +189,14 @@ export default function Dashboard() {
         return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
     }, [bookings]);
 
-    // Kiểm tra thời hạn thanh toán 30 phút
+    // Kiểm tra thời hạn thanh toán 30 phút theo paymentHoldExpiresAt / paymentHoldStartedAt
     const isPendingPaymentExpired = useMemo(() => {
-        if (!pendingPaymentBooking?.createdAt) return false;
-        return (Date.now() - new Date(pendingPaymentBooking.createdAt).getTime()) > 30 * 60 * 1000;
+        if (pendingPaymentBooking?.paymentHoldExpiresAt) {
+            return Date.now() > new Date(pendingPaymentBooking.paymentHoldExpiresAt).getTime();
+        }
+        const holdStart = pendingPaymentBooking?.paymentHoldStartedAt || pendingPaymentBooking?.createdAt;
+        if (!holdStart) return false;
+        return (Date.now() - new Date(holdStart).getTime()) > 30 * 60 * 1000;
     }, [pendingPaymentBooking]);
 
     // Tìm ca chăm sóc đã hoàn thành gần nhất (Completed=5)

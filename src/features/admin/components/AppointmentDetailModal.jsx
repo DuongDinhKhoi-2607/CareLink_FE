@@ -258,6 +258,7 @@ export default function AppointmentDetailModal({
     );
     const [resolveNote, setResolveNote] = useState("");
     const [resolveError, setResolveError] = useState("");
+    const [submittingResolution, setSubmittingResolution] = useState(false);
 
     // Cho phép đóng modal bằng phím Escape.
     useEffect(() => {
@@ -283,20 +284,36 @@ export default function AppointmentDetailModal({
         return null;
     }
 
-    const handleConfirmResolution = () => {
+    const handleConfirmResolution = async () => {
         if (!resolveNote.trim()) {
             setResolveError("Vui lòng nhập ghi chú kết quả đối soát / lý do giải quyết.");
             return;
         }
+        if (resolveType === 1 && (!Number.isFinite(Number(refundAmount)) || Number(refundAmount) <= 0)) {
+            setResolveError("Số tiền duyệt hoàn phải lớn hơn 0 đ.");
+            return;
+        }
         setResolveError("");
-        if (onResolveDispute) {
-            onResolveDispute(appointment.id, {
+        if (!onResolveDispute) return;
+
+        setSubmittingResolution(true);
+        try {
+            await onResolveDispute(appointment.id, {
                 resolutionType: resolveType,
                 refundAmount: resolveType === 1 ? Number(refundAmount) : 0,
                 resolutionNote: resolveNote.trim(),
             });
+            setIsResolving(false);
+        } catch (err) {
+            setResolveError(
+                err?.response?.data?.message ||
+                    err?.response?.data?.title ||
+                    err?.message ||
+                    "Không thể ghi nhận kết quả phân xử. Vui lòng thử lại."
+            );
+        } finally {
+            setSubmittingResolution(false);
         }
-        setIsResolving(false);
     };
 
     const sc = statusConfig?.[appointment.status] ?? {
@@ -714,9 +731,9 @@ export default function AppointmentDetailModal({
                                                             >
                                                                 <div className="flex items-center gap-1.5 mb-0.5">
                                                                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                                    Chấp nhận hoàn tiền
+                                                                    Chấp thuận hoàn tiền
                                                                 </div>
-                                                                <p className="text-[10px] font-normal text-slate-500">Hoàn lại tiền cho gia đình</p>
+                                                                <p className="text-[10px] font-normal text-slate-500">Khấu trừ đối soát ví điều dưỡng; bộ phận tài chính chuyển khoản hoàn cho gia đình</p>
                                                             </button>
 
                                                             <button
@@ -770,17 +787,19 @@ export default function AppointmentDetailModal({
                                                         <div className="flex items-center justify-end gap-2 pt-1">
                                                             <button
                                                                 type="button"
+                                                                disabled={submittingResolution}
                                                                 onClick={() => setIsResolving(false)}
-                                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition disabled:opacity-50"
                                                             >
                                                                 Hủy
                                                             </button>
                                                             <button
                                                                 type="button"
+                                                                disabled={submittingResolution}
                                                                 onClick={handleConfirmResolution}
-                                                                className="rounded-lg bg-[#00677c] px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#005565] transition"
+                                                                className="rounded-lg bg-[#00677c] px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#005565] transition disabled:opacity-50"
                                                             >
-                                                                Xác nhận kết luận
+                                                                {submittingResolution ? "Đang ghi nhận..." : "Xác nhận kết luận"}
                                                             </button>
                                                         </div>
                                                     </div>

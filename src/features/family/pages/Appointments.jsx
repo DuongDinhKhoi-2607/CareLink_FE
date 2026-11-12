@@ -59,8 +59,13 @@ const mapBookingToAppointment = (b) => {
         rawStatus = b.conversationId ? 3 : 2;
     }
 
-    const createdAtMs = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    const isPaymentExpired = rawStatus === 1 && createdAtMs > 0 && (Date.now() - createdAtMs) > 30 * 60 * 1000;
+    const holdStartMs = b.paymentHoldStartedAt
+        ? new Date(b.paymentHoldStartedAt).getTime()
+        : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+    const holdExpiresMs = b.paymentHoldExpiresAt
+        ? new Date(b.paymentHoldExpiresAt).getTime()
+        : (holdStartMs > 0 ? holdStartMs + 30 * 60 * 1000 : 0);
+    const isPaymentExpired = rawStatus === 1 && holdExpiresMs > 0 && Date.now() > holdExpiresMs;
 
     let tab = "upcoming";
     let statusLabel = "ĐÃ TIẾP NHẬN";
@@ -72,7 +77,7 @@ const mapBookingToAppointment = (b) => {
     if (rawStatus === 1) { // PendingPayment
         if (isPaymentExpired) {
             tab = "cancelled";
-            statusLabel = "HẾT HẠN GIỮ CHỖ (30P)";
+            statusLabel = "QUÁ HẠN GIỮ CHỖ 30 PHÚT";
             statusBadge = "bg-rose-50 text-rose-700 border border-rose-200";
             dotColor = "bg-rose-500";
             canCancel = false;
@@ -1050,7 +1055,7 @@ export default function Appointments() {
                                                     <svg className="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
-                                                    <span>Đã hết hạn giữ chỗ (30p)</span>
+                                                    <span>Đã hết hạn giữ chỗ 30 phút</span>
                                                 </span>
                                                 <Link
                                                     to="/caregivers"
