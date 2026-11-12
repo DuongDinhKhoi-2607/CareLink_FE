@@ -3,9 +3,7 @@ import { Link } from "react-router-dom";
 import {
     getDemoChatState,
     subscribeDemoChat,
-    setDemoStatus,
     addDemoMessage,
-    resetDemoChat,
 } from "../../../data/chatDemoStore";
 import {
     MessageSquare,
@@ -26,15 +24,6 @@ import {
 import CaregiverChatThread from "../components/CaregiverChatThread";
 import CaregiverBookingDetailPanel from "../components/CaregiverBookingDetailPanel";
 import conversationApi from "../../../api/conversationApi";
-
-// ============================================================
-// DỮ LIỆU MOCK CHO DANH SÁCH HỘI THOẠI PHỤ
-// Chỉ dùng để hoàn thiện giao diện demo.
-// Những hội thoại này chưa có lịch sử chat riêng.
-// ============================================================
-
-// Danh sách hội thoại rỗng mặc định khi chưa có dữ liệu từ Backend API
-const mockOtherConversations = [];
 
 // Các câu trả lời nhanh dành cho điều dưỡng.
 const quickReplies = [
@@ -249,84 +238,6 @@ function SystemMessage({ message }) {
     );
 }
 
-// Modal xác nhận hành động.
-function ConfirmModal({
-    open,
-    title,
-    description,
-    confirmText,
-    cancelText = "Quay lại",
-    onConfirm,
-    onCancel,
-    danger = false,
-    icon: Icon = AlertCircle,
-}) {
-    if (!open) return null;
-
-    return (
-        <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm"
-            onMouseDown={(event) => {
-                if (event.target === event.currentTarget) {
-                    onCancel();
-                }
-            }}
-        >
-            <div
-                role="dialog"
-                aria-modal="true"
-                className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-[fadeIn_150ms_ease-out]"
-            >
-                <div className="p-6">
-                    <div className="flex items-start gap-4">
-                        <div
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                                danger
-                                    ? "bg-rose-50 text-rose-600"
-                                    : "bg-[#edf7f9] text-[#087487]"
-                            }`}
-                        >
-                            <Icon className="w-6 h-6" />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                            <h3 className="text-base font-bold text-slate-900">
-                                {title}
-                            </h3>
-
-                            <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                                {description}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2.5">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
-                    >
-                        {cancelText}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${
-                            danger
-                                ? "bg-rose-600 hover:bg-rose-700"
-                                : "bg-[#087487] hover:bg-[#066274]"
-                        }`}
-                    >
-                        {confirmText}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 // ============================================================
 // COMPONENT CHÍNH
 // ============================================================
@@ -350,11 +261,11 @@ export default function CaregiverMessages() {
     const [customReason, setCustomReason] = useState("");
     const [rejectError, setRejectError] = useState("");
 
-    const [showResetModal, setShowResetModal] = useState(false);
-
-    // Quản lý danh sách hội thoại thực từ Backend API
+    // Quản lý trạng thái tải và danh sách hội thoại thực từ Backend API
     const [realConversations, setRealConversations] = useState([]);
     const realConversationsRef = useRef([]);
+    const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+    const [conversationsError, setConversationsError] = useState(null);
     const [isUsingRealApi, setIsUsingRealApi] = useState(false);
     const [activeConvId, setActiveConvId] = useState(null);
     const activeConvIdRef = useRef(null);
@@ -502,9 +413,14 @@ export default function CaregiverMessages() {
 
     // Tải danh sách hội thoại từ Backend
     const fetchConversations = useCallback(async (isInitial = false) => {
+        if (isInitial) {
+            setIsLoadingConversations(true);
+            setConversationsError(null);
+        }
         try {
             const res = await conversationApi.getConversations({ PageNumber: 1, PageSize: 50 });
             const items = res?.items || (Array.isArray(res) ? res : []);
+            setConversationsError(null);
             if (items.length > 0) {
                 const pad = (n) => String(n).padStart(2, "0");
                 const mappedList = items.map((c) => {
@@ -561,10 +477,23 @@ export default function CaregiverMessages() {
                     activeConvIdRef.current = null;
                 }
             }
-        } catch {
-            setIsUsingRealApi(true);
-            setRealConversations([]);
-            realConversationsRef.current = [];
+        } catch (err) {
+            console.error("[CareLink] Lỗi tải danh sách hội thoại:", err);
+            let userError = "Chưa thể tải danh sách cuộc trò chuyện. Vui lòng thử lại sau.";
+            if (err?.response?.status === 401) {
+                userError = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+            } else if (!navigator.onLine || err?.code === "ERR_NETWORK") {
+                userError = "Kết nối đang gặp sự cố. Vui lòng kiểm tra mạng và thử lại.";
+            }
+            if (isInitial || realConversationsRef.current.length === 0) {
+                setConversationsError(userError);
+                setRealConversations([]);
+                realConversationsRef.current = [];
+            }
+        } finally {
+            if (isInitial) {
+                setIsLoadingConversations(false);
+            }
         }
     }, [loadConversationDetails]);
 
@@ -709,23 +638,30 @@ export default function CaregiverMessages() {
                     { responseNote: "Điều dưỡng đã xác nhận nhận ca." }
                 );
                 showToast("Đã đồng ý nhận ca! Ca chăm sóc đã được tạo ở trạng thái Chờ thanh toán.");
-                if (res.bookingId) {
-                    // Cập nhật bookingId vào state
-                    setDemoStatus("caregiver_accepted");
-                    return;
+                setDemoState((prev) => ({
+                    ...prev,
+                    status: "caregiver_accepted",
+                    bookingInfo: {
+                        ...prev.bookingInfo,
+                        bookingId: res?.bookingId || prev.bookingInfo?.bookingId,
+                    },
+                }));
+                if (demoState.activeConversationId) {
+                    loadConversationDetails(demoState.activeConversationId);
                 }
+                return;
             } catch (err) {
                 console.error("[CareLink] Lỗi khi chấp thuận đề xuất ca:", err);
-                let msg = err.response?.data?.detail || err.response?.data?.message || "Không thể chấp nhận ca lúc này.";
+                let msg = err.response?.data?.detail || err.response?.data?.message || "Chưa thể chấp nhận ca lúc này. Vui lòng thử lại.";
                 if (msg.toLowerCase().includes("lịch rảnh")) {
                     msg = "Bạn chưa có lịch rảnh vào khung giờ này. Vui lòng vào tab 'Lịch làm việc' bấm 'Bật rảnh cả tuần' hoặc thêm giờ rảnh rồi nhấn 'Lưu & Đồng bộ lịch tuần' trước khi nhận ca!";
                 }
                 showToast(msg);
                 return;
             }
+        } else {
+            showToast("Chưa thể thực hiện thao tác này. Vui lòng thử lại sau.");
         }
-
-        setDemoStatus("caregiver_accepted");
     };
 
     // Mở modal từ chối.
@@ -758,8 +694,14 @@ export default function CaregiverMessages() {
                     { reason: finalReason }
                 );
                 showToast("Đã từ chối đề xuất nhận ca.");
-                setDemoStatus("caregiver_rejected", finalReason);
+                setDemoState((prev) => ({
+                    ...prev,
+                    status: "caregiver_rejected",
+                    rejectReason: finalReason,
+                }));
                 setShowRejectModal(false);
+                setRejectError("");
+                setCustomReason("");
                 if (demoState.activeConversationId) {
                     loadConversationDetails(demoState.activeConversationId);
                 }
@@ -773,25 +715,22 @@ export default function CaregiverMessages() {
 
                 if (rawDetail) {
                     if (rawDetail.toLowerCase().includes("unexpected error")) {
-                        msg = "Hệ thống máy chủ đang bận xử lý dữ liệu. Vui lòng thử lại sau ít phút.";
+                        msg = "Hệ thống đang bận xử lý dữ liệu. Vui lòng thử lại sau ít phút.";
                     } else {
                         msg = rawDetail;
                     }
                 }
-                msg = msg || "Không thể kết nối đến máy chủ hoặc lỗi xử lý khi từ chối ca.";
+                msg = msg || "Chưa thể từ chối ca lúc này. Vui lòng thử lại.";
                 showToast(msg);
                 if (demoState.activeConversationId) {
                     loadConversationDetails(demoState.activeConversationId);
                 }
                 return;
             }
+        } else {
+            showToast("Chưa thể thực hiện thao tác này. Vui lòng thử lại sau.");
+            setShowRejectModal(false);
         }
-
-        setDemoStatus("caregiver_rejected", finalReason);
-
-        setShowRejectModal(false);
-        setRejectError("");
-        setCustomReason("");
     };
 
     // Điều dưỡng gửi đề xuất mức giá mới (Counter-Offer)
@@ -811,7 +750,10 @@ export default function CaregiverMessages() {
                     }
                 );
                 showToast("Đã gửi đề xuất mức giá mới cho gia đình thành công!");
-                setDemoStatus("counter_offered");
+                setDemoState((prev) => ({
+                    ...prev,
+                    status: "counter_offered",
+                }));
                 if (demoState.activeConversationId) {
                     loadConversationDetails(demoState.activeConversationId);
                 }
@@ -825,7 +767,7 @@ export default function CaregiverMessages() {
 
                 if (rawDetail) {
                     if (rawDetail.toLowerCase().includes("unexpected error")) {
-                        msg = "Hệ thống đang cập nhật tính năng thương lượng giá (thiếu cột counter_price trên CSDL Supabase). Vui lòng cập nhật SQL hoặc thử lại.";
+                        msg = "Chưa thể gửi mức giá đề xuất lúc này. Vui lòng thử lại sau.";
                     } else {
                         msg = rawDetail;
                     }
@@ -838,18 +780,9 @@ export default function CaregiverMessages() {
                 throw new Error(msg);
             }
         } else {
-            showToast(`Đã ghi nhận đề xuất mức giá mới: ${Number(counterPrice).toLocaleString("vi-VN")} đ`);
-            setDemoStatus("counter_offered");
-            return true;
+            showToast("Chưa thể thực hiện thao tác này. Vui lòng thử lại sau.");
+            return false;
         }
-    };
-
-    // Reset dữ liệu demo sau khi người dùng xác nhận.
-    const handleResetDemo = () => {
-        resetDemoChat();
-        setInputText("");
-        setShowResetModal(false);
-        setQuickRepliesOpen(false);
     };
 
     return (
@@ -880,32 +813,14 @@ export default function CaregiverMessages() {
                                 Trao đổi riêng tư
                             </span>
 
-                            {isUsingRealApi ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700">
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                    Máy chủ trực tuyến
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                                    <MessageCircle className="h-3.5 w-3.5" />
-                                    Bản trình diễn
-                                </span>
-                            )}
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Kênh trao đổi trực tiếp
+                            </span>
                         </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {!isUsingRealApi && (
-                            <button
-                                type="button"
-                                onClick={() => setShowResetModal(true)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                            >
-                                <RotateCcw className="h-4 w-4" />
-                                Làm mới demo
-                            </button>
-                        )}
-
                         <Link
                             to="/caregiver/bookings"
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#087487] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#066274] active:scale-[0.98]"
@@ -1010,18 +925,44 @@ export default function CaregiverMessages() {
                         </div>
 
                         <div className="flex-1 divide-y divide-slate-100 overflow-y-auto">
-                            {filteredConversations.length === 0 ? (
+                            {isLoadingConversations && realConversations.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+                                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#087487] border-t-transparent" />
+                                    <p className="mt-2.5 text-xs font-medium text-slate-500">
+                                        Đang tải cuộc trò chuyện...
+                                    </p>
+                                </div>
+                            ) : conversationsError && realConversations.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
+                                    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                                        <AlertCircle className="h-5 w-5" />
+                                    </div>
+                                    <p className="text-xs font-semibold text-slate-700 leading-relaxed max-w-xs">
+                                        {conversationsError}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => fetchConversations(true)}
+                                        className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl bg-[#087487] px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-[#066274] cursor-pointer"
+                                    >
+                                        <RotateCcw className="h-3.5 w-3.5" />
+                                        Thử lại
+                                    </button>
+                                </div>
+                            ) : filteredConversations.length === 0 ? (
                                 <div className="flex flex-col items-center px-5 py-12 text-center">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                                         <SearchX className="h-5 w-5" />
                                     </div>
 
                                     <p className="mt-3 text-sm font-semibold text-slate-700">
-                                        Không tìm thấy hội thoại
+                                        {searchQuery ? "Không tìm thấy hội thoại" : "Bạn chưa có cuộc trò chuyện nào"}
                                     </p>
 
                                     <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                                        Thử tìm bằng tên người liên hệ hoặc nội dung tin nhắn.
+                                        {searchQuery
+                                            ? "Thử tìm bằng tên người liên hệ hoặc nội dung tin nhắn."
+                                            : "Khi có gia đình liên hệ đặt lịch chăm sóc, tin nhắn sẽ hiển thị tại đây."}
                                     </p>
                                 </div>
                             ) : (
@@ -1098,14 +1039,36 @@ export default function CaregiverMessages() {
                         <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
                             <p className="flex items-center gap-2 text-[10px] leading-relaxed text-slate-500">
                                 <Info className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                                {isUsingRealApi
-                                    ? "Đang hiển thị danh sách hội thoại thực từ hệ thống CareLink."
-                                    : "Các hội thoại phụ là dữ liệu minh họa cho giao diện demo."}
+                                Tin nhắn được bảo mật và đồng bộ hai chiều qua hệ thống CareLink.
                             </p>
                         </div>
                     </aside>
 
-                    {isUsingRealApi && realConversations.length === 0 ? (
+                    {conversationsError && realConversations.length === 0 ? (
+                        <div
+                            className={`${
+                                mobileSection === "list" ? "hidden lg:flex" : "flex"
+                            } min-h-[500px] flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-sm lg:col-span-8 xl:col-span-9`}
+                        >
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                                <AlertCircle className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-800">
+                                Chưa thể tải cuộc trò chuyện
+                            </h3>
+                            <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-500">
+                                {conversationsError}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => fetchConversations(true)}
+                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#087487] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#066274] cursor-pointer"
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                                Thử lại
+                            </button>
+                        </div>
+                    ) : realConversations.length === 0 ? (
                         <div
                             className={`${
                                 mobileSection === "list" ? "hidden lg:flex" : "flex"
@@ -1115,7 +1078,7 @@ export default function CaregiverMessages() {
                                 <MessageSquare className="h-8 w-8" />
                             </div>
                             <h3 className="text-base font-bold text-slate-800">
-                                Chưa có cuộc hội thoại nào
+                                Bạn chưa có cuộc trò chuyện nào
                             </h3>
                             <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-500">
                                 Hộp thư của bạn hiện đang trống. Khi có gia đình hoặc người thân liên hệ đặt lịch chăm sóc, tin nhắn sẽ hiển thị tại đây.
@@ -1168,19 +1131,6 @@ export default function CaregiverMessages() {
                         </>
                     )}
                 </div>
-
-                {/* MODAL XÁC NHẬN RESET DEMO */}
-                <ConfirmModal
-                    open={showResetModal}
-                    title="Làm mới cuộc trò chuyện?"
-                    description="Toàn bộ tin nhắn và trạng thái demo hiện tại sẽ được đưa về dữ liệu ban đầu. Hành động này có thể ảnh hưởng đến màn hình Family đang sử dụng cùng dữ liệu demo."
-                    confirmText="Làm mới demo"
-                    cancelText="Giữ nguyên"
-                    onConfirm={handleResetDemo}
-                    onCancel={() => setShowResetModal(false)}
-                    danger={true}
-                    icon={RotateCcw}
-                />
 
                 {/* Toast feedback */}
                 {toastMessage && (
