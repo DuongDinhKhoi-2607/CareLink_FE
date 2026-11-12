@@ -1,5 +1,21 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import {
+    BookOpen,
+    Calendar,
+    ChevronLeft,
+    CircleDollarSign,
+    ClipboardList,
+    Home,
+    LayoutGrid,
+    LogOut,
+    Menu,
+    MessageSquare,
+    Star,
+    User,
+    Wallet,
+    X,
+} from "lucide-react";
 import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
@@ -11,81 +27,49 @@ const navItems = [
         path: "/caregiver/dashboard",
         label: "Tổng quan",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-            </svg>
-        ),
+        icon: <LayoutGrid className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/profile",
         label: "Hồ sơ năng lực",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-        ),
+        icon: <User className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/pricing",
         label: "Bảng giá dịch vụ",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        ),
+        icon: <CircleDollarSign className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/wallet",
         label: "Ví & Rút tiền",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
-            </svg>
-        ),
+        icon: <Wallet className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/schedule",
         label: "Lịch làm việc",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-            </svg>
-        ),
+        icon: <Calendar className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/bookings",
         label: "Yêu cầu nhận ca",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-        ),
+        icon: <ClipboardList className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/messages",
         label: "Tin nhắn & Trao đổi",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.874-.985c.34-.798.536-1.636.57-2.484C3.805 16.035 3 14.123 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-            </svg>
-        ),
+        icon: <MessageSquare className="w-5 h-5" strokeWidth={1.9} />,
     },
     {
         path: "/caregiver/review",
         label: "Đánh giá",
         badge: null,
-        icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-            </svg>
-        ),
+        icon: <Star className="w-5 h-5" strokeWidth={1.9} />,
     },
 ];
 
@@ -239,13 +223,13 @@ export default function CaregiverLayout() {
             <header className="h-16 bg-white border-b border-slate-200/80 shadow-xs sticky top-0 z-40 flex items-center px-4 sm:px-6 gap-4">
                 {/* Mobile hamburger */}
                 <button
-                    className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-600"
+                    type="button"
+                    className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-600 cursor-pointer"
                     onClick={() => setSidebarOpen(true)}
-                    aria-label="Mở menu"
+                    aria-label="Mở menu điều hướng"
+                    aria-expanded={sidebarOpen}
                 >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                    </svg>
+                    <Menu className="w-5 h-5" />
                 </button>
 
                 {/* Logo */}
@@ -316,9 +300,7 @@ export default function CaregiverLayout() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00677c]" />
                     </span>
-                    <svg className="w-4 h-4 text-[#00677c]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                    </svg>
+                    <BookOpen className="w-4 h-4 text-[#00677c]" />
                     <span className="hidden md:inline">Hướng dẫn sử dụng</span>
                 </button>
 
@@ -332,6 +314,9 @@ export default function CaregiverLayout() {
                         onClick={() => setUserMenuOpen(!userMenuOpen)}
                         className="flex items-center gap-2.5 cursor-pointer group p-1 rounded-xl hover:bg-slate-100 transition-colors"
                         title="Tài khoản Điều dưỡng"
+                        aria-label="Mở menu tài khoản Điều dưỡng"
+                        aria-expanded={userMenuOpen}
+                        aria-haspopup="menu"
                     >
                         {currentUser?.avatar || currentUser?.avatarUrl ? (
                             <img
@@ -368,10 +353,9 @@ export default function CaregiverLayout() {
                         onClick={() => setShowLogoutModal(true)}
                         className="w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 flex items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
                         title="Đăng xuất khỏi hệ thống"
+                        aria-label="Đăng xuất khỏi hệ thống"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                        </svg>
+                        <LogOut className="w-4 h-4" />
                     </button>
 
                     {/* Dropdown Menu khi nhấn vào Avatar/Tên */}
@@ -396,9 +380,7 @@ export default function CaregiverLayout() {
                                         onClick={() => setUserMenuOpen(false)}
                                         className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-[#00677c] transition-colors"
                                     >
-                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                                        </svg>
+                                        <Home className="w-4 h-4 text-slate-400" />
                                         <span>Về trang chủ Website</span>
                                     </Link>
                                 </div>
@@ -411,9 +393,7 @@ export default function CaregiverLayout() {
                                         }}
                                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer"
                                     >
-                                        <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                                        </svg>
+                                        <LogOut className="w-4 h-4 text-rose-500" />
                                         <span>Đăng xuất tài khoản</span>
                                     </button>
                                 </div>
@@ -531,12 +511,11 @@ export default function CaregiverLayout() {
                                 <span className="text-white font-bold text-lg">Menu</span>
                                 <button
                                     type="button"
+                                    aria-label="Đóng menu"
                                     className="ml-auto p-1.5 rounded-lg hover:bg-white/10 text-white/70 cursor-pointer"
                                     onClick={() => setSidebarOpen(false)}
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
 
@@ -580,9 +559,7 @@ export default function CaregiverLayout() {
                                     }}
                                     className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium cursor-pointer"
                                 >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                    </svg>
+                                    <ChevronLeft className="w-4 h-4" />
                                     Về trang chính
                                 </button>
                             </div>

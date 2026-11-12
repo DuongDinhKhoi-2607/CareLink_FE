@@ -23,13 +23,13 @@ export default function CaregiverWallet() {
     // ── LỊCH SỬ BIẾN ĐỘNG SỐ DƯ (TRANSACTIONS - CỐ ĐỊNH PHÍ SÀN 60K/CA THEO NGHIỆP VỤ) ──
     const [transactions, setTransactions] = useState([]);
 
-    // ── MODAL RÚT TIỀN ──
+    // ── MODAL RÚT TIỀN (Khởi tạo trống, chỉ tự điền nếu API ví trả về thông tin ngân hàng đã lưu) ──
     const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
     const [payoutForm, setPayoutForm] = useState({
         amount: "",
-        bankName: "Vietcombank",
-        accountNumber: "1018992345",
-        accountHolder: "NGUYEN THUY LINH",
+        bankName: "",
+        accountNumber: "",
+        accountHolder: "",
         note: "",
     });
     const [payoutError, setPayoutError] = useState("");
@@ -46,6 +46,10 @@ export default function CaregiverWallet() {
             const res = await caregiverApi.getWallet();
             const data = res?.data || res;
             if (data && typeof data === "object") {
+                const apiBankName = data.bankName || data.bankAccount?.bankName || "";
+                const apiAccountNumber = data.accountNumber || data.bankAccount?.accountNumber || "";
+                const apiAccountHolder = data.accountHolder || data.bankAccount?.accountHolder || "";
+
                 setWallet((prev) => ({
                     ...prev,
                     balance: Number(data.balance ?? data.currentBalance ?? prev.balance),
@@ -59,11 +63,20 @@ export default function CaregiverWallet() {
                     totalEarned: Number(data.totalEarned ?? data.totalIncome ?? prev.totalEarned),
                     totalWithdrawn: Number(data.totalWithdrawn ?? data.totalPayout ?? prev.totalWithdrawn),
                     bankAccount: {
-                        bankName: data.bankName || data.bankAccount?.bankName || prev.bankAccount.bankName,
-                        accountNumber: data.accountNumber || data.bankAccount?.accountNumber || prev.bankAccount.accountNumber,
-                        accountHolder: data.accountHolder || data.bankAccount?.accountHolder || prev.bankAccount.accountHolder,
+                        bankName: apiBankName || prev.bankAccount.bankName,
+                        accountNumber: apiAccountNumber || prev.bankAccount.accountNumber,
+                        accountHolder: apiAccountHolder || prev.bankAccount.accountHolder,
                     },
                 }));
+
+                if (apiBankName || apiAccountNumber || apiAccountHolder) {
+                    setPayoutForm((prev) => ({
+                        ...prev,
+                        bankName: prev.bankName || apiBankName,
+                        accountNumber: prev.accountNumber || apiAccountNumber,
+                        accountHolder: prev.accountHolder || apiAccountHolder,
+                    }));
+                }
             }
         } catch (err) {
             console.warn("Lỗi tải số dư ví:", err);
@@ -124,16 +137,16 @@ export default function CaregiverWallet() {
             if (list.length > 0) {
                 setPayouts(
                     list.map((p) => {
-                        const statusStr = (p.status || "").toLowerCase();
-                        const isApproved = statusStr === "approved" || p.status === 1;
-                        const isRejected = statusStr === "rejected" || p.status === 2;
+                        const statusStr = String(p.status ?? "").toLowerCase();
+                        const isApproved = statusStr === "approved" || p.status === 2;
+                        const isRejected = statusStr === "rejected" || p.status === 3;
                         return {
                             id: p.id || `PO-${p.code || "N/A"}`,
                             createdAt: p.createdAt ? new Date(p.createdAt).toLocaleString("vi-VN") : p.requestDate || "Vừa xong",
                             amount: Number(p.amount || 0),
                             bankName: p.bankName || p.bank || "Ngân hàng",
-                            accountNumber: p.accountNumber || "—",
-                            accountHolder: p.accountHolder || "—",
+                            accountNumber: p.bankAccountNumber || p.accountNumber || "—",
+                            accountHolder: p.bankAccountName || p.accountHolder || "—",
                             status: isApproved ? "approved" : isRejected ? "rejected" : "pending",
                             statusLabel: isApproved ? "Đã chuyển khoản" : isRejected ? "Từ chối" : "Đang chờ đối soát",
                             statusColor: isApproved
@@ -141,8 +154,8 @@ export default function CaregiverWallet() {
                                 : isRejected
                                 ? "bg-rose-50 text-rose-700 border-rose-200"
                                 : "bg-amber-50 text-amber-700 border-amber-200",
-                            referenceCode: p.referenceCode || p.transactionCode || null,
-                            note: p.note || p.rejectReason || "",
+                            referenceCode: p.bankReferenceCode || p.referenceCode || p.transactionCode || null,
+                            note: p.adminNote || p.note || p.rejectReason || "",
                         };
                     })
                 );
@@ -170,30 +183,35 @@ export default function CaregiverWallet() {
         setPayoutError("");
 
         // Chuẩn hóa và làm sạch số tiền: loại bỏ dấu chấm/phẩy phân cách hàng nghìn (ví dụ "50.000", "50,000", "50000")
-        const cleanAmountStr = String(payoutForm.amount || "").replace(/[\.,\sđ₫]/g, "");
+        const cleanAmountStr = String(payoutForm.amount || "").replace(/[.,\sđ₫]/g, "");
         const withdrawAmount = Number(cleanAmountStr);
 
         // Quy chuẩn Backend CreatePayoutRequest: Range(50_000, 1_000_000_000)
         if (isNaN(withdrawAmount) || withdrawAmount < 50000) {
-            setPayoutError("Số tiền rút tối thiểu là 50.000 VNĐ theo quy định hệ thống!");
+            setPayoutError("Số tiền rút tối thiểu là 50.000 VNĐ theo quy định hệ thống. Vui lòng nhập số tiền hợp lệ!");
             return;
         }
 
         if (withdrawAmount > wallet.availableBalance) {
-            setPayoutError(`Số tiền rút vượt quá số dư khả dụng hiện có (${wallet.availableBalance.toLocaleString("vi-VN")} ₫)!`);
+            setPayoutError(`Số tiền rút vượt quá số dư khả dụng hiện có (${wallet.availableBalance.toLocaleString("vi-VN")} ₫). Vui lòng điều chỉnh lại số tiền!`);
+            return;
+        }
+
+        if (!payoutForm.bankName) {
+            setPayoutError("Vui lòng chọn ngân hàng thụ hưởng nhận tiền chuyển khoản!");
             return;
         }
 
         const cleanAccNumber = payoutForm.accountNumber.trim();
         // Quy chuẩn Backend: RegularExpression(@"^[0-9]{6,30}$")
         if (!/^\d{6,30}$/.test(cleanAccNumber)) {
-            setPayoutError("Số tài khoản ngân hàng chỉ được gồm từ 6 đến 30 chữ số!");
+            setPayoutError("Số tài khoản ngân hàng không hợp lệ (vui lòng chỉ nhập từ 6 đến 30 chữ số, không chứa chữ cái hoặc ký tự đặc biệt)!");
             return;
         }
 
         const cleanAccountHolder = payoutForm.accountHolder.trim().toUpperCase();
         if (!cleanAccountHolder) {
-            setPayoutError("Vui lòng nhập tên chủ tài khoản ngân hàng!");
+            setPayoutError("Vui lòng nhập họ và tên chủ tài khoản ngân hàng (in hoa không dấu)! Số tiền sẽ được giải ngân đúng tên này.");
             return;
         }
 
@@ -217,13 +235,13 @@ export default function CaregiverWallet() {
             await Promise.all([fetchWallet(), fetchPayouts(), fetchTransactions()]);
 
             setIsPayoutModalOpen(false);
-            setPayoutForm({ ...payoutForm, amount: "", note: "" });
-            showToast("✓ Đã gửi yêu cầu rút tiền thành công! Admin sẽ đối soát và giải ngân.");
+            setPayoutForm((prev) => ({ ...prev, amount: "", note: "" }));
+            showToast("✓ Đã gửi yêu cầu rút tiền thành công! Admin sẽ đối soát và giải ngân về tài khoản.");
         } catch (err) {
             console.error("Lỗi gửi yêu cầu rút tiền:", err);
-            let msg = "Không thể tạo yêu cầu rút tiền. Vui lòng kiểm tra lại!";
+            let msg = "Không thể tạo yêu cầu rút tiền vào lúc này. Vui lòng kiểm tra lại thông tin hoặc thử lại sau!";
 
-            // Bóc tách ProblemDetails validation errors từ ASP.NET Core
+            // Bóc tách ProblemDetails validation errors từ ASP.NET Core & thân thiện hóa
             const errorObj = err?.response?.data?.errors;
             if (errorObj && typeof errorObj === "object") {
                 const errorEntries = Object.values(errorObj);
@@ -234,8 +252,13 @@ export default function CaregiverWallet() {
                 msg = err.response.data.detail;
             } else if (err?.response?.data?.message) {
                 msg = err.response.data.message;
-            } else if (err?.response?.data?.title && err?.response?.data?.title !== "One or more validation errors occurred.") {
-                msg = err.response.data.title;
+            } else if (err?.code === "ERR_NETWORK" || !err?.response) {
+                msg = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra đường truyền mạng và thử lại!";
+            }
+
+            // Loại bỏ các thông báo kỹ thuật không thân thiện
+            if (msg.includes("One or more validation") || msg.includes("Exception") || msg.includes("SQL") || msg.includes("500")) {
+                msg = "Hệ thống đang bận hoặc thông tin chưa hợp lệ. Vui lòng kiểm tra lại số tài khoản và thử lại sau!";
             }
 
             setPayoutError(msg);
@@ -498,54 +521,57 @@ export default function CaregiverWallet() {
                 </div>
             </div>
 
-            {/* ── MODAL TẠO YÊU CẦU RÚT TIỀN ── */}
+            {/* ── MODAL TẠO YÊU CẦU RÚT TIỀN (Rộng rãi hơn, bắt lỗi rõ ràng, animate mượt mà) ── */}
             {isPayoutModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 w-full max-w-lg p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-6 animate-modal-backdrop">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-xl sm:max-w-2xl p-6 sm:p-8 space-y-5 animate-modal-pop">
+                        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
                             <div>
-                                <h3 className="text-base font-bold text-[#002045]">Yêu cầu rút tiền về ngân hàng</h3>
-                                <p className="text-xs text-slate-500">Chuyển tiền từ ví CareLink về tài khoản chính chủ của bạn</p>
+                                <h3 className="text-base sm:text-lg font-bold text-[#002045]">Yêu cầu rút tiền về ngân hàng</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Chuyển tiền từ ví CareLink về tài khoản chính chủ của bạn</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsPayoutModalOpen(false)}
-                                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors"
+                                disabled={submittingPayout}
+                                aria-label="Đóng cửa sổ rút tiền"
+                                className="w-8.5 h-8.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
                             >
                                 ✕
                             </button>
                         </div>
 
                         {/* Thẻ hiển thị số dư khả dụng */}
-                        <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200/80 flex items-center justify-between">
+                        <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200/80 flex items-center justify-between gap-3">
                             <div>
-                                <span className="text-slate-500 text-xs block">Số dư khả dụng hiện tại:</span>
-                                <strong className="text-xl text-[#00677c] font-extrabold">
+                                <span className="text-slate-500 text-xs block font-medium">Số dư khả dụng hiện tại:</span>
+                                <strong className="text-xl sm:text-2xl text-[#00677c] font-extrabold tracking-tight">
                                     {wallet.availableBalance.toLocaleString("vi-VN")} ₫
                                 </strong>
                             </div>
                             <button
                                 type="button"
-                                disabled={wallet.availableBalance < 50000}
+                                disabled={wallet.availableBalance < 50000 || submittingPayout}
                                 onClick={() => {
                                     if (wallet.availableBalance < 50000) {
                                         setPayoutError("Số dư khả dụng hiện tại chưa đạt hạn mức rút tối thiểu 50.000 ₫.");
                                         return;
                                     }
                                     setPayoutForm({ ...payoutForm, amount: wallet.availableBalance.toString() });
+                                    setPayoutError("");
                                 }}
-                                className="px-3 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-xs cursor-pointer"
+                                className="px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
                             >
                                 Rút tất cả
                             </button>
                         </div>
 
                         {wallet.availableBalance < 50000 && (
-                            <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${wallet.availableBalance < 0 ? "bg-rose-50 border-rose-200 text-rose-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
-                                <svg className={`w-4 h-4 shrink-0 ${wallet.availableBalance < 0 ? "text-rose-600" : "text-amber-600"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <div className={`p-3.5 rounded-xl text-xs flex items-center gap-2.5 border transition-all ${wallet.availableBalance < 0 ? "bg-rose-50 border-rose-200 text-rose-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+                                <svg className={`w-4.5 h-4.5 shrink-0 ${wallet.availableBalance < 0 ? "text-rose-600" : "text-amber-600"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                                 </svg>
-                                <span>
+                                <span className="leading-relaxed">
                                     {wallet.availableBalance < 0
                                         ? `Ví đang tạm âm ${Math.abs(wallet.availableBalance).toLocaleString("vi-VN")} ₫ và sẽ tự động được bù trừ từ các ca tiếp theo trước khi rút tiền.`
                                         : `Số dư ví hiện tại (${wallet.availableBalance.toLocaleString("vi-VN")} ₫) chưa đạt hạn mức rút tối thiểu (50.000 ₫).`}
@@ -555,23 +581,32 @@ export default function CaregiverWallet() {
 
                         <form onSubmit={handleCreatePayout} noValidate className="space-y-4 text-xs">
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Số tiền muốn rút (VNĐ) *</label>
+                                <label className="block text-slate-700 font-semibold mb-1">
+                                    Số tiền muốn rút (VNĐ) <span className="text-rose-500 font-bold">*</span>
+                                </label>
                                 <input
                                     type="number"
                                     required
+                                    disabled={submittingPayout}
                                     value={payoutForm.amount}
-                                    onChange={(e) => setPayoutForm({ ...payoutForm, amount: e.target.value })}
+                                    onChange={(e) => {
+                                        setPayoutForm({ ...payoutForm, amount: e.target.value });
+                                        if (payoutError) setPayoutError("");
+                                    }}
                                     placeholder="Tối thiểu 50.000 ₫"
-                                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-sm font-bold text-[#002045]"
+                                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-sm font-bold text-[#002045] transition-all disabled:opacity-60"
                                 />
-                                <div className="flex gap-2 pt-2">
+                                <div className="flex flex-wrap gap-2 pt-2">
                                     {[200000, 500000, 1000000, 2000000].map((quick) => (
                                         <button
                                             key={quick}
                                             type="button"
-                                            disabled={quick > wallet.availableBalance}
-                                            onClick={() => setPayoutForm({ ...payoutForm, amount: quick.toString() })}
-                                            className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40 text-[11px] font-medium cursor-pointer"
+                                            disabled={quick > wallet.availableBalance || submittingPayout}
+                                            onClick={() => {
+                                                setPayoutForm({ ...payoutForm, amount: quick.toString() });
+                                                if (payoutError) setPayoutError("");
+                                            }}
+                                            className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 disabled:opacity-40 text-[11px] font-semibold cursor-pointer transition-all"
                                         >
                                             {(quick / 1000).toLocaleString("vi-VN")}k
                                         </button>
@@ -579,48 +614,76 @@ export default function CaregiverWallet() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                 <div>
-                                    <label className="block text-slate-700 font-semibold mb-1">Ngân hàng thụ hưởng *</label>
+                                    <label className="block text-slate-700 font-semibold mb-1">
+                                        Ngân hàng thụ hưởng <span className="text-rose-500 font-bold">*</span>
+                                    </label>
                                     <select
                                         value={payoutForm.bankName}
-                                        onChange={(e) => setPayoutForm({ ...payoutForm, bankName: e.target.value })}
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                        disabled={submittingPayout}
+                                        onChange={(e) => {
+                                            setPayoutForm({ ...payoutForm, bankName: e.target.value });
+                                            if (payoutError) setPayoutError("");
+                                        }}
+                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-xs text-slate-800 transition-all cursor-pointer disabled:opacity-60"
                                     >
-                                        <option value="Vietcombank">Vietcombank</option>
+                                        <option value="">-- Chọn ngân hàng thụ hưởng --</option>
+                                        <option value="Vietcombank">Vietcombank (Ngoại thương)</option>
                                         <option value="MB Bank">MB Bank (Quân đội)</option>
-                                        <option value="Techcombank">Techcombank</option>
-                                        <option value="BIDV">BIDV</option>
-                                        <option value="VietinBank">VietinBank</option>
-                                        <option value="VPBank">VPBank</option>
-                                        <option value="ACB">ACB</option>
+                                        <option value="Techcombank">Techcombank (Kỹ thương)</option>
+                                        <option value="BIDV">BIDV (Đầu tư & Phát triển)</option>
+                                        <option value="VietinBank">VietinBank (Công thương)</option>
+                                        <option value="VPBank">VPBank (Việt Nam Thịnh Vượng)</option>
+                                        <option value="ACB">ACB (Á Châu)</option>
+                                        <option value="TPBank">TPBank (Tiên Phong)</option>
+                                        <option value="VIB">VIB (Quốc tế)</option>
+                                        <option value="Sacombank">Sacombank (Sài Gòn Thương Tín)</option>
+                                        <option value="HDBank">HDBank (Phát triển TP.HCM)</option>
+                                        <option value="Agribank">Agribank (Nông nghiệp & PTNT)</option>
+                                        <option value="OCB">OCB (Phương Đông)</option>
+                                        <option value="SHB">SHB (Sài Gòn - Hà Nội)</option>
+                                        <option value="MSB">MSB (Hàng Hải)</option>
+                                        <option value="SeABank">SeABank (Đông Nam Á)</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-700 font-semibold mb-1">Số tài khoản ngân hàng *</label>
+                                    <label className="block text-slate-700 font-semibold mb-1">
+                                        Số tài khoản ngân hàng <span className="text-rose-500 font-bold">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         required
+                                        disabled={submittingPayout}
                                         value={payoutForm.accountNumber}
-                                        onChange={(e) => setPayoutForm({ ...payoutForm, accountNumber: e.target.value })}
-                                        placeholder="Ví dụ: 1018992345"
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white font-mono"
+                                        onChange={(e) => {
+                                            setPayoutForm({ ...payoutForm, accountNumber: e.target.value });
+                                            if (payoutError) setPayoutError("");
+                                        }}
+                                        placeholder="Nhập số tài khoản (6–30 chữ số)"
+                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white font-mono text-xs text-slate-800 transition-all disabled:opacity-60"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">Tên chủ tài khoản (In hoa không dấu) *</label>
+                                <label className="block text-slate-700 font-semibold mb-1">
+                                    Tên chủ tài khoản (In hoa không dấu) <span className="text-rose-500 font-bold">*</span>
+                                </label>
                                 <input
                                     type="text"
                                     required
+                                    disabled={submittingPayout}
                                     value={payoutForm.accountHolder}
-                                    onChange={(e) => setPayoutForm({ ...payoutForm, accountHolder: e.target.value.toUpperCase() })}
-                                    placeholder="Ví dụ: NGUYEN THUY LINH"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white uppercase font-bold text-slate-800"
+                                    onChange={(e) => {
+                                        setPayoutForm({ ...payoutForm, accountHolder: e.target.value.toUpperCase() });
+                                        if (payoutError) setPayoutError("");
+                                    }}
+                                    placeholder="VD: NGUYEN VAN A (in hoa không dấu)"
+                                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white uppercase font-bold text-slate-800 text-xs transition-all disabled:opacity-60"
                                 />
-                                <p className="text-[10px] text-slate-400 mt-1">
+                                <p className="text-[10.5px] text-slate-400 mt-1">
                                     * Tên chủ tài khoản ngân hàng phải trùng khớp với tên trên Căn cước công dân đã xác minh.
                                 </p>
                             </div>
@@ -629,35 +692,36 @@ export default function CaregiverWallet() {
                                 <label className="block text-slate-700 font-semibold mb-1">Ghi chú (Tùy chọn)</label>
                                 <input
                                     type="text"
+                                    disabled={submittingPayout}
                                     value={payoutForm.note}
                                     onChange={(e) => setPayoutForm({ ...payoutForm, note: e.target.value })}
                                     placeholder="Ví dụ: Rút tiền thu nhập ca tuần 2 tháng 10"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
+                                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white text-xs text-slate-800 transition-all disabled:opacity-60"
                                 />
                             </div>
 
                             {payoutError && (
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-medium flex items-center gap-2">
-                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <div className="p-3.5 bg-rose-50 border border-rose-200/90 rounded-2xl text-rose-700 text-xs font-medium flex items-start gap-2.5 animate-in fade-in-50 duration-150">
+                                    <svg className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                                     </svg>
-                                    <span>{payoutError}</span>
+                                    <span className="leading-relaxed">{payoutError}</span>
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                            <div className="flex items-center justify-end gap-3 pt-3.5 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setIsPayoutModalOpen(false)}
                                     disabled={submittingPayout}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
+                                    className="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submittingPayout || wallet.availableBalance < 50000}
-                                    className="px-5 py-2 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
+                                    className="px-6 py-2.5 bg-gradient-to-r from-[#00677c] to-[#008ba3] hover:from-[#005566] hover:to-[#007489] text-white font-semibold rounded-xl text-xs transition-all shadow-md hover:shadow-lg active:scale-98 cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
                                 >
                                     {submittingPayout && (
                                         <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">

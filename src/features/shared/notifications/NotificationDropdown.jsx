@@ -23,7 +23,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [isDemoMode] = useState(false);
+    const [isDemoMode, setIsDemoMode] = useState(false);
 
     // ── 1. Lấy số lượng thông báo chưa đọc (Polling nhẹ mỗi 45s) ──
     const fetchUnreadCount = useCallback(async () => {
@@ -45,6 +45,13 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         setLoading(true);
         setError(null);
 
+        if (isDemoMode) {
+            setNotifications(getMockNotificationsByRole(userRole));
+            setUnreadCount(getMockUnreadCountByRole(userRole));
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await notificationApi.getNotifications({ pageNumber: 1, pageSize: 8 });
             const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
@@ -57,11 +64,11 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             console.warn("[CareLink Notifications] Lỗi tải thông báo:", err);
             setNotifications([]);
             setUnreadCount(0);
-            setError(null);
+            setError("Không thể tải thông báo lúc này. Vui lòng thử lại.");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isDemoMode, userRole]);
 
     // ── 3. Polling chu kỳ 45s & Cập nhật khi tab hoạt động trở lại ──
     useEffect(() => {
@@ -195,12 +202,13 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                 title={unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Thông báo"}
                 aria-label="Xem thông báo"
                 aria-expanded={isOpen}
+                aria-haspopup="true"
             >
                 <Bell className="w-5 h-5 transition-transform group-hover:scale-105" strokeWidth={1.9} />
 
                 {/* Huy hiệu Badge số lượng thông báo chưa đọc */}
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[19px] h-[19px] px-1 bg-rose-500 text-white text-[10.5px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in-75 duration-200">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[19px] h-[19px] px-1 bg-rose-500 text-white text-[10.5px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-xs">
                         {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                 )}
@@ -211,7 +219,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                 <div
                     className={`absolute ${
                         align === "left" ? "left-0" : "right-0"
-                    } mt-2.5 w-[350px] sm:w-[390px] bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,32,69,0.22),0_10px_20px_-5px_rgba(0,0,0,0.08)] border border-slate-200/90 ring-1 ring-slate-900/10 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right`}
+                    } mt-2.5 w-[350px] sm:w-[390px] bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,32,69,0.22),0_10px_20px_-5px_rgba(0,0,0,0.08)] border border-slate-200/90 ring-1 ring-slate-900/10 overflow-hidden z-50 animate-modal-pop origin-top-right`}
                 >
                     {/* Đường viền dải màu Gradient thương hiệu CareLink ở đỉnh Popover */}
                     <div className="h-[2.5px] w-full bg-gradient-to-r from-teal-500 via-[#00677c] to-emerald-400" />

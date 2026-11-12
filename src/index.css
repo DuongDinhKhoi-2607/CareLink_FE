@@ -164,4 +164,33 @@ body {
   .animate-toast-in {
     animation: toastSlideInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+}
+
+/* 6. Modal & Popover Entrance Animations */
+@keyframes modalBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-modal-backdrop {
+  animation: modalBackdropIn 0.2s ease-out forwards;
+}
+
+.animate-modal-pop {
+  animation: modalPopIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
