@@ -82,12 +82,20 @@ export default function CaregiverWallet() {
                 ? res.items
                 : [];
             if (list.length > 0) {
+                const normalizeTxType = (rawType, amount) => {
+                    const key = String(rawType ?? "").toLowerCase();
+                    if (key === "bookingearning" || key === "earning" || rawType === 1) return "earning";
+                    if (key === "refunddeduction" || key === "refund_deduction" || rawType === 2) return "refund_deduction";
+                    if (key === "withdrawal" || rawType === 3) return "withdrawal";
+                    if (key === "platformfee" || key === "platform_fee" || rawType === 4) return "platform_fee";
+                    return Number(amount || 0) >= 0 ? "earning" : "refund_deduction";
+                };
                 setTransactions(
                     list.map((t, idx) => ({
                         id: t.id || `TX-${t.bookingId || idx + 100}`,
                         date: t.createdAt ? new Date(t.createdAt).toLocaleString("vi-VN") : t.date || "Vừa xong",
                         title: t.title || t.description || "Biến động số dư",
-                        type: t.type || (t.amount > 0 ? "earning" : "platform_fee"),
+                        type: normalizeTxType(t.type, t.amount),
                         amount: Number(t.amount || 0),
                         balanceAfter: Number(t.balanceAfter ?? t.balance ?? 0),
                         note: t.note || t.reference || "",
@@ -283,16 +291,31 @@ export default function CaregiverWallet() {
             {/* ── CARD 1: CÁC THẺ CHỈ SỐ TÀI CHÍNH (ĐỒNG BỘ CHÍNH XÁC BACKEND DTO: WalletResponse) ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 {/* Số dư khả dụng (AvailableBalance = Balance - PendingPayout) */}
-                <div className="bg-gradient-to-br from-[#00677c] to-[#004756] text-white rounded-3xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+                <div
+                    className={`rounded-3xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[140px] text-white ${
+                        wallet.availableBalance < 0
+                            ? "bg-gradient-to-br from-rose-700 to-rose-900"
+                            : "bg-gradient-to-br from-[#00677c] to-[#004756]"
+                    }`}
+                >
                     <div className="relative z-10">
-                        <span className="text-teal-200 text-xs font-semibold tracking-wide uppercase">Số dư khả dụng</span>
+                        <span className={`text-xs font-semibold tracking-wide uppercase ${wallet.availableBalance < 0 ? "text-rose-200" : "text-teal-200"}`}>
+                            {wallet.availableBalance < 0 ? "Số dư ví (Đang ghi nợ)" : "Số dư khả dụng"}
+                        </span>
                         <h2 className="text-3xl font-extrabold mt-1 tracking-tight">
-                            {wallet.availableBalance.toLocaleString("vi-VN")} <span className="text-lg font-bold text-teal-200">₫</span>
+                            {wallet.availableBalance.toLocaleString("vi-VN")}{" "}
+                            <span className={`text-lg font-bold ${wallet.availableBalance < 0 ? "text-rose-200" : "text-teal-200"}`}>₫</span>
                         </h2>
                     </div>
-                    <div className="relative z-10 flex items-center justify-between text-xs text-teal-100 pt-2 border-t border-teal-500/30">
-                        <span>Sẵn sàng rút về ngân hàng</span>
-                        <span className="underline cursor-pointer" onClick={() => setIsPayoutModalOpen(true)}>Rút ngay →</span>
+                    <div className={`relative z-10 flex items-center justify-between text-xs pt-2 border-t ${wallet.availableBalance < 0 ? "text-rose-100 border-rose-500/40" : "text-teal-100 border-teal-500/30"}`}>
+                        {wallet.availableBalance < 0 ? (
+                            <span>Tự động bù trừ từ thu nhập ca tiếp theo</span>
+                        ) : (
+                            <>
+                                <span>Sẵn sàng rút về ngân hàng</span>
+                                <span className="underline cursor-pointer" onClick={() => setIsPayoutModalOpen(true)}>Rút ngay →</span>
+                            </>
+                        )}
                     </div>
                     {/* Decorative shape */}
                     <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10 blur-md pointer-events-none"></div>
@@ -324,6 +347,20 @@ export default function CaregiverWallet() {
                     </p>
                 </div>
             </div>
+
+            {wallet.availableBalance < 0 && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                        !
+                    </div>
+                    <div className="text-xs text-rose-900 leading-relaxed">
+                        <strong className="font-bold block mb-0.5">
+                            Ví của bạn đang tạm âm {Math.abs(wallet.availableBalance).toLocaleString("vi-VN")} ₫
+                        </strong>
+                        Khoản khấu trừ này phát sinh do hoàn tiền ca hủy hoặc giải quyết khiếu nại khi số dư khả dụng tại thời điểm đối soát chưa đủ. Thu nhập từ các ca chăm sóc hoàn tất tiếp theo sẽ tự động bù trừ khoản này; bạn có thể tạo yêu cầu rút tiền lại khi số dư đạt từ 50.000 ₫.
+                    </div>
+                </div>
+            )}
 
             {/* ── BANNER CHÍNH SÁCH PHÍ NỀN TẢNG (QUY TẮC BẮT BUỘC) ── */}
             <div className="bg-teal-50/60 border border-teal-200/70 rounded-2xl p-4 flex items-start gap-3.5">
@@ -423,12 +460,20 @@ export default function CaregiverWallet() {
                                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold ${
                                         t.type === "earning"
                                             ? "bg-emerald-50 text-emerald-600"
+                                            : t.type === "refund_deduction"
+                                            ? "bg-rose-50 text-rose-600"
                                             : t.type === "platform_fee"
                                             ? "bg-amber-50 text-amber-600"
                                             : "bg-blue-50 text-blue-600"
                                     }`}
                                 >
-                                    {t.type === "earning" ? "↓" : t.type === "platform_fee" ? "⚡" : "↑"}
+                                    {t.type === "earning"
+                                        ? "↓"
+                                        : t.type === "refund_deduction"
+                                        ? "↩"
+                                        : t.type === "platform_fee"
+                                        ? "⚡"
+                                        : "↑"}
                                 </div>
                                 <div>
                                     <p className="font-bold text-[#002045] text-sm">{t.title}</p>
@@ -439,7 +484,7 @@ export default function CaregiverWallet() {
                             <div className="text-right">
                                 <p
                                     className={`font-bold text-sm ${
-                                        t.amount > 0 ? "text-emerald-600" : "text-slate-700"
+                                        t.amount > 0 ? "text-emerald-600" : t.type === "refund_deduction" ? "text-rose-600" : "text-slate-700"
                                     }`}
                                 >
                                     {t.amount > 0 ? "+" : ""}{t.amount.toLocaleString("vi-VN")} ₫
@@ -496,11 +541,15 @@ export default function CaregiverWallet() {
                         </div>
 
                         {wallet.availableBalance < 50000 && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
-                                <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${wallet.availableBalance < 0 ? "bg-rose-50 border-rose-200 text-rose-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+                                <svg className={`w-4 h-4 shrink-0 ${wallet.availableBalance < 0 ? "text-rose-600" : "text-amber-600"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                                 </svg>
-                                <span>Số dư ví hiện tại ({wallet.availableBalance.toLocaleString("vi-VN")} ₫) chưa đạt hạn mức rút tối thiểu (50.000 ₫).</span>
+                                <span>
+                                    {wallet.availableBalance < 0
+                                        ? `Ví đang tạm âm ${Math.abs(wallet.availableBalance).toLocaleString("vi-VN")} ₫ và sẽ tự động được bù trừ từ các ca tiếp theo trước khi rút tiền.`
+                                        : `Số dư ví hiện tại (${wallet.availableBalance.toLocaleString("vi-VN")} ₫) chưa đạt hạn mức rút tối thiểu (50.000 ₫).`}
+                                </span>
                             </div>
                         )}
 

@@ -346,8 +346,14 @@ export default function AdminNurseStatistics() {
 
                                         {/* Wallet / Withdrawn */}
                                         <td className="py-3.5 px-4 whitespace-nowrap">
-                                            <p className="font-bold text-slate-900">{formatVND(nurse.financialStats?.currentWalletBalance || 0)}</p>
-                                            <p className="text-[10px] text-slate-400">Đã rút: {formatVND(nurse.financialStats?.totalWithdrawn || 0)}</p>
+                                            <p className={`font-bold ${(nurse.financialStats?.currentWalletBalance || 0) < 0 ? "text-rose-600" : "text-slate-900"}`}>
+                                                {formatVND(nurse.financialStats?.currentWalletBalance || 0)}
+                                            </p>
+                                            <p className="text-[10px] text-slate-400">
+                                                {(nurse.financialStats?.currentWalletBalance || 0) < 0
+                                                    ? "Ví đang âm (công nợ khấu trừ)"
+                                                    : `Đã rút: ${formatVND(nurse.financialStats?.totalWithdrawn || 0)}`}
+                                            </p>
                                         </td>
 
                                         {/* Action */}
@@ -480,10 +486,14 @@ export default function AdminNurseStatistics() {
                                             <p className="text-lg font-bold text-teal-700 mt-1">{formatVND(nurseDetail.financialStats?.totalEarned || 0)}</p>
                                             <p className="text-[11px] text-slate-400">Từ các ca hoàn tất</p>
                                         </div>
-                                        <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                                        <div className={`p-3 rounded-xl border shadow-2xs ${(nurseDetail.financialStats?.currentWalletBalance || 0) < 0 ? "bg-rose-50/70 border-rose-200" : "bg-white border-slate-200"}`}>
                                             <p className="text-[10px] uppercase font-bold text-slate-400">Số dư ví hiện tại</p>
-                                            <p className="text-lg font-bold text-emerald-700 mt-1">{formatVND(nurseDetail.financialStats?.currentWalletBalance || 0)}</p>
-                                            <p className="text-[11px] text-slate-400">Khả dụng trong ví</p>
+                                            <p className={`text-lg font-bold mt-1 ${(nurseDetail.financialStats?.currentWalletBalance || 0) < 0 ? "text-rose-600" : "text-emerald-700"}`}>
+                                                {formatVND(nurseDetail.financialStats?.currentWalletBalance || 0)}
+                                            </p>
+                                            <p className={`text-[11px] ${(nurseDetail.financialStats?.currentWalletBalance || 0) < 0 ? "text-rose-600 font-semibold" : "text-slate-400"}`}>
+                                                {(nurseDetail.financialStats?.currentWalletBalance || 0) < 0 ? "Đang âm · Bù trừ ca tiếp theo" : "Khả dụng trong ví"}
+                                            </p>
                                         </div>
                                         <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
                                             <p className="text-[10px] uppercase font-bold text-slate-400">Đã rút về NH</p>

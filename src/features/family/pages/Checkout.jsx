@@ -177,13 +177,16 @@ export default function Checkout() {
         };
     }, [bookingId]);
 
-    // Giữ nguyên quy tắc quá hạn thanh toán 30 phút.
+    // Đồng bộ thời hạn giữ chỗ 30 phút theo paymentHoldExpiresAt / paymentHoldStartedAt từ BE.
     const isExpired = useMemo(() => {
-        if (!booking?.createdAt) return false;
+        if (booking?.paymentHoldExpiresAt) {
+            return Date.now() > new Date(booking.paymentHoldExpiresAt).getTime();
+        }
+        const holdStart = booking?.paymentHoldStartedAt || booking?.createdAt;
+        if (!holdStart) return false;
 
-        const createdMs = new Date(booking.createdAt).getTime();
-
-        return Date.now() - createdMs > 30 * 60 * 1000;
+        const holdStartMs = new Date(holdStart).getTime();
+        return Date.now() - holdStartMs > 30 * 60 * 1000;
     }, [booking]);
 
     const selectedMethodData =
