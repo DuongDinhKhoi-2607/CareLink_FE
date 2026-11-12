@@ -18,160 +18,6 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-// ── MOCK DATA: TRANSACTIONS ────────────────────────────────────────────────────
-const initialTransactions = [
-    {
-        id: "TXN-5001",
-        family: "Nguyễn Thu Hà",
-        caregiver: "Lê Hoàng Long",
-        type: "Gia đình thanh toán",
-        amount: 960000,
-        platformFee: 60000,
-        caregiverPay: 900000,
-        date: "23/09/2026",
-        time: "08:42",
-        status: "Thành công",
-        shiftId: "CA-2001",
-    },
-    {
-        id: "TXN-5002",
-        family: "Phạm Thị Bích",
-        caregiver: "Nguyễn Thị Phương Thảo",
-        type: "Gia đình thanh toán",
-        amount: 960000,
-        platformFee: 60000,
-        caregiverPay: 900000,
-        date: "22/09/2026",
-        time: "06:15",
-        status: "Thành công",
-        shiftId: "CA-2003",
-    },
-    {
-        id: "TXN-5003",
-        family: "Bùi Thị Lan",
-        caregiver: "Trần Thị Mai",
-        type: "Gia đình thanh toán",
-        amount: 1440000,
-        platformFee: 60000,
-        caregiverPay: 1380000,
-        date: "22/09/2026",
-        time: "18:30",
-        status: "Thành công",
-        shiftId: "CA-2007",
-    },
-    {
-        id: "TXN-5004",
-        family: "Lê Văn Dũng",
-        caregiver: "Phạm Quốc Huy",
-        type: "Hoàn tiền",
-        amount: 480000,
-        platformFee: 0,
-        caregiverPay: 0,
-        date: "21/09/2026",
-        time: "14:20",
-        status: "Hoàn tiền",
-        shiftId: "CA-2004",
-    },
-    {
-        id: "TXN-5005",
-        family: "Hoàng Minh Tuấn",
-        caregiver: "Lê Hoàng Long",
-        type: "Đặt cọc",
-        amount: 180000,
-        platformFee: 0,
-        caregiverPay: 0,
-        date: "24/09/2026",
-        time: "09:10",
-        status: "Đang giữ cọc",
-        shiftId: "CA-2006",
-    },
-    {
-        id: "TXN-5006",
-        family: "Võ Thị Thanh",
-        caregiver: "Vũ Thị Bích Trâm",
-        type: "Gia đình thanh toán",
-        amount: 720000,
-        platformFee: 60000,
-        caregiverPay: 660000,
-        date: "20/09/2026",
-        time: "15:45",
-        status: "Đang khiếu nại",
-        shiftId: "CA-2005",
-    },
-    {
-        id: "TXN-5007",
-        family: "Trần Minh Khoa",
-        caregiver: "Trần Thị Mai",
-        type: "Đặt cọc",
-        amount: 135000,
-        platformFee: 0,
-        caregiverPay: 0,
-        date: "23/09/2026",
-        time: "13:05",
-        status: "Đang giữ cọc",
-        shiftId: "CA-2002",
-    },
-];
-
-// ── MOCK DATA: WITHDRAWAL REQUESTS ────────────────────────────────────────────
-const initialWithdrawals = [
-    {
-        id: "WD-301",
-        caregiver: "Lê Hoàng Long",
-        caregiverPhone: "0912 345 678",
-        amount: 3200000,
-        bank: "Vietcombank",
-        accountNumber: "1234 5678 9012",
-        requestDate: "23/09/2026",
-        status: "Chờ duyệt",
-        note: "",
-    },
-    {
-        id: "WD-302",
-        caregiver: "Trần Thị Mai",
-        caregiverPhone: "0901 234 567",
-        amount: 1500000,
-        bank: "Techcombank",
-        accountNumber: "9876 5432 1098",
-        requestDate: "22/09/2026",
-        status: "Chờ duyệt",
-        note: "",
-    },
-    {
-        id: "WD-303",
-        caregiver: "Nguyễn Thị Phương Thảo",
-        caregiverPhone: "0988 765 432",
-        amount: 800000,
-        bank: "MB Bank",
-        accountNumber: "5555 1234 6789",
-        requestDate: "21/09/2026",
-        status: "Đã duyệt",
-        note: "",
-    },
-    {
-        id: "WD-304",
-        caregiver: "Đặng Văn Bình",
-        caregiverPhone: "0944 888 999",
-        amount: 2100000,
-        bank: "BIDV",
-        accountNumber: "7777 8888 9999",
-        requestDate: "20/09/2026",
-        status: "Từ chối",
-        note: "Thông tin tài khoản không khớp với hồ sơ đăng ký.",
-    },
-    {
-        id: "WD-305",
-        caregiver: "Phạm Quốc Huy",
-        caregiverPhone: "0933 456 789",
-        amount: 4500000,
-        bank: "Sacombank",
-        accountNumber: "3333 4444 5555",
-        requestDate: "18/09/2026",
-        status: "Đã duyệt",
-        note: "",
-    },
-];
-
 // ── HELPER ─────────────────────────────────────────────────────────────────────
 const formatVND = (n) =>
     n.toLocaleString("vi-VN", { style: "currency", currency: "VND" }).replace("₫", "₫");
@@ -370,8 +216,9 @@ function Toast({ message, type }) {
 export default function AdminFinance() {
     const [activeTab, setActiveTab] = useState("transactions");
     const [searchQuery, setSearchQuery] = useState("");
-    const [transactions] = useState(initialTransactions);
-    const [withdrawals, setWithdrawals] = useState(initialWithdrawals);
+    const [transactions, setTransactions] = useState([]);
+    const [withdrawals, setWithdrawals] = useState([]);
+    const [transactionsError, setTransactionsError] = useState("");
     const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState(null);
     const [approveTarget, setApproveTarget] = useState(null);
@@ -398,16 +245,39 @@ export default function AdminFinance() {
         }
 
         try {
+            setTransactionsError("");
             const bookingsRes = await adminApi.getAllBookings({ PageNumber: 1, PageSize: 50 });
             const items = bookingsRes?.items || bookingsRes?.data || (Array.isArray(bookingsRes) ? bookingsRes : []);
-            if (Array.isArray(items) && items.length > 0) {
+            if (Array.isArray(items)) {
+                const statusNameMap = {
+                    pendingpayment: 1,
+                    pendingacceptance: 2,
+                    accepted: 3,
+                    inprogress: 4,
+                    completed: 5,
+                    canceled: 6,
+                    cancelled: 6,
+                    disputed: 7,
+                };
                 const realTxs = items.map((b) => {
-                    const rawSt = typeof b.status === "number" ? b.status : 1;
+                    const rawSt =
+                        typeof b.status === "number"
+                            ? b.status
+                            : statusNameMap[String(b.status ?? "").toLowerCase()] || 1;
                     const isCompleted = rawSt === 5;
                     const isCanceled = rawSt === 6;
-                    const isPaid = rawSt >= 2 && rawSt !== 6;
+                    const isDisputed = rawSt === 7;
+                    const isPaid = rawSt >= 2 && rawSt !== 6 && rawSt !== 7;
                     let type = "Gia đình thanh toán";
-                    let status = isCompleted ? "Thành công" : isCanceled ? "Hoàn tiền" : isPaid ? "Đang giữ cọc" : "Chờ thanh toán";
+                    let status = isCompleted
+                        ? "Thành công"
+                        : isDisputed
+                        ? "Đang khiếu nại"
+                        : isCanceled
+                        ? "Hoàn tiền"
+                        : isPaid
+                        ? "Đang giữ cọc"
+                        : "Chờ thanh toán";
                     if (b.refundedAmount && Number(b.refundedAmount) > 0) {
                         type = "Hoàn tiền";
                         status = "Hoàn tiền";
@@ -433,9 +303,13 @@ export default function AdminFinance() {
                     };
                 });
                 setTransactions(realTxs);
+            } else {
+                setTransactions([]);
             }
-        } catch {
-            // ignore
+        } catch (err) {
+            console.warn("Lỗi tải danh sách giao dịch từ API:", err);
+            setTransactions([]);
+            setTransactionsError("Không thể tải nhật ký giao dịch thực tế từ máy chủ.");
         }
     }, []);
 
@@ -500,11 +374,10 @@ export default function AdminFinance() {
             }
 
             const combined = [...customerPayouts, ...nursePayouts];
-            if (combined.length > 0) {
-                setWithdrawals(combined);
-            }
+            setWithdrawals(combined);
         } catch (err) {
             console.warn("Lỗi tải danh sách yêu cầu rút tiền của Admin:", err);
+            setWithdrawals([]);
         } finally {
             setLoadingWithdrawals(false);
         }
@@ -552,6 +425,7 @@ export default function AdminFinance() {
         "Thành công": "bg-emerald-50 text-emerald-700 border-emerald-200",
         "Hoàn tiền": "bg-amber-50 text-amber-700 border-amber-200",
         "Đang giữ cọc": "bg-sky-50 text-sky-700 border-sky-200",
+        "Chờ thanh toán": "bg-slate-100 text-slate-600 border-slate-200",
         "Đang khiếu nại": "bg-rose-50 text-rose-700 border-rose-200",
     };
 
@@ -630,8 +504,8 @@ export default function AdminFinance() {
                 savedCustomerWd[idx].adminNote = reason;
                 localStorage.setItem("carelink_family_withdraw_requests", JSON.stringify(savedCustomerWd));
 
-                // Hoàn lại tiền vào ví của khách hàng
-                const curBal = Number(localStorage.getItem("carelink_family_wallet_balance") || 110000);
+                // Hoàn lại tiền vào ví của khách hàng (nếu có dữ liệu lưu cục bộ)
+                const curBal = Number(localStorage.getItem("carelink_family_wallet_balance") || 0);
                 localStorage.setItem("carelink_family_wallet_balance", String(curBal + refundAmt));
 
                 showToast(`Đã từ chối yêu cầu ${id} và hoàn trả ${formatVND(refundAmt)} về ví của khách hàng.`, "error");
@@ -818,6 +692,21 @@ export default function AdminFinance() {
             {/* ── TRANSACTION TABLE ── */}
             {activeTab === "transactions" && (
                 <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                    {transactionsError && (
+                        <div className="px-5 py-3 bg-rose-50 border-b border-rose-200 text-xs text-rose-700 flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2 font-medium">
+                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                {transactionsError}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={fetchFinancialData}
+                                className="px-3 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 font-bold hover:bg-rose-100 transition-colors cursor-pointer shrink-0"
+                            >
+                                Thử lại
+                            </button>
+                        </div>
+                    )}
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>

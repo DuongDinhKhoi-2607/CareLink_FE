@@ -8,16 +8,13 @@ import {
     User,
     Phone,
     CheckCircle2,
-    AlertTriangle,
     ShieldCheck,
     CreditCard,
     MessageSquare,
     X,
     Stethoscope,
     Loader2,
-    Sparkles,
     AlertCircle,
-    Award,
     Star,
     RefreshCw
 } from "lucide-react";
@@ -135,7 +132,7 @@ const mapBookingToAppointment = (b) => {
     }
 
     // Nghiệm thu 2 chiều: Nếu điều dưỡng đã xác nhận nhưng khách hàng chưa ký nghiệm thu
-    const needsCustomerConfirm = (rawStatus === 4 || rawStatus === 5) && Boolean(b.nurseConfirmedAt) && !Boolean(b.customerConfirmedAt);
+    const needsCustomerConfirm = (rawStatus === 4 || rawStatus === 5) && Boolean(b.nurseConfirmedAt) && !b.customerConfirmedAt;
     if (needsCustomerConfirm) {
         tab = "ongoing";
         statusLabel = "CHỜ BẠN NGHIỆM THU";
@@ -395,7 +392,7 @@ export default function Appointments() {
                                 })
                             );
                         }
-                    } catch (e) {
+                    } catch {
                         // Silent check
                     }
                 });
@@ -621,6 +618,89 @@ export default function Appointments() {
                     <span>Đặt lịch mới</span>
                 </Link>
             </header>
+
+            {/* 4 Thẻ chỉ số tổng quan nhanh (Interactive Metric Cards) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* 1. Sắp tới */}
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("upcoming")}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                        activeTab === "upcoming"
+                            ? "bg-gradient-to-br from-teal-50/90 to-white border-[#00677c] ring-2 ring-[#00677c]/20 shadow-sm"
+                            : "bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50"
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500">Ca sắp tới</span>
+                        <div className="w-8 h-8 rounded-xl bg-teal-50 text-[#00677c] flex items-center justify-center">
+                            <Clock className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">{countUpcoming}</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Chờ tiếp nhận &amp; Chờ thanh toán</p>
+                </button>
+
+                {/* 2. Đang diễn ra */}
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("ongoing")}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                        activeTab === "ongoing"
+                            ? "bg-gradient-to-br from-teal-50/90 to-white border-teal-600 ring-2 ring-teal-500/20 shadow-sm"
+                            : "bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50"
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500">Đang diễn ra</span>
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                        </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">{countOngoing}</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Đang trực &amp; Chờ nghiệm thu</p>
+                </button>
+
+                {/* 3. Đã hoàn thành */}
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("completed")}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                        activeTab === "completed"
+                            ? "bg-gradient-to-br from-slate-50 to-white border-slate-800 ring-2 ring-slate-800/10 shadow-sm"
+                            : "bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50"
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500">Đã hoàn thành</span>
+                        <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">{countCompleted}</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Đã nghiệm thu lâm sàng</p>
+                </button>
+
+                {/* 4. Đã hủy */}
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("cancelled")}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                        activeTab === "cancelled"
+                            ? "bg-gradient-to-br from-rose-50/60 to-white border-rose-400 ring-2 ring-rose-400/20 shadow-sm"
+                            : "bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/50"
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500">Đã hủy</span>
+                        <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+                            <X className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">{countCancelled}</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Hủy ca hoặc quá hạn 30p</p>
+                </button>
+            </div>
 
             {/* Thanh Tab gạch chân (Underline Tabs) chuẩn y như hình ảnh mẫu */}
             <div className="border-b border-slate-200">
@@ -982,6 +1062,21 @@ export default function Appointments() {
                                     </div>
                                 )}
 
+                                {/* Cảnh báo giữ chỗ 30 phút cho ca chờ thanh toán */}
+                                {apt.canPay && (
+                                    <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl p-3 text-xs text-amber-900 my-1 flex items-start gap-2.5">
+                                        <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+                                        <div className="flex-1">
+                                            <p className="font-bold text-amber-950">
+                                                Ca hẹn đang được giữ chỗ trong 30 phút
+                                            </p>
+                                            <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                                                Khung giờ của bạn đang được tạm khóa. Vui lòng hoàn tất thanh toán qua cổng PayOS để điều dưỡng tiếp nhận ca trực.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* ======================================================== */}
                                 {/* ĐƯỜNG GẠCH PHÂN CÁCH NGAY DƯỚI CHỖ NGƯỜI NHẬN CHĂM SÓC   */}
                                 {/* ======================================================== */}
@@ -1017,6 +1112,20 @@ export default function Appointments() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                             </svg>
                                             <span>{apt.location}</span>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
+                                            <span className="font-bold text-[#00677c]">
+                                                {apt.price}
+                                            </span>
+                                            <span className="text-slate-400">·</span>
+                                            <span className="text-[11px] text-slate-500">
+                                                (Đã gồm 60.000đ phí sàn)
+                                            </span>
+                                            <span className="text-emerald-700 font-semibold text-[10px] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
+                                                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                                PayOS Escrow
+                                            </span>
                                         </div>
                                     </div>
 
@@ -1251,8 +1360,11 @@ export default function Appointments() {
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h3 id="appointment-detail-title" className="text-base sm:text-lg font-bold text-slate-900">
-                                            Chi tiết ca chăm sóc
+                                        <h3 id="appointment-detail-title" className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                                            <span>Chi tiết ca chăm sóc</span>
+                                            {loadingDetail && (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#00677c]" title="Đang đồng bộ dữ liệu..." />
+                                            )}
                                         </h3>
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${selectedAppointment.statusBadge}`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${selectedAppointment.dotColor}`} />

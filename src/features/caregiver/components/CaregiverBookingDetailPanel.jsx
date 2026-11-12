@@ -86,13 +86,13 @@ export default function CaregiverBookingDetailPanel({
 
             if (rawDetail) {
                 if (rawDetail.toLowerCase().includes("unexpected error")) {
-                    errDetail = "Hệ thống đang cập nhật tính năng thương lượng giá (thiếu cột counter_price trên CSDL Supabase). Vui lòng cập nhật SQL hoặc thử lại.";
+                    errDetail = "Chưa thể gửi mức giá đề xuất lúc này. Vui lòng thử lại sau.";
                 } else {
                     errDetail = rawDetail;
                 }
             }
             if (errDetail && errDetail.toLowerCase().includes("unexpected error")) {
-                errDetail = "Hệ thống đang bận hoặc cơ sở dữ liệu chưa sẵn sàng cho giá thương lượng mới. Vui lòng thử lại sau.";
+                errDetail = "Chưa thể gửi mức giá đề xuất lúc này. Vui lòng thử lại sau.";
             }
             setCounterError(errDetail || "Không thể gửi đề xuất giá mới. Vui lòng kiểm tra lại.");
         } finally {
@@ -350,7 +350,7 @@ export default function CaregiverBookingDetailPanel({
                                     </div>
 
                                     <p className="mt-2 text-xs leading-relaxed text-emerald-800">
-                                        Gia đình có thể tiếp tục quy trình thanh toán theo luồng demo hiện tại.
+                                        Gia đình đã nhận được thông báo chấp thuận và có thể tiến hành thanh toán giữ chỗ trong 30 phút.
                                     </p>
                                 </div>
 

@@ -34,17 +34,15 @@ export default function CreateDisputeModal({
     appointment,
     onSubmitSuccess,
 }) {
-    if (!isOpen || !appointment) return null;
-
     const [reasonCategory, setReasonCategory] = useState("Điều dưỡng đến muộn >30 phút mà không báo trước");
     const [description, setDescription] = useState("");
-    const [evidenceFiles, setEvidenceFiles] = useState([
-        "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600",
-    ]);
+    const [evidenceFiles, setEvidenceFiles] = useState([]);
     const [newEvidenceUrl, setNewEvidenceUrl] = useState("");
     const [showAddUrl, setShowAddUrl] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
+
+    if (!isOpen || !appointment) return null;
 
     const REASON_CATEGORIES = [
         "Điều dưỡng đến muộn >30 phút mà không báo trước",
@@ -70,7 +68,8 @@ export default function CreateDisputeModal({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const fullReason = `${reasonCategory}: ${description.trim() || "Gia đình yêu cầu đối soát lại ca trực."}`;
+        const rawReason = `${reasonCategory}: ${description.trim() || "Gia đình yêu cầu đối soát lại ca trực."}`;
+        const fullReason = rawReason.slice(0, 500);
 
         if (!description.trim() && reasonCategory === "Lý do khác") {
             setError("Vui lòng mô tả chi tiết sự việc khi chọn lý do khác để Ban Quản trị xử lý chính xác.");
@@ -108,32 +107,16 @@ export default function CreateDisputeModal({
             }
             onClose();
         } catch (err) {
-            console.warn("Lỗi khi gửi khiếu nại tới server, áp dụng fallback:", err);
+            console.warn("Lỗi khi gửi khiếu nại tới server:", err);
             const errMsg =
                 err.response?.data?.detail ||
                 err.response?.data?.message ||
-                err.response?.data?.title;
+                err.response?.data?.title ||
+                (err.code === "ERR_NETWORK" || !err.response
+                    ? "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại."
+                    : "Gửi khiếu nại chưa thành công. Vui lòng kiểm tra lại thông tin và thử lại.");
 
-            // Nếu server lỗi hoặc chưa có endpoint, fallback tạo mock để không chặn flow người dùng
-            if (!errMsg || err.response?.status >= 500 || err.code === "ERR_NETWORK") {
-                const fallbackDto = {
-                    id: `DSP-${Date.now().toString().slice(-4)}`,
-                    code: `DSP-${String(bookingId).replace("CK-", "").replace("CA-", "")}`,
-                    bookingId: bookingId,
-                    reason: fullReason,
-                    description: description.trim(),
-                    evidenceUrls: evidenceFiles,
-                    status: "Đang xác minh",
-                    statusNote: "Hệ thống đã tiếp nhận khiếu nại và chuyển tới Ban Quản trị CareLink xử lý trong vòng 24h.",
-                    createdAt: new Date().toLocaleString("vi-VN"),
-                };
-                if (onSubmitSuccess) {
-                    onSubmitSuccess(fallbackDto);
-                }
-                onClose();
-            } else {
-                setError(errMsg);
-            }
+            setError(errMsg);
         } finally {
             setIsSubmitting(false);
         }
@@ -335,6 +318,14 @@ export default function CreateDisputeModal({
                             </div>
                         )}
                     </div>
+
+                    {/* Hiển thị lỗi tổng quát trước nút gửi để người dùng luôn thấy ngay */}
+                    {error && (
+                        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                            <span>{error}</span>
+                        </div>
+                    )}
 
                     {/* ── ACTIONS FOOTER ── */}
                     <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">

@@ -330,16 +330,7 @@ export default function Chat() {
         }
     };
 
-    // 6. Xử lý sau khi tạo đề xuất ca thành công
-    const handleProposalCreated = (newProposal) => {
-        showToast("Đã gửi đề xuất đặt lịch chăm sóc tới điều dưỡng thành công!");
-        setShowProposalModal(false);
-        if (conversation?.id) {
-            fetchMessagesAndProposals(conversation.id, false);
-        }
-    };
-
-    // 7. Định dạng chi tiết đặt lịch hiển thị ở cột tóm tắt bên phải
+    // 6. Định dạng chi tiết đặt lịch hiển thị ở cột tóm tắt bên phải
     const bookingDetails = activeProposal
         ? [
               {
@@ -447,11 +438,6 @@ export default function Chat() {
         totalPrice: activeProposal?.totalPrice || 0,
         platformFee: activeProposal?.platformFee || 60000,
         totalPaymentAmount: activeProposal?.totalPaymentAmount || ((activeProposal?.totalPrice || 0) + 60000),
-    };
-
-    // Khi người dùng bấm "Xác nhận muốn đặt lịch" ở cột phải
-    const handleOpenProposalModal = () => {
-        setShowProposalModal(true);
     };
 
     const handleAcceptCounterProposal = async () => {
@@ -895,6 +881,7 @@ export default function Chat() {
                     nurseAvatar={avatarUrl}
                     conversationId={conversation?.id}
                     onProposalCreated={() => {
+                        showToast("Đã gửi đề xuất đặt lịch chăm sóc tới điều dưỡng thành công!");
                         if (conversation?.id) {
                             fetchMessagesAndProposals(conversation.id, false);
                         }

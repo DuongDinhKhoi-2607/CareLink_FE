@@ -15,7 +15,6 @@ import {
     Menu,
     X,
     ChevronRight,
-    Plus,
     LogOut,
     BookOpen,
     ShieldAlert,
@@ -201,6 +200,7 @@ export default function AdminLayout() {
                         onClick={() => setMobileOpen(true)}
                         className="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                         aria-label="Mở menu di động"
+                        aria-expanded={mobileOpen}
                     >
                         <Menu className="w-5 h-5" />
                     </button>
@@ -242,6 +242,9 @@ export default function AdminLayout() {
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
                             className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group text-left"
                             title="Tài khoản quản trị viên"
+                            aria-label="Mở menu tài khoản quản trị viên"
+                            aria-expanded={userMenuOpen}
+                            aria-haspopup="menu"
                         >
                             <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 text-[#00677c] font-black text-xs flex items-center justify-center border border-teal-200 shadow-2xs group-hover:scale-105 transition-transform">
                                 {(currentUser?.name || currentUser?.fullName || currentUser?.email || "AD").charAt(0).toUpperCase()}
@@ -263,6 +266,7 @@ export default function AdminLayout() {
                             onClick={() => setShowLogoutModal(true)}
                             className="w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 flex items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
                             title="Đăng xuất khỏi hệ thống"
+                            aria-label="Đăng xuất khỏi hệ thống"
                         >
                             <LogOut className="w-4 h-4" />
                         </button>
@@ -345,6 +349,8 @@ export default function AdminLayout() {
                                     onClick={() => handleToggleCollapse(true)}
                                     className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 border border-white/10 transition-colors cursor-pointer shrink-0"
                                     title="Thu gọn thanh menu"
+                                    aria-label="Thu gọn thanh menu"
+                                    aria-expanded={true}
                                 >
                                     <PanelLeftClose className="w-4.5 h-4.5" />
                                 </button>
@@ -355,6 +361,8 @@ export default function AdminLayout() {
                                 onClick={() => handleToggleCollapse(false)}
                                 className="w-10 h-10 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 flex items-center justify-center transition-colors cursor-pointer border border-teal-500/30 shadow-2xs"
                                 title="Mở rộng thanh menu"
+                                aria-label="Mở rộng thanh menu"
+                                aria-expanded={false}
                             >
                                 <PanelLeftOpen className="w-5 h-5" />
                             </button>
@@ -458,7 +466,7 @@ export default function AdminLayout() {
                                         <div className="text-[9px] font-bold text-teal-400 uppercase">ADMIN PORTAL</div>
                                     </div>
                                 </div>
-                                <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer">
+                                <button type="button" onClick={() => setMobileOpen(false)} aria-label="Đóng menu di động" className="p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>

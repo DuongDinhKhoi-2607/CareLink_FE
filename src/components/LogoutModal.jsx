@@ -1,26 +1,39 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { LogOut } from "lucide-react";
 
 export default function LogoutModal({ isOpen, onClose, onConfirm, roleName = "tài khoản" }) {
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") onClose?.();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+        <div
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-modal-title"
+        >
             {/* Lớp nền mờ dịu mắt, giảm độ tương phản chói */}
-            <div 
-                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
-                onClick={onClose} 
+            <div
+                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity animate-modal-backdrop"
+                onClick={onClose}
             />
 
             {/* Hộp thoại xác nhận: Rộng rãi hơn (max-w-md), nền dịu sang trọng không chói */}
-            <div className="relative w-full max-w-md bg-[#f8fafc] rounded-3xl p-7 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.22)] border border-slate-200/90 z-10 text-center animate-in zoom-in-95 duration-200 flex flex-col items-center">
+            <div className="relative w-full max-w-md bg-[#f8fafc] rounded-3xl p-7 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.22)] border border-slate-200/90 z-10 text-center animate-modal-pop flex flex-col items-center">
                 {/* Icon cảnh báo tròn đỏ mềm mại */}
                 <div className="w-14 h-14 rounded-2xl bg-rose-100/80 border border-rose-200/90 flex items-center justify-center text-rose-600 mb-4 shadow-xs">
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                    </svg>
+                    <LogOut className="w-7 h-7" strokeWidth={2} />
                 </div>
 
-                <h3 className="text-lg font-bold text-slate-800 tracking-tight mb-2">
+                <h3 id="logout-modal-title" className="text-lg font-bold text-slate-800 tracking-tight mb-2">
                     Xác nhận đăng xuất?
                 </h3>
                 <p className="text-sm text-slate-500 leading-relaxed max-w-sm mb-6">

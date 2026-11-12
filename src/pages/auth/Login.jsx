@@ -276,19 +276,12 @@ export default function Login() {
                 }
             });
         } else {
-            // Khi không có mạng hoặc Google SDK bị chặn: fallback sang tài khoản mẫu
+            // Không tạo tài khoản hoặc token giả khi thiếu Google Sign-In SDK
             setToast({
-                type: "info",
-                title: "Chế độ trải nghiệm",
-                message: "Không tải được Google Sign-In SDK. Đang đăng nhập bằng tài khoản Google mẫu...",
+                type: "error",
+                title: "Không khả dụng Google Sign-In",
+                message: "Không thể tải Google Sign-In SDK (do mạng hoặc trình chặn nội dung). Vui lòng tải lại trang hoặc đăng nhập bằng email và mật khẩu.",
             });
-            const mockGoogleUser = {
-                name: "Nguyễn Văn An (Google)",
-                email: "an.nguyen.google@carelink.vn",
-                role: "family",
-                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            };
-            handleLoginSuccess(mockGoogleUser, "mock_google_token_" + Date.now(), "mock_google_refresh_" + Date.now());
         }
     };
 

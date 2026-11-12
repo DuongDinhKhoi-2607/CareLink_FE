@@ -512,23 +512,13 @@ export default function Register() {
             }
 
             if (err.code === "ERR_NETWORK" || !err.response) {
-                const effectiveName =
-                    name.trim() ||
-                    (email.trim() ? email.trim().split("@")[0] : "Người dùng CareLink");
-                const mockUser = {
-                    name: effectiveName,
-                    email: email.trim(),
-                    phone: phone.trim(),
-                    role: targetRole,
-                    avatar:
-                        targetRole === "family"
-                            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                            : "/images/caregiver_avatar.svg",
-                };
-
-                const mockToken = "mock_reg_token_" + Date.now();
-
-                saveUserAndNavigate(mockUser, mockToken, mockToken);
+                setToast({
+                    type: "error",
+                    title: "Không thể kết nối máy chủ",
+                    message:
+                        "Không thể kết nối đến máy chủ để hoàn tất đăng ký. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                });
+                setIsLoading(false);
                 return;
             }
 
@@ -610,27 +600,11 @@ export default function Register() {
 
             if (apiErr.code === "ERR_NETWORK" || !apiErr.response) {
                 setToast({
-                    type: "info",
-                    title: "Chế độ trải nghiệm",
+                    type: "error",
+                    title: "Không thể kết nối máy chủ",
                     message:
-                        "Không kết nối được Backend. Đang kích hoạt tài khoản Google...",
+                        "Không kết nối được đến máy chủ để xác thực Google. Vui lòng kiểm tra kết nối mạng và thử lại.",
                 });
-
-                const googleUser = {
-                    name: "Người dùng CareLink (Google)",
-                    email: "user.google@carelink.vn",
-                    role,
-                    avatar:
-                        role === "family"
-                            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                            : "/images/caregiver_avatar.svg",
-                };
-
-                saveUserAndNavigate(
-                    googleUser,
-                    "mock_google_token_" + Date.now(),
-                    "mock_google_refresh_" + Date.now()
-                );
             } else {
                 const msg =
                     apiErr.response?.data?.message ||
@@ -686,27 +660,11 @@ export default function Register() {
             });
         } else {
             setToast({
-                type: "info",
-                title: "Chế độ trải nghiệm",
+                type: "error",
+                title: "Không khả dụng Google Sign-In",
                 message:
-                    "Không tải được Google Sign-In SDK. Đang đăng ký với tài khoản Google...",
+                    "Không thể tải Google Sign-In SDK (do mạng hoặc trình chặn nội dung). Vui lòng tải lại trang hoặc đăng ký bằng biểu mẫu email.",
             });
-
-            const googleUser = {
-                name: "Người dùng Google",
-                email: "user.google@carelink.vn",
-                role,
-                avatar:
-                    role === "family"
-                        ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                        : "/images/caregiver_avatar.svg",
-            };
-
-            saveUserAndNavigate(
-                googleUser,
-                "mock_google_token_" + Date.now(),
-                "mock_google_refresh_" + Date.now()
-            );
         }
     };
 

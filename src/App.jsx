@@ -1,64 +1,76 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import CaregiverLayout from "./layouts/CaregiverLayout";
-import Home from "./pages/public/Home";
-import ForFamily from "./features/family/pages/ForFamily";
-import Services from "./features/family/pages/Services";
-import CaregiverList from "./features/family/pages/CaregiverList";
-import CaregiverProfile from "./features/family/pages/CaregiverProfile";
-import Chat from "./features/family/pages/Chat";
-import DashboardMessages from "./features/family/pages/DashboardMessages";
-import Checkout from "./features/family/pages/Checkout";
-import PaymentResult from "./features/family/pages/PaymentResult";
-import Dashboard from "./features/family/pages/Dashboard";
-import Appointments from "./features/family/pages/Appointments";
-import Relatives from "./features/family/pages/Relatives";
-import HealthReports from "./features/family/pages/HealthReports";
-import FamilyWallet from "./features/family/pages/Wallet";
-import FamilyProfile from "./features/family/pages/FamilyProfile";
-import Review from "./features/family/pages/Review";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import MedicalHandbook from "./pages/public/MedicalHandbook";
-import HandbookDetail from "./pages/public/HandbookDetail";
-import PrivacyPolicy from "./pages/public/PrivacyPolicy";
-import TermsOfService from "./pages/public/TermsOfService";
-
-// Caregiver feature pages
-import ForCaregiver from "./features/caregiver/pages/ForCaregiver";
-import ChooseRole from "./features/caregiver/pages/ChooseRole";
-import Verification from "./features/caregiver/pages/Verification";
-import CaregiverDashboard from "./features/caregiver/pages/CaregiverDashboard";
-import CaregiverSchedule from "./features/caregiver/pages/CaregiverSchedule";
-import CaregiverBookingRequests from "./features/caregiver/pages/CaregiverBookingRequests";
-import CaregiverMessages from "./features/caregiver/pages/CaregiverMessages";
-import CaregiverReview from "./features/caregiver/pages/CaregiverReview";
-import CaregiverProfilePage from "./features/caregiver/pages/CaregiverProfilePage";
-import CaregiverWallet from "./features/caregiver/pages/CaregiverWallet";
-import CaregiverPricing from "./features/caregiver/pages/CaregiverPricing";
-
-import PageTransition from "./components/PageTransition";
-
-// Admin feature pages
 import AdminLayout from "./layouts/AdminLayout";
-import AdminDashboard from "./features/admin/pages/AdminDashboard";
-import CaregiverApprovals from "./features/admin/pages/CaregiverApprovals";
-import AdminServices from "./features/admin/pages/AdminServices";
-import ServiceManagement from "./features/admin/pages/ServiceManagement";
-import AdminAppointments from "./features/admin/pages/AdminAppointments";
-import UserManagement from "./features/admin/pages/UserManagement";
-import AdminFinance from "./features/admin/pages/AdminFinance";
-import AdminHandbook from "./features/admin/pages/AdminHandbook";
-import AdminDisputes from "./features/admin/pages/AdminDisputes";
-import AdminNurseStatistics from "./features/admin/pages/AdminNurseStatistics";
+import PageTransition from "./components/PageTransition";
+import Home from "./pages/public/Home";
+
+// Lazy-loaded Public & Auth pages
+const ForFamily = lazy(() => import("./features/family/pages/ForFamily"));
+const CaregiverList = lazy(() => import("./features/family/pages/CaregiverList"));
+const CaregiverProfile = lazy(() => import("./features/family/pages/CaregiverProfile"));
+const Chat = lazy(() => import("./features/family/pages/Chat"));
+const Checkout = lazy(() => import("./features/family/pages/Checkout"));
+const PaymentResult = lazy(() => import("./features/family/pages/PaymentResult"));
+const Review = lazy(() => import("./features/family/pages/Review"));
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const MedicalHandbook = lazy(() => import("./pages/public/MedicalHandbook"));
+const HandbookDetail = lazy(() => import("./pages/public/HandbookDetail"));
+const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/public/TermsOfService"));
+
+// Lazy-loaded Family Dashboard pages
+const Dashboard = lazy(() => import("./features/family/pages/Dashboard"));
+const Appointments = lazy(() => import("./features/family/pages/Appointments"));
+const Relatives = lazy(() => import("./features/family/pages/Relatives"));
+const HealthReports = lazy(() => import("./features/family/pages/HealthReports"));
+const FamilyWallet = lazy(() => import("./features/family/pages/Wallet"));
+const DashboardMessages = lazy(() => import("./features/family/pages/DashboardMessages"));
+const FamilyProfile = lazy(() => import("./features/family/pages/FamilyProfile"));
+
+// Lazy-loaded Caregiver pages
+const ForCaregiver = lazy(() => import("./features/caregiver/pages/ForCaregiver"));
+const ChooseRole = lazy(() => import("./features/caregiver/pages/ChooseRole"));
+const Verification = lazy(() => import("./features/caregiver/pages/Verification"));
+const CaregiverDashboard = lazy(() => import("./features/caregiver/pages/CaregiverDashboard"));
+const CaregiverSchedule = lazy(() => import("./features/caregiver/pages/CaregiverSchedule"));
+const CaregiverBookingRequests = lazy(() => import("./features/caregiver/pages/CaregiverBookingRequests"));
+const CaregiverMessages = lazy(() => import("./features/caregiver/pages/CaregiverMessages"));
+const CaregiverReview = lazy(() => import("./features/caregiver/pages/CaregiverReview"));
+const CaregiverProfilePage = lazy(() => import("./features/caregiver/pages/CaregiverProfilePage"));
+const CaregiverWallet = lazy(() => import("./features/caregiver/pages/CaregiverWallet"));
+const CaregiverPricing = lazy(() => import("./features/caregiver/pages/CaregiverPricing"));
+
+// Lazy-loaded Admin pages
+const AdminDashboard = lazy(() => import("./features/admin/pages/AdminDashboard"));
+const CaregiverApprovals = lazy(() => import("./features/admin/pages/CaregiverApprovals"));
+const AdminServices = lazy(() => import("./features/admin/pages/AdminServices"));
+const AdminAppointments = lazy(() => import("./features/admin/pages/AdminAppointments"));
+const UserManagement = lazy(() => import("./features/admin/pages/UserManagement"));
+const AdminFinance = lazy(() => import("./features/admin/pages/AdminFinance"));
+const AdminHandbook = lazy(() => import("./features/admin/pages/AdminHandbook"));
+const AdminDisputes = lazy(() => import("./features/admin/pages/AdminDisputes"));
+const AdminNurseStatistics = lazy(() => import("./features/admin/pages/AdminNurseStatistics"));
+
+function RouteFallback() {
+  return (
+    <div className="min-h-[60vh] w-full flex flex-col items-center justify-center gap-3 text-slate-500">
+      <div className="w-8 h-8 rounded-full border-3 border-slate-200 border-t-[#00677c] animate-spin" aria-hidden="true" />
+      <span className="text-xs font-medium tracking-wide">Đang tải dữ liệu trang...</span>
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <PageTransition>
-        <Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
           {/* Nhóm các trang Website công khai dùng chung MainLayout (Header + Footer) */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
@@ -131,7 +143,8 @@ export default function App() {
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/handbook" element={<AdminHandbook />} />
           </Route>
-        </Routes>
+          </Routes>
+        </Suspense>
       </PageTransition>
     </BrowserRouter>
   );

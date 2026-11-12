@@ -20,6 +20,7 @@ export default function AdminDashboard() {
     const [timeRange, setTimeRange] = useState("30days");
     const [chartMode, setChartMode] = useState("month");
     const [liveSummary, setLiveSummary] = useState(null);
+    const [revenueMetrics, setRevenueMetrics] = useState(null);
     const [recentActivities, setRecentActivities] = useState([]);
     const [pendingCount, setPendingCount] = useState(0);
     const [activeServices, setActiveServices] = useState([]);
@@ -42,7 +43,14 @@ export default function AdminDashboard() {
 
         // 2. Doanh thu theo khoảng thời gian
         adminApi.getRevenueMetrics({ range: timeRange })
-            .catch(() => {});
+            .then((res) => {
+                if (isMounted && res) {
+                    setRevenueMetrics(res?.data || res);
+                }
+            })
+            .catch((err) => {
+                console.warn("[CareLink Admin] Revenue metrics API error:", err);
+            });
 
         // 3. Hồ sơ điều dưỡng chờ duyệt thực tế
         adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 20 })
@@ -141,16 +149,20 @@ export default function AdminDashboard() {
     }, [timeRange]);
 
     // Dữ liệu KPI thực tế từ Backend (Không dùng Mock Data)
+    const activePlatformFee = revenueMetrics?.platformFee ?? liveSummary?.totalPlatformFee;
+    const activeGmv = revenueMetrics?.gmv ?? liveSummary?.totalGmv;
+    const activeCompleted = revenueMetrics?.totalCompletedBookings ?? liveSummary?.completedBookings;
+
     const currentKpi = {
-        revenue: liveSummary?.totalPlatformFee != null
-            ? Number(liveSummary.totalPlatformFee).toLocaleString("vi-VN") + " ₫"
-            : (liveSummary?.totalGmv != null ? Number(liveSummary.totalGmv).toLocaleString("vi-VN") + " ₫" : "0 ₫"),
-        revenueGrowth: liveSummary?.totalGmv != null
-            ? `GMV: ${Number(liveSummary.totalGmv).toLocaleString("vi-VN")} ₫`
+        revenue: activePlatformFee != null
+            ? Number(activePlatformFee).toLocaleString("vi-VN") + " ₫"
+            : (activeGmv != null ? Number(activeGmv).toLocaleString("vi-VN") + " ₫" : "0 ₫"),
+        revenueGrowth: activeGmv != null
+            ? `GMV: ${Number(activeGmv).toLocaleString("vi-VN")} ₫`
             : "Chưa có phát sinh",
-        completedShifts: liveSummary?.completedBookings != null ? String(liveSummary.completedBookings) : "0",
+        completedShifts: activeCompleted != null ? String(activeCompleted) : "0",
         shiftsGrowth: liveSummary?.totalBookings
-            ? `${Math.round(((liveSummary.completedBookings || 0) / Math.max(liveSummary.totalBookings, 1)) * 100)}% hoàn thành`
+            ? `${Math.round(((activeCompleted || 0) / Math.max(liveSummary.totalBookings, 1)) * 100)}% hoàn thành`
             : "0% hoàn thành",
         newFamilies: liveSummary?.totalBookings != null ? String(liveSummary.totalBookings) : "0",
         familyGrowth: liveSummary?.pendingBookings != null ? `${liveSummary.pendingBookings} ca đang chờ` : "0 ca chờ",
@@ -382,10 +394,21 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                        <span>Trung bình doanh thu/ngày: <strong className="text-slate-800">{liveSummary?.totalPlatformFee ? Math.round(Number(liveSummary.totalPlatformFee) / 30).toLocaleString("vi-VN") + " ₫" : "0 ₫"}</strong></span>
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                        <span>
+                            Trung bình phí sàn/ngày (30d):{" "}
+                            <strong className="text-slate-800">
+                                {activePlatformFee ? Math.round(Number(activePlatformFee) / 30).toLocaleString("vi-VN") + " ₫" : "0 ₫"}
+                            </strong>
+                            {activeGmv != null && (
+                                <>
+                                    {" · "}GMV tích lũy:{" "}
+                                    <strong className="text-slate-800">{Number(activeGmv).toLocaleString("vi-VN")} ₫</strong>
+                                </>
+                            )}
+                        </span>
                         <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Tăng trưởng ổn định
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Đã đồng bộ {activeCompleted ?? 0} ca hoàn tất
                         </span>
                     </div>
                 </div>

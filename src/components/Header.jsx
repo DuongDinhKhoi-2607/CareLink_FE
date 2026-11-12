@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import {
+    ArrowRight,
+    Calendar,
+    ChevronDown,
+    LayoutGrid,
+    LogOut,
+    Menu,
+    PieChart,
+    ShieldCheck,
+    X,
+} from "lucide-react";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 
@@ -213,7 +224,10 @@ export default function Header() {
                                 <button
                                     type="button"
                                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                                    className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full border border-slate-200/90 hover:border-teal-500/40 bg-white hover:bg-slate-50/80 transition-all shadow-2xs cursor-pointer group"
+                                    aria-label="Mở menu tài khoản"
+                                    aria-expanded={showUserDropdown}
+                                    aria-haspopup="menu"
+                                    className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full border border-slate-200/90 hover:border-teal-500/40 bg-white hover:bg-slate-50/80 transition-all shadow-2xs cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00677c]/30"
                                 >
                                     <img
                                         src={getUserAvatar()}
@@ -232,9 +246,7 @@ export default function Header() {
                                             {user.role === "caregiver" ? "Điều dưỡng" : user.role === "admin" ? "Administrator" : "Gia đình"}
                                         </span>
                                     </div>
-                                    <svg className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform ${showUserDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                    </svg>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform ${showUserDropdown ? "rotate-180" : ""}`} />
                                 </button>
 
                                 {/* Dropdown menu người dùng */}
@@ -279,9 +291,7 @@ export default function Header() {
                                                             onClick={() => setShowUserDropdown(false)}
                                                             className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-teal-50/70 hover:text-teal-700 transition-colors"
                                                         >
-                                                            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                                                            </svg>
+                                                            <LayoutGrid className="w-4 h-4 text-teal-600" />
                                                             <span>Bảng điều khiển Caregiver</span>
                                                         </Link>
                                                         <Link
@@ -289,9 +299,7 @@ export default function Header() {
                                                             onClick={() => setShowUserDropdown(false)}
                                                             className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-teal-50/70 hover:text-teal-700 transition-colors"
                                                         >
-                                                            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                                            </svg>
+                                                            <Calendar className="w-4 h-4 text-teal-600" />
                                                             <span>Lịch làm việc của tôi</span>
                                                         </Link>
                                                     </>
@@ -302,9 +310,7 @@ export default function Header() {
                                                         onClick={() => setShowUserDropdown(false)}
                                                         className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-teal-50/70 hover:text-teal-700 transition-colors"
                                                     >
-                                                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                                                        </svg>
+                                                        <ShieldCheck className="w-4 h-4 text-teal-600" />
                                                         <span>Cổng Quản trị Hệ thống</span>
                                                     </Link>
                                                 ) : (
@@ -315,9 +321,7 @@ export default function Header() {
                                                             onClick={() => setShowUserDropdown(false)}
                                                             className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-teal-50/70 hover:text-teal-700 transition-colors"
                                                         >
-                                                            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                                                            </svg>
+                                                            <LayoutGrid className="w-4 h-4 text-teal-600" />
                                                             <span>Bảng điều khiển</span>
                                                         </Link>
 
@@ -326,9 +330,7 @@ export default function Header() {
                                                             onClick={() => setShowUserDropdown(false)}
                                                             className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-teal-50/70 hover:text-teal-700 transition-colors"
                                                         >
-                                                            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                                            </svg>
+                                                            <Calendar className="w-4 h-4 text-teal-600" />
                                                             <span>Lịch hẹn</span>
                                                         </Link>
 
@@ -337,10 +339,7 @@ export default function Header() {
                                                             onClick={() => setShowUserDropdown(false)}
                                                             className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-teal-50/70 hover:text-teal-700 transition-colors"
                                                         >
-                                                            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
-                                                            </svg>
+                                                            <PieChart className="w-4 h-4 text-teal-600" />
                                                             <span>Báo cáo sức khỏe</span>
                                                         </Link>
                                                     </>
@@ -353,9 +352,7 @@ export default function Header() {
                                                     onClick={handleLogout}
                                                     className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer"
                                                 >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                                                    </svg>
+                                                    <LogOut className="w-4 h-4" />
                                                     <span>Đăng xuất</span>
                                                 </button>
                                             </div>
@@ -378,9 +375,7 @@ export default function Header() {
                                 className="px-4 py-2 text-xs sm:text-[13px] font-semibold text-white bg-[#00677c] hover:bg-[#005566] rounded-xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-1.5"
                             >
                                 <span>Tham gia ngay</span>
-                                <svg className="w-3.5 h-3.5 text-teal-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
+                                <ArrowRight className="w-3.5 h-3.5 text-teal-200" strokeWidth={2.2} />
                             </Link>
                         </div>
                     )}
@@ -389,17 +384,14 @@ export default function Header() {
                     <button
                         type="button"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                        aria-label="Menu"
+                        className="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00677c]/30"
+                        aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
+                        aria-expanded={mobileMenuOpen}
                     >
                         {mobileMenuOpen ? (
-                            <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <X className="w-5.5 h-5.5" />
                         ) : (
-                            <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                            </svg>
+                            <Menu className="w-5.5 h-5.5" />
                         )}
                     </button>
                 </div>
