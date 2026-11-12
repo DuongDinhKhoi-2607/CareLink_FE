@@ -19,6 +19,7 @@ import {
     ArrowRight,
     CalendarClock,
     ShieldCheck,
+    ShieldAlert,
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
@@ -114,6 +115,20 @@ function BookingStepIndicator({ currentStep, onSelectStep, maxReachedStep = 1 })
     );
 }
 
+// ── ĐỊNH DẠNG ĐỊA CHỈ TRỰC QUAN & ĐẦY ĐỦ ──
+const formatAddressDisplay = (addr) => {
+    if (!addr) return "Địa chỉ mặc định";
+    if (addr.fullAddress && addr.fullAddress.trim()) {
+        return addr.fullAddress.trim();
+    }
+    const street = (addr.streetAddress || addr.addressLine || "").trim();
+    const ward = (addr.ward || "").trim();
+    const district = (addr.district || "").trim();
+    const city = (addr.city || "").trim();
+    const parts = [street, ward, district, city].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "Địa chỉ mặc định";
+};
+
 export default function DirectBookingModal({
     isOpen,
     onClose,
@@ -186,6 +201,7 @@ export default function DirectBookingModal({
     // ── POPUPS NỘI BỘ (Xem bệnh án, Thêm người thân, Xác nhận điều khoản) ──
     const [selectedViewingRecipient, setSelectedViewingRecipient] = useState(null);
     const [showAddRelativeModal, setShowAddRelativeModal] = useState(false);
+    const [showConsentModal, setShowConsentModal] = useState(false);
     const [newRelativeForm, setNewRelativeForm] = useState({
         fullName: "",
         dateOfBirth: "",
@@ -564,12 +580,16 @@ export default function DirectBookingModal({
     };
 
     // ── 8. XỬ LÝ GỬI ĐẶT LỊCH TRỰC TIẾP & ĐIỀU HƯỚNG SANG PAYOS ──
-    const handleFinalConfirmBooking = async () => {
+    const handleFinalConfirmBooking = () => {
         if (isProposalMode) {
-            await handleSubmitProposal();
+            handleSubmitProposal();
             return;
         }
+        // Mở modal cảnh báo màu vàng xác nhận quyền riêng tư & chia sẻ hồ sơ bệnh án
+        setShowConsentModal(true);
+    };
 
+    const executeDirectBooking = async () => {
         setIsSubmitting(true);
         setValidationError("");
 
@@ -610,6 +630,7 @@ export default function DirectBookingModal({
             const createdBooking = await familyApi.createBooking(payload);
             const targetBookingId = createdBooking?.id || createdBooking?.bookingId;
 
+            setShowConsentModal(false);
             onClose();
 
             if (targetBookingId && (createdBooking?.status === 1 || createdBooking?.status === "PendingPayment")) {
@@ -638,6 +659,7 @@ export default function DirectBookingModal({
                 }
             }
             setValidationError(msg);
+            setShowConsentModal(false);
         } finally {
             setIsSubmitting(false);
         }
@@ -907,7 +929,7 @@ export default function DirectBookingModal({
                                                     const id = addr.id || addr.addressId;
                                                     return (
                                                         <option key={id} value={id}>
-                                                            {addr.label ? `[${addr.label}] ` : ""}{addr.streetAddress || addr.addressLine}, {addr.district || ""}, {addr.city || ""}
+                                                            {addr.label ? `[${addr.label}] ` : ""}{formatAddressDisplay(addr)}
                                                         </option>
                                                     );
                                                 })}
@@ -1151,8 +1173,8 @@ export default function DirectBookingModal({
                                             </div>
                                             <div>
                                                 <span className="text-slate-400 block text-[11px]">Địa chỉ tiếp nhận:</span>
-                                                <span className="font-bold text-slate-900 truncate block">
-                                                    {selectedAddressObj ? `${selectedAddressObj.streetAddress || selectedAddressObj.addressLine}, ${selectedAddressObj.city || ""}` : "Địa chỉ mặc định"}
+                                                <span className="font-bold text-slate-900 truncate block" title={formatAddressDisplay(selectedAddressObj)}>
+                                                    {formatAddressDisplay(selectedAddressObj)}
                                                 </span>
                                             </div>
                                         </div>
@@ -1222,21 +1244,23 @@ export default function DirectBookingModal({
                                         />
                                     </div>
 
-                                    {/* 4. Checkbox đồng ý chia sẻ thông tin y tế */}
-                                    <div className="p-3.5 rounded-2xl bg-teal-50/50 border border-teal-200/80">
-                                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                                            <input
-                                                type="checkbox"
-                                                checked={consentMedical}
-                                                onChange={(e) => setConsentMedical(e.target.checked)}
-                                                className="w-4 h-4 mt-0.5 text-[#00677C] rounded border-slate-300 focus:ring-teal-500 cursor-pointer shrink-0"
-                                            />
-                                            <div className="text-xs text-slate-700 leading-relaxed">
-                                                <strong className="text-slate-900">Chia sẻ tóm tắt tiền sử bệnh:</strong>{" "}
-                                                Tôi đồng ý chia sẻ tiền sử dị ứng, bệnh nền và lưu ý y tế của người thân để điều dưỡng chuẩn bị dụng cụ chuyên môn chu đáo nhất.
-                                            </div>
-                                        </label>
-                                    </div>
+                                    {/* 4. Checkbox đồng ý chia sẻ thông tin y tế (Chỉ hiển thị khi thương lượng qua Chat) */}
+                                    {isProposalMode && (
+                                        <div className="p-3.5 rounded-2xl bg-teal-50/50 border border-teal-200/80">
+                                            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={consentMedical}
+                                                    onChange={(e) => setConsentMedical(e.target.checked)}
+                                                    className="w-4 h-4 mt-0.5 text-[#00677C] rounded border-slate-300 focus:ring-teal-500 cursor-pointer shrink-0"
+                                                />
+                                                <div className="text-xs text-slate-700 leading-relaxed">
+                                                    <strong className="text-slate-900">Chia sẻ tóm tắt tiền sử bệnh:</strong>{" "}
+                                                    Tôi đồng ý chia sẻ tiền sử dị ứng, bệnh nền và lưu ý y tế của người thân để điều dưỡng chuẩn bị dụng cụ chuyên môn chu đáo nhất.
+                                                </div>
+                                            </label>
+                                        </div>
+                                    )}
 
                                     {/* 5. Bảng phân rã chi phí minh bạch */}
                                     <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-white space-y-2.5 shadow-xs">
@@ -1518,6 +1542,103 @@ export default function DirectBookingModal({
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── MODAL CẢNH BÁO VÀNG: XÁC NHẬN QUYỀN RIÊNG TƯ & CHIA SẺ HỒ SƠ Y TẾ ── */}
+            {showConsentModal && (
+                <div
+                    className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4 backdrop-blur-2xs animate-in fade-in duration-200"
+                    onClick={() => !isSubmitting && setShowConsentModal(false)}
+                >
+                    <div
+                        className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-amber-200 space-y-5 animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header Modal */}
+                        <div className="flex items-start justify-between gap-3 pb-3 border-b border-amber-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+                                    <AlertTriangle className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-bold text-slate-900">
+                                        Quyền riêng tư & Hồ sơ y tế
+                                    </h4>
+                                    <p className="text-xs text-slate-500">
+                                        Bảo mật thông tin sức khỏe cho {selectedRecipientObj?.name || "người thân"}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowConsentModal(false)}
+                                disabled={isSubmitting}
+                                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Nội dung cảnh báo vàng */}
+                        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-xs text-amber-900 space-y-2 leading-relaxed">
+                            <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                                Lưu ý về dữ liệu sức khỏe cá nhân:
+                            </p>
+                            <p>
+                                Tiền sử bệnh lý, dị ứng thuốc và ghi chú điều trị là thông tin y tế nhạy cảm. CareLink cam kết bảo mật theo quy định và chỉ chia sẻ cho điều dưỡng phụ trách khi có sự đồng ý của gia đình.
+                            </p>
+                        </div>
+
+                        {/* Checkbox chia sẻ hồ sơ (Mặc định không tích) */}
+                        <label className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200 transition cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={consentMedical}
+                                onChange={(e) => setConsentMedical(e.target.checked)}
+                                className="w-4 h-4 mt-0.5 text-[#00677C] rounded border-slate-300 focus:ring-teal-500 cursor-pointer shrink-0"
+                            />
+                            <div className="text-xs text-slate-700 leading-relaxed">
+                                <strong className="text-slate-900 block mb-0.5">
+                                    Đồng ý chia sẻ tóm tắt bệnh án cho điều dưỡng
+                                </strong>
+                                Cho phép điều dưỡng phụ trách ca trực xem trước tiền sử bệnh nền, dị ứng và lưu ý chăm sóc để chuẩn bị dụng cụ chu đáo nhất.
+                            </div>
+                        </label>
+
+                        <p className="text-[11px] text-slate-400 italic px-1">
+                            💡 Nếu không tích chọn, điều dưỡng chỉ nhận thông tin dịch vụ và địa chỉ mà không thể xem hồ sơ bệnh án.
+                        </p>
+
+                        {validationError && (
+                            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                                {validationError}
+                            </div>
+                        )}
+
+                        {/* Footer Buttons */}
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowConsentModal(false)}
+                                disabled={isSubmitting}
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                            >
+                                Xem lại
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={executeDirectBooking}
+                                className="px-6 py-2.5 rounded-xl bg-[#00677C] hover:bg-[#005566] text-white text-xs font-bold transition shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                            >
+                                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                <span>Tiếp tục thanh toán</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
