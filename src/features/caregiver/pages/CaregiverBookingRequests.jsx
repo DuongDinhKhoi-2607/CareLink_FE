@@ -10,6 +10,8 @@ import {
     AlertTriangle,
     Clock,
     ShieldCheck,
+    ShieldAlert,
+    MessageSquare,
 } from "lucide-react";
 import SubmitHealthRecordModal from "../components/SubmitHealthRecordModal";
 import RejectBookingModal from "../components/RejectBookingModal";
@@ -424,13 +426,18 @@ function BookingCard({ booking, onAccept, onReject, onStart, onReport, onViewRec
                             <button
                                 id={`reject-${id}`}
                                 onClick={() => onReject(booking)}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white border-2 border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 hover:border-red-300 active:scale-[0.98] transition-all cursor-pointer"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-50 hover:border-rose-300 active:scale-[0.98] transition-all cursor-pointer"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                Từ chối
+                                <XCircle className="w-4 h-4" />
+                                Từ chối nhận ca
                             </button>
+                            <Link
+                                to="/caregiver/messages"
+                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+                            >
+                                <MessageSquare className="w-3.5 h-3.5 text-[#00677c]" />
+                                <span>Trao đổi thỏa thuận qua Chat</span>
+                            </Link>
                         </div>
                     )}
 
@@ -569,7 +576,6 @@ export default function CaregiverBookingRequests() {
     const [bookings, setBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState(null);
-    const [isUsingFallback, setIsUsingFallback] = useState(false);
     const [filter, setFilter] = useState("all"); // "all" | "pending" | "accepted" | "in_progress" | "completed" | "rejected"
     const [reportingBooking, setReportingBooking] = useState(null);
     const [viewingRecordBooking, setViewingRecordBooking] = useState(null);

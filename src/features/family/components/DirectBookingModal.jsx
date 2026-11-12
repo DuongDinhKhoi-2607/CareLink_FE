@@ -1,33 +1,118 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     X,
-    Calendar,
-    CalendarCheck,
     Clock,
     User,
     MapPin,
     Check,
-    CheckCircle2,
-    ShieldAlert,
     AlertCircle,
     Loader2,
     Sparkles,
-    CreditCard,
     Stethoscope,
-    Lock,
-    HelpCircle,
     Plus,
     Minus,
     AlertTriangle,
     UserPlus,
     Info,
-    Send,
-    MessageSquare,
-    Wallet,
+    ArrowLeft,
+    ArrowRight,
+    CalendarClock,
+    ShieldCheck,
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
+
+// ── BỘ CHỈ BÁO TIẾN TRÌNH 3 BƯỚC (NỘI BỘ) ──
+const BOOKING_STEPS = [
+    {
+        step: 1,
+        title: "Người nhận & Địa chỉ",
+        subtitle: "Hồ sơ chăm sóc",
+        icon: User,
+    },
+    {
+        step: 2,
+        title: "Dịch vụ & Khung giờ",
+        subtitle: "Gói & Suất trực",
+        icon: CalendarClock,
+    },
+    {
+        step: 3,
+        title: "Xác nhận & Chi phí",
+        subtitle: "Bảo đảm minh bạch",
+        icon: ShieldCheck,
+    },
+];
+
+function BookingStepIndicator({ currentStep, onSelectStep, maxReachedStep = 1 }) {
+    return (
+        <div className="w-full bg-slate-50/80 border-b border-slate-200/80 px-4 sm:px-6 py-3 shrink-0">
+            <nav aria-label="Các bước đặt lịch" className="flex items-center justify-between max-w-xl mx-auto relative">
+                {/* Connecting background progress track */}
+                <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-slate-200 -z-0" />
+                <div
+                    className="absolute left-6 top-1/2 -translate-y-1/2 h-0.5 bg-[#00677C] transition-all duration-300 -z-0"
+                    style={{
+                        width: currentStep === 1 ? "0%" : currentStep === 2 ? "50%" : "calc(100% - 3rem)",
+                    }}
+                />
+
+                {BOOKING_STEPS.map((s) => {
+                    const isCompleted = s.step < currentStep;
+                    const isCurrent = s.step === currentStep;
+                    const isClickable = s.step <= maxReachedStep;
+                    const IconComp = s.icon;
+
+                    return (
+                        <button
+                            key={s.step}
+                            type="button"
+                            disabled={!isClickable}
+                            onClick={() => isClickable && onSelectStep && onSelectStep(s.step)}
+                            aria-current={isCurrent ? "step" : undefined}
+                            className={`flex flex-col items-center gap-1.5 relative z-10 transition-all ${
+                                isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-75"
+                            }`}
+                        >
+                            <div
+                                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all duration-200 border-2 ${
+                                    isCurrent
+                                        ? "bg-[#00677C] text-white border-[#00677C] ring-4 ring-teal-500/20 shadow-md scale-105"
+                                        : isCompleted
+                                        ? "bg-teal-600 text-white border-teal-600"
+                                        : "bg-white text-slate-400 border-slate-300"
+                                }`}
+                            >
+                                {isCompleted ? (
+                                    <Check className="w-4 h-4 stroke-[2.5]" />
+                                ) : (
+                                    <IconComp className="w-4 h-4" />
+                                )}
+                            </div>
+                            <div className="text-center">
+                                <span
+                                    className={`block text-[11px] sm:text-xs font-bold leading-tight ${
+                                        isCurrent
+                                            ? "text-[#00677C]"
+                                            : isCompleted
+                                            ? "text-slate-800"
+                                            : "text-slate-400"
+                                    }`}
+                                >
+                                    {s.title}
+                                </span>
+                                <span className="hidden sm:block text-[10px] text-slate-500 font-medium">
+                                    {s.subtitle}
+                                </span>
+                            </div>
+                        </button>
+                    );
+                })}
+            </nav>
+        </div>
+    );
+}
 
 export default function DirectBookingModal({
     isOpen,
@@ -51,6 +136,10 @@ export default function DirectBookingModal({
         caregiver?.avatar ||
         "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
 
+    // ── STEPPER CONTROLLER ──
+    const [currentStep, setCurrentStep] = useState(1); // 1: Người nhận & Địa chỉ, 2: Dịch vụ & Thời gian, 3: Xác nhận & Chi phí
+    const [maxReachedStep, setMaxReachedStep] = useState(1);
+
     // ── DATA STATES ──
     const [recipients, setRecipients] = useState([]);
     const [addresses, setAddresses] = useState([]);
@@ -58,16 +147,15 @@ export default function DirectBookingModal({
     const [loadingData, setLoadingData] = useState(false);
     const [dataError, setDataError] = useState("");
 
-    // ── FORM INPUTS ──
+    // ── STEP 1: FORM INPUTS (Người nhận & Địa chỉ) ──
     const [selectedRecipientId, setSelectedRecipientId] = useState("");
     const [selectedAddressId, setSelectedAddressId] = useState("");
+
+    // ── STEP 2: FORM INPUTS (Dịch vụ & Khung giờ) ──
     const [selectedServiceIds, setSelectedServiceIds] = useState([]);
     const [serviceQuantities, setServiceQuantities] = useState({}); // { [serviceId]: number }
-
-    // Giờ yêu cầu có mặt tại nhà (I.2)
     const [requestedArrivalTime, setRequestedArrivalTime] = useState("");
 
-    // Ngày chọn lịch (mặc định hôm nay hoặc ngày truyền vào YYYY-MM-DD)
     const todayStr = useMemo(() => {
         const now = new Date();
         const year = now.getFullYear();
@@ -77,41 +165,26 @@ export default function DirectBookingModal({
     }, []);
 
     const [selectedDate, setSelectedDate] = useState(initialDate || todayStr);
-
-    // ── SLOTS CINEMA (FE-02) ──
     const [slots, setSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [selectedSlotIndexes, setSelectedSlotIndexes] = useState([]);
 
-    // ── GHI CHÚ DẶN DÒ & LỖI VALIDATION (HIỂN THỊ DƯỚI TỔNG TIỀN) ──
+    // ── STEP 3: FORM INPUTS (Ghi chú & Xác nhận) ──
     const [customerNotes, setCustomerNotes] = useState("");
+    const [consentMedical, setConsentMedical] = useState(false); // Checkbox quyền riêng tư y tế
     const [validationError, setValidationError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // ── REALTIME CẢNH BÁO GIÁ THAY ĐỔI ──
-    const [priceUpdateAlert, setPriceUpdateAlert] = useState("");
-    const previousPricingRef = useRef(null);
 
     // ── THƯƠNG LƯỢNG GIÁ QUA CHAT (NẾU MỞ TỪ PHÒNG CHAT) ──
     const [isProposalMode, setIsProposalMode] = useState(false);
     const [proposedPrice, setProposedPrice] = useState("");
 
-    // ── SỐ DƯ VÍ CARELINK & TÙY CHỌN CẤN TRỪ KHI ĐẶT CA TRỰC ──
-    const [walletBalance, setWalletBalance] = useState(() => {
-        try {
-            const saved = localStorage.getItem("carelink_family_wallet_balance");
-            return saved !== null ? Number(saved) : 60000;
-        } catch {
-            return 60000;
-        }
-    });
-    const [useWalletBalance, setUseWalletBalance] = useState(false);
-    const [customWalletDeduct, setCustomWalletDeduct] = useState("");
+    // ── REALTIME CẢNH BÁO GIÁ THAY ĐỔI ──
+    const [priceUpdateAlert, setPriceUpdateAlert] = useState("");
+    const previousPricingRef = useRef(null);
 
-    // ── MODAL XEM CHI TIẾT HỒ SƠ Y TẾ NGƯỜI THÂN (NÚT I) ──
+    // ── POPUPS NỘI BỘ (Xem bệnh án, Thêm người thân, Xác nhận điều khoản) ──
     const [selectedViewingRecipient, setSelectedViewingRecipient] = useState(null);
-
-    // ── MODAL LỒNG: THÊM HỒ SƠ NGƯỜI THÂN TỨC THÌ ──
     const [showAddRelativeModal, setShowAddRelativeModal] = useState(false);
     const [newRelativeForm, setNewRelativeForm] = useState({
         fullName: "",
@@ -124,11 +197,7 @@ export default function DirectBookingModal({
     const [isSavingRelative, setIsSavingRelative] = useState(false);
     const [addRelativeError, setAddRelativeError] = useState("");
 
-    // ── POPUP XÁC NHẬN QUYỀN RIÊNG TƯ Y TẾ (MÀU VÀNG/AMBER, MẶC ĐỊNH CHƯA TÍCH) ──
-    const [showPrivacyPopup, setShowPrivacyPopup] = useState(false);
-    const [consentMedical, setConsentMedical] = useState(false); // Mặc định CHƯA TÍCH theo yêu cầu user
-
-    // Lấy Customer ID từ localStorage để gọi API available-slots
+    // Customer ID từ localStorage
     const currentCustomerId = useMemo(() => {
         try {
             const raw = localStorage.getItem("carelink_user");
@@ -140,7 +209,7 @@ export default function DirectBookingModal({
         }
     }, []);
 
-    // ── HELPER TÍNH TUỔI TỪ NGÀY SINH ──
+    // Helper tính tuổi
     const calculateAge = useCallback((dobString) => {
         if (!dobString) return null;
         const dob = new Date(dobString);
@@ -179,14 +248,13 @@ export default function DirectBookingModal({
                 setSelectedAddressId((prev) => (prev && addrList.some((a) => (a.id || a.addressId) === prev) ? prev : (addrList[0]?.id || addrList[0]?.addressId || "")));
             }
 
-            // 3. Bảng giá dịch vụ của điều dưỡng
+            // 3. Bảng giá dịch vụ
             if (pricingRes.status === "fulfilled") {
                 const raw = pricingRes.value;
                 const pricingList = Array.isArray(raw) ? raw : (raw?.data || []);
                 const offered = pricingList.filter((item) => item.isOffered !== false);
                 const finalPricing = offered.length > 0 ? offered : pricingList;
 
-                // Kiểm tra Realtime xem giá có vừa bị điều dưỡng sửa đổi không
                 if (previousPricingRef.current && previousPricingRef.current.length > 0) {
                     let hasChanged = false;
                     for (const item of finalPricing) {
@@ -197,7 +265,7 @@ export default function DirectBookingModal({
                         }
                     }
                     if (hasChanged) {
-                        setPriceUpdateAlert("Điều dưỡng vừa cập nhật lại đơn giá/thời lượng dịch vụ. Hệ thống đã đồng bộ giá mới nhất, vui lòng xem lại trước khi xác nhận!");
+                        setPriceUpdateAlert("Điều dưỡng vừa cập nhật lại đơn giá/thời lượng dịch vụ. Hệ thống đã đồng bộ giá mới nhất.");
                     }
                 }
                 previousPricingRef.current = finalPricing;
@@ -215,7 +283,6 @@ export default function DirectBookingModal({
         if (!isOpen || !nurseId) return;
         loadFormData(true);
 
-        // Realtime Polling: Kiểm tra bảng giá cập nhật mỗi 8 giây khi modal đang mở
         const pricingTimer = setInterval(() => {
             loadFormData(false);
         }, 8000);
@@ -223,7 +290,7 @@ export default function DirectBookingModal({
         return () => clearInterval(pricingTimer);
     }, [isOpen, nurseId, loadFormData]);
 
-    // ── 2. TẢI SLOTS RẠP PHIM CHO NGÀY ĐƯỢC CHỌN ──
+    // ── 2. TẢI SLOTS CHO NGÀY ĐƯỢC CHỌN ──
     const fetchSlots = useCallback(async (date) => {
         if (!nurseId || !date) return;
         setLoadingSlots(true);
@@ -264,7 +331,6 @@ export default function DirectBookingModal({
         }
     }, [isOpen, selectedDate, fetchSlots]);
 
-    // Cập nhật selectedDate nếu prop initialDate thay đổi
     useEffect(() => {
         if (initialDate) setSelectedDate(initialDate);
     }, [initialDate]);
@@ -285,15 +351,14 @@ export default function DirectBookingModal({
             }
         });
 
-        // Mỗi slot rạp phim chuẩn là 60 phút (Smart Cinema Slot Selection: Math.ceil(mins / 60))
         const needed = mins > 0 ? Math.ceil(mins / 60) : 0;
         return { totalMinutes: mins, requiredSlots: needed, baseServicesPrice: price };
     }, [selectedServiceIds, serviceQuantities, services]);
 
-    // Phí sàn cố định ADR-002
+    // Phí sàn cố định ADR-002: 60.000 VNĐ
     const platformFee = 60000;
 
-    // Giờ làm thêm (Overtime) do khách chủ động chọn thêm slot nán lại (Section IV doc)
+    // Giờ làm thêm (Overtime) do khách chủ động chọn thêm slot
     const extraSlotsCount = Math.max(0, selectedSlotIndexes.length - requiredSlots);
     const extraMinutes = extraSlotsCount * 60;
     const effectiveHourlyRate = totalMinutes > 0 ? (baseServicesPrice / (totalMinutes / 60)) : 100000;
@@ -302,17 +367,7 @@ export default function DirectBookingModal({
     const totalServicePrice = baseServicesPrice + extraMinutesPrice;
     const grandTotal = totalServicePrice > 0 ? totalServicePrice + platformFee : platformFee;
 
-    // ── TÍNH TOÁN CẤN TRỪ SỐ DƯ VÍ CARELINK ──
-    const actualTotalBeforeDeduction = isProposalMode && proposedPrice
-        ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10) + platformFee
-        : grandTotal;
-
-    const maxDeductible = Math.min(walletBalance, actualTotalBeforeDeduction);
-    const parsedCustomDeduct = customWalletDeduct.trim() !== "" ? Number(customWalletDeduct.replace(/\D/g, "")) : 0;
-    const walletDeductAmount = useWalletBalance ? Math.min(maxDeductible, Math.max(0, parsedCustomDeduct)) : 0;
-    const finalPayAmount = Math.max(0, actualTotalBeforeDeduction - walletDeductAmount);
-
-    // ── 4. CHỌN/BỎ CHỌN DỊCH VỤ & TĂNG/GIẢM SỐ LƯỢNG CA (SLOT) ──
+    // ── 4. CHỌN/BỎ CHỌN DỊCH VỤ & TĂNG/GIẢM SỐ LƯỢNG CA ──
     const handleToggleService = (serviceId) => {
         setValidationError("");
         setSelectedServiceIds((prev) => {
@@ -339,42 +394,7 @@ export default function DirectBookingModal({
         setSelectedSlotIndexes([]);
     };
 
-    // ── XỬ LÝ NHẬP MỨC GIÁ ĐỀ XUẤT MƯỢT MÀ (CHỐNG NHẢY CON TRỎ / NHẢY LOẠN SỐ) ──
-    const priceInputRef = useRef(null);
-
-    const handleProposedPriceChange = (e) => {
-        const input = e.target;
-        const rawVal = input.value;
-        const selStart = input.selectionStart || rawVal.length;
-        const offsetFromEnd = rawVal.length - selStart;
-
-        // Trích xuất các chữ số thuần túy
-        const digits = rawVal.replace(/\D/g, "");
-
-        if (!digits) {
-            setProposedPrice("");
-            return;
-        }
-
-        // Giới hạn tối đa 8 chữ số (dưới 100 triệu VNĐ)
-        const trimmed = digits.slice(0, 8);
-        const num = Math.min(parseInt(trimmed, 10), 50000000);
-
-        // Định dạng phân tách hàng nghìn bằng dấu chấm chuẩn Việt Nam
-        const formatted = num.toLocaleString("vi-VN");
-
-        // Giữ vị trí con trỏ tính từ cuối chuỗi để không bao giờ bị nhảy về đầu hoặc giữa chuỗi
-        requestAnimationFrame(() => {
-            if (input) {
-                const newPos = Math.max(0, formatted.length - offsetFromEnd);
-                input.setSelectionRange(newPos, newPos);
-            }
-        });
-
-        setProposedPrice(formatted);
-    };
-
-    // ── 5. THUẬT TOÁN CHỌN SUẤT TRỰC THÔNG MINH (SMART CINEMA SLOTS) ──
+    // ── 5. THUẬT TOÁN CHỌN SUẤT TRỰC THÔNG MINH (CINEMA SLOTS) ──
     const isConsecutive = (indexes) => {
         if (indexes.length <= 1) return true;
         const sorted = [...indexes].sort((a, b) => a - b);
@@ -391,7 +411,7 @@ export default function DirectBookingModal({
         if (!slot.isAvailable) return;
 
         if (requiredSlots === 0) {
-            setValidationError("Vui lòng chọn dịch vụ chăm sóc y tế ở mục 3 trước khi chọn khung giờ!");
+            setValidationError("Vui lòng chọn dịch vụ chăm sóc y tế ở trên trước khi chọn khung giờ!");
             return;
         }
 
@@ -403,7 +423,7 @@ export default function DirectBookingModal({
             return;
         }
 
-        // Tự động quét chọn chuỗi requiredSlots liên tiếp từ ô click (Quy tắc Cinema Auto-Select)
+        // Tự động quét chọn chuỗi requiredSlots liên tiếp từ ô click
         const targetIndexes = [];
         let canAutoSelect = true;
 
@@ -421,8 +441,6 @@ export default function DirectBookingModal({
             setSelectedSlotIndexes(targetIndexes);
             setValidationError("");
         } else {
-            // Không đủ slot liên tiếp từ mốc này
-            const missingSlot = slots.find((s) => s.slotIndex >= idx && (!s.isAvailable || s.slotIndex >= idx + requiredSlots));
             setSelectedSlotIndexes([idx]);
             setValidationError(
                 `Dịch vụ cần ${requiredSlots} khung giờ liên tiếp (${totalMinutes} phút). Từ mốc ${slot.startTime} không đủ số suất trực trống liền kề. Vui lòng chọn mốc giờ bắt đầu khác!`
@@ -430,39 +448,49 @@ export default function DirectBookingModal({
         }
     };
 
-    // ── 6. BƯỚC 1: XÁC THỰC DỮ LIỆU & MỞ POPUP QUYỀN RIÊNG TƯ Y TẾ ──
-    const handleInitiateBooking = (e) => {
-        e.preventDefault();
+    // ── 6. ĐIỀU HƯỚNG WIZARD TỪNG BƯỚC ──
+    const handleNextFromStep1 = () => {
         setValidationError("");
-
         if (!selectedRecipientId) {
-            setValidationError("Vui lòng chọn người thân cần chăm sóc hoặc bấm 'Thêm người thân' để tạo hồ sơ.");
+            setValidationError("Vui lòng chọn người thân cần chăm sóc để tiếp tục.");
             return;
         }
+        if (!selectedAddressId && addresses.length > 0) {
+            setValidationError("Vui lòng chọn địa chỉ nhận ca trực tại nhà.");
+            return;
+        }
+        setCurrentStep(2);
+        setMaxReachedStep((prev) => Math.max(prev, 2));
+    };
 
+    const handleNextFromStep2 = () => {
+        setValidationError("");
         if (selectedServiceIds.length === 0) {
-            setValidationError("Vui lòng chọn ít nhất một gói dịch vụ chăm sóc y tế.");
+            setValidationError("Vui lòng chọn ít nhất 1 gói dịch vụ chăm sóc.");
             return;
         }
-
-        if (selectedSlotIndexes.length === 0) {
-            setValidationError(`Vui lòng chọn ${requiredSlots} khung giờ liên tiếp cho gói dịch vụ (${totalMinutes} phút).`);
+        if (!selectedDate) {
+            setValidationError("Vui lòng chọn ngày thực hiện ca trực.");
             return;
         }
-
         if (selectedSlotIndexes.length < requiredSlots) {
             const missing = requiredSlots - selectedSlotIndexes.length;
             setValidationError(`Gói dịch vụ bạn chọn có tổng thời lượng ${totalMinutes} phút (cần tối thiểu ${requiredSlots} khung giờ). Bạn cần chọn thêm ${missing} khung giờ liên tiếp còn thiếu.`);
             return;
         }
-
         if (!isConsecutive(selectedSlotIndexes)) {
-            setValidationError("Các khung giờ trong một ca trực phải liên tiếp nhau (không được ngắt quãng). Vui lòng chọn các khung giờ liền kề!");
+            setValidationError("Các khung giờ trong một ca trực phải liên tiếp nhau. Vui lòng chọn các khung giờ liền kề!");
             return;
         }
+        setCurrentStep(3);
+        setMaxReachedStep((prev) => Math.max(prev, 3));
+    };
 
-        // Tất cả hợp lệ -> Mở popup Quyền riêng tư & Bảo mật Y tế trước khi gửi (áp dụng cho cả 2 luồng)
-        setShowPrivacyPopup(true);
+    const handleJumpStep = (step) => {
+        if (step <= maxReachedStep) {
+            setValidationError("");
+            setCurrentStep(step);
+        }
     };
 
     // ── 7. XỬ LÝ GỬI ĐỀ XUẤT THƯƠNG LƯỢNG GIÁ QUA CHAT ──
@@ -500,7 +528,6 @@ export default function DirectBookingModal({
 
             let targetConvId = conversationId;
             if (!targetConvId && nurseId) {
-                // Tự động tìm hoặc tạo hội thoại với điều dưỡng này nếu mở từ Profile
                 const convRes = await conversationApi.getOrCreateConversation({
                     nurseId: nurseId,
                     NurseId: nurseId,
@@ -515,11 +542,9 @@ export default function DirectBookingModal({
 
             await conversationApi.createProposal(targetConvId, proposalPayload);
 
-            setShowPrivacyPopup(false);
             onProposalCreated?.();
             onClose();
 
-            // Nếu mở ngoài phòng chat, chuyển hướng vào phòng chat để theo dõi tiến độ đàm phán
             if (!conversationId) {
                 navigate(`/chat?nurseId=${nurseId}`, {
                     state: {
@@ -530,16 +555,15 @@ export default function DirectBookingModal({
                 });
             }
         } catch (err) {
-            console.error("[CareLink] Lỗi gửi đề xuất ca trực:", err);
-            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất ca qua Chat lúc này. Vui lòng thử lại!";
+            console.error("[CareLink] Lỗi gửi đề xuất giá:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể gửi đề xuất ca lúc này. Vui lòng thử lại!";
             setValidationError(msg);
-            setShowPrivacyPopup(false);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // ── 8. BƯỚC 2: GỬI LỊCH ĐẶT VÀ CHUYỂN TỚI CHECKOUT (PAYOS VIETQR) ──
+    // ── 8. XỬ LÝ GỬI ĐẶT LỊCH TRỰC TIẾP & ĐIỀU HƯỚNG SANG PAYOS ──
     const handleFinalConfirmBooking = async () => {
         if (isProposalMode) {
             await handleSubmitProposal();
@@ -563,7 +587,6 @@ export default function DirectBookingModal({
             const scheduledStart = `${selectedDate}T${startTimeStr}:00+07:00`;
             const scheduledEnd = `${selectedDate}T${endTimeStr}:00+07:00`;
 
-            // Xây dựng danh sách serviceItems theo chuẩn V2.1 của Q
             const serviceItems = selectedServiceIds.map((id) => ({
                 serviceId: id,
                 quantity: serviceQuantities[id] || 1,
@@ -587,30 +610,6 @@ export default function DirectBookingModal({
             const createdBooking = await familyApi.createBooking(payload);
             const targetBookingId = createdBooking?.id || createdBooking?.bookingId;
 
-            // ── CẤN TRỪ SỐ DƯ VÍ CARELINK (NẾU GIA ĐÌNH CHỌN) ──
-            if (useWalletBalance && walletDeductAmount > 0) {
-                const newBal = Math.max(0, walletBalance - walletDeductAmount);
-                setWalletBalance(newBal);
-                localStorage.setItem("carelink_family_wallet_balance", String(newBal));
-
-                const savedWd = JSON.parse(localStorage.getItem("carelink_family_withdraw_requests") || "[]");
-                savedWd.unshift({
-                    id: `TXN-W-${Date.now().toString().slice(-6)}`,
-                    amount: walletDeductAmount,
-                    bank: "Ví CareLink",
-                    accountNumber: `Ca hẹn #${(targetBookingId || "").slice(0, 8).toUpperCase()}`,
-                    accountName: "Gia đình",
-                    date: new Date().toLocaleDateString("vi-VN"),
-                    time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-                    timestamp: Date.now(),
-                    status: "Đã cấn trừ đặt ca",
-                    reason: `Cấn trừ ${walletDeductAmount.toLocaleString("vi-VN")}đ vào ca trực với điều dưỡng ${nurseName}`,
-                });
-                localStorage.setItem("carelink_family_withdraw_requests", JSON.stringify(savedWd));
-                window.dispatchEvent(new Event("storage"));
-            }
-
-            setShowPrivacyPopup(false);
             onClose();
 
             if (targetBookingId && (createdBooking?.status === 1 || createdBooking?.status === "PendingPayment")) {
@@ -618,18 +617,15 @@ export default function DirectBookingModal({
                     state: { bookingId: targetBookingId, booking: createdBooking },
                 });
             } else {
-                // Theo chuẩn ADR-003: Ca trực tiếp ban đầu ở trạng thái PendingAcceptance (Chờ điều dưỡng nhận).
-                // Điều dưỡng bấm nhận ca -> chuyển sang PendingPayment -> Gia đình mở thanh toán PayOS.
                 navigate("/dashboard/appointments", {
                     state: {
                         newBookingId: targetBookingId,
-                        notice: `Yêu cầu ca trực đã được gửi thành công tới Điều dưỡng ${nurseName}! Vui lòng đợi Điều dưỡng xác nhận nhận ca trước khi tiến hành thanh toán giữ chỗ.`,
+                        message: "Đặt ca hẹn thành công! Đang chờ điều dưỡng xác nhận tiếp nhận.",
                     },
                 });
             }
         } catch (err) {
             console.error("[CareLink] Lỗi đặt ca trực:", err);
-            setShowPrivacyPopup(false);
             const status = err.response?.status;
             let msg = err.response?.data?.detail || err.response?.data?.message;
             if (!msg) {
@@ -671,7 +667,6 @@ export default function DirectBookingModal({
             const created = await familyApi.createRecipient(payload);
             const newId = created?.id || created?.recipientId;
 
-            // Nạp lại danh sách người thân và tự động chọn người vừa thêm
             const updatedRecipients = await familyApi.getRecipients();
             const recList = Array.isArray(updatedRecipients) ? updatedRecipients : (updatedRecipients?.data || updatedRecipients?.items || []);
             setRecipients(recList);
@@ -697,6 +692,14 @@ export default function DirectBookingModal({
 
     if (!isOpen) return null;
 
+    // Lấy thông tin tóm tắt để hiển thị ở Bước 3
+    const selectedRecipientObj = recipients.find((r) => (r.id || r.recipientId) === selectedRecipientId);
+    const selectedAddressObj = addresses.find((a) => (a.id || a.addressId) === selectedAddressId);
+    const sortedIndexes = [...selectedSlotIndexes].sort((a, b) => a - b);
+    const firstSlotObj = slots.find((s) => s.slotIndex === sortedIndexes[0]);
+    const lastSlotObj = slots.find((s) => s.slotIndex === sortedIndexes[sortedIndexes.length - 1]);
+    const timeRangeStr = firstSlotObj && lastSlotObj ? `${firstSlotObj.startTime} – ${lastSlotObj.endTime}` : "Chưa chọn khung giờ";
+
     return (
         <div
             className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/65 p-3 sm:p-4 md:p-6 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
@@ -716,7 +719,7 @@ export default function DirectBookingModal({
                             <img
                                 src={nurseAvatar}
                                 alt={nurseName}
-                                className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-white shadow-sm ring-2 ring-teal-500/20 shrink-0"
+                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-white shadow-sm ring-2 ring-teal-500/20 shrink-0"
                                 onError={(e) => {
                                     e.currentTarget.onerror = null;
                                     e.currentTarget.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
@@ -725,9 +728,9 @@ export default function DirectBookingModal({
                             <div>
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-teal-100/80 text-[#00677C] border border-teal-200/80 mb-1">
                                     <Sparkles className="w-3 h-3 text-[#00677C]" />
-                                    Phiếu đặt lịch nhanh • Chọn giờ linh hoạt
+                                    Phiếu đặt lịch chăm sóc y tế
                                 </div>
-                                <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+                                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
                                     Đặt ca trực với {nurseName}
                                 </h2>
                                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
@@ -750,899 +753,687 @@ export default function DirectBookingModal({
                     </div>
                 </div>
 
-                {/* ── NỘI DUNG CHÍNH (SCROLLABLE BODY) ── */}
-                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+                {/* ── STEPPER INDICATOR ── */}
+                <BookingStepIndicator
+                    currentStep={currentStep}
+                    maxReachedStep={maxReachedStep}
+                    onSelectStep={handleJumpStep}
+                />
 
+                {/* Cảnh báo lỗi tải dữ liệu */}
+                {dataError && (
+                    <div className="mx-5 sm:mx-6 mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5 shrink-0">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <span className="flex-1 font-medium">{dataError}</span>
+                        <button
+                            type="button"
+                            onClick={() => setDataError("")}
+                            className="text-rose-500 hover:text-rose-700 text-xs font-bold"
+                        >
+                            Đã hiểu
+                        </button>
+                    </div>
+                )}
+
+                {/* Cảnh báo cập nhật bảng giá realtime */}
+                {priceUpdateAlert && (
+                    <div className="mx-5 sm:mx-6 mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5 shrink-0">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <span className="flex-1 font-medium">{priceUpdateAlert}</span>
+                        <button
+                            type="button"
+                            onClick={() => setPriceUpdateAlert("")}
+                            className="text-amber-500 hover:text-amber-700 text-xs font-bold"
+                        >
+                            Đã hiểu
+                        </button>
+                    </div>
+                )}
+
+                {/* ── NỘI DUNG CHÍNH (SCROLLABLE WIZARD CONTENT) ── */}
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
                     {loadingData ? (
-                        <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
+                        <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
                             <Loader2 className="w-8 h-8 animate-spin text-[#00677C]" />
                             <p className="text-xs font-semibold">Đang chuẩn bị hồ sơ ca trực và danh mục dịch vụ...</p>
                         </div>
                     ) : (
-                        <form onSubmit={handleInitiateBooking} className="space-y-6">
+                        <div>
+                            {/* ════════ BƯỚC 1: NGƯỜI NHẬN & ĐỊA CHỈ ════════ */}
+                            {currentStep === 1 && (
+                                <div className="space-y-6 animate-in fade-in duration-150">
+                                    {/* 1. Người thân cần chăm sóc */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                            <span className="flex items-center gap-1.5">
+                                                <User className="w-4 h-4 text-[#00677C]" />
+                                                1. Chọn người thân cần chăm sóc <span className="text-rose-500">*</span>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddRelativeModal(true)}
+                                                className="text-[11px] font-bold text-[#00677C] hover:text-[#005263] flex items-center gap-1 cursor-pointer hover:underline"
+                                            >
+                                                <UserPlus className="w-3.5 h-3.5" />
+                                                <span>Thêm người thân</span>
+                                            </button>
+                                        </div>
 
-                            {/* 1. CHỌN NGƯỜI THÂN CẦN CHĂM SÓC */}
-                            <div className="space-y-2.5">
-                                <div className="flex items-center justify-between text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                    <span className="flex items-center gap-1.5">
-                                        <User className="w-4 h-4 text-[#00677C]" />
-                                        1. Người thân cần chăm sóc <span className="text-rose-500">*</span>
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAddRelativeModal(true)}
-                                        className="text-[11px] font-bold text-[#00677C] hover:text-[#005263] flex items-center gap-1 cursor-pointer hover:underline"
-                                    >
-                                        <UserPlus className="w-3.5 h-3.5" />
-                                        <span>Thêm người thân</span>
-                                    </button>
-                                </div>
+                                        {recipients.length > 0 ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {recipients.map((rec) => {
+                                                    const id = rec.id || rec.recipientId;
+                                                    const isSelected = selectedRecipientId === id;
+                                                    const age = calculateAge(rec.dateOfBirth);
+                                                    const genderText = rec.gender === 1 || rec.genderName === "Nam" ? "Nam" : rec.gender === 2 || rec.genderName === "Nữ" ? "Nữ" : "Khác";
 
-                                {recipients.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                        {recipients.map((rec) => {
-                                            const id = rec.id || rec.recipientId;
-                                            const isSelected = selectedRecipientId === id;
-                                            const age = calculateAge(rec.dateOfBirth);
-                                            const genderText = rec.gender === 1 || rec.genderName === "Nam" ? "Nam" : rec.gender === 2 || rec.genderName === "Nữ" ? "Nữ" : "Khác";
-
-                                            return (
-                                                <div
-                                                    key={id}
-                                                    onClick={() => {
-                                                        setSelectedRecipientId(id);
-                                                        setValidationError("");
-                                                    }}
-                                                    className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${isSelected
-                                                            ? "border-[#00677C] bg-teal-50/60 ring-2 ring-[#00677C]/20 shadow-xs"
-                                                            : "border-slate-200 bg-white hover:border-slate-300"
-                                                        }`}
-                                                >
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-xs font-bold text-slate-900 truncate">
-                                                                {rec.fullName || rec.name}
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedViewingRecipient(rec);
-                                                                }}
-                                                                className="p-1 rounded-lg text-slate-400 hover:text-[#00677C] hover:bg-teal-100/60 transition cursor-pointer"
-                                                                title="Xem chi tiết hồ sơ y tế & tiền sử bệnh"
-                                                            >
-                                                                <Info className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                                            <span>{rec.relationship || "Người thân"}</span>
-                                                            <span>•</span>
-                                                            <span>{genderText}</span>
-                                                            <span>•</span>
-                                                            <span>{age ? `${age} tuổi` : (rec.dateOfBirth ? `Sinh ${rec.dateOfBirth}` : "Chưa rõ năm sinh")}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${isSelected ? "border-[#00677C] bg-[#00677C] text-white" : "border-slate-300 bg-white"
-                                                        }`}>
-                                                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="p-4 rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 text-xs text-slate-700 flex items-center justify-between">
-                                        <span>Chưa có hồ sơ người thân nào được lưu.</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowAddRelativeModal(true)}
-                                            className="px-3 py-1.5 rounded-xl bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition shadow-xs cursor-pointer"
-                                        >
-                                            + Tạo hồ sơ người thân ngay
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 2. CHỌN ĐỊA CHỈ TIẾP NHẬN TẠI NHÀ */}
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                    <MapPin className="w-4 h-4 text-[#00677C]" />
-                                    2. Địa chỉ tiếp nhận ca trực tại nhà
-                                </label>
-                                {addresses.length > 0 ? (
-                                    <select
-                                        value={selectedAddressId}
-                                        onChange={(e) => setSelectedAddressId(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition"
-                                    >
-                                        {addresses.map((addr) => {
-                                            const id = addr.id || addr.addressId;
-                                            return (
-                                                <option key={id} value={id}>
-                                                    {addr.label ? `[${addr.label}] ` : ""}{addr.streetAddress || addr.addressLine}, {addr.district || ""}, {addr.city || ""}
-                                                </option>
-                                            );
-                                        })}
-                                    </select>
-                                ) : (
-                                    <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                        Hệ thống sẽ sử dụng địa chỉ đăng ký trên hồ sơ người bệnh để điều dưỡng đến tiếp nhận.
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* 3. DANH MỤC DỊCH VỤ & THỜI LƯỢNG (+ / - SLOT) */}
-                            <div className="space-y-2.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                        <Stethoscope className="w-4 h-4 text-[#00677C]" />
-                                        3. Chọn dịch vụ chăm sóc y tế (Có thể chọn nhiều gói) <span className="text-rose-500">*</span>
-                                    </label>
-                                    <span className="text-xs font-extrabold text-[#00677C]">
-                                        {selectedServiceIds.length} dịch vụ • ~{totalMinutes} phút ({requiredSlots} ca/khung giờ)
-                                    </span>
-                                </div>
-
-                                {services.length === 0 ? (
-                                    <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border">
-                                        Đang tải bảng giá dịch vụ của điều dưỡng...
-                                    </p>
-                                ) : (
-                                    <div className="space-y-2.5">
-                                        {services.map((svc) => {
-                                            const id = svc.serviceId || svc.id;
-                                            const isChecked = selectedServiceIds.includes(id);
-                                            const basePrice = Number(svc.customPrice ?? svc.basePrice ?? 200000);
-                                            const duration = Number(svc.customDurationMinutes || svc.durationMinutes || 60);
-                                            const qty = serviceQuantities[id] || 1;
-
-                                            return (
-                                                <div
-                                                    key={id}
-                                                    onClick={() => handleToggleService(id)}
-                                                    className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer ${isChecked
-                                                            ? "border-[#00677C] bg-teal-50/40 ring-1 ring-[#00677C]/30 shadow-2xs"
-                                                            : "border-slate-200 bg-white hover:border-slate-300"
-                                                        }`}
-                                                >
-                                                    <div className="flex items-start gap-3 min-w-0">
-                                                        <div className={`w-5 h-5 mt-0.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${isChecked ? "border-[#00677C] bg-[#00677C] text-white" : "border-slate-300 bg-white"
+                                                    return (
+                                                        <div
+                                                            key={id}
+                                                            onClick={() => {
+                                                                setSelectedRecipientId(id);
+                                                                setValidationError("");
+                                                            }}
+                                                            className={`p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                                                                isSelected
+                                                                    ? "border-[#00677C] bg-teal-50/60 ring-2 ring-[#00677C]/20 shadow-xs"
+                                                                    : "border-slate-200 bg-white hover:border-slate-300"
+                                                            }`}
+                                                        >
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-xs font-bold text-slate-900 truncate">
+                                                                        {rec.fullName || rec.name}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedViewingRecipient(rec);
+                                                                        }}
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-[#00677C] hover:bg-teal-100/60 transition cursor-pointer"
+                                                                        title="Xem chi tiết hồ sơ y tế & tiền sử bệnh"
+                                                                    >
+                                                                        <Info className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                                                                    <span>{rec.relationship || "Người thân"}</span>
+                                                                    <span>•</span>
+                                                                    <span>{genderText}</span>
+                                                                    <span>•</span>
+                                                                    <span>{age ? `${age} tuổi` : (rec.dateOfBirth ? `Sinh ${rec.dateOfBirth}` : "Chưa rõ năm sinh")}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                                                                isSelected ? "border-[#00677C] bg-[#00677C] text-white" : "border-slate-300 bg-white"
                                                             }`}>
-                                                            {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                                                                    {svc.serviceName || svc.name}
-                                                                </h4>
-                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                                                    ⏱ {duration} phút
-                                                                </span>
-                                                            </div>
-                                                            {svc.description && (
-                                                                <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                                                                    {svc.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                                                        {/* Bộ đếm số lượng ca / slots (+ / -) */}
-                                                        {isChecked && (
-                                                            <div
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="flex items-center gap-1.5 bg-white border border-teal-200 rounded-xl px-2 py-1 shadow-2xs"
-                                                            >
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => handleUpdateQuantity(e, id, -1)}
-                                                                    disabled={qty <= 1}
-                                                                    className="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-900 border border-slate-300/80 disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition shadow-2xs"
-                                                                    title="Giảm số ca"
-                                                                >
-                                                                    <Minus className="w-3.5 h-3.5 stroke-[2.75] text-slate-900" />
-                                                                </button>
-                                                                <span className="text-xs font-black text-[#00677C] px-1.5 min-w-[24px] text-center">
-                                                                    {qty} ca
-                                                                </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => handleUpdateQuantity(e, id, 1)}
-                                                                    disabled={qty >= 8}
-                                                                    className="w-6 h-6 rounded-lg bg-teal-100 hover:bg-teal-200 flex items-center justify-center text-[#00677C] border border-teal-300/80 cursor-pointer transition shadow-2xs"
-                                                                    title="Tăng số ca / slot"
-                                                                >
-                                                                    <Plus className="w-3.5 h-3.5 stroke-[2.75] text-[#00677C]" />
-                                                                </button>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="text-right">
-                                                            <div className="text-xs sm:text-sm font-black text-[#00677C]">
-                                                                {(basePrice * qty).toLocaleString("vi-VN")} đ
-                                                            </div>
-                                                            <div className="text-[10px] text-slate-400">
-                                                                {qty > 1 ? `${basePrice.toLocaleString("vi-VN")} đ x ${qty}` : "Đơn giá điều dưỡng"}
+                                                                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* Cảnh báo cập nhật giá Realtime (Chuyển xuống dưới Mục 3 theo yêu cầu user, bỏ icon chuông) */}
-                                {priceUpdateAlert && (
-                                    <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs animate-in fade-in duration-200 mt-2">
-                                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                        <div className="flex-1 font-semibold leading-relaxed">{priceUpdateAlert}</div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 4. CHỌN NGÀY & KHUNG GIỜ TRỰC KHẢ DỤNG (CINEMA SLOTS) */}
-                            <div className="space-y-3 pt-1">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                        <Clock className="w-4 h-4 text-[#00677C]" />
-                                        4. Khung giờ trực khả dụng <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-500 font-medium">Ngày trực:</span>
-                                        <input
-                                            type="date"
-                                            min={todayStr}
-                                            value={selectedDate}
-                                            onChange={(e) => setSelectedDate(e.target.value)}
-                                            className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 outline-none focus:border-teal-500"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Chú thích trạng thái slot */}
-                                <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-3.5 h-3.5 rounded-md bg-emerald-50 border border-emerald-300"></span>
-                                        <span>Còn trống</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-3.5 h-3.5 rounded-md bg-[#00677C] text-white"></span>
-                                        <span className="font-semibold text-slate-700">Đang chọn</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-3.5 h-3.5 rounded-md bg-slate-100 border border-slate-300"></span>
-                                        <span>Đã kín / Quá giờ</span>
-                                    </div>
-                                </div>
-
-                                {/* Lưới 16 Slot Cinema */}
-                                {loadingSlots ? (
-                                    <div className="py-8 flex items-center justify-center gap-2 text-slate-400">
-                                        <Loader2 className="w-5 h-5 animate-spin text-[#00677C]" />
-                                        <span className="text-xs font-medium">Đang đồng bộ lịch trống thực tế của điều dưỡng...</span>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                        {slots.map((slot) => {
-                                            const isSelected = selectedSlotIndexes.includes(slot.slotIndex);
-                                            const isAvailable = slot.isAvailable;
-
-                                            return (
-                                                <button
-                                                    key={slot.slotIndex}
-                                                    type="button"
-                                                    disabled={!isAvailable}
-                                                    onClick={() => handleSelectSlot(slot)}
-                                                    title={!isAvailable ? (slot.reason || "Không khả dụng") : "Nhấn để tự động chọn chuỗi suất trực liên tiếp"}
-                                                    className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer relative ${isSelected
-                                                            ? "border-[#00677C] bg-[#00677C] text-white shadow-md scale-[1.02]"
-                                                            : isAvailable
-                                                                ? "border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/70 text-emerald-900 hover:border-emerald-400"
-                                                                : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60"
-                                                        }`}
-                                                >
-                                                    <span className="text-xs font-black tracking-tight">
-                                                        {slot.startTime} - {slot.endTime}
-                                                    </span>
-                                                    <span className={`text-[10px] font-bold ${isSelected
-                                                            ? "text-teal-100"
-                                                            : isAvailable
-                                                                ? "text-emerald-700"
-                                                                : "text-slate-400"
-                                                        }`}>
-                                                        {isSelected
-                                                            ? "Đã chọn"
-                                                            : isAvailable
-                                                                ? "Còn trống"
-                                                                : slot.reason?.toLowerCase().includes("qua")
-                                                                    ? "Đã qua giờ"
-                                                                    : "Đã kín"}
-                                                    </span>
-                                                    {!isAvailable && (
-                                                        <Lock className="w-3 h-3 text-slate-400 absolute top-1.5 right-1.5" />
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* Hướng dẫn trực quan về số khung giờ cần chọn */}
-                                {requiredSlots > 0 && (
-                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between text-slate-600">
-                                        <span>
-                                            Yêu cầu chọn: <strong className="text-slate-900">{requiredSlots} khung giờ liên tiếp</strong> (~{totalMinutes} phút)
-                                        </span>
-                                        <span className={`font-bold ${selectedSlotIndexes.length >= requiredSlots && isConsecutive(selectedSlotIndexes)
-                                                ? "text-emerald-600"
-                                                : "text-amber-600"
-                                            }`}>
-                                            Đã chọn {selectedSlotIndexes.length}/{requiredSlots} khung giờ {extraSlotsCount > 0 ? `(+${extraSlotsCount} ca thêm)` : ""}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Chú thích nghiệp vụ y tế bắt buộc theo tài liệu V2.1 */}
-                                <div className="text-[11px] text-slate-500 italic bg-teal-50/50 p-2.5 rounded-xl border border-teal-100/80 flex items-start gap-2">
-                                    <Info className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-                                    <span>
-                                        Thời gian ca trực là khung giờ giữ chỗ. Thời lượng chăm sóc thực tế phụ thuộc vào việc hoàn tất đầy đủ quy trình chuyên môn y tế của các gói dịch vụ đã chọn.
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* 5. GIỜ YÊU CẦU CÓ MẶT TẠI NHÀ & GHI CHÚ */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                        Giờ yêu cầu có mặt (Tùy chọn)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ví dụ: 17:15, hoặc Có mặt đúng 17:00..."
-                                        value={requestedArrivalTime}
-                                        onChange={(e) => setRequestedArrivalTime(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 outline-none"
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                        Ghi chú dặn dò điều dưỡng (Tùy chọn)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ví dụ: Bác hay chóng mặt; bấm chuông cửa số 2..."
-                                        value={customerNotes}
-                                        onChange={(e) => setCustomerNotes(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* 6. TÙY CHỌN ĐÀM PHÁN GIÁ THEO THỎA THUẬN (PROPOSAL) */}
-                            <div className={`p-4 rounded-2xl border transition-all duration-200 ${
-                                isProposalMode
-                                    ? "bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50/80 border-2 border-amber-400 shadow-sm ring-2 ring-amber-400/20"
-                                    : "bg-amber-50/30 border-amber-200/80 hover:border-amber-300 hover:bg-amber-50/50"
-                            }`}>
-                                <label className="flex items-start gap-3 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={isProposalMode}
-                                        onChange={(e) => setIsProposalMode(e.target.checked)}
-                                        className="w-4.5 h-4.5 mt-0.5 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer shrink-0"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`font-black text-xs sm:text-sm block ${isProposalMode ? "text-amber-950" : "text-slate-800"}`}>
-                                                Thương lượng giá theo thỏa thuận
-                                            </span>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-                                                Tùy chọn thỏa thuận giá
-                                            </span>
-                                        </div>
-                                        <span className="text-[11px] text-slate-500 block mt-1 leading-snug">
-                                            Gửi phiếu đề xuất ca kèm mức giá mong muốn để điều dưỡng {nurseName} xem xét và chấp thuận trong phòng chat trước khi bạn thanh toán.
-                                        </span>
-                                    </div>
-                                </label>
-
-                                {isProposalMode && (
-                                    <div className="pt-2 border-t border-amber-200/80 space-y-2 animate-in fade-in duration-150">
-                                        <div className="flex items-center justify-between">
-                                            <label className="block font-bold text-slate-700">
-                                                Mức giá bạn mong muốn đề xuất (VNĐ)
-                                            </label>
-                                            <span className="text-[11px] font-semibold text-amber-800">
-                                                Giá niêm yết: {baseServicesPrice.toLocaleString("vi-VN")} đ
-                                            </span>
-                                        </div>
-                                        <input
-                                            ref={priceInputRef}
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={proposedPrice}
-                                            onChange={handleProposedPriceChange}
-                                            placeholder={`Ví dụ: ${baseServicesPrice > 0 ? baseServicesPrice.toLocaleString("vi-VN") : "200.000"} VNĐ`}
-                                            className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white text-xs font-black text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/20 tracking-wide"
-                                        />
-
-                                        {/* Gợi ý nhanh mức giá */}
-                                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                            <span className="text-[10px] text-slate-400 font-semibold mr-0.5">Gợi ý:</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setProposedPrice(baseServicesPrice.toLocaleString("vi-VN"))}
-                                                className="px-2 py-0.5 rounded-lg border border-amber-200 bg-white text-[10px] font-bold text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
-                                            >
-                                                Giá niêm yết
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const current = proposedPrice ? parseInt(proposedPrice.replace(/\D/g, ""), 10) : baseServicesPrice;
-                                                    const updated = Math.max(50000, current - 20000);
-                                                    setProposedPrice(updated.toLocaleString("vi-VN"));
-                                                }}
-                                                className="px-2 py-0.5 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-                                            >
-                                                -20.000 đ
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const current = proposedPrice ? parseInt(proposedPrice.replace(/\D/g, ""), 10) : baseServicesPrice;
-                                                    const updated = current + 30000;
-                                                    setProposedPrice(updated.toLocaleString("vi-VN"));
-                                                }}
-                                                className="px-2 py-0.5 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-                                            >
-                                                +30.000 đ
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const current = proposedPrice ? parseInt(proposedPrice.replace(/\D/g, ""), 10) : baseServicesPrice;
-                                                    const updated = current + 50000;
-                                                    setProposedPrice(updated.toLocaleString("vi-VN"));
-                                                }}
-                                                className="px-2 py-0.5 rounded-lg border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-                                            >
-                                                +50.000 đ
-                                            </button>
-                                            {proposedPrice && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setProposedPrice("")}
-                                                    className="px-2 py-0.5 rounded-lg border border-rose-200 bg-rose-50 text-[10px] font-semibold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
-                                                >
-                                                    Xóa trắng
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <p className="text-[10px] text-slate-500 italic">
-                                            * Để trống nếu bạn đồng ý với tổng giá niêm yết của các dịch vụ đã chọn ({baseServicesPrice.toLocaleString("vi-VN")} đ).
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 7. KHẤU TRỪ TỪ SỐ DƯ VÍ CARELINK (NẾU CÓ SỐ DƯ & KHÔNG PHẢI THƯƠNG LƯỢNG QUA CHAT) */}
-                            {walletBalance > 0 && !isProposalMode && (
-                                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 to-teal-50/40 border border-emerald-200/90 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                                            <input
-                                                type="checkbox"
-                                                checked={useWalletBalance}
-                                                onChange={(e) => {
-                                                    const checked = e.target.checked;
-                                                    setUseWalletBalance(checked);
-                                                    if (checked) {
-                                                        setCustomWalletDeduct(maxDeductible.toLocaleString("vi-VN"));
-                                                    } else {
-                                                        setCustomWalletDeduct("");
-                                                    }
-                                                }}
-                                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-300 cursor-pointer"
-                                            />
-                                            <span className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                                                <Wallet className="w-4 h-4 text-emerald-600" />
-                                                <span>Dùng số dư Ví CareLink để thanh toán</span>
-                                            </span>
-                                        </label>
-                                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100/80 text-emerald-800 border border-emerald-200">
-                                            Khả dụng: {walletBalance.toLocaleString("vi-VN")} đ
-                                        </span>
-                                    </div>
-
-                                    {useWalletBalance && (
-                                        <div className="pt-2 border-t border-emerald-200/60 space-y-2.5 animate-in fade-in duration-150">
-                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className="text-[11px] text-slate-500 font-medium">Chọn nhanh:</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCustomWalletDeduct(maxDeductible.toLocaleString("vi-VN"))}
-                                                    className="px-2.5 py-1 rounded-lg border border-emerald-300 bg-emerald-50 text-[10px] sm:text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
-                                                >
-                                                    Dùng tối đa ({maxDeductible.toLocaleString("vi-VN")} đ)
-                                                </button>
-                                                {maxDeductible >= 50000 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCustomWalletDeduct((50000).toLocaleString("vi-VN"))}
-                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[10px] sm:text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                                                    >
-                                                        50.000 đ
-                                                    </button>
-                                                )}
-                                                {maxDeductible >= 100000 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCustomWalletDeduct((100000).toLocaleString("vi-VN"))}
-                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[10px] sm:text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                                                    >
-                                                        100.000 đ
-                                                    </button>
-                                                )}
-                                                {customWalletDeduct && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCustomWalletDeduct("")}
-                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-100 text-[10px] sm:text-[11px] font-medium text-slate-600 hover:bg-slate-200 transition cursor-pointer"
-                                                    >
-                                                        Xóa số tiền
-                                                    </button>
-                                                )}
+                                                    );
+                                                })}
                                             </div>
+                                        ) : (
+                                            <div className="p-4 rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 text-xs text-slate-700 flex items-center justify-between">
+                                                <span>Chưa có hồ sơ người thân nào được lưu.</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAddRelativeModal(true)}
+                                                    className="px-3.5 py-1.5 rounded-xl bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition shadow-xs cursor-pointer"
+                                                >
+                                                    + Tạo hồ sơ người thân ngay
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
 
+                                    {/* 2. Chọn địa chỉ tiếp nhận */}
+                                    <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                                        <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                            <MapPin className="w-4 h-4 text-[#00677C]" />
+                                            2. Địa chỉ tiếp nhận ca trực tại nhà <span className="text-rose-500">*</span>
+                                        </label>
+                                        {addresses.length > 0 ? (
+                                            <select
+                                                value={selectedAddressId}
+                                                onChange={(e) => {
+                                                    setSelectedAddressId(e.target.value);
+                                                    setValidationError("");
+                                                }}
+                                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-800 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition"
+                                            >
+                                                {addresses.map((addr) => {
+                                                    const id = addr.id || addr.addressId;
+                                                    return (
+                                                        <option key={id} value={id}>
+                                                            {addr.label ? `[${addr.label}] ` : ""}{addr.streetAddress || addr.addressLine}, {addr.district || ""}, {addr.city || ""}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                        ) : (
+                                            <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                                Hệ thống sẽ sử dụng địa chỉ mặc định trên hồ sơ người bệnh để điều dưỡng đến tiếp nhận.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ════════ BƯỚC 2: DỊCH VỤ & KHUNG GIỜ ════════ */}
+                            {currentStep === 2 && (
+                                <div className="space-y-6 animate-in fade-in duration-150">
+                                    {/* 1. Chọn dịch vụ chăm sóc */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                <Stethoscope className="w-4 h-4 text-[#00677C]" />
+                                                1. Chọn dịch vụ y tế <span className="text-rose-500">*</span>
+                                            </label>
+                                            <span className="text-xs font-extrabold text-[#00677C]">
+                                                {selectedServiceIds.length} dịch vụ • ~{totalMinutes} phút ({requiredSlots} ca/khung giờ)
+                                            </span>
+                                        </div>
+
+                                        {services.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border">
+                                                Đang tải bảng giá dịch vụ của điều dưỡng...
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-2.5">
+                                                {services.map((svc) => {
+                                                    const id = svc.serviceId || svc.id;
+                                                    const isChecked = selectedServiceIds.includes(id);
+                                                    const basePrice = Number(svc.customPrice ?? svc.basePrice ?? 200000);
+                                                    const duration = Number(svc.customDurationMinutes || svc.durationMinutes || 60);
+                                                    const qty = serviceQuantities[id] || 1;
+
+                                                    return (
+                                                        <div
+                                                            key={id}
+                                                            onClick={() => handleToggleService(id)}
+                                                            className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer ${
+                                                                isChecked
+                                                                    ? "border-[#00677C] bg-teal-50/40 ring-1 ring-[#00677C]/30 shadow-2xs"
+                                                                    : "border-slate-200 bg-white hover:border-slate-300"
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-start gap-3 min-w-0">
+                                                                <div className={`w-5 h-5 mt-0.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
+                                                                    isChecked ? "border-[#00677C] bg-[#00677C] text-white" : "border-slate-300 bg-white"
+                                                                }`}>
+                                                                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                                                            {svc.serviceName || svc.name}
+                                                                        </h4>
+                                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                                                            ⏱ {duration} phút
+                                                                        </span>
+                                                                    </div>
+                                                                    {svc.description && (
+                                                                        <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                                                                            {svc.description}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                                                {isChecked && (
+                                                                    <div
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="flex items-center gap-1.5 bg-white border border-teal-200 rounded-xl px-2 py-1 shadow-2xs"
+                                                                    >
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => handleUpdateQuantity(e, id, -1)}
+                                                                            disabled={qty <= 1}
+                                                                            className="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-900 border border-slate-300/80 disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition shadow-2xs"
+                                                                            title="Giảm số lượng"
+                                                                        >
+                                                                            <Minus className="w-3.5 h-3.5 stroke-[2.75] text-slate-900" />
+                                                                        </button>
+                                                                        <span className="text-xs font-black text-[#00677C] px-1.5 min-w-[24px] text-center">
+                                                                            {qty}
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => handleUpdateQuantity(e, id, 1)}
+                                                                            disabled={qty >= 8}
+                                                                            className="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-900 border border-slate-300/80 disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition shadow-2xs"
+                                                                            title="Tăng số lượng"
+                                                                        >
+                                                                            <Plus className="w-3.5 h-3.5 stroke-[2.75] text-slate-900" />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-xs sm:text-sm font-black text-slate-900">
+                                                                    {(basePrice * qty).toLocaleString("vi-VN")} đ
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 2. Ngày & Giờ có mặt */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                                        <div className="space-y-1.5">
+                                            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                Ngày thực hiện <span className="text-rose-500">*</span>
+                                            </label>
                                             <div className="relative">
                                                 <input
-                                                    type="text"
-                                                    value={customWalletDeduct}
+                                                    type="date"
+                                                    min={todayStr}
+                                                    value={selectedDate}
                                                     onChange={(e) => {
-                                                        const raw = e.target.value.replace(/\D/g, "");
-                                                        if (!raw) {
-                                                            setCustomWalletDeduct("");
-                                                            return;
-                                                        }
-                                                        const num = Number(raw);
-                                                        setCustomWalletDeduct(num.toLocaleString("vi-VN"));
+                                                        setSelectedDate(e.target.value);
+                                                        setValidationError("");
                                                     }}
-                                                    onBlur={() => {
-                                                        if (customWalletDeduct) {
-                                                            const num = Number(customWalletDeduct.replace(/\D/g, ""));
-                                                            const clamped = Math.min(num, maxDeductible);
-                                                            setCustomWalletDeduct(clamped > 0 ? clamped.toLocaleString("vi-VN") : "");
-                                                        }
-                                                    }}
-                                                    placeholder="Nhập số tiền muốn trừ (VNĐ)"
-                                                    className="w-full pl-3 pr-12 py-1.5 rounded-xl border border-emerald-200 bg-white text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:border-teal-500 outline-none"
                                                 />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">
-                                                    VNĐ
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                Giờ yêu cầu có mặt tại nhà (Tùy chọn)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Ví dụ: 17:15, hoặc Có mặt đúng 17:00..."
+                                                value={requestedArrivalTime}
+                                                onChange={(e) => setRequestedArrivalTime(e.target.value)}
+                                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Khung giờ ca trực (Cinema Slots Grid) */}
+                                    <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                                        <div className="flex items-center justify-between">
+                                            <label className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                <Clock className="w-4 h-4 text-[#00677C]" />
+                                                Chọn suất trực trong ngày <span className="text-rose-500">*</span>
+                                            </label>
+                                            <span className="text-[11px] text-slate-500">
+                                                Mỗi ô = 60 phút • Cần tối thiểu {requiredSlots} ô liền kề
+                                            </span>
+                                        </div>
+
+                                        {loadingSlots ? (
+                                            <div className="py-8 flex items-center justify-center gap-2 text-slate-400 text-xs">
+                                                <Loader2 className="w-4 h-4 animate-spin text-[#00677C]" />
+                                                <span>Đang tải lịch rảnh của điều dưỡng...</span>
+                                            </div>
+                                        ) : slots.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic p-3 bg-slate-50 rounded-xl border">
+                                                Không có khung giờ rảnh nào trong ngày này. Vui lòng chọn ngày khác!
+                                            </p>
+                                        ) : (
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                                {slots.map((s) => {
+                                                    const idx = s.slotIndex;
+                                                    const isSelected = selectedSlotIndexes.includes(idx);
+                                                    const isAvailable = s.isAvailable;
+
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            disabled={!isAvailable}
+                                                            onClick={() => handleSelectSlot(s)}
+                                                            className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                                                                isSelected
+                                                                    ? "border-[#00677C] bg-[#00677C] text-white shadow-sm ring-2 ring-[#00677C]/30 scale-102"
+                                                                    : isAvailable
+                                                                    ? "border-slate-200 bg-white hover:border-teal-400 hover:bg-teal-50/40 text-slate-800"
+                                                                    : "border-slate-100 bg-slate-100 text-slate-300 cursor-not-allowed opacity-60"
+                                                            }`}
+                                                        >
+                                                            <div className="text-xs font-bold leading-tight">
+                                                                {s.startTime}
+                                                            </div>
+                                                            <div className={`text-[10px] mt-0.5 ${isSelected ? "text-teal-100" : isAvailable ? "text-slate-500" : "text-slate-400"}`}>
+                                                                {s.endTime}
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ════════ BƯỚC 3: XÁC NHẬN & CHI PHÍ ════════ */}
+                            {currentStep === 3 && (
+                                <div className="space-y-6 animate-in fade-in duration-150">
+                                    {/* 1. Tóm tắt thông tin ca hẹn */}
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5 space-y-3.5">
+                                        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                                            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                                <Sparkles className="w-4 h-4 text-[#00677C]" />
+                                                Tóm tắt phiếu đặt ca
+                                            </h3>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCurrentStep(1)}
+                                                className="text-[11px] font-bold text-[#00677C] hover:underline cursor-pointer"
+                                            >
+                                                Sửa thông tin
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <span className="text-slate-400 block text-[11px]">Người nhận chăm sóc:</span>
+                                                <span className="font-bold text-slate-900">
+                                                    {selectedRecipientObj?.fullName || selectedRecipientObj?.name || "Chưa chọn"}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[11px]">Điều dưỡng phụ trách:</span>
+                                                <span className="font-bold text-slate-900">{nurseName}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[11px]">Thời gian ca trực:</span>
+                                                <span className="font-bold text-slate-900">
+                                                    {selectedDate} ({timeRangeStr})
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[11px]">Địa chỉ tiếp nhận:</span>
+                                                <span className="font-bold text-slate-900 truncate block">
+                                                    {selectedAddressObj ? `${selectedAddressObj.streetAddress || selectedAddressObj.addressLine}, ${selectedAddressObj.city || ""}` : "Địa chỉ mặc định"}
                                                 </span>
                                             </div>
                                         </div>
-                                    )}
+
+                                        {requestedArrivalTime && (
+                                            <div className="text-xs bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-900">
+                                                <strong>Giờ yêu cầu có mặt:</strong> {requestedArrivalTime}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 2. Tùy chọn đề xuất giá đàm phán trong Chat */}
+                                    <div className={`p-4 rounded-2xl border transition-all ${
+                                        isProposalMode
+                                            ? "bg-amber-50/70 border-amber-300 ring-2 ring-amber-400/20"
+                                            : "bg-white border-slate-200"
+                                    }`}>
+                                        <label className="flex items-start gap-3 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={isProposalMode}
+                                                onChange={(e) => setIsProposalMode(e.target.checked)}
+                                                className="w-4 h-4 mt-0.5 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer shrink-0"
+                                            />
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs sm:text-sm font-bold text-slate-900">
+                                                        Thương lượng giá theo thỏa thuận
+                                                    </span>
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800">
+                                                        Đàm phán qua chat
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                                    Gửi đề xuất ca kèm mức giá mong muốn để điều dưỡng duyệt trước trong phòng chat trước khi bạn thanh toán.
+                                                </p>
+                                            </div>
+                                        </label>
+
+                                        {isProposalMode && (
+                                            <div className="mt-3 pt-3 border-t border-amber-200/80 space-y-2">
+                                                <label className="block text-xs font-bold text-slate-700">
+                                                    Mức giá bạn mong muốn đề xuất (VNĐ)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={proposedPrice}
+                                                    onChange={(e) => setProposedPrice(e.target.value)}
+                                                    placeholder={`Ví dụ: ${baseServicesPrice.toLocaleString("vi-VN")} đ`}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white text-xs font-black text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/20"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 3. Ghi chú dặn dò */}
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                            Ghi chú dặn dò điều dưỡng (Tùy chọn)
+                                        </label>
+                                        <textarea
+                                            rows={2}
+                                            placeholder="Ví dụ: Bác hay chóng mặt khi ngồi dậy; bấm chuông cửa số 2..."
+                                            value={customerNotes}
+                                            onChange={(e) => setCustomerNotes(e.target.value)}
+                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 outline-none resize-none"
+                                        />
+                                    </div>
+
+                                    {/* 4. Checkbox đồng ý chia sẻ thông tin y tế */}
+                                    <div className="p-3.5 rounded-2xl bg-teal-50/50 border border-teal-200/80">
+                                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={consentMedical}
+                                                onChange={(e) => setConsentMedical(e.target.checked)}
+                                                className="w-4 h-4 mt-0.5 text-[#00677C] rounded border-slate-300 focus:ring-teal-500 cursor-pointer shrink-0"
+                                            />
+                                            <div className="text-xs text-slate-700 leading-relaxed">
+                                                <strong className="text-slate-900">Chia sẻ tóm tắt tiền sử bệnh:</strong>{" "}
+                                                Tôi đồng ý chia sẻ tiền sử dị ứng, bệnh nền và lưu ý y tế của người thân để điều dưỡng chuẩn bị dụng cụ chuyên môn chu đáo nhất.
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    {/* 5. Bảng phân rã chi phí minh bạch */}
+                                    <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-white space-y-2.5 shadow-xs">
+                                        <div className="flex items-center justify-between text-xs text-slate-600">
+                                            <span>Tiền dịch vụ chăm sóc:</span>
+                                            <span className="font-bold text-slate-900">
+                                                {baseServicesPrice.toLocaleString("vi-VN")} đ
+                                            </span>
+                                        </div>
+
+                                        {extraMinutesPrice > 0 && (
+                                            <div className="flex items-center justify-between text-xs text-slate-600">
+                                                <span>Thời gian chăm sóc thêm ({extraMinutes} phút):</span>
+                                                <span className="font-bold text-slate-900">
+                                                    +{extraMinutesPrice.toLocaleString("vi-VN")} đ
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between text-xs text-slate-600">
+                                            <span className="flex items-center gap-1">
+                                                <span>Phí nền tảng CareLink</span>
+                                                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 font-semibold">Cố định</span>
+                                            </span>
+                                            <span className="font-bold text-slate-900">
+                                                +{platformFee.toLocaleString("vi-VN")} đ
+                                            </span>
+                                        </div>
+
+                                        <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between">
+                                            <span className="text-xs sm:text-sm font-black text-slate-900">
+                                                Tổng thanh toán:
+                                            </span>
+                                            <span className="text-base sm:text-lg font-black text-[#00677C]">
+                                                {grandTotal.toLocaleString("vi-VN")} VNĐ
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 italic text-right">
+                                            Thanh toán an toàn qua cổng PayOS • Giữ chỗ trong 30 phút
+                                        </p>
+                                    </div>
                                 </div>
                             )}
-
-                            {/* 8. BẢNG TỔNG KẾT CHI PHÍ MINH BẠCH (ADR-002) */}
-                            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-teal-50/40 border border-slate-200/90 space-y-2 text-xs">
-                                <div className="flex items-center justify-between text-slate-600">
-                                    <span>
-                                        {isProposalMode
-                                            ? "Mức giá dịch vụ đề xuất (cho Điều dưỡng):"
-                                            : `Tổng tiền dịch vụ chăm sóc (${selectedServiceIds.length} dịch vụ • ~${totalMinutes} phút):`}
-                                    </span>
-                                    <span className="font-bold text-slate-900">
-                                        {(isProposalMode && proposedPrice
-                                            ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10)
-                                            : baseServicesPrice
-                                        ).toLocaleString("vi-VN")} VNĐ
-                                    </span>
-                                </div>
-
-                                {extraMinutesPrice > 0 && !isProposalMode && (
-                                    <div className="flex items-center justify-between text-teal-700">
-                                        <span>Phí suất trực thêm giờ ({extraSlotsCount} ca • ~{extraMinutes} phút):</span>
-                                        <span className="font-bold">+{extraMinutesPrice.toLocaleString("vi-VN")} VNĐ</span>
-                                    </div>
-                                )}
-
-                                {/* PHÍ NỀN TẢNG LUÔN HIỆN DIỆN MINH BẠCH THEO ADR-002 */}
-                                <div className="flex items-center justify-between text-slate-600">
-                                    <span className="font-medium">Phí nền tảng cố định:</span>
-                                    <span className="font-bold text-slate-900">{platformFee.toLocaleString("vi-VN")} VNĐ</span>
-                                </div>
-
-                                {useWalletBalance && walletDeductAmount > 0 && !isProposalMode && (
-                                    <div className="flex items-center justify-between text-emerald-700 font-bold bg-emerald-50/90 px-3 py-1.5 rounded-xl border border-emerald-200/80">
-                                        <span>Khấu trừ từ Số dư Ví CareLink:</span>
-                                        <span>-{walletDeductAmount.toLocaleString("vi-VN")} VNĐ</span>
-                                    </div>
-                                )}
-
-                                <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-sm sm:text-base font-black text-slate-900">
-                                    <span className="text-[#00677C]">
-                                        {isProposalMode
-                                            ? "Tổng thanh toán sau khi duyệt (PayOS):"
-                                            : finalPayAmount === 0 && useWalletBalance
-                                            ? "Số tiền thanh toán thêm (PayOS):"
-                                            : "Tổng thanh toán dự kiến (PayOS):"}
-                                    </span>
-                                    <span className="text-[#00677C] text-base sm:text-xl font-black">
-                                        {isProposalMode
-                                            ? `${(proposedPrice ? parseInt(proposedPrice.replace(/[^\d]/g, ""), 10) + platformFee : platformFee).toLocaleString("vi-VN")} VNĐ`
-                                            : `${finalPayAmount.toLocaleString("vi-VN")} VNĐ`}
-                                    </span>
-                                </div>
-
-                                {useWalletBalance && walletDeductAmount > 0 && finalPayAmount === 0 && !isProposalMode && (
-                                    <div className="p-2.5 rounded-xl bg-emerald-100/70 border border-emerald-300 text-emerald-800 text-xs font-semibold text-center flex items-center justify-center gap-1.5">
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                        <span>Đã cấn trừ 100% bằng số dư ví! Bạn không cần thanh toán thêm qua PayOS.</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 9. HIỂN THỊ THÔNG BÁO LỖI (ĐẶT NGAY DƯỚI TỔNG TIỀN THEO YÊU CẦU USER) */}
-                            {validationError && (
-                                <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm animate-in fade-in duration-200">
-                                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                                    <div className="flex-1 font-semibold leading-relaxed">{validationError}</div>
-                                </div>
-                            )}
-
-                            {/* 10. NÚT XÁC NHẬN ĐẶT LỊCH / GỬI ĐỀ XUẤT */}
-                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    disabled={isSubmitting}
-                                    className="px-5 py-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                                >
-                                    Hủy bỏ
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || selectedSlotIndexes.length === 0}
-                                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#00677c] to-[#008ba3] text-xs sm:text-sm font-extrabold text-white shadow-md hover:from-[#005566] hover:to-[#007489] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            <span>{isProposalMode ? "Đang gửi đề xuất..." : "Đang tạo lịch giữ chỗ..."}</span>
-                                        </>
-                                    ) : isProposalMode ? (
-                                        <>
-                                            <Send className="w-4 h-4" />
-                                            <span>Gửi đề xuất thỏa thuận qua Chat</span>
-                                        </>
-                                    ) : useWalletBalance && walletDeductAmount > 0 && finalPayAmount === 0 ? (
-                                        <>
-                                            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                                            <span>Đặt ca bằng Số dư Ví (0đ qua PayOS)</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CalendarCheck className="w-4 h-4" />
-                                            <span>Gửi yêu cầu đặt ca trực</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     )}
+                </div>
+
+                {/* ── FOOTER MODAL & NÚT ĐIỀU HƯỚNG BƯỚC ── */}
+                <div className="border-t border-slate-100 bg-slate-50/90 p-4 sm:p-5 shrink-0">
+                    {validationError && (
+                        <div className="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700 flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span>{validationError}</span>
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-3">
+                        {currentStep > 1 ? (
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={() => {
+                                    setValidationError("");
+                                    setCurrentStep((prev) => Math.max(1, prev - 1));
+                                }}
+                                className="px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                <span>Quay lại</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={isSubmitting}
+                                className="px-4 sm:px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 font-bold text-xs transition cursor-pointer"
+                            >
+                                Hủy bỏ
+                            </button>
+                        )}
+
+                        {currentStep === 1 && (
+                            <button
+                                type="button"
+                                onClick={handleNextFromStep1}
+                                className="px-6 py-2.5 rounded-xl bg-[#00677C] hover:bg-[#005566] text-white font-bold text-xs transition shadow-sm hover:shadow flex items-center gap-2 cursor-pointer ml-auto"
+                            >
+                                <span>Tiếp tục: Dịch vụ & Giờ</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        )}
+
+                        {currentStep === 2 && (
+                            <button
+                                type="button"
+                                onClick={handleNextFromStep2}
+                                className="px-6 py-2.5 rounded-xl bg-[#00677C] hover:bg-[#005566] text-white font-bold text-xs transition shadow-sm hover:shadow flex items-center gap-2 cursor-pointer ml-auto"
+                            >
+                                <span>Tiếp tục: Xem lại & Chi phí</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        )}
+
+                        {currentStep === 3 && (
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={handleFinalConfirmBooking}
+                                className="px-6 py-2.5 rounded-xl bg-[#00677C] hover:bg-[#005566] text-white font-black text-xs sm:text-sm transition shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-60 ml-auto"
+                            >
+                                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {isSubmitting
+                                    ? "Đang khởi tạo lịch hẹn..."
+                                    : isProposalMode
+                                    ? "Gửi đề xuất thương lượng giá"
+                                    : "Xác nhận đặt lịch qua PayOS"}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* ══════════════════════════════════════════════════════════════════════════ */}
-            {/* MODAL XEM CHI TIẾT HỒ SƠ Y TẾ NGƯỜI THÂN (KHI CLICK NÚT I KẾ TÊN)       */}
-            {/* ══════════════════════════════════════════════════════════════════════════ */}
+            {/* ── MODAL PHỤ: XEM CHI TIẾT HỒ SƠ Y TẾ NGƯỜI THÂN ── */}
             {selectedViewingRecipient && (
                 <div
-                    className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
-                    onMouseDown={(e) => {
-                        if (e.target === e.currentTarget) setSelectedViewingRecipient(null);
-                    }}
+                    className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4 backdrop-blur-2xs"
+                    onClick={() => setSelectedViewingRecipient(null)}
                 >
-                    <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden p-6 space-y-4 my-auto">
-                        <div className="flex items-center justify-between border-b pb-3">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-teal-100 text-[#00677C] flex items-center justify-center">
-                                    <User className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm sm:text-base font-black text-slate-900">
-                                        {selectedViewingRecipient.fullName || selectedViewingRecipient.name}
-                                    </h3>
-                                    <p className="text-[11px] text-slate-500">
-                                        Hồ sơ y tế người thân
-                                    </p>
-                                </div>
-                            </div>
+                    <div
+                        className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <Stethoscope className="w-4 h-4 text-[#00677C]" />
+                                Tóm tắt bệnh án • {selectedViewingRecipient.fullName || selectedViewingRecipient.name}
+                            </h3>
                             <button
                                 type="button"
                                 onClick={() => setSelectedViewingRecipient(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
-
                         <div className="space-y-3 text-xs">
-                            <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <div>
-                                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Mối quan hệ</span>
-                                    <span className="font-bold text-slate-800">{selectedViewingRecipient.relationship || "Người thân"}</span>
-                                </div>
-                                <div>
-                                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Giới tính</span>
-                                    <span className="font-bold text-slate-800">
-                                        {selectedViewingRecipient.gender === 1 || selectedViewingRecipient.genderName === "Nam" ? "Nam" : selectedViewingRecipient.gender === 2 || selectedViewingRecipient.genderName === "Nữ" ? "Nữ" : "Khác"}
-                                    </span>
-                                </div>
-                                <div className="col-span-2 pt-1 border-t border-slate-200/60">
-                                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Ngày sinh / Tuổi</span>
-                                    <span className="font-bold text-slate-800">
-                                        {selectedViewingRecipient.dateOfBirth || "Chưa rõ năm sinh"}
-                                        {calculateAge(selectedViewingRecipient.dateOfBirth) ? ` (${calculateAge(selectedViewingRecipient.dateOfBirth)} tuổi)` : ""}
-                                    </span>
-                                </div>
-                            </div>
-
                             <div>
-                                <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Địa chỉ thường trú / nhận ca</span>
-                                <p className="p-2.5 rounded-xl bg-slate-50 text-slate-700 font-medium border border-slate-100">
-                                    {selectedViewingRecipient.address || "Chưa cập nhật địa chỉ riêng"}
+                                <span className="font-bold text-slate-700 block">Tiền sử bệnh án:</span>
+                                <p className="text-slate-600 bg-slate-50 p-3 rounded-xl mt-1 border">
+                                    {selectedViewingRecipient.medicalHistory || "Không ghi nhận tiền sử bệnh lý đặc biệt."}
                                 </p>
                             </div>
-
                             <div>
-                                <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Tiền sử bệnh án &amp; Dị ứng</span>
-                                <p className="p-2.5 rounded-xl bg-slate-50 text-slate-700 font-medium border border-slate-100">
-                                    {selectedViewingRecipient.medicalHistory || "Không có tiền sử bệnh lý đặc biệt"}
-                                </p>
-                            </div>
-
-                            <div>
-                                <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Lưu ý chăm sóc đặc biệt</span>
-                                <p className="p-2.5 rounded-xl bg-slate-50 text-slate-700 font-medium border border-slate-100">
-                                    {selectedViewingRecipient.specialNotes || "Không có ghi chú thêm"}
+                                <span className="font-bold text-slate-700 block">Lưu ý chăm sóc đặc biệt:</span>
+                                <p className="text-slate-600 bg-slate-50 p-3 rounded-xl mt-1 border">
+                                    {selectedViewingRecipient.specialNotes || "Không có lưu ý đặc biệt."}
                                 </p>
                             </div>
                         </div>
-
-                        <div className="pt-2 flex justify-end">
-                            <button
-                                type="button"
-                                onClick={() => setSelectedViewingRecipient(null)}
-                                className="px-5 py-2 rounded-xl bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition cursor-pointer shadow-xs"
-                            >
-                                Đóng
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedViewingRecipient(null)}
+                            className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
+                        >
+                            Đóng cửa sổ
+                        </button>
                     </div>
                 </div>
             )}
 
-            {/* ══════════════════════════════════════════════════════════════════════════ */}
-            {/* POPUP XÁC NHẬN QUYỀN RIÊNG TƯ Y TẾ (MÀU VÀNG/AMBER NỔI BẬT, MẶC ĐỊNH CHƯA TÍCH) */}
-            {/* ══════════════════════════════════════════════════════════════════════════ */}
-            {showPrivacyPopup && (
-                <div
-                    className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
-                    onMouseDown={(e) => {
-                        if (e.target === e.currentTarget && !isSubmitting) setShowPrivacyPopup(false);
-                    }}
-                >
-                    <div className="w-full max-w-md bg-white rounded-3xl border border-amber-300 shadow-2xl overflow-hidden p-6 space-y-4 my-auto">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-700">
-                                <ShieldAlert className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-extrabold text-slate-900">
-                                    Quyền riêng tư &amp; Bảo mật Y tế
-                                </h3>
-                                <p className="text-xs text-slate-500">
-                                    Tiêu chuẩn bảo vệ dữ liệu sức khỏe CareLink
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Hộp cam kết màu vàng/amber nổi bật */}
-                        <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 space-y-2.5 text-xs leading-relaxed">
-                            <p className="font-medium">
-                                Để Điều dưỡng chuẩn bị đầy đủ trang thiết bị y tế và chăm sóc an toàn nhất cho người thân của bạn, hệ thống khuyến nghị chia sẻ tóm tắt hồ sơ sức khỏe và tiền sử bệnh án.
-                            </p>
-                            <label className="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={consentMedical}
-                                    onChange={(e) => setConsentMedical(e.target.checked)}
-                                    className="w-4.5 h-4.5 mt-0.5 text-amber-600 rounded border-amber-400 focus:ring-amber-500 cursor-pointer shrink-0"
-                                />
-                                <span className="font-bold text-amber-950 leading-tight">
-                                    Tôi đồng ý chia sẻ tóm tắt hồ sơ sức khỏe và tiền sử bệnh án của người thân cho Điều dưỡng tiếp nhận ca này.
-                                </span>
-                            </label>
-                            <p className="text-[11px] text-amber-800 italic">
-                                * Nếu bạn không tích chọn, điều dưỡng sẽ chỉ tiếp nhận dịch vụ mà không thể xem chi tiết tiền sử bệnh án trước đó.
-                            </p>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-3 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowPrivacyPopup(false)}
-                                disabled={isSubmitting}
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
-                            >
-                                Quay lại
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleFinalConfirmBooking}
-                                disabled={isSubmitting}
-                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00677C] to-[#008BA3] text-xs font-extrabold text-white shadow-md hover:from-[#005566] hover:to-[#007489] transition flex items-center gap-2 cursor-pointer"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Đang gửi yêu cầu...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle2 className="w-4 h-4" />
-                                        <span>Xác nhận gửi yêu cầu</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ══════════════════════════════════════════════════════════════════════════ */}
-            {/* MODAL LỒNG: THÊM HỒ SƠ NGƯỜI THÂN TỨC THÌ (KHÔNG CẦN CHUYỂN TRANG)        */}
-            {/* ══════════════════════════════════════════════════════════════════════════ */}
+            {/* ── MODAL PHỤ: THÊM NGƯỜI THÂN TỨC THÌ ── */}
             {showAddRelativeModal && (
                 <div
-                    className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
-                    onMouseDown={(e) => {
-                        if (e.target === e.currentTarget && !isSavingRelative) setShowAddRelativeModal(false);
-                    }}
+                    className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4 backdrop-blur-2xs"
+                    onClick={() => !isSavingRelative && setShowAddRelativeModal(false)}
                 >
-                    <div className="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden p-6 space-y-4 my-auto max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between border-b pb-3">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-teal-100 text-[#00677C] flex items-center justify-center">
-                                    <UserPlus className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-base font-bold text-slate-900">
-                                    Thêm hồ sơ người thân mới
-                                </h3>
-                            </div>
+                    <div
+                        className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <UserPlus className="w-4 h-4 text-[#00677C]" />
+                                Thêm hồ sơ người thân mới
+                            </h3>
                             <button
                                 type="button"
                                 onClick={() => setShowAddRelativeModal(false)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                                disabled={isSavingRelative}
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
                         {addRelativeError && (
-                            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                            <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
                                 {addRelativeError}
                             </div>
                         )}
@@ -1650,15 +1441,15 @@ export default function DirectBookingModal({
                         <form onSubmit={handleSaveNewRelative} className="space-y-3.5 text-xs">
                             <div>
                                 <label className="block font-bold text-slate-700 mb-1">
-                                    Họ và tên người nhận chăm sóc <span className="text-rose-500">*</span>
+                                    Họ và tên người thân <span className="text-rose-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     required
-                                    placeholder="Ví dụ: Cụ Nguyễn Văn An"
+                                    placeholder="Ví dụ: Nguyễn Văn A"
                                     value={newRelativeForm.fullName}
-                                    onChange={(e) => setNewRelativeForm({ ...newRelativeForm, fullName: e.target.value })}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500 font-medium"
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
                                 />
                             </div>
 
@@ -1668,16 +1459,16 @@ export default function DirectBookingModal({
                                     <input
                                         type="date"
                                         value={newRelativeForm.dateOfBirth}
-                                        onChange={(e) => setNewRelativeForm({ ...newRelativeForm, dateOfBirth: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                        onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
                                     />
                                 </div>
                                 <div>
                                     <label className="block font-bold text-slate-700 mb-1">Giới tính</label>
                                     <select
                                         value={newRelativeForm.gender}
-                                        onChange={(e) => setNewRelativeForm({ ...newRelativeForm, gender: Number(e.target.value) })}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:border-teal-500 font-medium"
+                                        onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, gender: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500 bg-white"
                                     >
                                         <option value={1}>Nam</option>
                                         <option value={2}>Nữ</option>
@@ -1687,66 +1478,43 @@ export default function DirectBookingModal({
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-700 mb-1">
-                                    Tiền sử bệnh án &amp; Dị ứng
-                                </label>
+                                <label className="block font-bold text-slate-700 mb-1">Tiền sử bệnh lý (Nếu có)</label>
                                 <input
                                     type="text"
-                                    placeholder="Ví dụ: Tăng huyết áp 10 năm, dị ứng phấn hoa..."
+                                    placeholder="Ví dụ: Cao huyết áp, tiểu đường type 2..."
                                     value={newRelativeForm.medicalHistory}
-                                    onChange={(e) => setNewRelativeForm({ ...newRelativeForm, medicalHistory: e.target.value })}
-                                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, medicalHistory: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
                                 />
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-700 mb-1">
-                                    Địa chỉ người bệnh đang ở
-                                </label>
+                                <label className="block font-bold text-slate-700 mb-1">Ghi chú đặc biệt</label>
                                 <input
                                     type="text"
-                                    placeholder="Ví dụ: 120 Hai Bà Trưng, Phường Đa Kao, Quận 1, TP. HCM"
-                                    value={newRelativeForm.address}
-                                    onChange={(e) => setNewRelativeForm({ ...newRelativeForm, address: e.target.value })}
-                                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block font-bold text-slate-700 mb-1">
-                                    Lưu ý đặc biệt cho điều dưỡng
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: Đi lại chậm, cần hỗ trợ khi lên xuống cầu thang..."
+                                    placeholder="Ví dụ: Khó đi lại, cần đỡ khi di chuyển..."
                                     value={newRelativeForm.specialNotes}
-                                    onChange={(e) => setNewRelativeForm({ ...newRelativeForm, specialNotes: e.target.value })}
-                                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, specialNotes: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
                                 />
                             </div>
 
-                            <div className="flex items-center justify-end gap-3 pt-3 border-t">
+                            <div className="pt-2 flex items-center justify-end gap-2.5">
                                 <button
                                     type="button"
                                     onClick={() => setShowAddRelativeModal(false)}
                                     disabled={isSavingRelative}
-                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSavingRelative}
-                                    className="px-5 py-2 rounded-xl bg-[#00677C] text-white font-extrabold hover:bg-[#005566] transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                    className="px-5 py-2 rounded-xl bg-[#00677C] text-white font-bold hover:bg-[#005566] transition flex items-center gap-2"
                                 >
-                                    {isSavingRelative ? (
-                                        <>
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            <span>Đang lưu...</span>
-                                        </>
-                                    ) : (
-                                        <span>Lưu hồ sơ người thân</span>
-                                    )}
+                                    {isSavingRelative && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                    <span>Lưu hồ sơ người thân</span>
                                 </button>
                             </div>
                         </form>
