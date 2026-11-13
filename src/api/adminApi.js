@@ -11,6 +11,8 @@ export const adminApi = {
         axiosClient.get("/api/v1/admin/dashboard/revenue", { params }),
     getWebsiteAnalytics: (params) =>
         axiosClient.get("/api/v1/admin/dashboard/analytics", { params }),
+    purgeActivityLogs: (data) =>
+        axiosClient.delete("/api/v1/admin/dashboard/analytics/logs", { data }),
 
     // ── 2. Xét duyệt hồ sơ Điều dưỡng (Nurse Verifications) ──
     getNurseVerifications: (params) =>

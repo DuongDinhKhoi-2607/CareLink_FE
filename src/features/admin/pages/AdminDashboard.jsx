@@ -27,6 +27,10 @@ import {
     Layers,
     BarChart3,
     CheckCircle,
+    Trash2,
+    AlertTriangle,
+    X,
+    Calendar,
 } from "lucide-react";
 import adminApi from "../../../api/adminApi";
 
@@ -48,6 +52,46 @@ export default function AdminDashboard() {
     const [analyticsError, setAnalyticsError] = useState(null);
     const [logPage, setLogPage] = useState(1);
     const LOGS_PER_PAGE = 10;
+
+    // Quản lý dọn dẹp nhật ký tương tác
+    const [showPurgeModal, setShowPurgeModal] = useState(false);
+    const [purgeMode, setPurgeMode] = useState("last_1_hour");
+    const [purgeFromDate, setPurgeFromDate] = useState("");
+    const [purgeToDate, setPurgeToDate] = useState("");
+    const [purgePageViewsOnly, setPurgePageViewsOnly] = useState(false);
+    const [purging, setPurging] = useState(false);
+    const [toastMessage, setToastMessage] = useState(null);
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+    };
+
+    const handlePurgeLogs = async () => {
+        if (purgeMode === "custom_range" && (!purgeFromDate || !purgeToDate)) {
+            showToast("Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.");
+            return;
+        }
+        setPurging(true);
+        try {
+            const payload = {
+                rangeMode: purgeMode,
+                fromDate: purgeMode === "custom_range" ? purgeFromDate : null,
+                toDate: purgeMode === "custom_range" ? purgeToDate : null,
+                pageViewsOnly: purgePageViewsOnly,
+            };
+            const res = await adminApi.purgeActivityLogs(payload);
+            const deletedCount = res?.data?.deletedCount ?? res?.deletedCount ?? 0;
+            showToast(`Đã dọn dẹp thành công ${deletedCount} sự kiện nhật ký.`);
+            setShowPurgeModal(false);
+            fetchAnalytics(analyticsRange);
+        } catch (err) {
+            console.warn("[CareLink Admin] Purge logs error:", err);
+            showToast("Không thể dọn dẹp nhật ký lúc này. Vui lòng thử lại.");
+        } finally {
+            setPurging(false);
+        }
+    };
 
     const fetchAnalytics = useCallback((range = analyticsRange) => {
         setLoadingAnalytics(true);
@@ -981,7 +1025,7 @@ export default function AdminDashboard() {
 
                                 return (
                                     <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                                             <div>
                                                 <h3 className="text-base font-bold text-slate-900">
                                                     Nhật ký tương tác gần đây
@@ -990,9 +1034,20 @@ export default function AdminDashboard() {
                                                     Theo dõi các lượt tương tác mới nhất của khách hàng trên hệ thống
                                                 </p>
                                             </div>
-                                            <span className="text-xs text-slate-400 font-medium">
-                                                {totalLogs > 0 ? `Hiển thị ${paginatedLogs.length} trên ${totalLogs} sự kiện mới nhất` : "Chưa có sự kiện"}
-                                            </span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                                                    {totalLogs > 0 ? `Hiển thị ${paginatedLogs.length} trên ${totalLogs} sự kiện mới nhất` : "Chưa có sự kiện"}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPurgeModal(true)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+                                                    title="Dọn dẹp bớt nhật ký tương tác"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                                    <span>Dọn dẹp nhật ký</span>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="mt-4 overflow-x-auto">
@@ -1124,6 +1179,189 @@ export default function AdminDashboard() {
                             })()}
                         </>
                     ) : null}
+                </div>
+            )}
+            {/* MODAL DỌN DẸP NHẬT KÝ TƯƠNG TÁC */}
+            {showPurgeModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+                        onClick={() => !purging && setShowPurgeModal(false)}
+                    />
+
+                    {/* Modal Content */}
+                    <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200/90 z-10 animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100 shrink-0">
+                                    <Trash2 className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">
+                                        Dọn dẹp nhật ký tương tác
+                                    </h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        Chọn phạm vi thời gian hoặc loại dữ liệu cần dọn dẹp để tối ưu hệ thống
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={purging}
+                                onClick={() => setShowPurgeModal(false)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="py-4 space-y-4">
+                            {/* 1. Chọn khoảng thời gian */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                    Khoảng thời gian muốn dọn dẹp
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    {[
+                                        { id: "last_1_hour", label: "1 giờ qua", desc: "Vừa kiểm thử xong" },
+                                        { id: "last_24_hours", label: "24 giờ qua", desc: "Tương tác trong ngày" },
+                                        { id: "last_7_days", label: "7 ngày qua", desc: "Tương tác trong tuần" },
+                                        { id: "all", label: "Tất cả thời gian", desc: "Làm sạch hoàn toàn" },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.id}
+                                            type="button"
+                                            onClick={() => setPurgeMode(opt.id)}
+                                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                                                purgeMode === opt.id
+                                                    ? "border-[#00677c] bg-teal-50/50 text-[#00677c] ring-1 ring-[#00677c]"
+                                                    : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                                            }`}
+                                        >
+                                            <span className="font-bold">{opt.label}</span>
+                                            <span className="text-[11px] text-slate-400 mt-0.5">{opt.desc}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Lựa chọn tùy chọn khoảng ngày */}
+                                <div className="mt-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPurgeMode("custom_range")}
+                                        className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between text-xs ${
+                                            purgeMode === "custom_range"
+                                                ? "border-[#00677c] bg-teal-50/50 text-[#00677c] ring-1 ring-[#00677c]"
+                                                : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                                        }`}
+                                    >
+                                        <div>
+                                            <span className="font-bold block">Tùy chọn khoảng ngày cụ thể...</span>
+                                            <span className="text-[11px] text-slate-400">Chọn chính xác ngày bắt đầu và ngày kết thúc</span>
+                                        </div>
+                                        <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                                    </button>
+
+                                    {/* Ô nhập ngày nếu chọn custom_range */}
+                                    {purgeMode === "custom_range" && (
+                                        <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                                    Từ ngày
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={purgeFromDate}
+                                                    onChange={(e) => setPurgeFromDate(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00677c]"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                                    Đến ngày
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={purgeToDate}
+                                                    onChange={(e) => setPurgeToDate(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#00677c]"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 2. Bộ lọc loại dữ liệu */}
+                            <div className="pt-2 border-t border-slate-100">
+                                <label className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={purgePageViewsOnly}
+                                        onChange={(e) => setPurgePageViewsOnly(e.target.checked)}
+                                        className="mt-0.5 rounded border-slate-300 text-[#00677c] focus:ring-[#00677c] cursor-pointer"
+                                    />
+                                    <div className="text-xs">
+                                        <span className="font-semibold text-slate-800 block">
+                                            Chỉ dọn dẹp các lượt xem trang thông thường
+                                        </span>
+                                        <span className="text-slate-400 text-[11px]">
+                                            Giữ lại các hoạt động chuyển đổi quan trọng (Đăng nhập, Đăng ký, Đặt lịch, Thanh toán)
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {/* Cảnh báo an toàn */}
+                            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-start gap-2.5 text-xs text-amber-800">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-bold">Lưu ý:</span> Các nhật ký được chọn sẽ được gỡ bỏ vĩnh viễn khỏi hệ thống để làm sạch bộ nhớ.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button
+                                type="button"
+                                disabled={purging}
+                                onClick={() => setShowPurgeModal(false)}
+                                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                disabled={purging}
+                                onClick={handlePurgeLogs}
+                                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                            >
+                                {purging ? (
+                                    <>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        Đang xử lý...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Xác nhận dọn dẹp
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TOAST THÔNG BÁO TIẾNG VIỆT THÂN THIỆN */}
+            {toastMessage && (
+                <div className="fixed bottom-6 right-6 z-50 px-4 py-3 bg-slate-900 text-white rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{toastMessage}</span>
                 </div>
             )}
         </div>
