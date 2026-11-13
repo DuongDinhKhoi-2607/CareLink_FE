@@ -40,7 +40,7 @@ export default function AdminDashboard() {
     const [activeServices, setActiveServices] = useState([]);
     const [loadingActivities, setLoadingActivities] = useState(true);
 
-    // ── OUTCOME 3: WEBSITE ACTIVITY TRACKING STATE ──
+    // ── WEBSITE ACTIVITY TRACKING STATE ──
     const [analyticsRange, setAnalyticsRange] = useState("30days");
     const [analyticsData, setAnalyticsData] = useState(null);
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -233,16 +233,16 @@ export default function AdminDashboard() {
                         </span>
                     </h1>
                     <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                        Theo dõi vận hành hệ thống, doanh thu, và dữ liệu lưu lượng truy cập thực tế (Outcome 3).
+                        Theo dõi vận hành hệ thống, doanh thu và lưu lượng tương tác người dùng trên nền tảng CareLink.
                     </p>
                 </div>
 
                 {/* Tab Switcher */}
-                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 self-start sm:self-auto">
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 w-full sm:w-auto">
                     <button
                         type="button"
                         onClick={() => setActiveTab("overview")}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        className={`flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                             activeTab === "overview"
                                 ? "bg-white text-[#00677c] shadow-xs"
                                 : "text-slate-600 hover:text-slate-900"
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
                             setActiveTab("analytics");
                             if (!analyticsData) fetchAnalytics(analyticsRange);
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        className={`flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                             activeTab === "analytics"
                                 ? "bg-white text-[#00677c] shadow-xs"
                                 : "text-slate-600 hover:text-slate-900"
@@ -276,15 +276,15 @@ export default function AdminDashboard() {
             {activeTab === "overview" && (
                 <div className="space-y-6">
                     {/* Header filter */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <span className="text-xs font-semibold text-slate-500">
                             Thống kê hoạt động kinh doanh & ca trực
                         </span>
-                        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 w-full sm:w-auto">
                             <button
                                 type="button"
                                 onClick={() => setTimeRange("7days")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                     timeRange === "7days"
                                         ? "bg-white text-[#00677c] shadow-xs"
                                         : "text-slate-600 hover:text-slate-900"
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
                             <button
                                 type="button"
                                 onClick={() => setTimeRange("30days")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                     timeRange === "30days"
                                         ? "bg-white text-[#00677c] shadow-xs"
                                         : "text-slate-600 hover:text-slate-900"
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
                             <button
                                 type="button"
                                 onClick={() => setTimeRange("3months")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                     timeRange === "3months"
                                         ? "bg-white text-[#00677c] shadow-xs"
                                         : "text-slate-600 hover:text-slate-900"
@@ -622,7 +622,7 @@ export default function AdminDashboard() {
             )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
-            {/* TAB 2: TƯƠNG TÁC & LƯU LƯỢNG WEB (OUTCOME 3)                   */}
+            {/* TAB 2: TƯƠNG TÁC & LƯU LƯỢNG WEB                            */}
             {/* ══════════════════════════════════════════════════════════════ */}
             {activeTab === "analytics" && (
                 <div className="space-y-6">
@@ -643,12 +643,12 @@ export default function AdminDashboard() {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex-1 sm:flex-initial">
                                 <button
                                     type="button"
                                     onClick={() => setAnalyticsRange("today")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                         analyticsRange === "today"
                                             ? "bg-white text-[#00677c] shadow-xs"
                                             : "text-slate-600 hover:text-slate-900"
@@ -659,7 +659,7 @@ export default function AdminDashboard() {
                                 <button
                                     type="button"
                                     onClick={() => setAnalyticsRange("7days")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                         analyticsRange === "7days"
                                             ? "bg-white text-[#00677c] shadow-xs"
                                             : "text-slate-600 hover:text-slate-900"
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
                                 <button
                                     type="button"
                                     onClick={() => setAnalyticsRange("30days")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                    className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                         analyticsRange === "30days"
                                             ? "bg-white text-[#00677c] shadow-xs"
                                             : "text-slate-600 hover:text-slate-900"
@@ -684,8 +684,8 @@ export default function AdminDashboard() {
                                 type="button"
                                 onClick={() => fetchAnalytics(analyticsRange)}
                                 disabled={loadingAnalytics}
-                                title="Làm mới dữ liệu từ Supabase"
-                                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                                title="Làm mới dữ liệu"
+                                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                             >
                                 <RefreshCw className={`w-4 h-4 ${loadingAnalytics ? "animate-spin text-[#00677c]" : ""}`} />
                             </button>
@@ -708,8 +708,8 @@ export default function AdminDashboard() {
                     {loadingAnalytics && !analyticsData ? (
                         <div className="py-20 text-center bg-white rounded-2xl border border-slate-200/90 shadow-xs">
                             <RefreshCw className="w-8 h-8 animate-spin text-[#00677c] mx-auto mb-3" />
-                            <p className="text-sm font-semibold text-slate-700">Đang tổng hợp dữ liệu tương tác từ Supabase...</p>
-                            <p className="text-xs text-slate-400 mt-1">Đang truy vấn bảng visitor_sessions và user_activity_logs</p>
+                            <p className="text-sm font-semibold text-slate-700">Đang tổng hợp dữ liệu tương tác mới nhất...</p>
+                            <p className="text-xs text-slate-400 mt-1">Hệ thống đang đồng bộ dữ liệu thời gian thực</p>
                         </div>
                     ) : analyticsData ? (
                         <>
@@ -731,7 +731,7 @@ export default function AdminDashboard() {
                                             <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md">
                                                 Người dùng thực tế
                                             </span>
-                                            <span className="text-xs text-slate-400">Visitor ID độc lập</span>
+                                            <span className="text-xs text-slate-400">Định danh riêng biệt</span>
                                         </div>
                                     </div>
                                 </div>
@@ -832,10 +832,10 @@ export default function AdminDashboard() {
                                     <div className="text-xl font-bold text-slate-900 mt-1">
                                         {analyticsData.successfulPayments || 0}
                                     </div>
-                                    <span className="text-[11px] text-slate-400 mt-1 block">VNPAY & Ví hệ thống</span>
+                                    <span className="text-[11px] text-slate-400 mt-1 block">PayOS & Ví hệ thống</span>
                                 </div>
 
-                                <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs">
+                                <div className="col-span-2 sm:col-span-1 bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs">
                                     <span className="text-[11px] font-bold text-slate-500 uppercase">Tỷ lệ chuyển đổi</span>
                                     <div className="text-xl font-bold text-[#00677c] mt-1">
                                         {analyticsData.conversionRate || 0}%
@@ -1049,13 +1049,13 @@ export default function AdminDashboard() {
                                                                 </span>
                                                             </td>
                                                             <td className="py-3 px-3 whitespace-nowrap text-slate-600">
-                                                                <span className="inline-flex items-center gap-1 text-[11px]">
-                                                                    {act.deviceType === "Mobile" ? (
-                                                                        <Smartphone className="w-3.5 h-3.5 text-slate-400" />
-                                                                    ) : act.deviceType === "Tablet" ? (
-                                                                        <Tablet className="w-3.5 h-3.5 text-slate-400" />
+                                                                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium">
+                                                                    {act.deviceType?.includes("Phone") || act.deviceType?.includes("Android") || act.deviceType?.includes("Điện thoại") || act.deviceType === "Mobile" ? (
+                                                                        <Smartphone className="w-3.5 h-3.5 text-teal-600" />
+                                                                    ) : act.deviceType?.includes("Tablet") || act.deviceType?.includes("iPad") ? (
+                                                                        <Tablet className="w-3.5 h-3.5 text-purple-600" />
                                                                     ) : (
-                                                                        <Laptop className="w-3.5 h-3.5 text-slate-400" />
+                                                                        <Laptop className="w-3.5 h-3.5 text-slate-500" />
                                                                     )}
                                                                     {act.deviceType}
                                                                 </span>
