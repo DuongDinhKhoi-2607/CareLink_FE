@@ -214,7 +214,7 @@ export default function Home() {
         <div className="flex flex-col w-full">
 
             {/* 1. HERO SECTION */}
-            <section className="relative w-full h-auto py-8 sm:py-0 sm:h-[620px] lg:h-[700px] flex items-center overflow-hidden">
+            <section className="relative w-full h-auto py-12 sm:py-0 sm:h-[620px] lg:h-[700px] flex items-center overflow-hidden">
                 {/* ── BACKGROUND CHO MÀN HÌNH LAPTOP / DESKTOP (GIỮ NGUYÊN 100% KHÔNG ĐỔI) ── */}
                 <div className="hidden sm:block absolute inset-0 z-0">
                     <div
@@ -228,10 +228,9 @@ export default function Home() {
                 </div>
 
                 {/* ── NỀN SANG TRỌNG CHO MÀN HÌNH ĐIỆN THOẠI (MOBILE AMBIENT CANVAS) ── */}
-                <div className="sm:hidden absolute inset-0 z-0 bg-gradient-to-b from-teal-50/70 via-white to-slate-50/40 pointer-events-none">
-                    {/* Vệt ánh sáng mờ tạo chiều sâu tinh tế */}
-                    <div className="absolute -top-12 -right-12 w-64 h-64 bg-teal-100/50 rounded-full blur-3xl" />
-                    <div className="absolute top-1/2 -left-16 w-52 h-52 bg-sky-100/40 rounded-full blur-2xl" />
+                <div className="sm:hidden absolute inset-0 z-0 bg-gradient-to-b from-teal-50/60 via-white to-slate-50/30 pointer-events-none">
+                    <div className="absolute -top-12 -right-12 w-64 h-64 bg-teal-100/40 rounded-full blur-3xl" />
+                    <div className="absolute top-1/2 -left-16 w-52 h-52 bg-sky-100/30 rounded-full blur-2xl" />
                 </div>
 
                 <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -275,45 +274,6 @@ export default function Home() {
                                     {user?.role === "caregiver" ? "Bảng điều khiển Caregiver" : "Đăng ký đi làm"}
                                 </Link>
                             )}
-                        </div>
-
-                        {/* ── THẺ HÌNH ẢNH SHOWCASE DÀNH RIÊNG CHO MOBILE (HIỂN THỊ TRỌN VẸN KHÔNG BỊ CHÈN CHỮ) ── */}
-                        <div className="sm:hidden mt-2 relative rounded-2xl overflow-hidden border border-teal-100 shadow-md shadow-teal-950/5">
-                            <img
-                                src="/images/home_hero.jpg"
-                                alt="CareLink - Chăm sóc tận tâm, kết nối chuyên môn"
-                                className="w-full h-52 object-cover object-[center_35%]"
-                                loading="eager"
-                            />
-                            {/* Gradient mờ chân ảnh */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent pointer-events-none" />
-
-                            {/* Huy hiệu kính nổi (Floating Glass Pills) */}
-                            <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white text-[11px] font-medium">
-                                <span className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Điều dưỡng & SV Y khoa
-                                </span>
-                                <span className="bg-white/25 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 font-bold text-[10px]">
-                                    ★ 4.9/5 (1.200+ đánh giá)
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* ── 3 CHỈ SỐ UY TÍN NHANH TRÊN MOBILE ── */}
-                        <div className="sm:hidden grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
-                            <div className="py-2 px-1 bg-white/90 rounded-xl border border-slate-100 shadow-2xs">
-                                <span className="block text-xs font-bold text-slate-800">100%</span>
-                                <span className="text-[10px] text-slate-500">Xác minh bằng cấp</span>
-                            </div>
-                            <div className="py-2 px-1 bg-white/90 rounded-xl border border-slate-100 shadow-2xs">
-                                <span className="block text-xs font-bold text-[#00677c]">24/7</span>
-                                <span className="text-[10px] text-slate-500">Hỗ trợ kết nối</span>
-                            </div>
-                            <div className="py-2 px-1 bg-white/90 rounded-xl border border-slate-100 shadow-2xs">
-                                <span className="block text-xs font-bold text-emerald-600">Bảo hiểm</span>
-                                <span className="text-[10px] text-slate-500">Đầy đủ mỗi ca</span>
-                            </div>
                         </div>
                     </div>
                 </div>

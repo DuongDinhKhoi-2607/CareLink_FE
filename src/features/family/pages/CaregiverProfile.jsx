@@ -96,6 +96,11 @@ export default function CaregiverProfile() {
     const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
     const [selectedBookingDate, setSelectedBookingDate] = useState(null);
 
+    // Luôn cuộn lên đầu trang khi vào xem hồ sơ điều dưỡng
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, [nurseId]);
+
     // Đồng bộ trạng thái Lưu hồ sơ yêu thích & ghi nhận sự kiện xem hồ sơ điều dưỡng
     useEffect(() => {
         if (!nurseId) return;

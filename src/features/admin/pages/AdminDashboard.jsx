@@ -158,6 +158,7 @@ export default function AdminDashboard() {
                 const nList = nursesRes.value.items || (Array.isArray(nursesRes.value) ? nursesRes.value : []);
                 nList.forEach((n) => {
                     const isPending = n.status === 1 || n.status === "Pending" || n.statusName === "Chờ duyệt";
+                    const isApproved = n.status === 2 || n.status === "Approved" || n.statusName === "Đã duyệt";
                     acts.push({
                         id: `nurse-${n.id || n.nurseId}`,
                         type: "verification",
@@ -165,13 +166,17 @@ export default function AdminDashboard() {
                         description: `Nộp hồ sơ chuyên môn: ${n.educationLevel || n.specialty || "Y tế / Chăm sóc"} - CCCD/Chứng chỉ`,
                         time: n.submittedAt || n.createdAt ? new Date(n.submittedAt || n.createdAt).toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "Gần đây",
                         rawDate: n.submittedAt || n.createdAt ? new Date(n.submittedAt || n.createdAt).getTime() : 0,
-                        badge: isPending ? "Chờ duyệt" : (n.status === 2 || n.status === "Approved" ? "Đã duyệt" : "Từ chối"),
+                        badge: isPending ? "Chờ duyệt" : (isApproved ? "Đã duyệt" : "Từ chối"),
                         badgeColor: isPending
                             ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-200",
+                            : isApproved
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-rose-50 text-rose-700 border-rose-200",
                         iconColor: isPending
                             ? "bg-amber-50 text-amber-600 border border-amber-200/60"
-                            : "bg-emerald-50 text-emerald-600 border border-emerald-200/60",
+                            : isApproved
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200/60"
+                            : "bg-rose-50 text-rose-600 border border-rose-200/60",
                         icon: <FileCheck2 className="w-4.5 h-4.5" strokeWidth={2} />,
                     });
                 });
@@ -259,7 +264,7 @@ export default function AdminDashboard() {
                         }`}
                     >
                         <Globe className="w-3.5 h-3.5" />
-                        Lưu lượng Web (Outcome 3)
+                        Lưu lượng & Tương tác
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     </button>
                 </div>
@@ -377,7 +382,7 @@ export default function AdminDashboard() {
                         {/* 4. Điều dưỡng đang hoạt động */}
                         <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Điều dưỡng Online</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Điều dưỡng đang hoạt động</span>
                                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
                                     <ShieldCheck className="w-5 h-5" strokeWidth={2} />
                                 </div>
@@ -626,15 +631,15 @@ export default function AdminDashboard() {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-lg font-bold text-slate-900">
-                                    Báo cáo tương tác & Hành vi người dùng
+                                    Thống kê lưu lượng & Hành vi người dùng
                                 </h2>
                                 <span className="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    Dữ liệu thật Supabase
+                                    Hệ thống trực tiếp
                                 </span>
                             </div>
                             <p className="text-xs text-slate-500 mt-1">
-                                Bằng chứng số liệu thực tế phục vụ đánh giá Outcome 3: Theo dõi toàn bộ hành vi từ Khách vãng lai đến Khách hàng đặt ca.
+                                Theo dõi chi tiết số lượt truy cập và tiến trình tương tác của người dùng trên nền tảng CareLink theo thời gian thực.
                             </p>
                         </div>
 
@@ -957,21 +962,21 @@ export default function AdminDashboard() {
 
                                     <div className="mt-6 pt-4 border-t border-slate-100">
                                         <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-100 text-[11px] text-teal-800 leading-relaxed">
-                                            💡 <strong>Ý nghĩa học thuật Outcome 3:</strong> Phễu này chứng minh website có khả năng thu hút và dẫn dắt người dùng thật từ giai đoạn tìm hiểu đến hành vi thanh toán cốt lõi.
+                                            💡 <strong>Hiệu quả chuyển đổi:</strong> Phễu thể hiện tỷ lệ chuyển đổi tự nhiên của khách hàng từ khi tiếp cận website, tìm hiểu thông tin điều dưỡng đến khi đặt lịch và hoàn tất thanh toán.
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* NHẬT KÝ HOẠT ĐỘNG THỜI GIAN THỰC (EVIDENCE LOG TABLE) */}
+                            {/* NHẬT KÝ HOẠT ĐỘNG THỜI GIAN THỰC */}
                             <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
                                     <div>
                                         <h3 className="text-base font-bold text-slate-900">
-                                            Nhật ký tương tác thời gian thực
+                                            Nhật ký tương tác gần đây
                                         </h3>
                                         <p className="text-xs text-slate-500">
-                                            Bằng chứng chi tiết từng sự kiện tương tác của người dùng thật lưu trực tiếp trên Supabase
+                                            Theo dõi các lượt tương tác mới nhất của khách hàng trên hệ thống
                                         </p>
                                     </div>
                                     <span className="text-xs text-slate-400 font-medium">
@@ -988,7 +993,7 @@ export default function AdminDashboard() {
                                                 <th className="py-2.5 px-3">Hành động</th>
                                                 <th className="py-2.5 px-3">Trang thao tác</th>
                                                 <th className="py-2.5 px-3">Thiết bị</th>
-                                                <th className="py-2.5 px-3 rounded-r-lg text-right">Mã xác thực log</th>
+                                                <th className="py-2.5 px-3 rounded-r-lg text-right">Mã sự kiện</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -1056,7 +1061,7 @@ export default function AdminDashboard() {
                                                                 </span>
                                                             </td>
                                                             <td className="py-3 px-3 whitespace-nowrap text-right font-mono text-[10px] text-slate-400">
-                                                                <span title={`ID ghi nhận trên Supabase: ${act.id}`}>
+                                                                <span title={`Mã giao dịch hệ thống: ${act.id}`}>
                                                                     {String(act.id).slice(0, 8)}...
                                                                 </span>
                                                             </td>
