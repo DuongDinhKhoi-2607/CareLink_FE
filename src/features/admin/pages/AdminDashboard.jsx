@@ -10,6 +10,7 @@ import {
     CalendarClock,
     CheckCircle2,
     RefreshCw,
+    ChevronLeft,
     ChevronRight,
     Activity,
     Clock,
@@ -45,10 +46,13 @@ export default function AdminDashboard() {
     const [analyticsData, setAnalyticsData] = useState(null);
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
     const [analyticsError, setAnalyticsError] = useState(null);
+    const [logPage, setLogPage] = useState(1);
+    const LOGS_PER_PAGE = 8;
 
     const fetchAnalytics = useCallback((range = analyticsRange) => {
         setLoadingAnalytics(true);
         setAnalyticsError(null);
+        setLogPage(1);
         adminApi.getWebsiteAnalytics({ range })
             .then((res) => {
                 setAnalyticsData(res?.data || res);
@@ -969,116 +973,155 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* NHẬT KÝ HOẠT ĐỘNG THỜI GIAN THỰC */}
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
-                                    <div>
-                                        <h3 className="text-base font-bold text-slate-900">
-                                            Nhật ký tương tác gần đây
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            Theo dõi các lượt tương tác mới nhất của khách hàng trên hệ thống
-                                        </p>
-                                    </div>
-                                    <span className="text-xs text-slate-400 font-medium">
-                                        Hiển thị 20 sự kiện gần nhất
-                                    </span>
-                                </div>
+                            {(() => {
+                                const allActivities = analyticsData.recentActivities || [];
+                                const totalLogs = allActivities.length;
+                                const totalLogPages = Math.ceil(totalLogs / LOGS_PER_PAGE) || 1;
+                                const paginatedLogs = allActivities.slice((logPage - 1) * LOGS_PER_PAGE, logPage * LOGS_PER_PAGE);
 
-                                <div className="mt-4 overflow-x-auto">
-                                    <table className="w-full text-left text-xs border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 font-bold">
-                                                <th className="py-2.5 px-3 rounded-l-lg">Thời gian</th>
-                                                <th className="py-2.5 px-3">Đối tượng</th>
-                                                <th className="py-2.5 px-3">Hành động</th>
-                                                <th className="py-2.5 px-3">Trang thao tác</th>
-                                                <th className="py-2.5 px-3">Thiết bị</th>
-                                                <th className="py-2.5 px-3 rounded-r-lg text-right">Mã sự kiện</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {analyticsData.recentActivities && analyticsData.recentActivities.length > 0 ? (
-                                                analyticsData.recentActivities.map((act) => {
-                                                    const roleBadge =
-                                                        act.userRoleName === "Quản trị viên"
-                                                            ? "bg-rose-50 text-rose-700 border-rose-200"
-                                                            : act.userRoleName === "Điều dưỡng"
-                                                            ? "bg-teal-50 text-[#00677c] border-teal-200"
-                                                            : act.userRoleName === "Khách hàng"
-                                                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                            : "bg-slate-100 text-slate-700 border-slate-200";
+                                return (
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                                            <div>
+                                                <h3 className="text-base font-bold text-slate-900">
+                                                    Nhật ký tương tác gần đây
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Theo dõi các lượt tương tác mới nhất của khách hàng trên hệ thống
+                                                </p>
+                                            </div>
+                                            <span className="text-xs text-slate-400 font-medium">
+                                                {totalLogs > 0 ? `Hiển thị ${paginatedLogs.length} trên ${totalLogs} sự kiện mới nhất` : "Chưa có sự kiện"}
+                                            </span>
+                                        </div>
 
-                                                    const eventBadge =
-                                                        act.eventType === "PAYMENT_SUCCESS"
-                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                            : act.eventType === "CREATE_BOOKING"
-                                                            ? "bg-teal-50 text-[#00677c] border-teal-200"
-                                                            : act.eventType === "REGISTER"
-                                                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                            : act.eventType === "LOGIN"
-                                                            ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-                                                            : act.eventType === "VIEW_NURSE" || act.eventType === "SEARCH_NURSE"
-                                                            ? "bg-sky-50 text-sky-700 border-sky-200"
-                                                            : "bg-slate-50 text-slate-600 border-slate-200";
+                                        <div className="mt-4 overflow-x-auto">
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 font-bold">
+                                                        <th className="py-2.5 px-3 rounded-l-lg">Thời gian</th>
+                                                        <th className="py-2.5 px-3">Đối tượng</th>
+                                                        <th className="py-2.5 px-3">Hành động</th>
+                                                        <th className="py-2.5 px-3">Trang thao tác</th>
+                                                        <th className="py-2.5 px-3">Thiết bị</th>
+                                                        <th className="py-2.5 px-3 rounded-r-lg text-right">Mã sự kiện</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {paginatedLogs.length > 0 ? (
+                                                        paginatedLogs.map((act) => {
+                                                            const roleBadge =
+                                                                act.userRoleName === "Quản trị viên"
+                                                                    ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                                    : act.userRoleName === "Điều dưỡng"
+                                                                    ? "bg-teal-50 text-[#00677c] border-teal-200"
+                                                                    : act.userRoleName === "Khách hàng"
+                                                                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                                    : "bg-slate-100 text-slate-700 border-slate-200";
 
-                                                    return (
-                                                        <tr key={act.id} className="hover:bg-slate-50/80 transition-colors">
-                                                            <td className="py-3 px-3 whitespace-nowrap">
-                                                                <span className="font-semibold text-slate-800 block">{act.timeAgo}</span>
-                                                                <span className="text-[10px] text-slate-400">
-                                                                    {new Date(act.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-3 px-3">
-                                                                <div className="font-semibold text-slate-800">{act.userDisplayName}</div>
-                                                                <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 ${roleBadge}`}>
-                                                                    {act.userRoleName}
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-3 px-3 whitespace-nowrap">
-                                                                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border ${eventBadge}`}>
-                                                                    {act.eventNameVi}
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-3 px-3 max-w-xs truncate">
-                                                                <span className="font-medium text-slate-700 block truncate" title={act.pageTitle || act.pageUrl}>
-                                                                    {act.pageTitle || act.pageUrl}
-                                                                </span>
-                                                                <span className="text-[10px] text-slate-400 block truncate" title={act.pageUrl}>
-                                                                    {act.pageUrl}
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-3 px-3 whitespace-nowrap text-slate-600">
-                                                                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium">
-                                                                    {act.deviceType?.includes("Phone") || act.deviceType?.includes("Android") || act.deviceType?.includes("Điện thoại") || act.deviceType === "Mobile" ? (
-                                                                        <Smartphone className="w-3.5 h-3.5 text-teal-600" />
-                                                                    ) : act.deviceType?.includes("Tablet") || act.deviceType?.includes("iPad") ? (
-                                                                        <Tablet className="w-3.5 h-3.5 text-purple-600" />
-                                                                    ) : (
-                                                                        <Laptop className="w-3.5 h-3.5 text-slate-500" />
-                                                                    )}
-                                                                    {act.deviceType}
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-3 px-3 whitespace-nowrap text-right font-mono text-[10px] text-slate-400">
-                                                                <span title={`Mã giao dịch hệ thống: ${act.id}`}>
-                                                                    {String(act.id).slice(0, 8)}...
-                                                                </span>
+                                                            const eventBadge =
+                                                                act.eventType === "PAYMENT_SUCCESS"
+                                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                                    : act.eventType === "CREATE_BOOKING"
+                                                                    ? "bg-teal-50 text-[#00677c] border-teal-200"
+                                                                    : act.eventType === "REGISTER"
+                                                                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                                    : act.eventType === "LOGIN"
+                                                                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                                                    : act.eventType === "VIEW_NURSE" || act.eventType === "SEARCH_NURSE"
+                                                                    ? "bg-sky-50 text-sky-700 border-sky-200"
+                                                                    : "bg-slate-50 text-slate-600 border-slate-200";
+
+                                                            return (
+                                                                <tr key={act.id} className="hover:bg-slate-50/80 transition-colors">
+                                                                    <td className="py-3 px-3 whitespace-nowrap">
+                                                                        <span className="font-semibold text-slate-800 block">{act.timeAgo}</span>
+                                                                        <span className="text-[10px] text-slate-400">
+                                                                            {new Date(act.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-3">
+                                                                        <div className="font-semibold text-slate-800">{act.userDisplayName}</div>
+                                                                        <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 ${roleBadge}`}>
+                                                                            {act.userRoleName}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-3 whitespace-nowrap">
+                                                                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border ${eventBadge}`}>
+                                                                            {act.eventNameVi}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-3 max-w-xs truncate">
+                                                                        <span className="font-medium text-slate-700 block truncate" title={act.pageTitle || act.pageUrl}>
+                                                                            {act.pageTitle || act.pageUrl}
+                                                                        </span>
+                                                                        <span className="text-[10px] text-slate-400 block truncate" title={act.pageUrl}>
+                                                                            {act.pageUrl}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-3 whitespace-nowrap text-slate-600">
+                                                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium">
+                                                                            {act.deviceType?.includes("Phone") || act.deviceType?.includes("Android") || act.deviceType?.includes("Điện thoại") || act.deviceType === "Mobile" ? (
+                                                                                <Smartphone className="w-3.5 h-3.5 text-teal-600" />
+                                                                            ) : act.deviceType?.includes("Tablet") || act.deviceType?.includes("iPad") ? (
+                                                                                <Tablet className="w-3.5 h-3.5 text-purple-600" />
+                                                                            ) : (
+                                                                                <Laptop className="w-3.5 h-3.5 text-slate-500" />
+                                                                            )}
+                                                                            {act.deviceType}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3 px-3 whitespace-nowrap text-right font-mono text-[10px] text-slate-400">
+                                                                        <span title={`Mã giao dịch hệ thống: ${act.id}`}>
+                                                                            {String(act.id).slice(0, 8)}...
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                                                                Chưa có nhật ký hoạt động nào được ghi nhận. Hãy mở trình duyệt và duyệt các trang web để tạo tương tác thực.
                                                             </td>
                                                         </tr>
-                                                    );
-                                                })
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
-                                                        Chưa có nhật ký hoạt động nào được ghi nhận. Hãy mở trình duyệt và duyệt các trang web để tạo tương tác thực.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* PHÂN TRANG GỌN ĐẸP TRÁNH KÉO DÀI BẢNG */}
+                                        {totalLogs > LOGS_PER_PAGE && (
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 mt-2 border-t border-slate-100 text-xs text-slate-500">
+                                                <div>
+                                                    Trang <b className="text-slate-800">{logPage}</b> / <b className="text-slate-800">{totalLogPages}</b> (Sự kiện {(logPage - 1) * LOGS_PER_PAGE + 1} - {Math.min(logPage * LOGS_PER_PAGE, totalLogs)} trên {totalLogs})
+                                                </div>
+                                                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                                                    <button
+                                                        type="button"
+                                                        disabled={logPage === 1}
+                                                        onClick={() => setLogPage((p) => Math.max(1, p - 1))}
+                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                                    >
+                                                        <ChevronLeft className="w-3.5 h-3.5" /> Trước
+                                                    </button>
+                                                    <span className="px-2 font-bold text-slate-700">
+                                                        {logPage} / {totalLogPages}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        disabled={logPage === totalLogPages}
+                                                        onClick={() => setLogPage((p) => Math.min(totalLogPages, p + 1))}
+                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                                    >
+                                                        Sau <ChevronRight className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </>
                     ) : null}
                 </div>

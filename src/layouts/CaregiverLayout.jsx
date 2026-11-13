@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
     BookOpen,
@@ -76,6 +76,14 @@ const navItems = [
 export default function CaregiverLayout() {
     const location = useLocation();
     const navigate = useNavigate();
+    const mainRef = useRef(null);
+
+    useEffect(() => {
+        if (mainRef.current) {
+            mainRef.current.scrollTop = 0;
+        }
+    }, [location.pathname]);
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -218,9 +226,9 @@ export default function CaregiverLayout() {
     const isActive = (path) => location.pathname === path;
 
     return (
-        <div className="min-h-screen bg-[#f4f7f9] flex flex-col font-sans">
-            {/* ── Top Bar ── */}
-            <header className="h-16 bg-white border-b border-slate-200/80 shadow-xs sticky top-0 z-40 flex items-center px-4 sm:px-6 gap-4">
+        <div className="h-screen bg-[#f4f7f9] flex flex-col font-sans overflow-hidden">
+            {/* ── Top Bar (Cố định ở trên cùng) ── */}
+            <header className="h-16 shrink-0 bg-white border-b border-slate-200/80 shadow-xs z-40 flex items-center px-4 sm:px-6 gap-4">
                 {/* Mobile hamburger */}
                 <button
                     type="button"
@@ -403,11 +411,11 @@ export default function CaregiverLayout() {
                 </div>
             </header>
 
-            {/* ── Khung nội dung: Sidebar cố định theo viewport (sticky top-16), không bị kéo dài bất thường ── */}
-            <div className="flex flex-1 min-h-[calc(100vh-4rem)]">
+            {/* ── Khung nội dung: Sidebar cố định theo viewport, nội dung cuộn độc lập chuẩn Dashboard ── */}
+            <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* ── DESKTOP SIDEBAR: Giữ cố định sang xịn đẹp, không kéo dài xuống, animation mượt mà ── */}
                 <aside
-                    className={`hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto ${
+                    className={`hidden lg:flex flex-col h-full overflow-y-auto ${
                         isCollapsed ? "w-20" : "w-64"
                     } bg-[#102030] shrink-0 transition-all duration-300 ease-in-out z-20 border-r border-slate-800/50`}
                 >
@@ -567,8 +575,8 @@ export default function CaregiverLayout() {
                     </div>
                 )}
 
-                {/* ── Main Content ── */}
-                <main className="flex-1 min-w-0 w-full">
+                {/* ── Main Content: Cuộn độc lập mượt mà, không kéo trôi Sidebar ── */}
+                <main ref={mainRef} className="flex-1 min-w-0 w-full h-full overflow-y-auto">
                     <Outlet />
                 </main>
             </div>

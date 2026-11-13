@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
     LayoutDashboard,
@@ -85,6 +85,14 @@ const adminNavItems = [
 export default function AdminLayout() {
     const location = useLocation();
     const navigate = useNavigate();
+    const mainRef = useRef(null);
+
+    useEffect(() => {
+        if (mainRef.current) {
+            mainRef.current.scrollTop = 0;
+        }
+    }, [location.pathname]);
+
     const [isCollapsed, setIsCollapsed] = useState(() => {
         try {
             return localStorage.getItem("carelink_admin_sidebar_collapsed") === "true";
@@ -219,9 +227,9 @@ export default function AdminLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800 antialiased">
-            {/* ── TOP HEADER ── */}
-            <header className="h-16 bg-white border-b border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)] sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6">
+        <div className="h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800 antialiased overflow-hidden">
+            {/* ── TOP HEADER (Cố định ở trên cùng) ── */}
+            <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)] z-40 flex items-center justify-between px-4 sm:px-6">
                 <div className="flex items-center gap-3 sm:gap-4">
                     {/* Mobile Hamburger toggle */}
                     <button
@@ -342,11 +350,11 @@ export default function AdminLayout() {
                 </div>
             </header>
 
-            {/* ── BODY (SIDEBAR + MAIN CONTENT: Sidebar kéo dài tự nhiên theo nội dung từng trang) ── */}
-            <div className="flex flex-1 items-stretch min-h-[calc(100vh-4rem)]">
-                {/* ── DESKTOP SIDEBAR: Tự động co giãn dài theo đúng độ dài nội dung của trang, bắt đầu sát dưới header ── */}
+            {/* ── BODY (SIDEBAR CỐ ĐỊNH + NỘI DUNG CUỘN ĐỘC LẬP CHUẨN DASHBOARD) ── */}
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+                {/* ── DESKTOP SIDEBAR: Cố định theo viewport, nội dung bên trong tự cuộn nếu dài, không bao giờ bị kéo giãn ── */}
                 <aside
-                    className={`hidden lg:flex flex-col bg-[#1c2a38] border-r border-[#2a3c4e] shadow-[4px_0_15px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out shrink-0 self-stretch ${
+                    className={`hidden lg:flex flex-col bg-[#1c2a38] border-r border-[#2a3c4e] shadow-[4px_0_15px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out shrink-0 h-full overflow-y-auto ${
                         isCollapsed ? "w-20" : "w-64"
                     }`}
                 >
@@ -551,8 +559,8 @@ export default function AdminLayout() {
                     </div>
                 )}
 
-                {/* ── MAIN CONTENT OUTLET: Tự do co giãn theo nội dung từng trang ── */}
-                <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8">
+                {/* ── MAIN CONTENT: Cuộn mượt mà độc lập, không làm trôi Sidebar ── */}
+                <main ref={mainRef} className="flex-1 min-w-0 w-full h-full overflow-y-auto p-4 sm:p-6 lg:p-8">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
