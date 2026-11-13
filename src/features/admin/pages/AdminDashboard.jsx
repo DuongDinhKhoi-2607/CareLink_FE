@@ -47,7 +47,7 @@ export default function AdminDashboard() {
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
     const [analyticsError, setAnalyticsError] = useState(null);
     const [logPage, setLogPage] = useState(1);
-    const LOGS_PER_PAGE = 8;
+    const LOGS_PER_PAGE = 10;
 
     const fetchAnalytics = useCallback((range = analyticsRange) => {
         setLoadingAnalytics(true);
