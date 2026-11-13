@@ -16,6 +16,7 @@ import {
     Home,
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
+import { trackEvent } from "../../../utils/tracker";
 
 export default function PaymentResult() {
     const location = useLocation();
@@ -81,6 +82,12 @@ export default function PaymentResult() {
             // Status: 1 = Pending, 2 = Paid, 3 = Failed, 4 = Refunded
             // Nếu Backend đã xác nhận Payment là Paid (status === 2)
             if (status === 2) {
+                // Ghi nhận sự kiện Thanh toán thành công (EXE Outcome 3)
+                trackEvent("PAYMENT_SUCCESS", {
+                    bookingId: String(bookingId),
+                    amount: paymentRes?.amount || 0,
+                });
+
                 sessionStorage.removeItem("carelink_pending_payment_booking_id");
                 if (bookingId) {
                     try {

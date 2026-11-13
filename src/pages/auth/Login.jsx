@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import authApi, { GOOGLE_CLIENT_ID, fetchAndSyncUserMe } from "../../api/authApi";
 import Toast from "../../components/Toast";
+import { trackEvent } from "../../utils/tracker";
 
 export default function Login() {
     const navigate = useNavigate();
@@ -46,6 +47,9 @@ export default function Login() {
             localStorage.setItem("carelink_refresh_token", refreshToken);
         }
         localStorage.setItem("carelink_user", JSON.stringify(userObj));
+
+        // Ghi nhận sự kiện Đăng nhập thành công vào hệ thống Tracking (EXE Outcome 3)
+        trackEvent("LOGIN", { role: userObj.role });
 
         if (rememberMe) {
             localStorage.setItem("carelink_remember_me", "true");

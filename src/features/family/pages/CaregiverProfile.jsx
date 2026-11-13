@@ -4,6 +4,7 @@ import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
 import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2, Sparkles, Calendar, Heart, CalendarCheck } from "lucide-react";
 import DirectBookingModal from "../components/DirectBookingModal";
+import { trackEvent } from "../../../utils/tracker";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -95,9 +96,15 @@ export default function CaregiverProfile() {
     const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
     const [selectedBookingDate, setSelectedBookingDate] = useState(null);
 
-    // Đồng bộ trạng thái Lưu hồ sơ yêu thích từ localStorage
+    // Đồng bộ trạng thái Lưu hồ sơ yêu thích & ghi nhận sự kiện xem hồ sơ điều dưỡng
     useEffect(() => {
         if (!nurseId) return;
+
+        trackEvent("VIEW_NURSE", {
+            nurseId: String(nurseId),
+            nurseName: caregiver?.name || caregiver?.fullName || "Điều dưỡng CareLink",
+        });
+
         try {
             const raw = localStorage.getItem("carelink_favorite_caregivers");
             const favorites = raw ? JSON.parse(raw) : [];

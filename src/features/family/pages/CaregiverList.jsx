@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import CaregiverCard from "../components/CaregiverCard";
 import CaregiverFilterSidebar from "../components/CaregiverFilterSidebar";
 import familyApi from "../../../api/familyApi";
+import { trackEvent } from "../../../utils/tracker";
 import { HeartHandshake, ShieldAlert, LogIn, UserPlus, X, MessageSquare, CheckCircle2 } from "lucide-react";
 
 // Helper chuyển đổi dữ liệu từ Backend API (GET /api/v1/nurses/search) sang cấu trúc Card
@@ -296,6 +297,11 @@ export default function CaregiverList() {
         if (e) e.preventDefault();
         setPageNumber(1);
         setSearchTrigger((prev) => prev + 1);
+
+        trackEvent("SEARCH_NURSE", {
+            district: location.trim() || "Tất cả",
+            service: activeService?.serviceName || "Tất cả",
+        });
     };
 
     // Reset bộ lọc

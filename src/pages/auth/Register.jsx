@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import authApi, { GOOGLE_CLIENT_ID } from "../../api/authApi";
 import Toast from "../../components/Toast";
+import { trackEvent } from "../../utils/tracker";
 
 /* =========================================================
    ICONS
@@ -420,6 +421,9 @@ export default function Register() {
         }
 
         localStorage.setItem("carelink_user", JSON.stringify(user));
+
+        // Ghi nhận sự kiện Đăng ký tài khoản thành công (EXE Outcome 3)
+        trackEvent("REGISTER", { role: user.role });
 
         setToast({
             type: "success",

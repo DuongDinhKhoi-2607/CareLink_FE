@@ -9,6 +9,8 @@ export const adminApi = {
         axiosClient.get("/api/v1/admin/dashboard/summary"),
     getRevenueMetrics: (params) =>
         axiosClient.get("/api/v1/admin/dashboard/revenue", { params }),
+    getWebsiteAnalytics: (params) =>
+        axiosClient.get("/api/v1/admin/dashboard/analytics", { params }),
 
     // ── 2. Xét duyệt hồ sơ Điều dưỡng (Nurse Verifications) ──
     getNurseVerifications: (params) =>

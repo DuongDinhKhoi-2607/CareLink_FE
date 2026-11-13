@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
+import { trackEvent } from "../../../utils/tracker";
 
 // ── BỘ CHỈ BÁO TIẾN TRÌNH 3 BƯỚC (NỘI BỘ) ──
 const BOOKING_STEPS = [
@@ -558,6 +559,9 @@ export default function DirectBookingModal({
 
             await conversationApi.createProposal(targetConvId, proposalPayload);
 
+            // Ghi nhận sự kiện tạo đề xuất ca trực thành công (EXE Outcome 3)
+            trackEvent("CREATE_BOOKING", { mode: "proposal" });
+
             onProposalCreated?.();
             onClose();
 
@@ -629,6 +633,12 @@ export default function DirectBookingModal({
 
             const createdBooking = await familyApi.createBooking(payload);
             const targetBookingId = createdBooking?.id || createdBooking?.bookingId;
+
+            // Ghi nhận sự kiện tạo ca đặt trực tiếp thành công (EXE Outcome 3)
+            trackEvent("CREATE_BOOKING", {
+                bookingId: targetBookingId,
+                totalPrice: totalEstimate,
+            });
 
             setShowConsentModal(false);
             onClose();

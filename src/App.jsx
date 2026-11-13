@@ -5,6 +5,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import CaregiverLayout from "./layouts/CaregiverLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import PageTransition from "./components/PageTransition";
+import { PageTracker } from "./utils/tracker";
 import Home from "./pages/public/Home";
 
 // Lazy-loaded Public & Auth pages
@@ -68,6 +69,7 @@ function RouteFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      <PageTracker />
       <PageTransition>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
