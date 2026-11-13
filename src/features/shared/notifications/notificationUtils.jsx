@@ -13,6 +13,8 @@ import {
     ShieldAlert,
     AlertCircle,
     CheckCircle2,
+    Banknote,
+    UserCheck,
 } from "lucide-react";
 
 /**
@@ -123,6 +125,14 @@ export function getNotificationConfig(type) {
                 categoryLabel: "Biến động số dư ví",
             };
 
+        case "PAYOUT_REQUESTED":
+            return {
+                Icon: Banknote,
+                badgeBg: "bg-amber-50 border-amber-200",
+                iconColor: "text-amber-600",
+                categoryLabel: "Yêu cầu rút tiền",
+            };
+
         case "PAYOUT_REJECTED":
             return {
                 Icon: AlertCircle,
@@ -141,6 +151,14 @@ export function getNotificationConfig(type) {
                 categoryLabel: "Đề xuất chăm sóc",
             };
 
+        case "NURSE_VERIFICATION_SUBMITTED":
+            return {
+                Icon: UserCheck,
+                badgeBg: "bg-teal-50 border-teal-200",
+                iconColor: "text-[#00677c]",
+                categoryLabel: "Hồ sơ chờ thẩm định",
+            };
+
         case "NurseVerificationApproved":
             return {
                 Icon: ShieldCheck,
@@ -155,6 +173,15 @@ export function getNotificationConfig(type) {
                 badgeBg: "bg-rose-50 border-rose-200",
                 iconColor: "text-rose-600",
                 categoryLabel: "Hồ sơ từ chối",
+            };
+
+        case "DISPUTE_SUBMITTED":
+        case "DISPUTE_OPENED":
+            return {
+                Icon: ShieldAlert,
+                badgeBg: "bg-rose-50 border-rose-200",
+                iconColor: "text-rose-600",
+                categoryLabel: "Khiếu nại ca trực",
             };
 
         default:
@@ -194,7 +221,7 @@ export function resolveNotificationRoute(type, referenceId, role = "") {
         return "/dashboard/appointments";
     }
     if (type === "WALLET_CREDITED" || type.startsWith("PAYOUT_")) {
-        if (isAdmin) return "/admin/finance";
+        if (isAdmin) return "/admin/finance?tab=withdrawals";
         return "/caregiver/wallet";
     }
 
@@ -207,7 +234,7 @@ export function resolveNotificationRoute(type, referenceId, role = "") {
     }
 
     // Nurse Verification
-    if (type.startsWith("NurseVerification")) {
+    if (type.startsWith("NurseVerification") || type === "NURSE_VERIFICATION_SUBMITTED") {
         if (isAdmin) return "/admin/approvals";
         return "/caregiver/verification";
     }

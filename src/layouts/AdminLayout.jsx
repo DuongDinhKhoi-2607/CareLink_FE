@@ -107,6 +107,7 @@ export default function AdminLayout() {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
     const [openDisputesCount, setOpenDisputesCount] = useState(0);
+    const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
 
     // Dynamic Admin User from localStorage / API
     const [currentUser, setCurrentUser] = useState(() => {
@@ -135,29 +136,57 @@ export default function AdminLayout() {
 
         // Hàm lấy số lượng đếm thực tế từ Database
         const fetchRealCounts = () => {
-            // Tải số lượng hồ sơ đang chờ duyệt thực tế (verificationStatus === 1 hoặc 4)
+            // 1. Tải số lượng hồ sơ đang chờ duyệt thực tế (verificationStatus === 1 hoặc 4)
             adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 100 }).then((res) => {
                 const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
                 const pending = list.filter(item => item.verificationStatus === 1 || item.verificationStatus === 4).length;
                 setPendingApprovalsCount(pending);
             }).catch(() => {});
 
-            // Tải số lượng khiếu nại đang mở thực tế (status === 1: Open / Đang xác minh)
+            // 2. Tải số lượng khiếu nại đang mở thực tế (status === 1: Open / Đang xác minh)
             adminApi.getDisputes({ pageNumber: 1, pageSize: 100 }).then((res) => {
                 const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
                 const open = list.filter(item => item.status === 1 || item.status === "Open" || item.status === "Đang xác minh").length;
                 setOpenDisputesCount(open);
             }).catch(() => {});
+
+            // 3. Tải số lượng yêu cầu rút tiền đang chờ duyệt thực tế từ Điều dưỡng
+            adminApi.getPayouts({ pageNumber: 1, pageSize: 100 }).then((res) => {
+                const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+                const pending = list.filter(item => {
+                    const st = item.status;
+                    return st === 1 || st === "Pending" || st === "Chờ duyệt";
+                }).length;
+                setPendingPayoutsCount(pending);
+            }).catch(() => {});
         };
 
         fetchRealCounts();
 
+        // Chu kỳ Polling tự động mỗi 25s để cập nhật huy hiệu theo thời gian thực
+        const interval = setInterval(() => {
+            if (document.visibilityState === "visible") {
+                fetchRealCounts();
+            }
+        }, 25000);
+
+        const handleFocus = () => {
+            if (document.visibilityState === "visible") {
+                fetchRealCounts();
+            }
+        };
+
         // Lắng nghe sự kiện phát ra khi Admin thực hiện thao tác duyệt/từ chối hoặc giải quyết khiếu nại
         window.addEventListener("carelink:admin-refresh-badges", fetchRealCounts);
+        window.addEventListener("focus", handleFocus);
+        document.addEventListener("visibilitychange", handleFocus);
 
         return () => {
+            clearInterval(interval);
             window.removeEventListener("storage", handleSync);
             window.removeEventListener("carelink:admin-refresh-badges", fetchRealCounts);
+            window.removeEventListener("focus", handleFocus);
+            document.removeEventListener("visibilitychange", handleFocus);
         };
     }, [location.pathname]);
 
@@ -396,18 +425,33 @@ export default function AdminLayout() {
 
                                     {/* Badge count */}
                                     {(() => {
-                                        const count = item.path === "/admin/approvals" 
-                                            ? pendingApprovalsCount 
-                                            : item.path === "/admin/disputes" 
-                                            ? openDisputesCount 
-                                            : item.badge;
+                                        let count = null;
+                                        let badgeColor = "bg-teal-500/25 text-teal-300 border-teal-400/30";
+                                        let dotColor = "bg-teal-400";
+
+                                        if (item.path === "/admin/approvals") {
+                                            count = pendingApprovalsCount;
+                                            badgeColor = "bg-teal-500/25 text-teal-300 border-teal-400/30";
+                                            dotColor = "bg-teal-400";
+                                        } else if (item.path === "/admin/disputes") {
+                                            count = openDisputesCount;
+                                            badgeColor = "bg-rose-500/25 text-rose-300 border-rose-400/30";
+                                            dotColor = "bg-rose-400";
+                                        } else if (item.path === "/admin/finance") {
+                                            count = pendingPayoutsCount;
+                                            badgeColor = "bg-amber-400/25 text-amber-300 border-amber-400/40 font-extrabold animate-pulse";
+                                            dotColor = "bg-amber-400";
+                                        } else {
+                                            count = item.badge;
+                                        }
+
                                         if (!count) return null;
                                         return (
                                             <span
-                                                className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full border transition-all ${
                                                     isCollapsed
-                                                        ? "absolute top-1 right-1 w-2 h-2 p-0 bg-rose-500 rounded-full"
-                                                        : "ml-auto bg-teal-500/25 text-teal-300 border border-teal-400/30"
+                                                        ? `absolute top-1.5 right-1.5 w-2.5 h-2.5 p-0 ${dotColor} rounded-full border-transparent shadow-xs animate-pulse`
+                                                        : `ml-auto ${badgeColor}`
                                                 }`}
                                             >
                                                 {!isCollapsed && count}

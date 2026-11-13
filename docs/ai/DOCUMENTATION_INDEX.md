@@ -23,5 +23,7 @@
 | 11 | [`README.md`](../../README.md) | Hướng dẫn chạy Vite dev/build | 🟡 **`REFERENCE`** | Hướng dẫn lệnh khởi động Frontend. | Tham khảo lệnh build. |
 | 12 | [`.agents/skills/design-taste-frontend/SKILL.md`](../../.agents/skills/design-taste-frontend/SKILL.md) | Skill thẩm mỹ thiết kế UI | 🟡 **`REFERENCE`** | Hướng dẫn nâng cấp giao diện, chống thiết kế rập khuôn. | Tham khảo khi thiết kế màn hình mới. |
 | 13 | [`.agents/skills/redesign-existing-projects/SKILL.md`](../../.agents/skills/redesign-existing-projects/SKILL.md) | Skill tái cấu trúc giao diện | 🟡 **`REFERENCE`** | Hướng dẫn quy trình audit và tái thiết kế UI. | Tham khảo khi làm task nâng cấp UX. |
+| 14 | [`docs/specs/ADMIN_NOTIFICATION_AND_FINANCE_AUDIT_REPORT.md`](../specs/ADMIN_NOTIFICATION_AND_FINANCE_AUDIT_REPORT.md) | Báo cáo rà soát lỗi Thông báo & Tài chính Admin | 🟢 **`ACTIVE`** | Rà soát lỗi E2E chuông thông báo, Taskbar badge, và luồng rút tiền Admin. | Căn cứ xử lý đồng bộ giữa Frontend và Backend. |
+| 15 | [`docs/specs/REPORT_SUA_LOI_THONG_BAO_VA_TAI_CHINH_ADMIN.md`](../specs/REPORT_SUA_LOI_THONG_BAO_VA_TAI_CHINH_ADMIN.md) | Báo cáo nghiệm thu sửa lỗi Thông báo, Taskbar & Tài chính | 🟢 **`ACTIVE`** | Nghiệm thu chi tiết Before vs After nâng cấp chuẩn UI/UX Pro Max, bằng chứng build và hướng dẫn test. | Tài liệu nghiệm thu chính thức. |
 
 ---

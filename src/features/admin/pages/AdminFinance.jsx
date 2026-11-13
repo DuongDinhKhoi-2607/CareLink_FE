@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import adminApi from "../../../api/adminApi";
 import {
     CircleDollarSign,
@@ -214,7 +215,25 @@ function Toast({ message, type }) {
 
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────────
 export default function AdminFinance() {
-    const [activeTab, setActiveTab] = useState("transactions");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState(() => {
+        const tab = searchParams.get("tab");
+        return tab === "withdrawals" ? "withdrawals" : "transactions";
+    });
+
+    useEffect(() => {
+        const tab = searchParams.get("tab");
+        if (tab === "withdrawals" || tab === "transactions") {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (newTab) => {
+        setActiveTab(newTab);
+        setSearchQuery("");
+        setSearchParams(newTab === "withdrawals" ? { tab: "withdrawals" } : {});
+    };
+
     const [searchQuery, setSearchQuery] = useState("");
     const [transactions, setTransactions] = useState([]);
     const [withdrawals, setWithdrawals] = useState([]);
@@ -316,7 +335,7 @@ export default function AdminFinance() {
     const fetchPayouts = useCallback(async () => {
         setLoadingWithdrawals(true);
         try {
-            const res = await adminApi.getPayouts();
+            const res = await adminApi.getPayouts({ pageNumber: 1, pageSize: 100 });
             const list = Array.isArray(res)
                 ? res
                 : Array.isArray(res?.data)
@@ -335,7 +354,7 @@ export default function AdminFinance() {
                     id: w.id || `WD-${w.code || "N/A"}`,
                     role: "Điều dưỡng",
                     caregiver: w.nurseName || w.caregiverName || w.user?.fullName || w.caregiver || "Điều dưỡng",
-                    caregiverPhone: w.nursePhone || w.caregiverPhone || w.user?.phoneNumber || "—",
+                    caregiverPhone: w.nursePhone || w.caregiverPhone || w.user?.phoneNumber || (w.nurseId ? `ĐD ID: ${String(w.nurseId).substring(0, 8)}` : "Đã xác minh qua Ví"),
                     amount: Number(w.amount || 0),
                     bank: w.bankName || w.bank || "Ngân hàng",
                     accountNumber: w.bankAccountNumber || w.accountNumber || "—",
@@ -481,6 +500,7 @@ export default function AdminFinance() {
             showToast(`✓ Đã duyệt chi trả thành công cho yêu cầu ${id}! Lệnh chuyển tiền đang được xử lý.`, "success");
             setApproveTarget(null);
             await fetchPayouts();
+            window.dispatchEvent(new CustomEvent("carelink:admin-refresh-badges"));
         } catch (err) {
             console.error("Lỗi duyệt yêu cầu rút tiền:", err);
             const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.response?.data?.title || "Không thể duyệt yêu cầu rút tiền. Vui lòng thử lại!";
@@ -518,6 +538,7 @@ export default function AdminFinance() {
             showToast(`Đã từ chối yêu cầu rút tiền ${id}. Thông báo đã được gửi đến điều dưỡng.`, "error");
             setRejectTarget(null);
             await fetchPayouts();
+            window.dispatchEvent(new CustomEvent("carelink:admin-refresh-badges"));
         } catch (err) {
             console.error("Lỗi từ chối yêu cầu rút tiền:", err);
             const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.response?.data?.title || "Không thể từ chối yêu cầu. Vui lòng thử lại!";
@@ -615,13 +636,41 @@ export default function AdminFinance() {
                 </div>
             </div>
 
+            {/* ── ACTION REQUIRED BANNER: Báo động có yêu cầu rút tiền đang chờ xử lý ── */}
+            {pendingWithdrawals > 0 && activeTab === "transactions" && (
+                <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-teal-500/10 border border-amber-300/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in duration-300">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs animate-bounce">
+                            <Banknote className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="text-xs sm:text-sm font-extrabold text-amber-950 flex items-center gap-1.5">
+                                Có {pendingWithdrawals} yêu cầu rút tiền đang chờ bạn phê duyệt!
+                                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                            </h4>
+                            <p className="text-[11px] sm:text-xs text-amber-800/90 mt-0.5">
+                                Điều dưỡng đã gửi yêu cầu giải ngân thu nhập tiền công về tài khoản ngân hàng.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => handleTabChange("withdrawals")}
+                        className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                    >
+                        <span>Chuyển sang duyệt ngay</span>
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
             {/* ── TABS & SEARCH ── */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-center gap-3">
                 {/* Tabs nổi bật dễ nhận diện cho Admin */}
                 <div className="flex items-center bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 gap-2 shrink-0">
                     <button
                         type="button"
-                        onClick={() => { setActiveTab("transactions"); setSearchQuery(""); }}
+                        onClick={() => handleTabChange("transactions")}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                             activeTab === "transactions"
                                 ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
@@ -638,7 +687,7 @@ export default function AdminFinance() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => { setActiveTab("withdrawals"); setSearchQuery(""); }}
+                        onClick={() => handleTabChange("withdrawals")}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                             activeTab === "withdrawals"
                                 ? "bg-[#00677c] text-white shadow-md shadow-[#00677c]/25 border border-[#00677c] scale-[1.02]"
@@ -648,8 +697,8 @@ export default function AdminFinance() {
                         <Banknote className={`w-4 h-4 ${activeTab === "withdrawals" ? "text-cyan-200" : "text-[#00677c]"}`} />
                         <span>Yêu cầu rút tiền</span>
                         {pendingWithdrawals > 0 ? (
-                            <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide ${
-                                activeTab === "withdrawals" ? "bg-amber-400 text-slate-900" : "bg-amber-100 text-amber-800 border border-amber-300"
+                            <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-wide animate-pulse ${
+                                activeTab === "withdrawals" ? "bg-amber-400 text-slate-900 font-extrabold" : "bg-amber-100 text-amber-800 border border-amber-300 font-extrabold"
                             }`}>
                                 {pendingWithdrawals}
                             </span>

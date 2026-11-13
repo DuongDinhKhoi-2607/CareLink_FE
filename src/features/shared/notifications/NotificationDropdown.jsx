@@ -9,9 +9,30 @@ import {
     Info,
 } from "lucide-react";
 import notificationApi from "../../../api/notificationApi";
+import adminApi from "../../../api/adminApi";
 import NotificationItem from "./NotificationItem";
 import { resolveNotificationRoute } from "./notificationUtils";
 import { getMockNotificationsByRole, getMockUnreadCountByRole } from "./notificationMockData";
+
+// Helper đọc và lưu danh sách ID thông báo vận hành của Admin đã đọc
+const getAdminReadOpIds = () => {
+    try {
+        const raw = localStorage.getItem("carelink_admin_read_op_notifs");
+        return raw ? JSON.parse(raw) : [];
+    } catch {
+        return [];
+    }
+};
+
+const saveAdminReadOpId = (id) => {
+    try {
+        const readIds = getAdminReadOpIds();
+        if (!readIds.includes(id)) {
+            readIds.push(id);
+            localStorage.setItem("carelink_admin_read_op_notifs", JSON.stringify(readIds));
+        }
+    } catch {}
+};
 
 export default function NotificationDropdown({ userRole = "", align = "right" }) {
     const navigate = useNavigate();
@@ -25,20 +46,125 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
     const [error, setError] = useState(null);
     const [isDemoMode, setIsDemoMode] = useState(false);
 
-    // ── 1. Lấy số lượng thông báo chưa đọc (Polling nhẹ mỗi 45s) ──
+    // ── 0. Lấy danh sách các sự kiện nghiệp vụ thực tế dành cho Quản trị viên ──
+    const fetchAdminOperationalItems = useCallback(async () => {
+        const readIds = getAdminReadOpIds();
+        const opItems = [];
+
+        try {
+            const [payoutsRes, verifsRes, disputesRes] = await Promise.allSettled([
+                adminApi.getPayouts({ pageNumber: 1, pageSize: 50 }),
+                adminApi.getNurseVerifications({ pageNumber: 1, pageSize: 50 }),
+                adminApi.getDisputes({ pageNumber: 1, pageSize: 50 }),
+            ]);
+
+            // 1. Yêu cầu rút tiền từ Điều dưỡng đang chờ duyệt
+            if (payoutsRes.status === "fulfilled") {
+                const res = payoutsRes.value;
+                const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+                const pending = list.filter(
+                    (w) => w.status === 1 || w.status === "Pending" || w.status === "Chờ duyệt"
+                );
+                pending.forEach((w) => {
+                    const id = `op-payout-${w.id}`;
+                    opItems.push({
+                        id,
+                        title: "Yêu cầu rút tiền cần duyệt",
+                        message: `Điều dưỡng ${w.nurseName || w.caregiverName || w.bankAccountName || "Điều dưỡng"} vừa gửi yêu cầu rút ${Number(w.amount || 0).toLocaleString("vi-VN")} ₫ về ${w.bankName || "ngân hàng"}.`,
+                        type: "PAYOUT_REQUESTED",
+                        referenceId: w.id,
+                        isRead: readIds.includes(id),
+                        createdAt: w.createdAt || new Date().toISOString(),
+                        isOperational: true,
+                        targetRoute: "/admin/finance?tab=withdrawals",
+                    });
+                });
+            }
+
+            // 2. Hồ sơ chứng chỉ y tế của Điều dưỡng đang chờ thẩm định
+            if (verifsRes.status === "fulfilled") {
+                const res = verifsRes.value;
+                const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+                const pending = list.filter(
+                    (v) => v.verificationStatus === 1 || v.verificationStatus === 4 || v.status === "Pending"
+                );
+                pending.forEach((v) => {
+                    const id = `op-verif-${v.id || v.nurseId}`;
+                    opItems.push({
+                        id,
+                        title: "Hồ sơ điều dưỡng cần thẩm định",
+                        message: `Ứng viên ${v.fullName || v.nurseName || "Điều dưỡng"} vừa nộp hồ sơ chứng chỉ hành nghề y tế cần thẩm định duyệt.`,
+                        type: "NURSE_VERIFICATION_SUBMITTED",
+                        referenceId: v.id || v.nurseId,
+                        isRead: readIds.includes(id),
+                        createdAt: v.submittedAt || v.createdAt || new Date().toISOString(),
+                        isOperational: true,
+                        targetRoute: "/admin/approvals",
+                    });
+                });
+            }
+
+            // 3. Khiếu nại từ khách hàng / ca chăm sóc đang chờ can thiệp
+            if (disputesRes.status === "fulfilled") {
+                const res = disputesRes.value;
+                const list = Array.isArray(res) ? res : res?.items || res?.data?.items || res?.data || [];
+                const open = list.filter(
+                    (d) => d.status === 1 || d.status === "Open" || d.status === "Đang xác minh"
+                );
+                open.forEach((d) => {
+                    const id = `op-disp-${d.id}`;
+                    opItems.push({
+                        id,
+                        title: "Khiếu nại ca chăm sóc mới",
+                        message: `Ca ${d.bookingCode || "trực"} có khiếu nại: "${d.reason || d.title || "Cần can thiệp hỗ trợ giải quyết"}"`,
+                        type: "DISPUTE_SUBMITTED",
+                        referenceId: d.id,
+                        isRead: readIds.includes(id),
+                        createdAt: d.createdAt || new Date().toISOString(),
+                        isOperational: true,
+                        targetRoute: "/admin/disputes",
+                    });
+                });
+            }
+        } catch {
+            // Không chặn ứng dụng nếu API phụ gặp sự cố
+        }
+
+        return opItems;
+    }, []);
+
+    // ── 1. Lấy số lượng thông báo chưa đọc (Polling nhẹ mỗi 30s) ──
     const fetchUnreadCount = useCallback(async () => {
         try {
-            const res = await notificationApi.getUnreadCount();
-            if (typeof res?.unreadCount === "number") {
-                setUnreadCount(res.unreadCount);
-            } else {
-                setUnreadCount(0);
+            let totalUnread = 0;
+
+            // Lấy từ API notification hệ thống
+            try {
+                const res = await notificationApi.getUnreadCount();
+                if (typeof res?.unreadCount === "number") {
+                    totalUnread += res.unreadCount;
+                }
+            } catch {
+                // ignore
             }
+
+            // Nếu vai trò là Admin: Đồng bộ thêm các nghiệp vụ chờ duyệt
+            if (userRole === "admin") {
+                try {
+                    const opItems = await fetchAdminOperationalItems();
+                    const opUnread = opItems.filter((item) => !item.isRead).length;
+                    totalUnread += opUnread;
+                } catch {
+                    // ignore
+                }
+            }
+
+            setUnreadCount(totalUnread);
         } catch (err) {
             console.warn("[CareLink Notifications] Không thể lấy unread count:", err?.message);
             setUnreadCount(0);
         }
-    }, []);
+    }, [userRole, fetchAdminOperationalItems]);
 
     // ── 2. Lấy danh sách thông báo khi mở dropdown ──
     const fetchNotifications = useCallback(async () => {
@@ -53,13 +179,36 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         }
 
         try {
-            const res = await notificationApi.getNotifications({ pageNumber: 1, pageSize: 8 });
-            const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
-            setNotifications(items);
+            let combined = [];
 
-            // Cập nhật lại unread count từ danh sách
-            const unreadInList = items.filter((n) => !n.isRead).length;
-            setUnreadCount(unreadInList);
+            // Nếu là Admin: ưu tiên nạp các sự kiện nghiệp vụ thực tế lên đầu
+            if (userRole === "admin") {
+                try {
+                    const opItems = await fetchAdminOperationalItems();
+                    combined = [...opItems];
+                } catch {
+                    // ignore
+                }
+            }
+
+            // Nạp thông báo từ DB
+            try {
+                const res = await notificationApi.getNotifications({ pageNumber: 1, pageSize: 12 });
+                const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
+                combined = [...combined, ...items];
+            } catch (apiErr) {
+                if (userRole !== "admin") {
+                    throw apiErr;
+                }
+            }
+
+            // Sắp xếp theo ngày tạo mới nhất lên trước
+            combined.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+            setNotifications(combined);
+
+            const unreadTotal = combined.filter((n) => !n.isRead).length;
+            setUnreadCount(unreadTotal);
         } catch (err) {
             console.warn("[CareLink Notifications] Lỗi tải thông báo:", err);
             setNotifications([]);
@@ -68,9 +217,9 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         } finally {
             setLoading(false);
         }
-    }, [isDemoMode, userRole]);
+    }, [isDemoMode, userRole, fetchAdminOperationalItems]);
 
-    // ── 3. Polling chu kỳ 45s & Cập nhật khi tab hoạt động trở lại ──
+    // ── 3. Polling chu kỳ 30s & Cập nhật khi tab hoạt động trở lại ──
     useEffect(() => {
         fetchUnreadCount();
 
@@ -78,7 +227,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             if (document.visibilityState === "visible") {
                 fetchUnreadCount();
             }
-        }, 45000);
+        }, 30000);
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
@@ -86,13 +235,24 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             }
         };
 
+        const handleBadgeRefresh = () => {
+            fetchUnreadCount();
+            if (isOpen) {
+                fetchNotifications();
+            }
+        };
+
         document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("focus", handleVisibilityChange);
+        window.addEventListener("carelink:admin-refresh-badges", handleBadgeRefresh);
 
         return () => {
             clearInterval(interval);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("focus", handleVisibilityChange);
+            window.removeEventListener("carelink:admin-refresh-badges", handleBadgeRefresh);
         };
-    }, [fetchUnreadCount]);
+    }, [fetchUnreadCount, fetchNotifications, isOpen]);
 
     // Khi người dùng bấm mở dropdown: nạp danh sách chi tiết
     useEffect(() => {
@@ -137,7 +297,9 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             );
             setUnreadCount((prev) => Math.max(0, prev - 1));
 
-            if (!isDemoMode && !String(item.id).startsWith("demo-")) {
+            if (item.isOperational) {
+                saveAdminReadOpId(item.id);
+            } else if (!isDemoMode && !String(item.id).startsWith("demo-")) {
                 try {
                     await notificationApi.markAsRead(item.id);
                 } catch (err) {
@@ -150,7 +312,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         setIsOpen(false);
 
         // Điều hướng đến đúng phân hệ theo vai trò
-        const route = resolveNotificationRoute(item.type, item.referenceId, userRole);
+        const route = item.targetRoute || resolveNotificationRoute(item.type, item.referenceId, userRole);
         if (route) {
             navigate(route);
         }
@@ -164,12 +326,17 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         setUnreadCount(0);
 
+        if (userRole === "admin") {
+            try {
+                notifications.filter((n) => n.isOperational).forEach((n) => saveAdminReadOpId(n.id));
+            } catch {}
+        }
+
         if (!isDemoMode) {
             try {
                 await notificationApi.markAllAsRead();
             } catch (err) {
                 console.error("[CareLink Notifications] Lỗi khi đánh dấu tất cả đã đọc:", err);
-                // Rollback nếu cần thiết
                 fetchNotifications();
             }
         }
@@ -208,13 +375,13 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
 
                 {/* Huy hiệu Badge số lượng thông báo chưa đọc */}
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[19px] h-[19px] px-1 bg-rose-500 text-white text-[10.5px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[19px] h-[19px] px-1 bg-rose-500 text-white text-[10.5px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-pulse">
                         {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                 )}
             </button>
 
-            {/* Dropdown Popover — Đã tăng độ sâu shadow và bo viền đen mờ cao cấp để tách bạch với Dashboard trắng */}
+            {/* Dropdown Popover */}
             {isOpen && (
                 <div
                     className={`absolute ${
@@ -319,7 +486,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
                                 </div>
                                 <p className="text-xs font-semibold text-slate-600">Bạn chưa có thông báo nào</p>
                                 <p className="text-[11px] text-slate-400 max-w-[220px] leading-relaxed">
-                                    Các thông báo mới về ca chăm sóc và lịch hẹn sẽ xuất hiện tại đây.
+                                    Các thông báo mới về ca chăm sóc và yêu cầu phê duyệt sẽ xuất hiện tại đây.
                                 </p>
                             </div>
                         ) : (
@@ -337,7 +504,7 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
 
                     {/* Footer của Dropdown */}
                     <div className="p-2.5 px-4 bg-slate-50 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
-                        <span className="text-[11px] text-slate-400">CareLink Realtime System</span>
+                        <span className="text-[11px] text-slate-400 font-medium">CareLink Operational System</span>
                         <button
                             type="button"
                             onClick={() => setIsOpen(false)}
