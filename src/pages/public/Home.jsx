@@ -214,40 +214,49 @@ export default function Home() {
         <div className="flex flex-col w-full">
 
             {/* 1. HERO SECTION */}
-            <section className="relative w-full h-[560px] sm:h-[620px] lg:h-[700px] flex items-center overflow-hidden">
-                <div className="absolute inset-0 z-0">
+            <section className="relative w-full h-auto py-8 sm:py-0 sm:h-[620px] lg:h-[700px] flex items-center overflow-hidden">
+                {/* ── BACKGROUND CHO MÀN HÌNH LAPTOP / DESKTOP (GIỮ NGUYÊN 100% KHÔNG ĐỔI) ── */}
+                <div className="hidden sm:block absolute inset-0 z-0">
                     <div
-                        className="w-full h-full bg-cover bg-[position:82%_center] sm:bg-[position:85%_center] lg:bg-[position:right_center]"
+                        className="w-full h-full bg-cover bg-[position:85%_center] lg:bg-[position:right_center]"
                         style={{
                             backgroundImage: `url('/images/home_hero.jpg')`,
                         }}
                     />
-                    {/* Lớp phủ dải màu êm dịu: Chuyển màu mượt mà, khử chói sáng, giúp đọc chữ rõ nét và thư thái cho mắt */}
+                    {/* Lớp phủ dải màu êm dịu desktop: Chuyển màu mượt mà, khử chói sáng, giúp đọc chữ rõ nét */}
                     <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/75 via-28% via-white/25 via-42% to-transparent pointer-events-none" />
                 </div>
 
+                {/* ── NỀN SANG TRỌNG CHO MÀN HÌNH ĐIỆN THOẠI (MOBILE AMBIENT CANVAS) ── */}
+                <div className="sm:hidden absolute inset-0 z-0 bg-gradient-to-b from-teal-50/70 via-white to-slate-50/40 pointer-events-none">
+                    {/* Vệt ánh sáng mờ tạo chiều sâu tinh tế */}
+                    <div className="absolute -top-12 -right-12 w-64 h-64 bg-teal-100/50 rounded-full blur-3xl" />
+                    <div className="absolute top-1/2 -left-16 w-52 h-52 bg-sky-100/40 rounded-full blur-2xl" />
+                </div>
+
                 <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-2xl flex flex-col gap-6">
+                    <div className="max-w-2xl flex flex-col gap-5 sm:gap-6">
                         <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/90 text-[#00677c] text-xs sm:text-sm font-semibold w-fit border border-teal-200/70 shadow-xs">
                             <span className="w-2 h-2 rounded-full bg-[#00677c] animate-pulse" />
                             Hệ thống kết nối chăm sóc sức khỏe 24/7
                         </span>
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#102030] tracking-tight leading-[1.15]">
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#102030] tracking-tight leading-[1.18] sm:leading-[1.15]">
                             Chăm sóc tận tâm,
                             <br />
                             <span className="text-[#00677c]">Kết nối chuyên môn</span>
                         </h1>
-                        <p className="text-base sm:text-lg text-slate-700 font-normal leading-relaxed max-w-lg">
+                        <p className="text-sm sm:text-base lg:text-lg text-slate-600 sm:text-slate-700 font-normal leading-relaxed max-w-lg">
                             Nền tảng kết nối sinh viên Y khoa và Điều dưỡng chuyên nghiệp với các gia đình cần hỗ trợ chăm sóc người cao tuổi, mang lại sự an tâm tuyệt đối.
                         </p>
-                        <div className="flex flex-wrap items-center gap-4 pt-2">
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-1 sm:pt-2">
                             {/* Nút "Tìm người chăm sóc" dành cho Gia đình & khách vãng lai: ẨN khi user là caregiver */}
                             {user?.role !== "caregiver" && (
                                 <Link
                                     to="/family"
-                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                                    className="inline-flex items-center justify-center gap-2 h-[48px] sm:h-[50px] px-6 sm:px-7 bg-[#00677c] text-white rounded-xl font-semibold hover:bg-[#005566] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer text-sm sm:text-base text-center"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                     Tìm người chăm sóc
@@ -258,14 +267,53 @@ export default function Home() {
                             {user?.role !== "family" && (
                                 <Link
                                     to={user?.role === "caregiver" ? "/caregiver/dashboard" : "/caregiver"}
-                                    className="inline-flex items-center justify-center gap-2 h-[50px] px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5"
+                                    className="inline-flex items-center justify-center gap-2 h-[48px] sm:h-[50px] px-6 sm:px-7 bg-white/95 backdrop-blur-xs border-2 border-[#00677c] text-[#00677c] rounded-xl font-semibold hover:bg-teal-50 hover:border-[#005566] hover:text-[#005566] transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer text-sm sm:text-base text-center"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                     {user?.role === "caregiver" ? "Bảng điều khiển Caregiver" : "Đăng ký đi làm"}
                                 </Link>
                             )}
+                        </div>
+
+                        {/* ── THẺ HÌNH ẢNH SHOWCASE DÀNH RIÊNG CHO MOBILE (HIỂN THỊ TRỌN VẸN KHÔNG BỊ CHÈN CHỮ) ── */}
+                        <div className="sm:hidden mt-2 relative rounded-2xl overflow-hidden border border-teal-100 shadow-md shadow-teal-950/5">
+                            <img
+                                src="/images/home_hero.jpg"
+                                alt="CareLink - Chăm sóc tận tâm, kết nối chuyên môn"
+                                className="w-full h-52 object-cover object-[center_35%]"
+                                loading="eager"
+                            />
+                            {/* Gradient mờ chân ảnh */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent pointer-events-none" />
+
+                            {/* Huy hiệu kính nổi (Floating Glass Pills) */}
+                            <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white text-[11px] font-medium">
+                                <span className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    Điều dưỡng & SV Y khoa
+                                </span>
+                                <span className="bg-white/25 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 font-bold text-[10px]">
+                                    ★ 4.9/5 (1.200+ đánh giá)
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* ── 3 CHỈ SỐ UY TÍN NHANH TRÊN MOBILE ── */}
+                        <div className="sm:hidden grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                            <div className="py-2 px-1 bg-white/90 rounded-xl border border-slate-100 shadow-2xs">
+                                <span className="block text-xs font-bold text-slate-800">100%</span>
+                                <span className="text-[10px] text-slate-500">Xác minh bằng cấp</span>
+                            </div>
+                            <div className="py-2 px-1 bg-white/90 rounded-xl border border-slate-100 shadow-2xs">
+                                <span className="block text-xs font-bold text-[#00677c]">24/7</span>
+                                <span className="text-[10px] text-slate-500">Hỗ trợ kết nối</span>
+                            </div>
+                            <div className="py-2 px-1 bg-white/90 rounded-xl border border-slate-100 shadow-2xs">
+                                <span className="block text-xs font-bold text-emerald-600">Bảo hiểm</span>
+                                <span className="text-[10px] text-slate-500">Đầy đủ mỗi ca</span>
+                            </div>
                         </div>
                     </div>
                 </div>
