@@ -1040,6 +1040,16 @@ export default function AdminDashboard() {
                                                 </span>
                                                 <button
                                                     type="button"
+                                                    onClick={() => fetchAnalytics(analyticsRange)}
+                                                    disabled={loadingAnalytics}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-teal-50 hover:border-teal-200 text-slate-600 hover:text-[#00677c] text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                                    title="Làm mới danh sách nhật ký tương tác"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loadingAnalytics ? "animate-spin text-teal-600" : ""}`} />
+                                                    <span>Làm mới</span>
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() => setShowPurgeModal(true)}
                                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
                                                     title="Dọn dẹp bớt nhật ký tương tác"

@@ -336,11 +336,13 @@ export default function CaregiverProfile() {
                                         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#102030]">
                                             {displayName}
                                         </h1>
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-teal-50 text-[#00677c] border border-teal-200/80">
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Đã xác thực
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-teal-50 text-[#00677c] border border-teal-200/80 shadow-2xs">
+                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#00677c] text-white shrink-0">
+                                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                </svg>
+                                            </span>
+                                            Đã xác thực bởi CareLink
                                         </span>
                                     </div>
 

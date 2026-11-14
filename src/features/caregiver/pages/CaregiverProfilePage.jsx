@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import caregiverApi from "../../../api/caregiverApi";
@@ -52,10 +52,48 @@ export default function CaregiverProfilePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const fileInputRef = useRef(null);
 
     const showToast = (msg) => {
         setToastMessage(msg);
         setTimeout(() => setToastMessage(null), 3500);
+    };
+
+    // Xử lý tải ảnh đại diện lên hệ thống
+    const handleAvatarFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            showToast("⚠️ Dung lượng ảnh tối đa 10MB. Vui lòng chọn ảnh nhỏ hơn.");
+            return;
+        }
+
+        setUploadingAvatar(true);
+        try {
+            const res = await authApi.uploadAvatar(file);
+            const uploadedUrl = res?.fileUrl || res?.relativeUrl;
+            if (!uploadedUrl) throw new Error("Không nhận được đường dẫn ảnh từ máy chủ");
+
+            setProfile((prev) => ({ ...prev, avatar: uploadedUrl }));
+            setDraft((prev) => ({ ...prev, avatar: uploadedUrl }));
+
+            await Promise.all([
+                caregiverApi.updateProfile({ avatarUrl: uploadedUrl }),
+                authApi.updateMe({ avatarUrl: uploadedUrl }),
+            ]);
+
+            showToast("✓ Đã cập nhật ảnh đại diện mới thành công!");
+            await fetchAndSyncUserMe();
+            await fetchProfile();
+        } catch (err) {
+            console.error("Lỗi tải ảnh đại diện:", err);
+            showToast("⚠️ Tải ảnh lên thất bại. Vui lòng thử lại!");
+        } finally {
+            setUploadingAvatar(false);
+            if (e.target) e.target.value = "";
+        }
     };
 
     // Modal Đổi mật khẩu tài khoản Điều dưỡng
@@ -409,23 +447,36 @@ export default function CaregiverProfilePage() {
                                 alt={profile.fullName}
                                 onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                                    e.target.src = "/images/caregiver_avatar.svg";
                                 }}
                                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-teal-600/30 shadow-md"
                             />
-                            {isEditing && (
-                                <button
-                                    type="button"
-                                    onClick={() => showToast("Đã kích hoạt tải ảnh đại diện mới từ thiết bị.")}
-                                    className="absolute -bottom-2 -right-2 p-1.5 bg-[#00677c] text-white rounded-xl shadow-md hover:bg-[#005566] transition-colors"
-                                    title="Thay đổi ảnh đại diện"
-                                >
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarFileChange}
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                disabled={uploadingAvatar}
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute -bottom-2 -right-2 p-2 bg-[#00677c] text-white rounded-xl shadow-md hover:bg-[#005566] transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
+                                title="Tải lên ảnh đại diện mới từ thiết bị"
+                            >
+                                {uploadingAvatar ? (
+                                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                    </svg>
+                                ) : (
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                                     </svg>
-                                </button>
-                            )}
+                                )}
+                            </button>
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -460,10 +511,10 @@ export default function CaregiverProfilePage() {
                                 <>
                                     <div className="flex items-center gap-2">
                                         <h2 className="text-xl font-bold text-[#002045]">{profile.fullName}</h2>
-                                        {(profile.verificationStatus === 2 || profile.verificationStatus === "Approved" || profile.verificationStatusName === "Approved" || certStatusInfo?.verificationStatus === 2) && (
-                                            <span className="p-1 rounded-full bg-teal-100 text-teal-700" title="Đã xác thực y tế">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        {(profile.verificationStatus === 2 || profile.verificationStatus === "Approved" || profile.verificationStatusName === "Approved" || certStatusInfo?.verificationStatus === 2 || profile.status === 1 || profile.status === "Approved") && (
+                                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#00677c] text-white shrink-0 shadow-2xs" title="Đã xác thực chuyên môn bởi CareLink">
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                                 </svg>
                                             </span>
                                         )}

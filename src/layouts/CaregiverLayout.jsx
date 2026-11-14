@@ -422,7 +422,7 @@ export default function CaregiverLayout() {
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* ── DESKTOP SIDEBAR: Giữ cố định sang xịn đẹp, không kéo dài xuống, animation mượt mà ── */}
                 <aside
-                    className={`hidden lg:flex flex-col h-full overflow-y-auto ${
+                    className={`hidden lg:flex flex-col h-full overflow-hidden ${
                         isCollapsed ? "w-20" : "w-64"
                     } bg-[#102030] shrink-0 transition-all duration-300 ease-in-out z-20 border-r border-slate-800/50`}
                 >
@@ -452,7 +452,7 @@ export default function CaregiverLayout() {
                     </div>
 
                     {/* Nav items */}
-                    <nav className="flex flex-col gap-1.5 p-3 flex-1">
+                    <nav className="flex flex-col gap-1.5 p-3 flex-1 overflow-y-auto">
                         {currentNavItems.map((item) => {
                             const active = isActive(item.path);
                             return (
@@ -495,17 +495,84 @@ export default function CaregiverLayout() {
                         })}
                     </nav>
 
-                    {/* Bottom — Về trang chính */}
-                    <div className="p-3 border-t border-white/10 shrink-0">
+                    {/* Bottom — Thông tin hồ sơ & Về trang chính đồng bộ như Dashboard Family */}
+                    <div className="p-3 border-t border-white/10 shrink-0 space-y-2">
+                        {isCollapsed ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <Link
+                                    to="/caregiver/profile"
+                                    className="relative group cursor-pointer"
+                                    title={currentUser?.fullName || currentUser?.name || "Điều dưỡng CareLink"}
+                                >
+                                    <img
+                                        src={currentUser?.avatar || currentUser?.avatarUrl || "/images/caregiver_avatar.svg"}
+                                        alt={currentUser?.fullName || "Điều dưỡng"}
+                                        className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-teal-500 shadow-2xs"
+                                        onError={(e) => {
+                                            e.currentTarget.onerror = null;
+                                            e.currentTarget.src = "/images/caregiver_avatar.svg";
+                                        }}
+                                    />
+                                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#102030] text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 shadow-lg">
+                                        {currentUser?.fullName || currentUser?.name || "Điều dưỡng CareLink"}
+                                    </div>
+                                </Link>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLogoutModal(true)}
+                                    className="w-8.5 h-8.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                                    title="Đăng xuất tài khoản"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-between gap-2.5">
+                                <Link
+                                    to="/caregiver/profile"
+                                    className="flex items-center gap-2.5 min-w-0 flex-1 group"
+                                    title="Xem hồ sơ điều dưỡng"
+                                >
+                                    <img
+                                        src={currentUser?.avatar || currentUser?.avatarUrl || "/images/caregiver_avatar.svg"}
+                                        alt={currentUser?.fullName || "Điều dưỡng"}
+                                        className="w-9 h-9 rounded-full object-cover shrink-0 border border-teal-400 shadow-2xs"
+                                        onError={(e) => {
+                                            e.currentTarget.onerror = null;
+                                            e.currentTarget.src = "/images/caregiver_avatar.svg";
+                                        }}
+                                    />
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-xs font-bold text-white group-hover:text-teal-300 transition-colors truncate">
+                                            {currentUser?.fullName || currentUser?.name || "Điều dưỡng CareLink"}
+                                        </span>
+                                        <span className="text-[10px] text-teal-400 font-medium truncate">
+                                            {currentUser?.role === "caregiver" ? "Điều dưỡng chuyên nghiệp" : (currentUser?.role || "Điều dưỡng")}
+                                        </span>
+                                    </div>
+                                </Link>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLogoutModal(true)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+                                    title="Đăng xuất tài khoản"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+
                         <button
                             type="button"
                             onClick={() => navigate("/caregiver")}
                             title={isCollapsed ? "Về trang chính CareLink" : undefined}
                             className={`w-full flex items-center ${
-                                isCollapsed ? "justify-center py-2.5 px-0" : "gap-2.5 px-3 py-2.5"
-                            } rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium cursor-pointer`}
+                                isCollapsed ? "justify-center py-2 px-0" : "gap-2 px-3 py-2"
+                            } rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all text-xs font-medium cursor-pointer`}
                         >
-                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                             </svg>
                             {!isCollapsed && <span>Về trang chính</span>}

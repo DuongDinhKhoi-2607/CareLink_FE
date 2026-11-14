@@ -354,7 +354,7 @@ export default function AdminLayout() {
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* ── DESKTOP SIDEBAR: Cố định theo viewport, nội dung bên trong tự cuộn nếu dài, không bao giờ bị kéo giãn ── */}
                 <aside
-                    className={`hidden lg:flex flex-col bg-[#1c2a38] border-r border-[#2a3c4e] shadow-[4px_0_15px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out shrink-0 h-full overflow-y-auto ${
+                    className={`hidden lg:flex flex-col bg-[#1c2a38] border-r border-[#2a3c4e] shadow-[4px_0_15px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out shrink-0 h-full overflow-hidden ${
                         isCollapsed ? "w-20" : "w-64"
                     }`}
                 >
@@ -476,8 +476,62 @@ export default function AdminLayout() {
                         })}
                     </nav>
 
-                    {/* Sidebar Footer — Đã lược bỏ nút Đăng xuất vì góc trên bên phải đã có nút exit */}
-                    <div className="p-3 border-t border-[#2a3c4e]/80 space-y-1">
+                    {/* Sidebar Footer — Chuẩn hoá đồng bộ như Dashboard Family */}
+                    <div className="p-3 border-t border-[#2a3c4e]/80 shrink-0 space-y-2">
+                        {isCollapsed ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <div
+                                    className="relative group cursor-pointer"
+                                    title={currentUser?.fullName || currentUser?.name || "Quản trị viên CareLink"}
+                                >
+                                    <img
+                                        src={currentUser?.avatar || currentUser?.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150"}
+                                        alt="Admin"
+                                        className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-teal-500 shadow-2xs"
+                                    />
+                                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#102030] text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 shadow-lg">
+                                        {currentUser?.fullName || currentUser?.name || "Quản trị viên CareLink"}
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLogoutModal(true)}
+                                    className="w-8.5 h-8.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                                    title="Đăng xuất tài khoản"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-between gap-2.5">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                    <img
+                                        src={currentUser?.avatar || currentUser?.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150"}
+                                        alt="Admin"
+                                        className="w-9 h-9 rounded-full object-cover shrink-0 border border-teal-400 shadow-2xs"
+                                    />
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-xs font-bold text-white truncate">
+                                            {currentUser?.fullName || currentUser?.name || "Quản trị viên"}
+                                        </span>
+                                        <span className="text-[10px] text-teal-400 font-medium truncate">
+                                            Administrator
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLogoutModal(true)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+                                    title="Đăng xuất tài khoản"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+
                         <Link
                             to="/admin"
                             className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-colors ${

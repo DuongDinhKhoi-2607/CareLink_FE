@@ -80,8 +80,22 @@ export const authApi = {
     // 8. Lấy thông tin cá nhân & profile của người dùng hiện tại (Customer hoặc Nurse)
     getMe: () => axiosClient.get("/api/v1/users/me"),
 
-    // 9. Cập nhật thông tin cá nhân cơ bản (họ tên, SĐT, avatar)
-    updateMe: (data) => axiosClient.put("/api/v1/users/me", data),
+    // 9. Cập nhật thông tin cá nhân cơ bản (họ tên, SĐT, avatar) và tự động đồng bộ tức thì
+    updateMe: async (data) => {
+        const res = await axiosClient.put("/api/v1/users/me", data);
+        await fetchAndSyncUserMe();
+        return res;
+    },
+
+    // 9b. Tải lên ảnh đại diện cá nhân lên hệ thống lưu trữ vĩnh viễn
+    uploadAvatar: async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await axiosClient.post("/api/v1/uploads", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return res?.data || res;
+    },
 };
 
 /**

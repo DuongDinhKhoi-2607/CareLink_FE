@@ -159,20 +159,27 @@ export default function CaregiverCard({
 
                             <div className="min-w-0">
 
-                                <h3
-                                    className="
-                                        text-[17px]
-                                        leading-tight
-                                        font-bold
-                                        tracking-tight
-                                        text-[#102030]
-                                        truncate
-                                        group-hover:text-[#00677c]
-                                        transition-colors
-                                    "
-                                >
-                                    {caregiver.name}
-                                </h3>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <h3
+                                        className="
+                                            text-[17px]
+                                            leading-tight
+                                            font-bold
+                                            tracking-tight
+                                            text-[#102030]
+                                            truncate
+                                            group-hover:text-[#00677c]
+                                            transition-colors
+                                        "
+                                    >
+                                        {caregiver.name}
+                                    </h3>
+                                    {(caregiver.status === 1 || caregiver.isVerified || caregiver.statusName === "Approved" || caregiver.verificationStatus === 2) && (
+                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#00677c] text-white shrink-0 shadow-2xs" title="Đã xác thực chuyên môn bởi CareLink">
+                                            <CheckIcon className="w-2.5 h-2.5 stroke-[3]" />
+                                        </span>
+                                    )}
+                                </div>
 
                                 <p className="text-[11px] font-semibold text-[#00677c] mt-1 leading-relaxed">
                                     {caregiver.role}

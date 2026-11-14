@@ -4,6 +4,7 @@ import BookingSummary from "../components/BookingSummary";
 import DirectBookingModal from "../components/DirectBookingModal";
 import conversationApi from "../../../api/conversationApi";
 import familyApi from "../../../api/familyApi";
+import { resolveNurseAvatar } from "../../../utils/nurseAvatar";
 
 // Cam kết an toàn CareLink
 const safetyCommitments = [
@@ -125,12 +126,13 @@ export default function Chat() {
         passedCaregiver?.name ||
         "Điều dưỡng CareLink";
 
-    const avatarUrl =
+    const rawAvatar =
         conversation?.nurseAvatar ||
         conversation?.otherPartyAvatar ||
         passedCaregiver?.avatarUrl ||
-        passedCaregiver?.image ||
-        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+        passedCaregiver?.image;
+
+    const avatarUrl = resolveNurseAvatar(rawAvatar, displayName);
 
     const displayRole =
         passedCaregiver?.educationLevel ||

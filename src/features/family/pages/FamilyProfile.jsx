@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Trash2, LogOut, X, Loader2, Camera, ShieldCheck, Mail, Phone, User } from "lucide-react";
@@ -79,6 +79,38 @@ export default function FamilyProfile() {
     const [personalDraft, setPersonalDraft] = useState(getStoredUser);
     const [personalLoading, setPersonalLoading] = useState(true);
     const [personalSubmitting, setPersonalSubmitting] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const fileInputRef = useRef(null);
+
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            setNotification({ type: "error", message: "Dung lượng ảnh tối đa 10MB. Vui lòng chọn ảnh nhỏ hơn." });
+            return;
+        }
+
+        setUploadingAvatar(true);
+        try {
+            const res = await authApi.uploadAvatar(file);
+            const uploadedUrl = res?.fileUrl || res?.relativeUrl;
+            if (!uploadedUrl) throw new Error("Không nhận được đường dẫn ảnh từ máy chủ");
+
+            setPersonalDraft((prev) => ({ ...prev, avatar: uploadedUrl }));
+            setPersonalInfo((prev) => ({ ...prev, avatar: uploadedUrl }));
+
+            await authApi.updateMe({ avatarUrl: uploadedUrl });
+            setNotification({ type: "success", message: "Đã cập nhật ảnh đại diện thành công!" });
+            await fetchUserProfile();
+        } catch (err) {
+            console.error("Lỗi tải ảnh đại diện:", err);
+            setNotification({ type: "error", message: "Tải ảnh lên thất bại. Vui lòng thử lại!" });
+        } finally {
+            setUploadingAvatar(false);
+            if (e.target) e.target.value = "";
+        }
+    };
 
     // Section 2: Liên hệ khẩn cấp
     const [emergencyContact, setEmergencyContact] = useState({
@@ -220,7 +252,7 @@ export default function FamilyProfile() {
             const payload = {
                 fullName: personalDraft.name.trim(),
                 phone: personalDraft.phone.trim(),
-                avatarUrl: personalDraft.avatar?.startsWith("http") ? personalDraft.avatar.trim() : null,
+                avatarUrl: personalDraft.avatar ? personalDraft.avatar.trim() : null,
             };
 
             const res = await authApi.updateMe(payload);
@@ -597,15 +629,39 @@ export default function FamilyProfile() {
                                         }}
                                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-teal-500 shadow-sm"
                                     />
-                                    <span className="absolute bottom-0 right-0 w-5 h-5 bg-teal-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm">
-                                        ✓
-                                    </span>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleAvatarUpload}
+                                        className="hidden"
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={uploadingAvatar}
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute -bottom-1 -right-1 p-1.5 bg-teal-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm hover:bg-teal-700 transition-colors cursor-pointer disabled:opacity-50"
+                                        title="Tải ảnh mới từ thiết bị"
+                                    >
+                                        {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                    </button>
                                 </div>
 
                                 <div className="flex-1 w-full space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={uploadingAvatar}
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-[#00677c] font-semibold rounded-xl border border-teal-200 transition-all flex items-center gap-1.5 cursor-pointer text-xs"
+                                        >
+                                            {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                                            <span>Tải ảnh từ máy tính / điện thoại</span>
+                                        </button>
+                                    </div>
                                     <div>
                                         <label className="block text-slate-600 font-medium mb-1">
-                                            Đường dẫn ảnh đại diện (URL)
+                                            Hoặc nhập đường dẫn ảnh (URL)
                                         </label>
                                         <input
                                             type="url"
@@ -737,7 +793,15 @@ export default function FamilyProfile() {
                                 }}
                                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white shadow-md ring-2 ring-teal-500/30"
                             />
-                            <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" title="Trực tuyến" />
+                            <button
+                                type="button"
+                                disabled={uploadingAvatar}
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute bottom-0 right-0 p-1.5 bg-[#00677c] hover:bg-[#005566] text-white rounded-full shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
+                                title="Thay đổi ảnh đại diện"
+                            >
+                                {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                            </button>
                         </div>
 
                         {/* Thông tin chính */}
