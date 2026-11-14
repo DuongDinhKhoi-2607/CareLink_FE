@@ -20,6 +20,7 @@ import {
     CalendarClock,
     ShieldCheck,
     ShieldAlert,
+    CheckCircle,
 } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
@@ -684,7 +685,7 @@ export default function DirectBookingModal({
             // Ghi nhận sự kiện tạo ca đặt trực tiếp thành công (EXE Outcome 3)
             trackEvent("CREATE_BOOKING", {
                 bookingId: targetBookingId,
-                totalPrice: totalEstimate,
+                totalPrice: createdBooking?.totalPrice || grandTotal,
             });
 
             setShowConsentModal(false);
@@ -698,7 +699,7 @@ export default function DirectBookingModal({
                 navigate("/dashboard/appointments", {
                     state: {
                         newBookingId: targetBookingId,
-                        message: "Đặt ca hẹn thành công! Đang chờ điều dưỡng xác nhận tiếp nhận.",
+                        message: `Đã gửi yêu cầu đặt lịch tới điều dưỡng ${nurseName}! Đang chờ điều dưỡng xác nhận tiếp nhận.`,
                     },
                 });
             }
@@ -901,7 +902,7 @@ export default function DirectBookingModal({
                                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
                                     <span>Đảm bảo đúng giờ ca trực</span>
                                     <span>•</span>
-                                    <span>Giữ chỗ 30 phút qua PayOS</span>
+                                    <span>Điều dưỡng tiếp nhận & Thanh toán PayOS an toàn</span>
                                 </p>
                             </div>
                         </div>
@@ -1508,8 +1509,8 @@ export default function DirectBookingModal({
                                                 {grandTotal.toLocaleString("vi-VN")} VNĐ
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-slate-400 italic text-right">
-                                            Thanh toán an toàn qua cổng PayOS • Giữ chỗ trong 30 phút
+                                        <p className="text-[11px] text-slate-500 italic text-right">
+                                            Gửi yêu cầu tới điều dưỡng • Giữ chỗ 30 phút qua PayOS sau khi tiếp nhận
                                         </p>
                                     </div>
                                 </div>
@@ -1586,7 +1587,7 @@ export default function DirectBookingModal({
                                     ? "Đang khởi tạo lịch hẹn..."
                                     : isProposalMode
                                     ? "Gửi đề xuất thương lượng giá"
-                                    : "Xác nhận đặt lịch qua PayOS"}
+                                    : "Gửi yêu cầu đặt ca"}
                             </button>
                         )}
                     </div>
@@ -2027,6 +2028,15 @@ export default function DirectBookingModal({
                             💡 Nếu không tích chọn, điều dưỡng chỉ nhận thông tin dịch vụ và địa chỉ mà không thể xem hồ sơ bệnh án.
                         </p>
 
+                        {/* Banner giải thích quy trình 2 bước: Gửi yêu cầu -> Tiếp nhận -> Thanh toán */}
+                        <div className="p-3.5 rounded-2xl bg-teal-50/80 border border-teal-200/90 text-xs text-teal-900 flex items-start gap-2.5 leading-relaxed">
+                            <CheckCircle className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                            <div>
+                                <strong className="block text-teal-950 font-semibold mb-0.5">Quy trình đặt ca y tế:</strong>
+                                Yêu cầu sẽ được gửi tới điều dưỡng {nurseName}. Sau khi điều dưỡng xác nhận tiếp nhận ca, bạn sẽ có 30 phút để thanh toán PayOS giữ chỗ an toàn.
+                            </div>
+                        </div>
+
                         {validationError && (
                             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
                                 {validationError}
@@ -2050,7 +2060,7 @@ export default function DirectBookingModal({
                                 className="px-6 py-2.5 rounded-xl bg-[#00677C] hover:bg-[#005566] text-white text-xs font-bold transition shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-60"
                             >
                                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                <span>Tiếp tục thanh toán</span>
+                                <span>Xác nhận gửi yêu cầu</span>
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
