@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Trash2, LogOut, X, Loader2, Camera, ShieldCheck, Mail, Phone, User } from "lucide-react";
+import { AlertTriangle, Trash2, LogOut, X, Loader2, Camera, ShieldCheck, Mail, Phone, User, Plus, AlertCircle } from "lucide-react";
 import familyApi from "../../../api/familyApi";
 import authApi, { normalizeUserProfile } from "../../../api/authApi";
 
@@ -114,10 +114,10 @@ export default function FamilyProfile() {
 
     // Section 2: Liên hệ khẩn cấp
     const [emergencyContact, setEmergencyContact] = useState({
-        name: "Nguyễn Văn An",
-        relation: "Con trai",
-        phone: "0909 123 456",
-        secondaryPhone: "0912 345 678",
+        name: "",
+        relation: "",
+        phone: "",
+        secondaryPhone: "",
     });
     const [emergencyDraft, setEmergencyDraft] = useState({ ...emergencyContact });
     const [isEditingEmergency, setIsEditingEmergency] = useState(false);
@@ -207,13 +207,17 @@ export default function FamilyProfile() {
 
                 if (norm.emergencyContact && (norm.emergencyContact.name || norm.emergencyContact.phone)) {
                     const ec = {
-                        name: norm.emergencyContact.name,
+                        name: norm.emergencyContact.name || "",
                         relation: norm.emergencyContact.relation || "Người thân",
-                        phone: norm.emergencyContact.phone,
+                        phone: norm.emergencyContact.phone || "",
                         secondaryPhone: "",
                     };
                     setEmergencyContact(ec);
                     setEmergencyDraft(ec);
+                } else {
+                    const emptyEc = { name: "", relation: "", phone: "", secondaryPhone: "" };
+                    setEmergencyContact(emptyEc);
+                    setEmergencyDraft(emptyEc);
                 }
 
                 // Đồng bộ với localStorage để Header/Sidebar không bị lệch
@@ -333,15 +337,15 @@ export default function FamilyProfile() {
                 emergencyContactPhone: emergencyDraft.phone?.trim() || null,
                 emergencyContactRelation: emergencyDraft.relation?.trim() || null,
             });
-            setEmergencyContact({ ...emergencyDraft });
+            const updated = { ...emergencyDraft };
+            setEmergencyContact(updated);
             setIsEditingEmergency(false);
             showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp lên hệ thống thành công!");
             await fetchAndSyncUserMe();
         } catch (err) {
             console.warn("Lỗi lưu liên hệ khẩn cấp:", err);
-            setEmergencyContact({ ...emergencyDraft });
-            setIsEditingEmergency(false);
-            showSuccessToast("Đã lưu thông tin liên hệ khẩn cấp!");
+            const errMsg = err.response?.data?.message || err.response?.data?.detail || "Không thể lưu thông tin liên hệ khẩn cấp. Vui lòng thử lại!";
+            showSuccessToast(`⚠️ ${errMsg}`);
         }
     };
 
@@ -862,7 +866,7 @@ export default function FamilyProfile() {
                         </div>
                     </div>
 
-                    {!isEditingEmergency && (
+                    {!isEditingEmergency && (emergencyContact?.name?.trim() || emergencyContact?.phone?.trim()) && (
                         <button
                             type="button"
                             onClick={() => {
@@ -884,6 +888,7 @@ export default function FamilyProfile() {
                                 <input
                                     type="text"
                                     required
+                                    placeholder="Ví dụ: Nguyễn Văn An"
                                     value={emergencyDraft.name}
                                     onChange={(e) => setEmergencyDraft({ ...emergencyDraft, name: e.target.value })}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
@@ -894,6 +899,7 @@ export default function FamilyProfile() {
                                 <input
                                     type="text"
                                     required
+                                    placeholder="Ví dụ: Con trai, Chồng..."
                                     value={emergencyDraft.relation}
                                     onChange={(e) => setEmergencyDraft({ ...emergencyDraft, relation: e.target.value })}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
@@ -904,6 +910,7 @@ export default function FamilyProfile() {
                                 <input
                                     type="text"
                                     required
+                                    placeholder="Ví dụ: 0909 123 456"
                                     value={emergencyDraft.phone}
                                     onChange={(e) => setEmergencyDraft({ ...emergencyDraft, phone: e.target.value })}
                                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-600 focus:bg-white"
@@ -927,7 +934,7 @@ export default function FamilyProfile() {
                             </button>
                         </div>
                     </form>
-                ) : (
+                ) : (emergencyContact?.name?.trim() || emergencyContact?.phone?.trim()) ? (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                         <div className="p-3.5 bg-rose-50/40 rounded-xl border border-rose-100">
                             <span className="text-slate-400 block text-[11px]">Tên người liên hệ:</span>
@@ -935,12 +942,35 @@ export default function FamilyProfile() {
                         </div>
                         <div className="p-3.5 bg-rose-50/40 rounded-xl border border-rose-100">
                             <span className="text-slate-400 block text-[11px]">Mối quan hệ:</span>
-                            <strong className="text-sm text-slate-700">{emergencyContact.relation}</strong>
+                            <strong className="text-sm text-slate-700">{emergencyContact.relation || "Người thân"}</strong>
                         </div>
                         <div className="p-3.5 bg-rose-50/40 rounded-xl border border-rose-100">
                             <span className="text-slate-400 block text-[11px]">Số điện thoại khẩn cấp:</span>
                             <strong className="text-sm text-rose-600">{emergencyContact.phone}</strong>
                         </div>
+                    </div>
+                ) : (
+                    <div className="p-5 rounded-2xl border border-dashed border-rose-200 bg-rose-50/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                        <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-800 flex items-center justify-center sm:justify-start gap-1.5">
+                                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                                <span>Chưa thiết lập liên hệ khẩn cấp</span>
+                            </p>
+                            <p className="text-[11.5px] text-slate-500 max-w-xl">
+                                Cung cấp số điện thoại người thân để điều dưỡng viên liên hệ trực tiếp ngay khi phát sinh tình huống sức khỏe bất thường trong suốt ca trực.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setEmergencyDraft({ name: "", relation: "", phone: "", secondaryPhone: "" });
+                                setIsEditingEmergency(true);
+                            }}
+                            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition shadow-2xs hover:shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Thêm liên hệ khẩn cấp</span>
+                        </button>
                     </div>
                 )}
             </div>

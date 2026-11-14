@@ -34,6 +34,19 @@ import {
 } from "lucide-react";
 import adminApi from "../../../api/adminApi";
 
+const getPaginationItems = (current, total) => {
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 4) {
+        return [1, 2, 3, 4, 5, "...", total];
+    }
+    if (current >= total - 3) {
+        return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+    }
+    return [1, "...", current - 1, current, current + 1, "...", total];
+};
+
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState("overview"); // "overview" | "analytics"
     const [timeRange, setTimeRange] = useState("30days");
@@ -51,7 +64,7 @@ export default function AdminDashboard() {
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
     const [analyticsError, setAnalyticsError] = useState(null);
     const [logPage, setLogPage] = useState(1);
-    const LOGS_PER_PAGE = 10;
+    const [logsPerPage, setLogsPerPage] = useState(10);
 
     // Quản lý dọn dẹp nhật ký tương tác
     const [showPurgeModal, setShowPurgeModal] = useState(false);
@@ -1020,8 +1033,9 @@ export default function AdminDashboard() {
                             {(() => {
                                 const allActivities = analyticsData.recentActivities || [];
                                 const totalLogs = allActivities.length;
-                                const totalLogPages = Math.ceil(totalLogs / LOGS_PER_PAGE) || 1;
-                                const paginatedLogs = allActivities.slice((logPage - 1) * LOGS_PER_PAGE, logPage * LOGS_PER_PAGE);
+                                const totalLogPages = Math.ceil(totalLogs / logsPerPage) || 1;
+                                const paginatedLogs = allActivities.slice((logPage - 1) * logsPerPage, logPage * logsPerPage);
+                                const pageItems = getPaginationItems(logPage, totalLogPages);
 
                                 return (
                                     <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
@@ -1155,33 +1169,80 @@ export default function AdminDashboard() {
                                             </table>
                                         </div>
 
-                                        {/* PHÂN TRANG GỌN ĐẸP TRÁNH KÉO DÀI BẢNG */}
-                                        {totalLogs > LOGS_PER_PAGE && (
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 mt-2 border-t border-slate-100 text-xs text-slate-500">
-                                                <div>
-                                                    Trang <b className="text-slate-800">{logPage}</b> / <b className="text-slate-800">{totalLogPages}</b> (Sự kiện {(logPage - 1) * LOGS_PER_PAGE + 1} - {Math.min(logPage * LOGS_PER_PAGE, totalLogs)} trên {totalLogs})
+                                        {/* PHÂN TRANG THÔNG MINH (CHỌN TRANG TRỰC TIẾP & TÙY CHỌN SỐ DÒNG) */}
+                                        {totalLogs > 0 && (
+                                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 mt-2 border-t border-slate-100 text-xs text-slate-500">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span>Hiển thị</span>
+                                                        <select
+                                                            value={logsPerPage}
+                                                            onChange={(e) => {
+                                                                setLogsPerPage(Number(e.target.value));
+                                                                setLogPage(1);
+                                                            }}
+                                                            className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold focus:outline-none focus:border-teal-500 cursor-pointer shadow-2xs"
+                                                        >
+                                                            <option value={10}>10 dòng</option>
+                                                            <option value={20}>20 dòng</option>
+                                                            <option value={50}>50 dòng</option>
+                                                        </select>
+                                                        <span>/ trang</span>
+                                                    </div>
+                                                    <span className="text-slate-300">|</span>
+                                                    <div>
+                                                        Sự kiện <b className="text-slate-800">{(logPage - 1) * logsPerPage + 1}</b> - <b className="text-slate-800">{Math.min(logPage * logsPerPage, totalLogs)}</b> trên <b className="text-slate-800">{totalLogs}</b> sự kiện mới nhất
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                                                    <button
-                                                        type="button"
-                                                        disabled={logPage === 1}
-                                                        onClick={() => setLogPage((p) => Math.max(1, p - 1))}
-                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                                                    >
-                                                        <ChevronLeft className="w-3.5 h-3.5" /> Trước
-                                                    </button>
-                                                    <span className="px-2 font-bold text-slate-700">
-                                                        {logPage} / {totalLogPages}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        disabled={logPage === totalLogPages}
-                                                        onClick={() => setLogPage((p) => Math.min(totalLogPages, p + 1))}
-                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                                                    >
-                                                        Sau <ChevronRight className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
+
+                                                {totalLogPages > 1 && (
+                                                    <div className="flex flex-wrap items-center gap-1.5 self-end lg:self-auto">
+                                                        <button
+                                                            type="button"
+                                                            disabled={logPage === 1}
+                                                            onClick={() => setLogPage((p) => Math.max(1, p - 1))}
+                                                            className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                                            title="Trang trước"
+                                                        >
+                                                            <ChevronLeft className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Trước</span>
+                                                        </button>
+
+                                                        {pageItems.map((item, idx) => {
+                                                            if (item === "...") {
+                                                                return (
+                                                                    <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 select-none font-bold">
+                                                                        ...
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            const isCurrent = item === logPage;
+                                                            return (
+                                                                <button
+                                                                    key={`page-${item}`}
+                                                                    type="button"
+                                                                    onClick={() => setLogPage(item)}
+                                                                    className={`min-w-8 h-8 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer shadow-2xs ${
+                                                                        isCurrent
+                                                                            ? "bg-[#00677c] text-white shadow-xs scale-105"
+                                                                            : "border border-slate-200 bg-white hover:bg-teal-50 hover:text-teal-700 text-slate-700"
+                                                                    }`}
+                                                                >
+                                                                    {item}
+                                                                </button>
+                                                            );
+                                                        })}
+
+                                                        <button
+                                                            type="button"
+                                                            disabled={logPage === totalLogPages}
+                                                            onClick={() => setLogPage((p) => Math.min(totalLogPages, p + 1))}
+                                                            className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                                            title="Trang tiếp theo"
+                                                        >
+                                                            <span className="hidden sm:inline">Sau</span> <ChevronRight className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
