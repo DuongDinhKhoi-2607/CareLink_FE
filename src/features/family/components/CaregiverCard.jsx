@@ -1,5 +1,6 @@
 import React from "react";
 import { Heart } from "lucide-react";
+import { resolveNurseAvatar, DEFAULT_NURSE_AVATAR } from "../../../utils/nurseAvatar";
 
 function StarIcon() {
     return (
@@ -116,7 +117,7 @@ export default function CaregiverCard({
                     <div className="relative w-[96px] h-[112px] sm:w-[108px] sm:h-[124px] shrink-0 rounded-xl overflow-hidden bg-[#edf3f1]">
 
                         <img
-                            src={caregiver.image}
+                            src={resolveNurseAvatar(caregiver.image || caregiver.avatarUrl, caregiver.name || caregiver.fullName, caregiver.email, caregiver.practitionerType)}
                             alt={`Chân dung ${caregiver.name}`}
                             className="
                                 w-full
@@ -128,8 +129,7 @@ export default function CaregiverCard({
                             "
                             onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src =
-                                    "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400";
+                                e.target.src = DEFAULT_NURSE_AVATAR;
                             }}
                         />
 

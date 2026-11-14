@@ -135,7 +135,7 @@ export default function Login() {
                     } else if (beRole.includes("nurse") || beRole.includes("caregiver")) {
                         targetRole = "caregiver";
                         targetName = "Điều dưỡng CareLink";
-                        avatar = avatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                        avatar = avatar || "/images/nurses/mai-lan.jpg";
                     } else {
                         targetRole = "family";
                         targetName = "Khách hàng CareLink";
@@ -226,7 +226,7 @@ export default function Login() {
 
             const targetName = syncedGoogleUser?.fullName || syncedGoogleUser?.name || (data.user?.email ? data.user.email.split("@")[0] : "Người dùng Google");
             const avatar = syncedGoogleUser?.avatar || (targetRole === "caregiver"
-                ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
+                ? "/images/nurses/mai-lan.jpg"
                 : targetRole === "admin"
                 ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80"
                 : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80");

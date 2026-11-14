@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
+import { resolveNurseAvatar, DEFAULT_NURSE_AVATAR } from "../utils/nurseAvatar";
 
 export default function Header() {
     const location = useLocation();
@@ -103,13 +104,10 @@ export default function Header() {
         return "";
     };
 
-    // Avatar an toàn có fallback chuẩn SVG hoạt hình không bao giờ bị lỗi
+    // Avatar chuẩn hóa cho Điều dưỡng / Sinh viên Điều dưỡng Việt Nam mặc áo blouse trắng
     const getUserAvatar = () => {
         if (user?.role === "caregiver") {
-            if (!user?.avatar || user.avatar.includes("unsplash.com") || user.avatar.includes("1594824813572") || user.avatar.includes("1594824813629")) {
-                return "/images/caregiver_avatar.svg";
-            }
-            return user.avatar;
+            return resolveNurseAvatar(user?.avatar || user?.avatarUrl, user?.name || user?.fullName, user?.email, user?.practitionerType);
         }
         if (user?.role === "admin") {
             return user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80";

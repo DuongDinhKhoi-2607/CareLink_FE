@@ -4,36 +4,45 @@ import CaregiverCard from "../components/CaregiverCard";
 import CaregiverFilterSidebar from "../components/CaregiverFilterSidebar";
 import familyApi from "../../../api/familyApi";
 import { trackEvent } from "../../../utils/tracker";
+import { resolveNurseAvatar, DEFAULT_NURSE_AVATAR } from "../../../utils/nurseAvatar";
 import { HeartHandshake, ShieldAlert, LogIn, UserPlus, X, MessageSquare, CheckCircle2 } from "lucide-react";
 
 // Helper chuyển đổi dữ liệu từ Backend API (GET /api/v1/nurses/search) sang cấu trúc Card
-const normalizeNurse = (item) => ({
-    id: item.nurseId || item.id,
-    nurseId: item.nurseId || item.id,
-    name: item.fullName || item.name || "Điều dưỡng CareLink",
-    fullName: item.fullName || item.name || "Điều dưỡng CareLink",
-    role: item.educationLevel || item.role || "Điều dưỡng chuyên nghiệp",
-    educationLevel: item.educationLevel || item.role || "Điều dưỡng chuyên nghiệp",
-    rate: item.rate || "Từ 200.000đ/ca",
-    rateNumber: item.rateNumber || 200000,
-    experience: item.experienceYears ? `${item.experienceYears} năm KN` : (item.experience || "Nhiều năm KN"),
-    experienceYears: item.experienceYears || 1,
-    specialty: item.specialty || (item.educationLevel || "Chăm sóc toàn diện"),
-    qualifications: item.educationLevel || item.qualifications || "Điều dưỡng",
-    availability: item.availability || ["Ngày thường", "Ca ngày"],
-    location: item.workDistrict || item.location || "TP. Hồ Chí Minh",
-    city: item.city || "Thành phố Hồ Chí Minh",
-    quote: item.bio || item.quote || "Điều dưỡng được xác thực chuyên môn, tận tâm hỗ trợ gia đình.",
-    bio: item.bio || item.quote || "Điều dưỡng được xác thực chuyên môn, tận tâm hỗ trợ gia đình.",
-    rating: item.averageRating != null ? Number(item.averageRating).toFixed(1) : (item.rating || 5.0),
-    averageRating: item.averageRating != null ? Number(item.averageRating) : (item.rating || 5.0),
-    totalReviews: item.totalReviews || 0,
-    distanceKm: item.distanceKm,
-    serviceRadiusKm: item.serviceRadiusKm,
-    image: item.avatarUrl || item.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
-    avatarUrl: item.avatarUrl || item.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
-    rawBackendData: item,
-});
+const normalizeNurse = (item) => {
+    const resolvedImg = resolveNurseAvatar(
+        item.avatarUrl || item.image,
+        item.fullName || item.name,
+        item.email || item.studentEmail,
+        item.practitionerType
+    );
+    return {
+        id: item.nurseId || item.id,
+        nurseId: item.nurseId || item.id,
+        name: item.fullName || item.name || "Điều dưỡng CareLink",
+        fullName: item.fullName || item.name || "Điều dưỡng CareLink",
+        role: item.educationLevel || item.role || "Điều dưỡng chuyên nghiệp",
+        educationLevel: item.educationLevel || item.role || "Điều dưỡng chuyên nghiệp",
+        rate: item.rate || "Từ 200.000đ/ca",
+        rateNumber: item.rateNumber || 200000,
+        experience: item.experienceYears ? `${item.experienceYears} năm KN` : (item.experience || "Nhiều năm KN"),
+        experienceYears: item.experienceYears || 1,
+        specialty: item.specialty || (item.educationLevel || "Chăm sóc toàn diện"),
+        qualifications: item.educationLevel || item.qualifications || "Điều dưỡng",
+        availability: item.availability || ["Ngày thường", "Ca ngày"],
+        location: item.workDistrict || item.location || "TP. Hồ Chí Minh",
+        city: item.city || "Thành phố Hồ Chí Minh",
+        quote: item.bio || item.quote || "Điều dưỡng được xác thực chuyên môn, tận tâm hỗ trợ gia đình.",
+        bio: item.bio || item.quote || "Điều dưỡng được xác thực chuyên môn, tận tâm hỗ trợ gia đình.",
+        rating: item.averageRating != null ? Number(item.averageRating).toFixed(1) : (item.rating || 5.0),
+        averageRating: item.averageRating != null ? Number(item.averageRating) : (item.rating || 5.0),
+        totalReviews: item.totalReviews || 0,
+        distanceKm: item.distanceKm,
+        serviceRadiusKm: item.serviceRadiusKm,
+        image: resolvedImg || DEFAULT_NURSE_AVATAR,
+        avatarUrl: resolvedImg || DEFAULT_NURSE_AVATAR,
+        rawBackendData: item,
+    };
+};
 
 // ============================================================
 // DỮ LIỆU BỘ LỌC

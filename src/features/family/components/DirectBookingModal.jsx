@@ -24,6 +24,7 @@ import {
 import familyApi from "../../../api/familyApi";
 import conversationApi from "../../../api/conversationApi";
 import { trackEvent } from "../../../utils/tracker";
+import { resolveNurseAvatar, DEFAULT_NURSE_AVATAR } from "../../../utils/nurseAvatar";
 
 // ── BỘ CHỈ BÁO TIẾN TRÌNH 3 BƯỚC (NỘI BỘ) ──
 const BOOKING_STEPS = [
@@ -156,11 +157,12 @@ export default function DirectBookingModal({
     // Hỗ trợ cả 2 cách truyền props: qua object `caregiver` hoặc trực tiếp qua `nurseId`, `nurseName`, `nurseAvatar`
     const nurseId = propNurseId || caregiver?.id || caregiver?.nurseId;
     const nurseName = propNurseName || caregiver?.name || caregiver?.fullName || "Điều dưỡng CareLink";
-    const nurseAvatar =
-        propNurseAvatar ||
-        caregiver?.image ||
-        caregiver?.avatar ||
-        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
+    const nurseAvatar = resolveNurseAvatar(
+        propNurseAvatar || caregiver?.image || caregiver?.avatar || caregiver?.avatarUrl,
+        nurseName,
+        caregiver?.email,
+        caregiver?.practitionerType
+    );
 
     // ── STEPPER CONTROLLER ──
     const [currentStep, setCurrentStep] = useState(1); // 1: Người nhận & Địa chỉ, 2: Dịch vụ & Thời gian, 3: Xác nhận & Chi phí
@@ -176,6 +178,7 @@ export default function DirectBookingModal({
     // ── STEP 1: FORM INPUTS (Người nhận & Địa chỉ) ──
     const [selectedRecipientId, setSelectedRecipientId] = useState("");
     const [selectedAddressId, setSelectedAddressId] = useState("");
+    const [customCareAddress, setCustomCareAddress] = useState("");
 
     // ── STEP 2: FORM INPUTS (Dịch vụ & Khung giờ) ──
     const [selectedServiceIds, setSelectedServiceIds] = useState([]);
@@ -278,7 +281,14 @@ export default function DirectBookingModal({
                 const raw = recipientsRes.value;
                 const recList = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []);
                 setRecipients(recList);
-                setSelectedRecipientId((prev) => (prev && recList.some((r) => (r.id || r.recipientId) === prev) ? prev : (recList[0]?.id || recList[0]?.recipientId || "")));
+                setSelectedRecipientId((prev) => {
+                    const nextId = prev && recList.some((r) => (r.id || r.recipientId) === prev) ? prev : (recList[0]?.id || recList[0]?.recipientId || "");
+                    const matched = recList.find((r) => (r.id || r.recipientId) === nextId);
+                    if (matched?.address) {
+                        setCustomCareAddress((curr) => curr || matched.address);
+                    }
+                    return nextId;
+                });
             }
 
             // 2. Địa chỉ
@@ -496,16 +506,12 @@ export default function DirectBookingModal({
             setValidationError("Vui lòng chọn người thân cần chăm sóc để tiếp tục.");
             return;
         }
-        if (!selectedAddressId) {
-            if (addresses.length > 0) {
-                setValidationError("Vui lòng chọn địa chỉ nhận ca trực tại nhà.");
-                return;
-            }
-            const selectedRec = recipients.find((r) => (r.id || r.recipientId) === selectedRecipientId);
-            if (!selectedRec?.address || !selectedRec.address.trim()) {
-                setValidationError("Vui lòng bấm \"+ Thêm địa chỉ mới\" để điều dưỡng biết địa điểm đến chăm sóc tại nhà.");
-                return;
-            }
+        const selectedRec = recipients.find((r) => (r.id || r.recipientId) === selectedRecipientId);
+        const hasValidSavedAddress = selectedAddressId && selectedAddressId !== "__custom__";
+        const resolvedCustomAddress = customCareAddress.trim() || selectedRec?.address?.trim() || "";
+        if (!hasValidSavedAddress && !resolvedCustomAddress) {
+            setValidationError("Vui lòng chọn địa chỉ đã lưu hoặc bấm \"+ Thêm địa chỉ mới\" để điều dưỡng biết nơi đến chăm sóc.");
+            return;
         }
         setCurrentStep(2);
         setMaxReachedStep((prev) => Math.max(prev, 2));
@@ -564,11 +570,16 @@ export default function DirectBookingModal({
                     : "[Đồng ý chia sẻ hồ sơ sức khỏe & tiền sử bệnh án]";
             }
 
+            const selectedRec = recipients.find((r) => (r.id || r.recipientId) === selectedRecipientId);
+            const hasSavedAddr = selectedAddressId && selectedAddressId !== "__custom__";
+            const customAddrText = !hasSavedAddr ? (customCareAddress.trim() || selectedRec?.address?.trim() || null) : null;
+
             const proposalPayload = {
                 serviceIds: selectedServiceIds,
                 serviceId: selectedServiceIds[0] || null,
                 recipientId: selectedRecipientId,
-                addressId: selectedAddressId || null,
+                addressId: hasSavedAddr ? selectedAddressId : null,
+                customAddress: customAddrText,
                 scheduledStart,
                 proposedTotalPrice: parsedCustomPrice || baseServicesPrice,
                 notes: fullNotes || null,
@@ -647,6 +658,10 @@ export default function DirectBookingModal({
                 quantity: serviceQuantities[id] || 1,
             }));
 
+            const selectedRec = recipients.find((r) => (r.id || r.recipientId) === selectedRecipientId);
+            const hasSavedAddr = selectedAddressId && selectedAddressId !== "__custom__";
+            const customAddrText = !hasSavedAddr ? (customCareAddress.trim() || selectedRec?.address?.trim() || null) : null;
+
             const payload = {
                 nurseId,
                 recipientId: selectedRecipientId,
@@ -657,7 +672,8 @@ export default function DirectBookingModal({
                 scheduledEnd,
                 extraMinutes,
                 requestedArrivalTime: requestedArrivalTime.trim() || null,
-                addressId: selectedAddressId || null,
+                addressId: hasSavedAddr ? selectedAddressId : null,
+                customAddress: customAddrText,
                 consentShareMedicalRecords: consentMedical,
                 customerNotes: customerNotes.trim() || null,
             };
@@ -734,6 +750,9 @@ export default function DirectBookingModal({
             const recList = Array.isArray(updatedRecipients) ? updatedRecipients : (updatedRecipients?.data || updatedRecipients?.items || []);
             setRecipients(recList);
             if (newId) setSelectedRecipientId(newId);
+            if (newRelativeForm.address.trim()) {
+                setCustomCareAddress(newRelativeForm.address.trim());
+            }
 
             setShowAddRelativeModal(false);
             setNewRelativeForm({
@@ -868,7 +887,7 @@ export default function DirectBookingModal({
                                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-white shadow-sm ring-2 ring-teal-500/20 shrink-0"
                                 onError={(e) => {
                                     e.currentTarget.onerror = null;
-                                    e.currentTarget.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
+                                    e.currentTarget.src = DEFAULT_NURSE_AVATAR;
                                 }}
                             />
                             <div>
@@ -978,6 +997,9 @@ export default function DirectBookingModal({
                                                             key={id}
                                                             onClick={() => {
                                                                 setSelectedRecipientId(id);
+                                                                if (rec.address) {
+                                                                    setCustomCareAddress(rec.address);
+                                                                }
                                                                 setValidationError("");
                                                             }}
                                                             className={`p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
@@ -1052,7 +1074,7 @@ export default function DirectBookingModal({
                                         </div>
 
                                         {addresses.length > 0 ? (
-                                            <div className="space-y-1.5">
+                                            <div className="space-y-2">
                                                 <select
                                                     value={selectedAddressId}
                                                     onChange={(e) => {
@@ -1069,27 +1091,53 @@ export default function DirectBookingModal({
                                                             </option>
                                                         );
                                                     })}
+                                                    <option value="__custom__">+ Nhập địa chỉ nhận chăm sóc khác...</option>
                                                 </select>
-                                                <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                                                    <span>💡 Điều dưỡng sẽ đến theo địa chỉ được chọn ở trên.</span>
-                                                </p>
+                                                {selectedAddressId === "__custom__" ? (
+                                                    <input
+                                                        type="text"
+                                                        value={customCareAddress}
+                                                        onChange={(e) => {
+                                                            setCustomCareAddress(e.target.value);
+                                                            setValidationError("");
+                                                        }}
+                                                        placeholder="Nhập số nhà, tên đường, phường/xã, quận/huyện, TP. Hồ Chí Minh..."
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition"
+                                                    />
+                                                ) : (
+                                                    <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                                                        <span>💡 Điều dưỡng sẽ đến theo địa chỉ được chọn ở trên.</span>
+                                                    </p>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="p-4 rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                                <div>
-                                                    <p className="font-semibold text-slate-800">Chưa có địa chỉ tiếp nhận ca trực nào được lưu.</p>
-                                                    <p className="text-[11px] text-slate-500 mt-0.5">
-                                                        Thêm địa chỉ nhà để điều dưỡng tới chăm sóc chu đáo, đúng hẹn.
-                                                    </p>
+                                            <div className="space-y-2">
+                                                <div className="p-3.5 rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                                                    <div>
+                                                        <p className="font-semibold text-slate-800">Chưa có địa chỉ nào trong sổ.</p>
+                                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                                            Thêm vào sổ địa chỉ hoặc nhập trực tiếp bên dưới.
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowAddAddressModal(true)}
+                                                        className="px-3.5 py-1.5 rounded-xl bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition shadow-xs cursor-pointer shrink-0 flex items-center gap-1"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>Thêm địa chỉ ngay</span>
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowAddAddressModal(true)}
-                                                    className="px-3.5 py-1.5 rounded-xl bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition shadow-xs cursor-pointer shrink-0 flex items-center gap-1"
-                                                >
-                                                    <Plus className="w-3.5 h-3.5" />
-                                                    <span>Thêm địa chỉ ngay</span>
-                                                </button>
+                                                <input
+                                                    type="text"
+                                                    value={customCareAddress || selectedRecipientObj?.address || ""}
+                                                    onChange={(e) => {
+                                                        setCustomCareAddress(e.target.value);
+                                                        setValidationError("");
+                                                    }}
+                                                    placeholder="Nhập trực tiếp số nhà, tên đường, phường/xã, quận/huyện..."
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition"
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -1326,8 +1374,17 @@ export default function DirectBookingModal({
                                             </div>
                                             <div>
                                                 <span className="text-slate-400 block text-[11px]">Địa chỉ tiếp nhận:</span>
-                                                <span className="font-bold text-slate-900 truncate block" title={formatAddressDisplay(selectedAddressObj)}>
-                                                    {formatAddressDisplay(selectedAddressObj)}
+                                                <span
+                                                    className="font-bold text-slate-900 truncate block"
+                                                    title={
+                                                        selectedAddressId && selectedAddressId !== "__custom__" && selectedAddressObj
+                                                            ? formatAddressDisplay(selectedAddressObj)
+                                                            : (customCareAddress.trim() || selectedRecipientObj?.address || "Chưa cập nhật địa chỉ")
+                                                    }
+                                                >
+                                                    {selectedAddressId && selectedAddressId !== "__custom__" && selectedAddressObj
+                                                        ? formatAddressDisplay(selectedAddressObj)
+                                                        : (customCareAddress.trim() || selectedRecipientObj?.address || "Chưa cập nhật địa chỉ")}
                                                 </span>
                                             </div>
                                         </div>
@@ -1652,6 +1709,20 @@ export default function DirectBookingModal({
                                         <option value={3}>Khác</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Địa chỉ nhận chăm sóc tại nhà <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Ví dụ: 125 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP.HCM"
+                                    value={newRelativeForm.address}
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, address: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
                             </div>
 
                             <div>

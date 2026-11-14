@@ -20,6 +20,7 @@ import LogoutModal from "../components/LogoutModal";
 import { NotificationDropdown } from "../features/shared/notifications";
 import authApi, { fetchAndSyncUserMe } from "../api/authApi";
 import caregiverApi from "../api/caregiverApi";
+import { resolveNurseAvatar, DEFAULT_NURSE_AVATAR } from "../utils/nurseAvatar";
 import CaregiverGuideModal from "../features/caregiver/components/CaregiverGuideModal";
 
 const navItems = [
@@ -132,12 +133,18 @@ export default function CaregiverLayout() {
                         ? prev.fullName
                         : "Điều dưỡng";
 
+                    const resolvedAv = resolveNurseAvatar(
+                        p?.avatarUrl || prev?.avatar || prev?.avatarUrl,
+                        validName,
+                        p?.email || prev?.email,
+                        p?.practitionerType ?? prev?.practitionerType
+                    );
                     const updated = {
                         ...prev,
                         fullName: validName,
                         name: validName,
-                        avatar: p?.avatarUrl || prev?.avatar,
-                        avatarUrl: p?.avatarUrl || prev?.avatarUrl,
+                        avatar: resolvedAv,
+                        avatarUrl: resolvedAv,
                         nurseStatus: v?.verificationStatus ?? (p?.status ?? prev?.nurseStatus),
                         verificationStatusName: v?.verificationStatusName || null,
                     };
@@ -328,11 +335,11 @@ export default function CaregiverLayout() {
                     >
                         {currentUser?.avatar || currentUser?.avatarUrl ? (
                             <img
-                                src={currentUser.avatar || currentUser.avatarUrl}
+                                src={resolveNurseAvatar(currentUser.avatar || currentUser.avatarUrl, currentUser.fullName || currentUser.name, currentUser.email, currentUser.practitionerType)}
                                 alt={currentUser.name || "Caregiver"}
                                 onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300";
+                                    e.target.src = DEFAULT_NURSE_AVATAR;
                                 }}
                                 className="w-9 h-9 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
                             />

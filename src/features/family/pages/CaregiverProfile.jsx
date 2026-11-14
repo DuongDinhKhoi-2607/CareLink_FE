@@ -5,6 +5,7 @@ import conversationApi from "../../../api/conversationApi";
 import { MessageSquare, LogIn, UserPlus, HeartHandshake, X, ShieldAlert, CheckCircle2, Sparkles, Calendar, Heart, CalendarCheck } from "lucide-react";
 import DirectBookingModal from "../components/DirectBookingModal";
 import { trackEvent } from "../../../utils/tracker";
+import { resolveNurseAvatar, DEFAULT_NURSE_AVATAR } from "../../../utils/nurseAvatar";
 
 // Dữ liệu mục xác minh
 const verificationItems = [
@@ -182,10 +183,15 @@ export default function CaregiverProfile() {
         handleOpenBooking(dateStr);
     };
 
-    // Fallback ảnh online chất lượng cao, bền vững (dùng chung avatar ĐD. Nguyễn Thùy Linh)
-    const avatarUrl = caregiver?.image || caregiver?.avatar || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600";
     const displayName = caregiver?.name || caregiver?.fullName || "Điều dưỡng CareLink";
     const displayRole = caregiver?.role || caregiver?.title || "Nhân viên y tế CareLink";
+    // Ảnh chân dung điều dưỡng / sinh viên điều dưỡng Việt Nam mặc áo blouse trắng
+    const avatarUrl = resolveNurseAvatar(
+        caregiver?.image || caregiver?.avatar || caregiver?.avatarUrl,
+        displayName,
+        caregiver?.email,
+        caregiver?.practitionerType
+    );
 
     const handleContact = async () => {
         const token = localStorage.getItem("carelink_token");
@@ -320,7 +326,7 @@ export default function CaregiverProfile() {
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
                                             e.target.onerror = null;
-                                            e.target.src = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=600";
+                                            e.target.src = DEFAULT_NURSE_AVATAR;
                                         }}
                                     />
                                 </div>

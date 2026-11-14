@@ -77,30 +77,27 @@ const steps = [
 
 const testimonials = [
     {
-        name: "Lê Hoàng Nam",
-        role: "Sinh viên Y đa khoa · Năm 4",
+        name: "Vũ Hoàng Nam",
+        role: "Sinh viên Điều dưỡng · Năm 4",
         quote:
             "CareLink giúp mình có thêm cơ hội vận dụng kiến thức đã học và chủ động hơn về thu nhập. Mỗi lần nhận được lời cảm ơn đều là một động lực rất lớn.",
-        avatar:
-            "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=80",
+        avatar: "/images/nurses/hoang-nam.jpg",
         featured: false,
     },
     {
-        name: "Nguyễn Thị Mai",
-        role: "Điều dưỡng viên · 2 năm kinh nghiệm",
+        name: "Nguyễn Thị Mai Lan",
+        role: "Điều dưỡng viên · 5 năm kinh nghiệm",
         quote:
             "Mình thích việc có thể chủ động sắp xếp thời gian và tìm hiểu thông tin ca chăm sóc trước khi nhận lịch. Điều đó giúp mình cân đối công việc tốt hơn.",
-        avatar:
-            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=80",
+        avatar: "/images/nurses/mai-lan.jpg",
         featured: true,
     },
     {
-        name: "Trần Thu Hà",
-        role: "Sinh viên Điều dưỡng · Năm 3",
+        name: "Lê Thị Thảo",
+        role: "Sinh viên Y đa khoa · Năm 5",
         quote:
             "Mình muốn trau dồi thêm kỹ năng giao tiếp và cách đồng hành cùng người cao tuổi. Đây cũng là cơ hội để mình học hỏi và trưởng thành hơn.",
-        avatar:
-            "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=80",
+        avatar: "/images/nurses/le-thao.jpg",
         featured: false,
     },
 ];
