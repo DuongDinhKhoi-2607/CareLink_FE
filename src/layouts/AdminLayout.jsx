@@ -283,8 +283,20 @@ export default function AdminLayout() {
                             aria-expanded={userMenuOpen}
                             aria-haspopup="menu"
                         >
-                            <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 text-[#00677c] font-black text-xs flex items-center justify-center border border-teal-200 shadow-2xs group-hover:scale-105 transition-transform">
-                                {(currentUser?.name || currentUser?.fullName || currentUser?.email || "AD").charAt(0).toUpperCase()}
+                            <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 text-[#00677c] font-black text-xs flex items-center justify-center border border-teal-200 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
+                                {currentUser?.avatar || currentUser?.avatarUrl ? (
+                                    <img
+                                        src={currentUser.avatar || currentUser.avatarUrl}
+                                        alt={currentUser?.name || "Admin"}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.style.display = "none";
+                                        }}
+                                    />
+                                ) : (
+                                    (currentUser?.name || currentUser?.fullName || currentUser?.email || "AD").charAt(0).toUpperCase()
+                                )}
                             </div>
                             <div className="hidden sm:block text-left">
                                 <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
@@ -476,65 +488,11 @@ export default function AdminLayout() {
                         })}
                     </nav>
 
-                    {/* Sidebar Footer — Chuẩn hoá đồng bộ như Dashboard Family */}
-                    <div className="p-3 border-t border-[#2a3c4e]/80 shrink-0 space-y-2">
-                        {isCollapsed ? (
-                            <div className="flex flex-col items-center gap-2">
-                                <div
-                                    className="relative group cursor-pointer"
-                                    title={currentUser?.fullName || currentUser?.name || "Quản trị viên CareLink"}
-                                >
-                                    <img
-                                        src={currentUser?.avatar || currentUser?.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150"}
-                                        alt="Admin"
-                                        className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-teal-500 shadow-2xs"
-                                    />
-                                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#102030] text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 shadow-lg">
-                                        {currentUser?.fullName || currentUser?.name || "Quản trị viên CareLink"}
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setShowLogoutModal(true)}
-                                    className="w-8.5 h-8.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
-                                    title="Đăng xuất tài khoản"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-between gap-2.5">
-                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                    <img
-                                        src={currentUser?.avatar || currentUser?.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150"}
-                                        alt="Admin"
-                                        className="w-9 h-9 rounded-full object-cover shrink-0 border border-teal-400 shadow-2xs"
-                                    />
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="text-xs font-bold text-white truncate">
-                                            {currentUser?.fullName || currentUser?.name || "Quản trị viên"}
-                                        </span>
-                                        <span className="text-[10px] text-teal-400 font-medium truncate">
-                                            Administrator
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setShowLogoutModal(true)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
-                                    title="Đăng xuất tài khoản"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-
+                    {/* Sidebar Footer — Gọn gàng thanh lịch, loại bỏ card trùng lặp với Header */}
+                    <div className="p-3 border-t border-[#2a3c4e]/80 shrink-0 space-y-1">
                         <Link
                             to="/admin"
-                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-colors ${
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/8 transition-colors ${
                                 isCollapsed ? "justify-center" : ""
                             }`}
                             title="Cài đặt hệ thống"
@@ -544,7 +502,7 @@ export default function AdminLayout() {
                         </Link>
                         <Link
                             to="/"
-                            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-teal-300 hover:bg-white/8 transition-colors ${
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-teal-300 hover:bg-white/8 transition-colors ${
                                 isCollapsed ? "justify-center" : ""
                             }`}
                             title="Về Website CareLink"
