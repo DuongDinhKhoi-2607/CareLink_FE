@@ -12,6 +12,8 @@ import {
     CheckCircle2,
     Loader2,
     PlusCircle,
+    Plus,
+    UserPlus,
     DollarSign,
     Layers,
     Sparkles,
@@ -59,6 +61,29 @@ const FALLBACK_SERVICES = [
     },
 ];
 
+const formatAddressDisplay = (addr) => {
+    if (!addr) return "Địa chỉ mặc định";
+    const main = (addr.fullAddress || addr.full_address || addr.streetAddress || addr.addressLine || addr.address || "").trim();
+    const ward = (addr.ward || "").trim();
+    const district = (addr.district || "").trim();
+    const city = (addr.city || "").trim();
+
+    if (!main) {
+        const parts = [ward, district, city].filter(Boolean);
+        return parts.length > 0 ? parts.join(", ") : "Địa chỉ mặc định";
+    }
+
+    const lower = main.toLowerCase();
+    const hasDistrictOrCity = (district && lower.includes(district.toLowerCase())) ||
+                              (city && lower.includes(city.toLowerCase()));
+    if (hasDistrictOrCity) {
+        return main;
+    }
+
+    const parts = [main, ward, district, city].filter(Boolean);
+    return parts.join(", ");
+};
+
 export default function CreateProposalModal({
     isOpen,
     onClose,
@@ -92,6 +117,156 @@ export default function CreateProposalModal({
 
     // Pre-calculate today for min date
     const todayStr = new Date().toISOString().split("T")[0];
+
+    // Inline modals for adding relative & address directly in proposal modal
+    const [showAddRelativeModal, setShowAddRelativeModal] = useState(false);
+    const [newRelativeForm, setNewRelativeForm] = useState({
+        fullName: "",
+        dateOfBirth: "",
+        gender: 1,
+        medicalHistory: "",
+        specialNotes: "",
+        address: "",
+    });
+    const [isSavingRelative, setIsSavingRelative] = useState(false);
+    const [addRelativeError, setAddRelativeError] = useState("");
+
+    const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+    const [newAddressForm, setNewAddressForm] = useState({
+        label: "Nhà riêng",
+        city: "TP. Hồ Chí Minh",
+        district: "Quận Bình Thạnh",
+        ward: "",
+        streetAddress: "",
+        noteForCaregiver: "",
+        isDefault: false,
+    });
+    const [isSavingAddress, setIsSavingAddress] = useState(false);
+    const [addAddressError, setAddAddressError] = useState("");
+
+    const handleSaveNewRelative = async (e) => {
+        e.preventDefault();
+        setAddRelativeError("");
+        if (!newRelativeForm.fullName.trim()) {
+            setAddRelativeError("Vui lòng nhập họ và tên của người thân.");
+            return;
+        }
+
+        setIsSavingRelative(true);
+        try {
+            const payload = {
+                fullName: newRelativeForm.fullName.trim(),
+                dateOfBirth: newRelativeForm.dateOfBirth || null,
+                gender: Number(newRelativeForm.gender) || 1,
+                medicalHistory: newRelativeForm.medicalHistory.trim() || null,
+                specialNotes: newRelativeForm.specialNotes.trim() || null,
+                address: newRelativeForm.address.trim() || null,
+                isMedicalRecordShared: true,
+            };
+
+            const created = await familyApi.createRecipient(payload);
+            const newId = created?.id || created?.recipientId;
+
+            const recRes = await familyApi.getRecipients();
+            const recList = Array.isArray(recRes) ? recRes : (recRes?.data || recRes?.items || []);
+            setRecipients(recList);
+            if (newId) setRecipientId(newId);
+
+            setShowAddRelativeModal(false);
+            setNewRelativeForm({
+                fullName: "",
+                dateOfBirth: "",
+                gender: 1,
+                medicalHistory: "",
+                specialNotes: "",
+                address: "",
+            });
+
+            if (newRelativeForm.address.trim() && addresses.length === 0) {
+                try {
+                    await familyApi.createAddress({
+                        label: "Nhà người thân",
+                        city: "TP. Hồ Chí Minh",
+                        fullAddress: newRelativeForm.address.trim(),
+                        streetAddress: newRelativeForm.address.trim(),
+                        isDefault: true,
+                    });
+                    const addrRes = await familyApi.getAddresses();
+                    const addrRaw = addrRes?.data || addrRes?.items || addrRes || [];
+                    const addrList = Array.isArray(addrRaw) ? addrRaw : [];
+                    setAddresses(addrList);
+                    if (addrList.length > 0) setAddressId(addrList[0].id);
+                } catch (addrErr) {
+                    console.warn("Không thể lưu địa chỉ từ hồ sơ người thân:", addrErr);
+                }
+            }
+        } catch (err) {
+            console.error("Lỗi tạo người thân:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể tạo người thân. Vui lòng thử lại!";
+            setAddRelativeError(msg);
+        } finally {
+            setIsSavingRelative(false);
+        }
+    };
+
+    const handleSaveNewAddress = async (e) => {
+        e.preventDefault();
+        setAddAddressError("");
+        if (!newAddressForm.streetAddress.trim()) {
+            setAddAddressError("Vui lòng nhập địa chỉ cụ thể (Số nhà, Tên đường, Căn hộ).");
+            return;
+        }
+
+        setIsSavingAddress(true);
+        try {
+            const payload = {
+                label: newAddressForm.label || "Nhà riêng",
+                city: newAddressForm.city || "TP. Hồ Chí Minh",
+                district: newAddressForm.district || "",
+                ward: newAddressForm.ward || "",
+                fullAddress: newAddressForm.streetAddress.trim(),
+                streetAddress: newAddressForm.streetAddress.trim(),
+                notes: newAddressForm.noteForCaregiver.trim(),
+                noteForCaregiver: newAddressForm.noteForCaregiver.trim(),
+                isDefault: newAddressForm.isDefault || addresses.length === 0,
+            };
+
+            const created = await familyApi.createAddress(payload);
+            const newId = created?.id || created?.data?.id;
+
+            const updatedRes = await familyApi.getAddresses();
+            const raw = updatedRes?.data || updatedRes?.items || updatedRes || [];
+            const list = Array.isArray(raw) ? raw : [];
+            setAddresses(list);
+
+            if (newId) {
+                setAddressId(newId);
+            } else if (list.length > 0) {
+                setAddressId(list[list.length - 1].id || list[0].id);
+            }
+
+            if (newAddressForm.noteForCaregiver.trim() && !notes.trim()) {
+                setNotes(newAddressForm.noteForCaregiver.trim());
+            }
+
+            setShowAddAddressModal(false);
+            setNewAddressForm({
+                label: "Nhà riêng",
+                city: "TP. Hồ Chí Minh",
+                district: "Quận Bình Thạnh",
+                ward: "",
+                streetAddress: "",
+                noteForCaregiver: "",
+                isDefault: false,
+            });
+        } catch (err) {
+            console.error("Lỗi tạo địa chỉ mới:", err);
+            const msg = err.response?.data?.detail || err.response?.data?.message || "Không thể thêm địa chỉ mới. Vui lòng thử lại!";
+            setAddAddressError(msg);
+        } finally {
+            setIsSavingAddress(false);
+        }
+    };
 
     useEffect(() => {
         if (!isOpen) return;
@@ -439,27 +614,56 @@ export default function CreateProposalModal({
 
                             {/* 2. CHỌN HỒ SƠ NGƯỜI BỆNH */}
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    Hồ sơ người nhận chăm sóc <span className="text-rose-500">*</span>
-                                </label>
-                                <select
-                                    value={recipientId}
-                                    onChange={(e) => setRecipientId(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
-                                >
-                                    {recipients.map((r) => (
-                                        <option key={r.id} value={r.id}>
-                                            {r.fullName} {r.genderName ? `(${r.genderName})` : r.gender === 1 ? "(Nam)" : r.gender === 2 ? "(Nữ)" : ""} {r.medicalHistory ? `— ${r.medicalHistory}` : ""}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="flex items-center justify-between text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    <span>Hồ sơ người nhận chăm sóc <span className="text-rose-500">*</span></span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddRelativeModal(true)}
+                                        className="text-[11px] font-bold text-[#00677C] hover:text-[#005263] flex items-center gap-1 cursor-pointer hover:underline"
+                                    >
+                                        <UserPlus className="w-3.5 h-3.5" />
+                                        <span>Thêm người thân</span>
+                                    </button>
+                                </div>
+                                {recipients.length > 0 ? (
+                                    <select
+                                        value={recipientId}
+                                        onChange={(e) => setRecipientId(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                                    >
+                                        {recipients.map((r) => (
+                                            <option key={r.id} value={r.id}>
+                                                {r.fullName} {r.genderName ? `(${r.genderName})` : r.gender === 1 ? "(Nam)" : r.gender === 2 ? "(Nữ)" : ""} {r.medicalHistory ? `— ${r.medicalHistory}` : ""}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <div className="p-3 rounded-xl border border-dashed border-teal-300 bg-teal-50/40 text-xs text-slate-700 flex items-center justify-between">
+                                        <span>Chưa có hồ sơ người thân nào.</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddRelativeModal(true)}
+                                            className="px-3 py-1.5 rounded-lg bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition shadow-xs cursor-pointer"
+                                        >
+                                            + Tạo hồ sơ ngay
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* 3. ĐỊA CHỈ NHẬN CHĂM SÓC */}
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    Địa chỉ chăm sóc (Tại nhà)
-                                </label>
+                                <div className="flex items-center justify-between text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    <span>Địa chỉ chăm sóc (Tại nhà)</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddAddressModal(true)}
+                                        className="text-[11px] font-bold text-[#00677C] hover:text-[#005263] flex items-center gap-1 cursor-pointer hover:underline"
+                                    >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>Thêm địa chỉ mới</span>
+                                    </button>
+                                </div>
                                 {addresses.length > 0 ? (
                                     <select
                                         value={addressId}
@@ -469,14 +673,22 @@ export default function CreateProposalModal({
                                         <option value="">-- Sử dụng địa chỉ mặc định của người thân --</option>
                                         {addresses.map((a) => (
                                             <option key={a.id} value={a.id}>
-                                                [{a.label}] {a.fullAddress} {a.isDefault ? "★ Mặc định" : ""}
+                                                [{a.label}] {formatAddressDisplay(a)} {a.isDefault ? "★ Mặc định" : ""}
                                             </option>
                                         ))}
                                     </select>
                                 ) : (
-                                    <p className="text-xs text-slate-500 italic bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                                        Hệ thống sẽ tự động sử dụng địa chỉ đăng ký mặc định của người bệnh.
-                                    </p>
+                                    <div className="p-3 rounded-xl border border-dashed border-teal-300 bg-teal-50/40 text-xs text-slate-700 flex items-center justify-between">
+                                        <span>Chưa có địa chỉ nào trong sổ.</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddAddressModal(true)}
+                                            className="px-3 py-1.5 rounded-lg bg-[#00677C] text-white text-xs font-bold hover:bg-[#005566] transition shadow-xs cursor-pointer flex items-center gap-1"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span>Thêm địa chỉ ngay</span>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 
@@ -644,6 +856,305 @@ export default function CreateProposalModal({
                     )}
                 </div>
             </div>
+
+            {/* Sub-modal: Thêm hồ sơ người thân */}
+            {showAddRelativeModal && (
+                <div
+                    className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 p-4 backdrop-blur-2xs"
+                    onClick={() => !isSavingRelative && setShowAddRelativeModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <UserPlus className="w-4 h-4 text-[#00677C]" />
+                                Thêm hồ sơ người thân mới
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddRelativeModal(false)}
+                                disabled={isSavingRelative}
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {addRelativeError && (
+                            <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                                {addRelativeError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveNewRelative} className="space-y-3.5 text-xs">
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Họ và tên người thân <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Ví dụ: Nguyễn Văn A"
+                                    value={newRelativeForm.fullName}
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Ngày sinh</label>
+                                    <input
+                                        type="date"
+                                        value={newRelativeForm.dateOfBirth}
+                                        onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Giới tính</label>
+                                    <select
+                                        value={newRelativeForm.gender}
+                                        onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, gender: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500 bg-white"
+                                    >
+                                        <option value={1}>Nam</option>
+                                        <option value={2}>Nữ</option>
+                                        <option value={3}>Khác</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">Tiền sử bệnh lý (Nếu có)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ví dụ: Cao huyết áp, tiểu đường type 2..."
+                                    value={newRelativeForm.medicalHistory}
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, medicalHistory: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">Ghi chú đặc biệt</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ví dụ: Khó đi lại, cần đỡ khi di chuyển..."
+                                    value={newRelativeForm.specialNotes}
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, specialNotes: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Địa chỉ nhận chăm sóc / Thường trú (Tùy chọn)
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Ví dụ: 123 Huỳnh Tấn Phát, Phường Tân Thuận, Quận 7..."
+                                    value={newRelativeForm.address}
+                                    onChange={(e) => setNewRelativeForm((prev) => ({ ...prev, address: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <div className="pt-2 flex items-center justify-end gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddRelativeModal(false)}
+                                    disabled={isSavingRelative}
+                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingRelative}
+                                    className="px-5 py-2 rounded-xl bg-[#00677C] text-white font-bold hover:bg-[#005566] transition flex items-center gap-2"
+                                >
+                                    {isSavingRelative && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                    <span>Lưu hồ sơ người thân</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Sub-modal: Thêm địa chỉ mới */}
+            {showAddAddressModal && (
+                <div
+                    className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 p-4 backdrop-blur-2xs"
+                    onClick={() => !isSavingAddress && setShowAddAddressModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-[#00677C]" />
+                                    Thêm địa chỉ chăm sóc mới
+                                </h3>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                    Lưu vị trí để điều dưỡng đến chăm sóc người thân chu đáo
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddAddressModal(false)}
+                                disabled={isSavingAddress}
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {addAddressError && (
+                            <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                                {addAddressError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveNewAddress} className="space-y-3.5 text-xs">
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1.5">
+                                    Tên nhãn địa chỉ <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {["Nhà riêng", "Nhà bố mẹ", "Nhà người thân", "Cơ quan"].map((preset) => (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => setNewAddressForm((prev) => ({ ...prev, label: preset }))}
+                                            className={`px-3 py-1 rounded-xl text-xs font-semibold transition ${
+                                                newAddressForm.label === preset
+                                                    ? "bg-teal-50 border border-teal-500 text-teal-800"
+                                                    : "bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100"
+                                            }`}
+                                        >
+                                            {preset}
+                                        </button>
+                                    ))}
+                                </div>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newAddressForm.label}
+                                    onChange={(e) => setNewAddressForm((prev) => ({ ...prev, label: e.target.value }))}
+                                    placeholder="Nhập tên nhãn (ví dụ: Nhà riêng, Chung cư Landmark...)"
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">
+                                        Tỉnh / TP <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={newAddressForm.city}
+                                        onChange={(e) => setNewAddressForm((prev) => ({ ...prev, city: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">
+                                        Quận / Huyện <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        value={newAddressForm.district}
+                                        onChange={(e) => setNewAddressForm((prev) => ({ ...prev, district: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500 bg-white"
+                                    >
+                                        {[
+                                            "Quận 1", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8",
+                                            "Quận 10", "Quận 11", "Quận 12", "Quận Bình Thạnh", "Quận Gò Vấp",
+                                            "Quận Phú Nhuận", "Quận Tân Bình", "Quận Tân Phú", "TP. Thủ Đức",
+                                            "Huyện Bình Chánh", "Huyện Hóc Môn", "Huyện Củ Chi", "Huyện Nhà Bè"
+                                        ].map((d) => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Phường / Xã</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ví dụ: Phường 25"
+                                        value={newAddressForm.ward}
+                                        onChange={(e) => setNewAddressForm((prev) => ({ ...prev, ward: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Địa chỉ cụ thể (Số nhà, Tên đường, Căn hộ) <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Ví dụ: 123 Huỳnh Tấn Phát, Căn hộ A12-05..."
+                                    value={newAddressForm.streetAddress}
+                                    onChange={(e) => setNewAddressForm((prev) => ({ ...prev, streetAddress: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Ghi chú hướng dẫn cho điều dưỡng (Nếu có)
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    placeholder="Ví dụ: Bấm chuông tầng 12, hầm gửi xe máy ở cổng B1..."
+                                    value={newAddressForm.noteForCaregiver}
+                                    onChange={(e) => setNewAddressForm((prev) => ({ ...prev, noteForCaregiver: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 outline-none focus:border-teal-500"
+                                />
+                            </div>
+
+                            <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={newAddressForm.isDefault}
+                                    onChange={(e) => setNewAddressForm((prev) => ({ ...prev, isDefault: e.target.checked }))}
+                                    className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300"
+                                />
+                                <span className="text-xs text-slate-700 font-medium">Đặt làm địa chỉ chăm sóc mặc định</span>
+                            </label>
+
+                            <div className="pt-2 flex items-center justify-end gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddAddressModal(false)}
+                                    disabled={isSavingAddress}
+                                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingAddress}
+                                    className="px-5 py-2 rounded-xl bg-[#00677C] text-white font-bold hover:bg-[#005566] transition flex items-center gap-2"
+                                >
+                                    {isSavingAddress && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                    <span>Lưu & Chọn địa chỉ này</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

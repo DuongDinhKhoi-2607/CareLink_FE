@@ -108,18 +108,22 @@ export default function FamilyProfile() {
     });
 
     // ── Helper map Backend → FE ───────────────────────────────────────────────────────
-    const mapAddress = (a) => ({
-        id: a.id,
-        label: a.label || a.title || a.addressLabel || "Khác",
-        isDefault: a.isDefault ?? a.isMain ?? false,
-        city: a.city || a.province || "",
-        district: a.district || "",
-        ward: a.ward || "",
-        streetAddress: a.streetAddress || a.street || a.addressLine || "",
-        noteForCaregiver: a.noteForCaregiver || a.notes || a.note || "",
-        latitude: a.latitude,
-        longitude: a.longitude,
-    });
+    const mapAddress = (a) => {
+        const rawFull = a.fullAddress || a.full_address || a.streetAddress || a.street || a.addressLine || a.address || "";
+        return {
+            id: a.id,
+            label: a.label || a.title || a.addressLabel || "Nhà riêng",
+            isDefault: a.isDefault ?? a.isMain ?? false,
+            city: a.city || a.province || "",
+            district: a.district || "",
+            ward: a.ward || "",
+            streetAddress: rawFull,
+            fullAddress: rawFull,
+            noteForCaregiver: a.notes || a.noteForCaregiver || a.note || "",
+            latitude: a.latitude,
+            longitude: a.longitude,
+        };
+    };
 
     // ── Build payload BE ────────────────────────────────────────────────────────────
     const buildAddressPayload = () => ({
@@ -127,7 +131,9 @@ export default function FamilyProfile() {
         city: addressForm.city,
         district: addressForm.district,
         ward: addressForm.ward,
+        fullAddress: addressForm.streetAddress.trim(),
         streetAddress: addressForm.streetAddress.trim(),
+        notes: addressForm.noteForCaregiver.trim(),
         noteForCaregiver: addressForm.noteForCaregiver.trim(),
         isDefault: addressForm.isDefault,
     });
@@ -364,8 +370,8 @@ export default function FamilyProfile() {
                 city: d.city || addr.city,
                 district: d.district || addr.district,
                 ward: d.ward || addr.ward || "",
-                streetAddress: d.streetAddress || d.street || addr.streetAddress,
-                noteForCaregiver: d.noteForCaregiver || d.notes || addr.noteForCaregiver || "",
+                streetAddress: d.fullAddress || d.full_address || d.streetAddress || d.street || addr.streetAddress,
+                noteForCaregiver: d.notes || d.noteForCaregiver || addr.noteForCaregiver || "",
                 isDefault: d.isDefault ?? addr.isDefault,
             });
         } catch (err) {
@@ -994,11 +1000,16 @@ export default function FamilyProfile() {
 
                                     <div>
                                         <p className="text-sm font-semibold text-[#002045] leading-snug">
-                                            {addr.streetAddress}
+                                            {addr.streetAddress || addr.fullAddress || "Chưa có địa chỉ chi tiết"}
                                         </p>
-                                        <p className="text-xs text-slate-500 mt-0.5">
-                                            {addr.ward ? `${addr.ward}, ` : ""}{addr.district}, {addr.city}
-                                        </p>
+                                        {(() => {
+                                            const main = (addr.streetAddress || addr.fullAddress || "").toLowerCase();
+                                            const hasDistrictOrCity = (addr.district && main.includes(addr.district.toLowerCase())) ||
+                                                                      (addr.city && main.includes(addr.city.toLowerCase()));
+                                            if (hasDistrictOrCity) return null;
+                                            const sub = [addr.ward, addr.district, addr.city].filter(Boolean).join(", ");
+                                            return sub ? <p className="text-xs text-slate-500 mt-0.5">{sub}</p> : null;
+                                        })()}
                                     </div>
 
                                     {addr.noteForCaregiver && (
