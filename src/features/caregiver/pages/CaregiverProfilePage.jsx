@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import caregiverApi from "../../../api/caregiverApi";
 import authApi, { fetchAndSyncUserMe } from "../../../api/authApi";
 import { resolveDocumentUrl } from "../../../api/axiosClient";
+import { resolveNurseAvatar } from "../../../utils/nurseAvatar";
 
 export default function CaregiverProfilePage() {
     // Lấy thông tin tài khoản đang đăng nhập từ localStorage để khởi tạo đúng tên, email người dùng thật
@@ -22,7 +23,12 @@ export default function CaregiverProfilePage() {
         title: "",
         email: loggedInUser?.email || "",
         phone: loggedInUser?.phone || "",
-        avatar: loggedInUser?.avatar || "/images/caregiver_avatar.svg",
+        avatar: resolveNurseAvatar(
+            loggedInUser?.avatar,
+            loggedInUser?.name || loggedInUser?.fullName,
+            loggedInUser?.email,
+            loggedInUser?.practitionerType
+        ),
         practitionerType: loggedInUser?.practitionerType || 1,
         rating: 5.0,
         reviewsCount: 0,
@@ -151,7 +157,12 @@ export default function CaregiverProfilePage() {
                         educationLevel: data.educationLevel || prev.educationLevel,
                         email: data.email || prev.email,
                         phone: data.phone || data.phoneNumber || prev.phone,
-                        avatar: data.avatar || data.avatarUrl || prev.avatar,
+                        avatar: resolveNurseAvatar(
+                            data.avatar || data.avatarUrl || prev.avatar,
+                            data.fullName || data.name || prev.fullName,
+                            data.email || prev.email,
+                            data.practitionerType ?? prev.practitionerType
+                        ),
                         rating: Number(data.rating ?? data.averageRating ?? prev.rating ?? 5.0),
                         reviewsCount: Number(data.reviewsCount ?? data.totalReviews ?? prev.reviewsCount ?? 0),
                         completedBookings: Number(data.completedBookings ?? data.totalBookings ?? prev.completedBookings ?? 0),

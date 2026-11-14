@@ -1,4 +1,5 @@
 import axiosClient from "./axiosClient";
+import { resolveNurseAvatar } from "../utils/nurseAvatar";
 
 // Google OAuth 2.0 Client ID của CareLink
 export const GOOGLE_CLIENT_ID =
@@ -110,19 +111,23 @@ export const normalizeUserProfile = (data) => {
         raw.phoneNumber ||
         "";
 
-    const avatar =
+    const nurseStatus = raw.nurseProfile?.status ?? (raw.verificationStatus ?? null);
+    const practitionerType = raw.nurseProfile?.practitionerType ?? (raw.practitionerType ?? 1);
+
+    const rawAvatar =
         raw.customerProfile?.avatarUrl ||
         raw.nurseProfile?.avatarUrl ||
         raw.avatarUrl ||
         raw.avatar ||
-        (role === "caregiver"
-            ? "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300"
-            : role === "admin"
-            ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200"
-            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200");
+        "";
 
-    const nurseStatus = raw.nurseProfile?.status ?? (raw.verificationStatus ?? null);
-    const practitionerType = raw.nurseProfile?.practitionerType ?? (raw.practitionerType ?? 1);
+    const avatar =
+        role === "caregiver"
+            ? resolveNurseAvatar(rawAvatar, name, raw.email, practitionerType)
+            : rawAvatar ||
+              (role === "admin"
+                  ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200"
+                  : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200");
 
     const emergencyContact = raw.customerProfile
         ? {

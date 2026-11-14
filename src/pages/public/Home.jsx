@@ -97,31 +97,31 @@ const processSteps = [
     },
 ];
 
-// 3. Dữ liệu danh sách điều dưỡng (Đã thay link ảnh chuẩn, không lỗi)
+// 3. Dữ liệu danh sách điều dưỡng (Ảnh thật điều dưỡng & sinh viên điều dưỡng Việt Nam mặc áo blouse trắng)
 const caregivers = [
     {
-        name: "Nguyễn Thùy Linh",
-        role: "Sinh viên Y4 - ĐH Y Hà Nội",
-        rating: "4.9",
-        image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400", // Đã fix
+        name: "Nguyễn Thị Mai Lan",
+        role: "Cử nhân Điều dưỡng - ĐH Y Dược TP.HCM",
+        rating: "5.0",
+        image: "/images/nurses/mai-lan.jpg",
         skills: ["TIÊM TRUYỀN", "THAY BĂNG", "VẬT LÝ TRỊ LIỆU"],
         quote: `"Luôn coi bệnh nhân như người thân trong gia đình, chăm sóc bằng cả trái tim và kiến thức chuyên môn."`,
     },
     {
-        name: "Trần Minh Quân",
-        role: "Điều dưỡng đa khoa - 3 năm KN",
-        rating: "5.0",
-        image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400", // Đã fix
-        skills: ["CHĂM SÓC SAU MỔ", "CẤP CỨU"],
+        name: "Trần Văn Minh",
+        role: "Cử nhân Điều dưỡng - ĐH Y khoa Phạm Ngọc Thạch",
+        rating: "4.9",
+        image: "/images/nurses/van-minh.jpg",
+        skills: ["CHĂM SÓC SAU MỔ", "THAY BĂNG VÔ KHUẨN"],
         quote: `"Chuyên môn vững vàng, bình tĩnh trong mọi tình huống. Luôn nỗ lực đem lại sự thoải mái nhất cho bệnh nhân."`,
     },
     {
-        name: "Lê Phương Hoa",
-        role: "Cử nhân Phục hồi chức năng",
+        name: "Lê Thị Thảo",
+        role: "Sinh viên Y đa khoa năm 5 - ĐH Y Dược TP.HCM",
         rating: "4.8",
-        image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400", // Đã fix
-        skills: ["XOA BÓP BẤM HUYỆT", "DINH DƯỠNG"],
-        quote: `"Kết hợp y học hiện đại và các phương pháp phục hồi tự nhiên để tăng cường sức khỏe cho người lớn tuổi."`,
+        image: "/images/nurses/le-thao.jpg",
+        skills: ["CHĂM SÓC CƠ BẢN", "THEO DÕI SINH HIỆU"],
+        quote: `"Kết hợp kiến thức y khoa bài bản và sự tận tâm để đồng hành chăm sóc sức khỏe cho ông bà mỗi ngày."`,
     },
 ];
 
