@@ -30,6 +30,7 @@
 | **Check-in GPS & Soft Check-in** | Vy | 🥈 `Build-Passed` | `CaregiverBookingRequests.jsx`, `caregiverApi.js` | Gửi `currentLocationText` cùng tọa độ GPS thiết bị khi điều dưỡng bấm bắt đầu ca trực. |
 | **Admin Thống kê Điều dưỡng** | Vy | 🥈 `Build-Passed` | `AdminNurseStatistics.jsx`, `AdminLayout.jsx`, `adminApi.js` | Bảng Data Table thống kê ca trực, tỷ lệ hoàn thành, doanh thu, số dư ví và Drawer sao kê chi tiết (`/admin/nurse-statistics`). |
 | **Quyết toán Ví & Chuẩn hóa Payout** | Vy | 🥈 `Build-Passed` | `AdminFinance.jsx`, `adminApi.js` | Sửa đảo ngược enum PayoutRequestStatus (`1=Pending, 2=Approved, 3=Rejected`), thêm modal nhập mã tham chiếu ngân hàng và ghi chú. |
+| **Cài đặt Hệ thống Quản trị & Public Config** | Vy | 🥈 `Build-Passed` | `AdminSettings.jsx`, `ConfirmSettingModal.jsx`, `Footer.jsx`, `adminApi.js` | Quản trị 5 cấu hình trọng yếu (phí sàn, rút tiền tối thiểu, hotline, email hỗ trợ/riêng tư); Bento Cards, Modal cảnh báo và đồng bộ Footer. |
 
 ---
 

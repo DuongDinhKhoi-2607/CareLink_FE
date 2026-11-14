@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import adminApi from "../api/adminApi";
 
 const footerLinkGroups = [
     {
@@ -29,6 +30,26 @@ const footerLinkGroups = [
 ];
 
 export default function Footer() {
+    const [publicConfig, setPublicConfig] = useState(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        adminApi.getPublicConfig()
+            .then((res) => {
+                if (isMounted && res) {
+                    const data = res.data || res;
+                    setPublicConfig(data);
+                }
+            })
+            .catch(() => {
+                // Silently fallback to defaults
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const displayHotline = publicConfig?.hotline?.trim() ? publicConfig.hotline.trim() : "1900 1234";
     return (
         <footer className="w-full bg-[#142334] text-white py-8 sm:py-9 px-6 sm:px-10 lg:px-16 border-t border-slate-700/50">
             <div className="max-w-7xl mx-auto flex flex-col gap-6">
@@ -89,7 +110,7 @@ export default function Footer() {
                             </div>
 
                             <span className="text-[11.5px] text-slate-400">
-                                Hotline: <a href="tel:19001234" className="text-cyan-300 font-semibold hover:underline">1900 1234</a> (24/7)
+                                Hotline: <a href={`tel:${displayHotline.replace(/\s+/g, "")}`} className="text-cyan-300 font-semibold hover:underline">{displayHotline}</a> (24/7)
                             </span>
                         </div>
                     </div>

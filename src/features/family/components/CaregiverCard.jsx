@@ -188,10 +188,6 @@ export default function CaregiverCard({
                             </div>
 
                             <div className="text-right shrink-0 flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold tracking-tight shadow-2xs">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Sẵn sàng nhận ca
-                                </span>
                                 {onToggleFavorite && (
                                     <button
                                         type="button"

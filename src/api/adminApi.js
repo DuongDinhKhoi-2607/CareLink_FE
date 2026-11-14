@@ -71,6 +71,14 @@ export const adminApi = {
         axiosClient.get("/api/v1/admin/nurses/statistics", { params }),
     getNurseDetailStatistics: (nurseId) =>
         axiosClient.get(`/api/v1/admin/nurses/statistics/${nurseId}`),
+
+    // ── 9. Cài đặt hệ thống toàn sàn (System Settings & Public Config) ──
+    getSystemSettings: () =>
+        axiosClient.get("/api/v1/admin/settings"),
+    updateSystemSettings: (data) =>
+        axiosClient.put("/api/v1/admin/settings", data),
+    getPublicConfig: () =>
+        axiosClient.get("/api/v1/system/public-config"),
 };
 
 export default adminApi;

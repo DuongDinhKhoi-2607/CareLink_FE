@@ -56,6 +56,7 @@ const AdminFinance = lazy(() => import("./features/admin/pages/AdminFinance"));
 const AdminHandbook = lazy(() => import("./features/admin/pages/AdminHandbook"));
 const AdminDisputes = lazy(() => import("./features/admin/pages/AdminDisputes"));
 const AdminNurseStatistics = lazy(() => import("./features/admin/pages/AdminNurseStatistics"));
+const AdminSettings = lazy(() => import("./features/admin/pages/AdminSettings"));
 
 function RouteFallback() {
   return (
@@ -153,6 +154,7 @@ export default function App() {
             <Route path="/admin/nurse-statistics" element={<AdminNurseStatistics />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
             <Route path="/admin/handbook" element={<AdminHandbook />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
           </Route>
           </Routes>
         </Suspense>

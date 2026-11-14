@@ -191,6 +191,15 @@
 
 ---
 
+### 📂 Phân Hệ 9: Cài Đặt Hệ Thống & Cấu Hình Công Khai (`src/api/adminApi.js` — 3 APIs)
+| STT | HTTP Method | Route Backend | Tên hàm client | Màn hình / Component FE | Quyền (Role) | Cấp độ kiểm chứng | Ghi chú & Tình huống |
+| :---: | :--- | :--- | :--- | :--- | :--- :---: | :---: | :--- |
+| 115 | `GET` | `/api/v1/admin/settings` | `getSystemSettings()` | `AdminSettings.jsx` | Admin | 🥈 **Build-Passed** | Tải danh sách 5 cấu hình trọng yếu (phí sàn, ngưỡng rút tiền, hotline, 2 email). |
+| 116 | `PUT` | `/api/v1/admin/settings` | `updateSystemSettings(data)` | `AdminSettings.jsx`, `ConfirmSettingModal.jsx` | Admin | 🥈 **Build-Passed** | Cập nhật giá trị cấu hình có modal xác nhận, validate chặt chẽ và không ảnh hưởng ca trực cũ. |
+| 117 | `GET` | `/api/v1/system/public-config` | `getPublicConfig()` | `Footer.jsx` | Khách/All | 🥈 **Build-Passed** | Đọc cấu hình công khai (hotline, email hỗ trợ) cho Footer và các trang công cộng. |
+
+---
+
 ## 📌 BẢO ĐẢM TÍNH TRUNG THỰC VỀ TRẠNG THÁI KIỂM CHỨNG
 1. **API Upload tài liệu điều dưỡng (STT 44 - `uploadDocuments`):** Đã được đính chính thành **`Build-Passed (Chờ test Supabase)`** vì mới hoàn thành code client và DTO, chưa chạy upload file ảnh thật vào Supabase Storage.
-2. **Đầy đủ 100%:** Toàn bộ 114 phương thức API trong các tệp client đều đã được liệt kê chi tiết từng dòng, đồng bộ đầy đủ với Backend V2.1!
+2. **Đầy đủ 100%:** Toàn bộ 117 phương thức API trong các tệp client đều đã được liệt kê chi tiết từng dòng, đồng bộ đầy đủ với Backend V2.1!

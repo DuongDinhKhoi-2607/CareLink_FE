@@ -418,10 +418,10 @@ export default function AdminLayout() {
                         )}
                     </div>
 
-                    {/* Navigation Items */}
-                    <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+                    {/* Navigation Items — Tối ưu khoảng cách để 100% không bị tràn cuộn trên màn hình chuẩn, thanh cuộn mờ tinh tế */}
+                    <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto custom-sidebar-scroll">
                         {!isCollapsed && (
-                            <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400/80 uppercase tracking-widest">
+                            <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400/80 uppercase tracking-widest">
                                 Quản trị hệ thống
                             </div>
                         )}
@@ -431,7 +431,7 @@ export default function AdminLayout() {
                                 <Link
                                     key={item.path}
                                     to={item.path}
-                                    className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
+                                    className={`relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all group ${
                                         active
                                             ? "bg-teal-500/20 text-teal-300 font-semibold shadow-xs"
                                             : "text-slate-300 hover:text-white hover:bg-white/8"
@@ -491,13 +491,15 @@ export default function AdminLayout() {
                     {/* Sidebar Footer — Gọn gàng thanh lịch, loại bỏ card trùng lặp với Header */}
                     <div className="p-3 border-t border-[#2a3c4e]/80 shrink-0 space-y-1">
                         <Link
-                            to="/admin"
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/8 transition-colors ${
-                                isCollapsed ? "justify-center" : ""
-                            }`}
+                            to="/admin/settings"
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                                location.pathname === "/admin/settings"
+                                    ? "bg-teal-500/20 text-teal-300 font-semibold shadow-xs"
+                                    : "text-slate-300 hover:text-white hover:bg-white/8"
+                            } ${isCollapsed ? "justify-center" : ""}`}
                             title="Cài đặt hệ thống"
                         >
-                            <Settings className="w-4 h-4 shrink-0 text-slate-400" />
+                            <Settings className={`w-4 h-4 shrink-0 ${location.pathname === "/admin/settings" ? "text-teal-400" : "text-slate-400"}`} />
                             {!isCollapsed && <span>Cài đặt hệ thống</span>}
                         </Link>
                         <Link
@@ -567,6 +569,28 @@ export default function AdminLayout() {
                                     );
                                 })}
                             </nav>
+                            <div className="p-3 border-t border-[#2a3c4e]/80 shrink-0 space-y-1">
+                                <Link
+                                    to="/admin/settings"
+                                    onClick={() => setMobileOpen(false)}
+                                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium ${
+                                        location.pathname === "/admin/settings"
+                                            ? "bg-teal-500/20 text-teal-300 font-semibold"
+                                            : "text-slate-300 hover:bg-white/8"
+                                    }`}
+                                >
+                                    <Settings className={`w-4 h-4 shrink-0 ${location.pathname === "/admin/settings" ? "text-teal-400" : "text-slate-400"}`} />
+                                    <span>Cài đặt hệ thống</span>
+                                </Link>
+                                <Link
+                                    to="/"
+                                    onClick={() => setMobileOpen(false)}
+                                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-teal-300 hover:bg-white/8 transition-colors"
+                                >
+                                    <Home className="w-4 h-4 shrink-0 text-slate-400" />
+                                    <span>Về trang chủ</span>
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 )}

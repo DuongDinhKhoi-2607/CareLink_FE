@@ -452,7 +452,7 @@ export default function CaregiverLayout() {
                     </div>
 
                     {/* Nav items */}
-                    <nav className="flex flex-col gap-1.5 p-3 flex-1 overflow-y-auto">
+                    <nav className="flex flex-col gap-1.5 p-3 flex-1 overflow-y-auto custom-sidebar-scroll">
                         {currentNavItems.map((item) => {
                             const active = isActive(item.path);
                             return (
