@@ -47,7 +47,7 @@ dotnet test --filter "FullyQualifiedName=CareLinkAPI.Tests.DemoDbSeeder.ResetAnd
 │                                                                           │            │
 │ [5. Bệnh án & Nghiệm thu] <── [4. Đặt lịch, Deal Chat & PayOS] <──────────┘            │
 │            │                                                                           │
-│            └──> [6. Ví tiền & Duyệt rút Admin] ──> [7. Đánh giá, Khiếu nại & Cẩm nang] │
+│            └──> [6. Ví tiền & Duyệt rút Admin] ──> [7. Cài đặt sàn, Outcome 3 & Vận hành]   │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -151,16 +151,20 @@ dotnet test --filter "FullyQualifiedName=CareLinkAPI.Tests.DemoDbSeeder.ResetAnd
      - Anh Long bấm thanh toán -> Mở cổng **VietQR PayOS** (250.000đ tiền công + 60.000đ phí sàn cố định CareLink).
      - Sau khi quét mã thanh toán thành công -> Ca chuyển sang **`Accepted (ĐÃ TIẾP NHẬN)`**!
 
-* **Kịch bản B: Đặt ca trực tiếp 1-chạm ngoài Profile (Direct Booking Workflow)**
+* **Kịch bản B: Đặt ca trực tiếp 1-chạm ngoài Profile (Direct Booking Workflow & Sổ địa chỉ)**
   1. **Tại Tab 1 (Khách Long):**
-     - Tại trang Profile Điều dưỡng Lan, bấm **"Đặt lịch ca trực ngay"**.
-     - Chọn Cụ An, gói dịch vụ, khung giờ 22:00 -> Bấm **"Xác nhận gửi yêu cầu"**.
-     - Đơn được gửi tới Điều dưỡng ở trạng thái **`PendingAcceptance (Chờ điều dưỡng nhận)`**.
-  2. **Tại Tab 2 (Điều dưỡng Lan):**
-     - Mở mục **"Yêu cầu nhận ca"** (`/caregiver/bookings`): Thấy ca trực của Anh Long -> Bấm **"Chấp nhận ca"**.
-     - Ca chuyển sang trạng thái **`Chờ thanh toán (PendingPayment)`** (hiện rõ badge giữ chỗ 30 phút, chống bấm lặp).
-  3. **Tại Tab 1 (Khách Long thanh toán):**
-     - Anh Long vào **"Lịch hẹn"** (`/dashboard/appointments`) -> Thấy nút **"Thanh toán ngay"** -> Quét mã VietQR PayOS -> Hoàn tất!
+     - Tại trang Profile Điều dưỡng Lan (`/caregivers/profile`), bấm **"Đặt ca trực với Nguyễn Thị Mai Lan"**.
+     - Modal 3 bước mở ra:
+       - *Bước 1 - Người nhận & Địa chỉ:* Chọn người thân (Cụ An). Địa chỉ được chọn nhanh từ **Sổ địa chỉ chăm sóc** đã lưu trong Hồ sơ gia đình (hoặc bấm *"+ Thêm địa chỉ mới"* nếu đến địa điểm khác). Thể hiện rõ: Bệnh nhân có **Liên hệ khẩn cấp** để điều dưỡng liên lạc ngay khi có sự cố sinh hiệu bất thường.
+       - *Bước 2 - Gói dịch vụ & Khung giờ:* Chọn dịch vụ Chăm sóc người cao tuổi, chọn khung giờ rảnh trong ngày.
+       - *Bước 3 - Xác nhận & Chi phí:* Xem tóm tắt chi phí (Tiền công điều dưỡng + Phí sàn 60k). Bấm **"Xác nhận gửi yêu cầu"**.
+     - *Điểm nhấn logic y tế:* Đơn được gửi tới Điều dưỡng ở trạng thái **`PendingAcceptance (Chờ điều dưỡng tiếp nhận)`**. Khách hàng chưa bị trừ tiền ngay!
+       > *Giải thích với Thầy/Cô: "Trong y tế gia đình, người bệnh không phải là món hàng tiêu dùng thông thường. Điều dưỡng cần xem xét bệnh lý, tiền sử tim mạch và khoảng cách địa lý trước khi nhận ca. Việc điều dưỡng xác nhận nhận ca trước khi khách thanh toán giúp loại bỏ hoàn toàn phiền toái hoàn tiền (refund) nếu phát sinh bất tương thích chuyên môn."*
+  2. **Tại Tab 2 (Điều dưỡng Lan tiếp nhận):**
+     - Mở mục **"Yêu cầu nhận ca"** (`/caregiver/bookings`): Thấy hồ sơ đặt ca của cụ An -> Bấm **"Chấp nhận ca"**.
+     - Hệ thống lập tức kích hoạt cơ chế giữ chỗ: Ca chuyển sang trạng thái **`Chờ thanh toán (PendingPayment)`** với đồng hồ đếm ngược giữ chỗ **30 phút** (khóa khung giờ, chống trùng lịch).
+  3. **Tại Tab 1 (Khách Long thanh toán PayOS):**
+     - Khách Long nhận thông báo điều dưỡng đã nhận ca -> Mở **"Lịch hẹn"** (`/dashboard/appointments`) -> Bấm **"Thanh toán ngay"** -> Quét mã QR PayOS -> Ca chuyển sang **`Accepted (Đã tiếp nhận)`** sẵn sàng thực hiện!
 
 #### 🎙️ Lời thoại Bước 4:
 > *"Thưa Thầy/Cô, CareLink mang đến trải nghiệm 2 trong 1: Khách hàng có thể **Đặt lịch nhanh 1 chạm** theo lịch rảnh thực tế, hoặc **Đàm phán trong Chat** nếu ca bệnh phức tạp cần thương lượng giá.*  
@@ -261,6 +265,23 @@ dotnet test --filter "FullyQualifiedName=CareLinkAPI.Tests.DemoDbSeeder.ResetAnd
   - Bấm mở bài viết *"5 Dấu hiệu suy giảm sức khỏe ở người cao tuổi"*:
     - Cho cô xem giao diện bài viết chuyên nghiệp, biểu tượng ống nghe y tế trang nhã.
     - Cuộn xuống chân bài viết: Có mục **"Tài liệu tham khảo"** trích dẫn nguồn uy tín để người dân bấm vào đọc bài báo gốc.
+
+#### 🌟 4. Cài đặt Hệ thống Quản trị Toàn sàn (`/admin/settings`):
+* **Tại Tab 3 (Admin):** Bấm vào mục **"Cài đặt hệ thống"** (`/admin/settings`) trên thanh điều hướng bên trái:
+  - Cho Thầy/Cô xem các thông số cấu hình cốt lõi điều khiển toàn bộ nền tảng:
+    - **Phí nền tảng (Platform Fee):** Hiện hành `60.000 VNĐ / ca` (theo quyết định kiến trúc ADR-002, cố định minh bạch thay vì trừ % gây áp lực thù lao điều dưỡng).
+    - **Hạn mức rút tiền tối thiểu:** `50.000 VNĐ` (bảo vệ thanh khoản ví và giảm tải chi phí giao dịch ngân hàng).
+    - **Thời gian giữ chỗ thanh toán:** `30 phút` (sau 30 phút nếu khách không quét PayOS thì slot rảnh tự động nhả ra cho gia đình khác đặt).
+    - **Kênh liên hệ khẩn cấp & CSKH:** Hotline hỗ trợ 24/7 và Email quyền riêng tư y tế.
+  - *Điểm nhấn kiến trúc:* Khi Admin điều chỉnh thông số và bấm **"Lưu thay đổi"**, toàn bộ bảng tính chi phí ở phía Khách hàng và Điều dưỡng tự động cập nhật tức thì qua API mà không cần can thiệp mã nguồn hay deploy lại hệ thống.
+
+#### 🌟 5. Giám sát Lưu lượng & Phân tích Tương tác Khách hàng Thời gian thực (EXE Outcome 3 Tracking):
+* **Tại Tab 3 (Admin):** Vào trang **"Tổng quan"** (`/admin/dashboard`):
+  - **Biểu đồ Phễu chuyển đổi (Conversion Funnel):** Thể hiện trực quan hành trình người dùng thực tế: *Ghé thăm website -> Tìm kiếm & xem hồ sơ điều dưỡng -> Gửi yêu cầu đặt lịch -> Hoàn tất thanh toán*.
+  - **Bảng Nhật ký tương tác gần đây (Activity Logs):**
+    - Hệ thống tự động ghi nhận (telemetry) mọi hành vi thực tế của khách hàng (kể cả khách vãng lai): Xem trang chủ, tìm kiếm theo quận, xem chi tiết điều dưỡng, đăng nhập, đặt ca.
+    - Tích hợp **Phân trang thông minh (Smart Pagination)**: Hỗ trợ tùy chọn 10 / 20 / 50 dòng trên mỗi trang, chuyển nhanh tới trang bất kỳ `[1] [2] ... [20]`.
+    - *Điểm nhấn chuẩn đầu ra EXE201:* Chứng minh với Hội đồng môn học rằng CareLink không chỉ là một ứng dụng code mẫu, mà đã có dữ liệu tương tác thực tế từ người dùng thật phục vụ khảo sát thị trường và đánh giá hiệu quả sản phẩm (Outcome 3).
 
 ---
 
