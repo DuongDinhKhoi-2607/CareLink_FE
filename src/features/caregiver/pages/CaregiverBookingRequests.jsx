@@ -781,7 +781,7 @@ export default function CaregiverBookingRequests() {
     ];
 
     return (
-        <div className="p-5 sm:p-8 max-w-6xl mx-auto animate-page-enter">
+        <div className="p-4 sm:p-8 max-w-6xl mx-auto animate-page-enter">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -822,7 +822,7 @@ export default function CaregiverBookingRequests() {
             )}
 
             {/* Filter tabs */}
-            <div className="flex items-center gap-2 mb-6 flex-wrap">
+            <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 scrollbar-none sm:flex-wrap">
                 {TABS.map((t) => (
                     <FilterTab
                         key={t.key}

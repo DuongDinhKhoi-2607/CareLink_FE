@@ -139,10 +139,18 @@ export default function DashboardLayout() {
 
     return (
         <div className="min-h-screen md:h-screen bg-[#f7fafc] flex flex-col md:flex-row font-sans text-[#102030] antialiased md:overflow-hidden">
+            {/* Backdrop on mobile when menu open */}
+            {mobileMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 md:hidden"
+                    onClick={() => setMobileMenuOpen(false)}
+                />
+            )}
+
             {/* Sidebar bên trái: Chiều rộng 245px, màu sắc ngà ánh xanh dịu mắt, ấm áp chuẩn Gia đình */}
             <aside
                 className={`w-full ${isCollapsed ? "md:w-[72px]" : "md:w-[245px]"
-                    } bg-[#f0f5f7] border-r border-slate-200/80 flex flex-col shrink-0 transition-all duration-300 ease-in-out md:self-stretch md:h-screen`}
+                    } bg-[#f0f5f7] border-r border-slate-200/80 flex flex-col shrink-0 transition-all duration-300 ease-in-out md:self-stretch md:h-screen sticky top-0 z-40 md:static shadow-xs md:shadow-none`}
             >
                 {/* Header của Sidebar */}
                 {isCollapsed ? (
@@ -223,7 +231,7 @@ export default function DashboardLayout() {
                 {/* Danh sách mục điều hướng */}
                 <nav
                     className={`flex-1 ${isCollapsed ? "px-2" : "px-3"
-                        } py-4 flex flex-col gap-1.5 ${mobileMenuOpen ? "block" : "hidden md:flex"}`}
+                        } py-4 flex flex-col gap-1.5 max-h-[calc(100vh-180px)] overflow-y-auto md:max-h-none ${mobileMenuOpen ? "block" : "hidden md:flex"}`}
                 >
                     {navigationItems.map((item) => {
                         const isActive = location.pathname === item.path;

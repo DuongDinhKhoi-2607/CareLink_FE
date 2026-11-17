@@ -639,79 +639,123 @@ export default function FamilyWallet() {
                         </p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/70 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                                    <th className="py-3.5 px-6">Mã giao dịch</th>
-                                    <th className="py-3.5 px-6">Phân loại</th>
-                                    <th className="py-3.5 px-6">Chi tiết nội dung</th>
-                                    <th className="py-3.5 px-6">Thời gian</th>
-                                    <th className="py-3.5 px-6 text-right">Số tiền</th>
-                                    <th className="py-3.5 px-6 text-center">Trạng thái</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredTransactions.map((tx) => {
-                                    const isPositive = tx.type === "refund";
-                                    return (
-                                        <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
-                                            <td className="py-4 px-6 font-bold text-slate-800 font-mono">
-                                                {tx.id}
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <span
-                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-2xs ${
-                                                        isPositive
-                                                            ? "bg-purple-50 text-purple-700 border border-purple-200/90"
-                                                            : "bg-slate-100 text-slate-700 border border-slate-200"
-                                                    }`}
-                                                >
-                                                    {isPositive ? (
-                                                        <ArrowDownLeft className="w-3 h-3 text-purple-600" />
-                                                    ) : (
-                                                        <ArrowUpRight className="w-3 h-3 text-slate-500" />
-                                                    )}
-                                                    <span>
-                                                        {isPositive ? "Tiền hoàn ca hủy" : "Chi tiêu đặt ca"}
+                    <>
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr className="border-b border-slate-100 bg-slate-50/70 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                                        <th className="py-3.5 px-6">Mã giao dịch</th>
+                                        <th className="py-3.5 px-6">Phân loại</th>
+                                        <th className="py-3.5 px-6">Chi tiết nội dung</th>
+                                        <th className="py-3.5 px-6">Thời gian</th>
+                                        <th className="py-3.5 px-6 text-right">Số tiền</th>
+                                        <th className="py-3.5 px-6 text-center">Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredTransactions.map((tx) => {
+                                        const isPositive = tx.type === "refund";
+                                        return (
+                                            <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
+                                                <td className="py-4 px-6 font-bold text-slate-800 font-mono">
+                                                    {tx.id}
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <span
+                                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-2xs ${
+                                                            isPositive
+                                                                ? "bg-purple-50 text-purple-700 border border-purple-200/90"
+                                                                : "bg-slate-100 text-slate-700 border border-slate-200"
+                                                        }`}
+                                                    >
+                                                        {isPositive ? (
+                                                            <ArrowDownLeft className="w-3 h-3 text-purple-600" />
+                                                        ) : (
+                                                            <ArrowUpRight className="w-3 h-3 text-slate-500" />
+                                                        )}
+                                                        <span>
+                                                            {isPositive ? "Tiền hoàn ca hủy" : "Chi tiêu đặt ca"}
+                                                        </span>
                                                     </span>
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <p className="font-bold text-slate-900">{tx.title}</p>
-                                                <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{tx.note}</p>
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                                                <span className="font-medium">{tx.date}</span>
-                                                {tx.time && (
-                                                    <span className="block text-[10px] text-slate-400 font-mono mt-0.5">{tx.time}</span>
-                                                )}
-                                            </td>
-                                            <td className="py-4 px-6 text-right font-extrabold text-sm whitespace-nowrap">
-                                                <span className={isPositive ? "text-purple-600" : "text-slate-800"}>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <p className="font-bold text-slate-900">{tx.title}</p>
+                                                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{tx.note}</p>
+                                                </td>
+                                                <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                                                    <span className="font-medium">{tx.date}</span>
+                                                    {tx.time && (
+                                                        <span className="block text-[10px] text-slate-400 font-mono mt-0.5">{tx.time}</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 px-6 text-right font-extrabold text-sm whitespace-nowrap">
+                                                    <span className={isPositive ? "text-purple-600" : "text-slate-800"}>
+                                                        {isPositive ? "+" : "-"}
+                                                        {tx.amount.toLocaleString("vi-VN")} đ
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 px-6 text-center whitespace-nowrap">
+                                                    {(() => {
+                                                        const meta = getStatusMeta(tx.status, tx.type);
+                                                        return (
+                                                            <span
+                                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${meta.badgeClass}`}
+                                                            >
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dotClass}`} />
+                                                                <span>{tx.status}</span>
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Card List View */}
+                        <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                            {filteredTransactions.map((tx) => {
+                                const isPositive = tx.type === "refund";
+                                const meta = getStatusMeta(tx.status, tx.type);
+                                return (
+                                    <div key={tx.id} className="p-3.5 bg-slate-50/50 rounded-2xl border border-slate-200/70 space-y-2.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="font-mono text-[11px] font-bold text-slate-500">
+                                                #{tx.id}
+                                            </span>
+                                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${meta.badgeClass}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dotClass}`} />
+                                                <span>{tx.status}</span>
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-slate-900 text-xs">{tx.title}</p>
+                                                <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{tx.note}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className={`font-extrabold text-xs sm:text-sm ${isPositive ? "text-purple-600" : "text-slate-800"}`}>
                                                     {isPositive ? "+" : "-"}
                                                     {tx.amount.toLocaleString("vi-VN")} đ
                                                 </span>
-                                            </td>
-                                            <td className="py-4 px-6 text-center whitespace-nowrap">
-                                                {(() => {
-                                                    const meta = getStatusMeta(tx.status, tx.type);
-                                                    return (
-                                                        <span
-                                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${meta.badgeClass}`}
-                                                        >
-                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dotClass}`} />
-                                                            <span>{tx.status}</span>
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
+                                            <span className="font-medium text-slate-500">{tx.date} {tx.time || ""}</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-slate-200 font-medium text-slate-600">
+                                                {isPositive ? "Hoàn tiền ca hủy" : "Đặt ca"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </div>
         </div>

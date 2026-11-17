@@ -704,7 +704,7 @@ export default function Appointments() {
 
             {/* Thanh Tab gạch chân (Underline Tabs) chuẩn y như hình ảnh mẫu */}
             <div className="border-b border-slate-200">
-                <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto">
+                <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto scrollbar-none">
                     {/* Tab: Sắp tới */}
                     <button
                         type="button"

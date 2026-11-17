@@ -756,7 +756,8 @@ export default function AdminFinance() {
                             </button>
                         </div>
                     )}
-                    <div className="overflow-x-auto">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -820,6 +821,58 @@ export default function AdminFinance() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Mobile Card List View */}
+                    <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                        {filteredTx.length === 0 ? (
+                            <div className="py-12 text-center text-slate-400 text-xs">
+                                <CircleDollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                <p className="font-semibold">Không tìm thấy giao dịch nào</p>
+                            </div>
+                        ) : (
+                            filteredTx.map((t) => (
+                                <div key={t.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-2.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="font-mono text-xs font-black text-[#00677c]">{t.id}</span>
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${TX_STATUS[t.status] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                                            {t.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400 text-[11px]">Gia đình:</span>
+                                            <span className="font-bold text-slate-800">{t.family}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400 text-[11px]">Điều dưỡng:</span>
+                                            <span className="font-semibold text-slate-700">{t.caregiver}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400 text-[11px]">Loại giao dịch:</span>
+                                            <span className="font-medium text-slate-700">{t.type}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 p-2 bg-white rounded-xl border border-slate-200/60 text-[11px]">
+                                        <div>
+                                            <span className="text-slate-400 block text-[10px]">Phí sàn CareLink:</span>
+                                            <span className="font-bold text-purple-600">{t.platformFee > 0 ? formatVND(t.platformFee) : "—"}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-slate-400 block text-[10px]">Điều dưỡng nhận:</span>
+                                            <span className="font-bold text-emerald-700">{t.caregiverPay > 0 ? formatVND(t.caregiverPay) : "—"}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                        <span className="text-[11px] text-slate-400">{t.date} · {t.time}</span>
+                                        <span className="font-black text-slate-900 text-xs sm:text-sm">{formatVND(t.amount)}</span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                     <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/60">
                         <span>Tổng <strong className="text-slate-700">{filteredTx.length}</strong> giao dịch</span>
                         <span className="text-emerald-600 font-semibold">
@@ -832,7 +885,8 @@ export default function AdminFinance() {
             {/* ── WITHDRAWAL TABLE ── */}
             {activeTab === "withdrawals" && (
                 <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-                    <div className="overflow-x-auto">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -950,6 +1004,87 @@ export default function AdminFinance() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile Card List View */}
+                    <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                        {filteredWd.length === 0 ? (
+                            <div className="py-12 text-center text-slate-400 text-xs">
+                                <Banknote className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                <p className="font-semibold">Không tìm thấy yêu cầu rút tiền nào</p>
+                            </div>
+                        ) : (
+                            filteredWd.map((w) => {
+                                const sc = WD_STATUS[w.status] || WD_STATUS["Chờ duyệt"];
+                                const isPending = w.status === "Chờ duyệt";
+                                const isCustomer = w.role === "Khách hàng";
+                                return (
+                                    <div key={w.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-xs font-black text-[#00677c]">{w.id}</span>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                                                    isCustomer ? "bg-purple-50 text-purple-800 border-purple-200" : "bg-teal-50 text-[#00677c] border-teal-200"
+                                                }`}>
+                                                    {w.role || "Điều dưỡng"}
+                                                </span>
+                                            </div>
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 ${sc.badge}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                                                {w.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-1.5 text-xs">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-slate-400 text-[11px]">Người nhận:</span>
+                                                <span className="font-bold text-slate-800">{w.caregiver} ({w.caregiverPhone})</span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-slate-400 text-[11px]">Ngân hàng:</span>
+                                                <span className="font-semibold text-slate-700">{w.bank} · <span className="font-mono text-slate-500">{w.accountNumber}</span></span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-slate-400 text-[11px]">Lý do:</span>
+                                                <span className="text-slate-600 truncate max-w-[200px]">{w.reason || "Rút tiền"}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                            <div>
+                                                <span className="text-[10.5px] text-slate-400 block">{w.requestDate}</span>
+                                                <span className="font-black text-slate-900 text-sm">{formatVND(w.amount)}</span>
+                                            </div>
+
+                                            {isPending ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setApproveTarget(w)}
+                                                        disabled={actionLoadingId === w.id}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-xs transition-all border border-emerald-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs disabled:opacity-50"
+                                                    >
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                        Duyệt
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setRejectTarget(w)}
+                                                        disabled={actionLoadingId === w.id}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition-all border border-rose-200 cursor-pointer inline-flex items-center gap-1 shadow-2xs disabled:opacity-50"
+                                                    >
+                                                        <XCircle className="w-3.5 h-3.5" />
+                                                        Từ chối
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">—</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                     <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/60">
                         <span>Tổng <strong className="text-slate-700">{filteredWd.length}</strong> yêu cầu rút tiền</span>

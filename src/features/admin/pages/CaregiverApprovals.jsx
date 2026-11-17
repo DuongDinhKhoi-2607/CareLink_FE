@@ -370,7 +370,8 @@ export default function CaregiverApprovals() {
 
             {/* ── BẢNG DANH SÁCH ĐIỀU DƯỠNG (TABLE) ── */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -468,6 +469,78 @@ export default function CaregiverApprovals() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                    {filteredCaregivers.length === 0 ? (
+                        <div className="py-10 text-center text-slate-400 text-xs">
+                            Không tìm thấy hồ sơ điều dưỡng nào phù hợp.
+                        </div>
+                    ) : (
+                        filteredCaregivers.map((c) => (
+                            <div key={c.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#00677c] font-bold flex items-center justify-center border border-teal-100 shrink-0 text-sm">
+                                            {c.name.charAt(0)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="font-bold text-slate-900 text-xs sm:text-sm truncate">{c.name}</div>
+                                            <div className="text-[11px] text-slate-400 truncate">{c.email}</div>
+                                        </div>
+                                    </div>
+                                    <span
+                                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 ${
+                                            c.status === "Chờ duyệt"
+                                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                : c.status === "Đã duyệt"
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : c.status === "Từ chối"
+                                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                : "bg-slate-100 text-slate-600 border-slate-200"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`w-1.5 h-1.5 rounded-full ${
+                                                c.status === "Chờ duyệt"
+                                                    ? "bg-amber-500"
+                                                    : c.status === "Đã duyệt"
+                                                    ? "bg-emerald-500"
+                                                    : c.status === "Từ chối"
+                                                    ? "bg-rose-500"
+                                                    : "bg-slate-400"
+                                            }`}
+                                        />
+                                        {c.status}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-slate-100">
+                                    <span className="text-[11px] font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md">
+                                        {c.role}
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 font-medium">
+                                        {c.phone}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                                    <span className="text-[10.5px] text-slate-400">
+                                        Gửi: {c.submittedDate}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenDetail(c)}
+                                        className="px-3 py-1.5 rounded-xl bg-teal-50 text-[#00677c] hover:bg-[#00677c] hover:text-white font-bold text-xs transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
+                                    >
+                                        <span>Xem hồ sơ</span>
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

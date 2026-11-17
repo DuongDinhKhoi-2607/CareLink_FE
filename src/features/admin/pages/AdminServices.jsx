@@ -620,7 +620,8 @@ export default function AdminServices() {
 
             {/* ── BẢNG DANH SÁCH DỊCH VỤ (API 82, 81, 84, 85, 86) ── */}
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -774,6 +775,126 @@ export default function AdminServices() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                    {loading ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                            <div className="w-5 h-5 border-2 border-[#00677c] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                            <span>Đang tải danh sách dịch vụ...</span>
+                        </div>
+                    ) : filteredServices.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                            Không tìm thấy dịch vụ nào phù hợp với bộ lọc.
+                        </div>
+                    ) : (
+                        filteredServices.map((svc) => (
+                            <div key={svc.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-2.5 min-w-0">
+                                        {getServiceIcon(svc)}
+                                        <div className="min-w-0">
+                                            <h4
+                                                onClick={() => handleViewDetail(svc)}
+                                                className="font-bold text-slate-900 text-xs sm:text-sm hover:text-[#00677c] transition-colors cursor-pointer truncate"
+                                            >
+                                                {svc.name}
+                                            </h4>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-[10px] font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/50">
+                                                    {svc.category}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400">#{svc.id}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <span
+                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 ${
+                                            svc.isActive
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-slate-100 text-slate-600 border-slate-200"
+                                        }`}
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${svc.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                                        {svc.status}
+                                    </span>
+                                </div>
+
+                                {svc.description && (
+                                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                                        {svc.description}
+                                    </p>
+                                )}
+
+                                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                                    <div className="flex items-center gap-1 text-slate-500 text-[11px]">
+                                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>{svc.duration}</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-black text-[#00677c] text-sm">
+                                            {Number(svc.basePrice || 0).toLocaleString("vi-VN")} ₫
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 block text-right">sàn / ca</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleViewDetail(svc)}
+                                        className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-[#00677c] text-xs font-semibold flex items-center gap-1 shadow-2xs"
+                                    >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        <span>Chi tiết</span>
+                                    </button>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenEdit(svc)}
+                                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-[#00677c] font-bold text-slate-700 text-xs transition-colors flex items-center gap-1"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                            <span>Sửa</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            disabled={togglingId === svc.id}
+                                            onClick={() => handleToggleStatus(svc)}
+                                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 ${
+                                                svc.isActive
+                                                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200"
+                                                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                                            } disabled:opacity-50`}
+                                        >
+                                            {togglingId === svc.id ? (
+                                                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <Power className="w-3.5 h-3.5" />
+                                            )}
+                                            <span>{svc.isActive ? "Tạm ngưng" : "Kích hoạt"}</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setDeletingService(svc);
+                                                setDeleteModalOpen(true);
+                                            }}
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                            title="Xóa"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

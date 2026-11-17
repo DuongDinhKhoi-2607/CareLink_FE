@@ -1,5 +1,5 @@
-import React from "react";
-import { Heart } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, Heart } from "lucide-react";
 
 function CheckIcon({ className = "w-4 h-4" }) {
     return (
@@ -40,29 +40,62 @@ export default function CaregiverFilterSidebar({
     setOnlyFavorites,
     favoriteCount = 0,
 }) {
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const activeFiltersCount =
+        (onlyFavorites ? 1 : 0) +
+        (selectedQualifications?.length || 0) +
+        (selectedSpecialties?.length || 0) +
+        (selectedAvailability?.length || 0) +
+        (minRating ? 1 : 0) +
+        (activeService ? 1 : 0);
+
     return (
         <aside className="lg:sticky lg:top-5">
             <div className="bg-white border border-[#dfe8e5] rounded-2xl overflow-hidden shadow-[0_10px_35px_-28px_rgba(16,32,48,0.3)]">
-                <div className="px-5 py-4 border-b border-[#edf1ef] flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-bold text-[#102030]">
-                            Bộ lọc
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                            Tùy chỉnh kết quả
-                        </p>
+                <div
+                    onClick={() => setMobileOpen((prev) => !prev)}
+                    className="px-5 py-4 border-b border-[#edf1ef] flex items-center justify-between cursor-pointer lg:cursor-default"
+                >
+                    <div className="flex items-center gap-2">
+                        <div>
+                            <p className="text-sm font-bold text-[#102030] flex items-center gap-2">
+                                <span>Bộ lọc</span>
+                                {activeFiltersCount > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#00677c] text-white">
+                                        {activeFiltersCount}
+                                    </span>
+                                )}
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                                {activeFiltersCount > 0
+                                    ? `Đang áp dụng ${activeFiltersCount} bộ lọc`
+                                    : "Tùy chỉnh kết quả"}
+                            </p>
+                        </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={resetFilters}
-                        className="text-[11px] font-bold text-[#00677c] hover:text-[#005566] cursor-pointer"
-                    >
-                        Đặt lại
-                    </button>
+                    <div className="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                resetFilters();
+                            }}
+                            className="text-[11px] font-bold text-[#00677c] hover:text-[#005566] cursor-pointer"
+                        >
+                            Đặt lại
+                        </button>
+                        <button
+                            type="button"
+                            className="lg:hidden p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                            aria-label={mobileOpen ? "Thu gọn bộ lọc" : "Mở rộng bộ lọc"}
+                        >
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileOpen ? "rotate-180" : ""}`} />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="p-5 space-y-6">
+                <div className={`p-5 space-y-6 ${mobileOpen ? "block" : "hidden lg:block"}`}>
                     {/* HỒ SƠ YÊU THÍCH / SAVED */}
                     {setOnlyFavorites && (
                         <div className="pb-5 border-b border-[#edf1ef]">

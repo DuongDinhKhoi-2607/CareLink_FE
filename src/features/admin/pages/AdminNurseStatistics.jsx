@@ -234,7 +234,8 @@ export default function AdminNurseStatistics() {
 
             {/* Data Table */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -372,6 +373,101 @@ export default function AdminNurseStatistics() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                    {loading ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                            <div className="w-8 h-8 border-3 border-[#00677c] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                            <p className="font-semibold">Đang tải dữ liệu thống kê...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="py-12 text-center text-rose-500 text-xs">
+                            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-rose-400" />
+                            <p className="font-bold">{error}</p>
+                            <button
+                                type="button"
+                                onClick={fetchStatistics}
+                                className="mt-2 px-3 py-1 bg-rose-600 text-white rounded-lg font-bold text-xs hover:bg-rose-700 cursor-pointer"
+                            >
+                                Thử lại
+                            </button>
+                        </div>
+                    ) : statsData.items.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                            <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                            <p className="font-semibold">Không tìm thấy điều dưỡng nào phù hợp</p>
+                        </div>
+                    ) : (
+                        statsData.items.map((nurse) => (
+                            <div key={nurse.nurseId} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <img
+                                            src={nurse.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(nurse.fullName || "Nurse")}&background=00677c&color=fff`}
+                                            alt={nurse.fullName}
+                                            className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">{nurse.fullName}</p>
+                                            <p className="text-[11px] text-slate-400 truncate">{nurse.phoneNumber || nurse.email || "—"}</p>
+                                        </div>
+                                    </div>
+
+                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${nurse.isAcceptingBookings ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-slate-100 text-slate-500"}`}>
+                                        {nurse.isAcceptingBookings ? "Sẵn sàng" : "Tạm nghỉ"}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 p-2 bg-white rounded-xl border border-slate-200/60">
+                                    <div className="flex items-center gap-1">
+                                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                        <span className="truncate text-[11px]">{nurse.workDistrict || "Chưa cài"}</span>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1 font-bold text-slate-800 text-[11px]">
+                                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
+                                        <span>{Number(nurse.averageRating || 5).toFixed(1)}</span>
+                                        <span className="text-[10px] text-slate-400 font-normal">({nurse.totalReviews || 0})</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1 text-xs">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-400">Ca trực:</span>
+                                        <span className="font-bold text-slate-800">
+                                            {nurse.bookingStats?.totalBookings || 0} ca ({nurse.bookingStats?.completedBookings || 0} HT · {nurse.bookingStats?.canceledBookings || 0} Hủy)
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-400">Tỷ lệ hoàn thành:</span>
+                                        <span className="font-bold text-emerald-700">{Math.round(nurse.bookingStats?.completionRate || 0)}%</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-400">Thu nhập tích lũy:</span>
+                                        <span className="font-bold text-teal-800">{formatVND(nurse.financialStats?.totalEarned || 0)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-400">Số dư ví:</span>
+                                        <span className={`font-bold ${(nurse.financialStats?.currentWalletBalance || 0) < 0 ? "text-rose-600" : "text-slate-900"}`}>
+                                            {formatVND(nurse.financialStats?.currentWalletBalance || 0)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-slate-100 flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenDetail(nurse.nurseId)}
+                                        className="w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-[#00677c]/10 text-[#00677c] hover:bg-[#00677c] hover:text-white font-bold text-xs transition-colors cursor-pointer inline-flex items-center justify-center gap-1"
+                                    >
+                                        <span>Chi tiết năng lực & ca trực</span>
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Pagination */}

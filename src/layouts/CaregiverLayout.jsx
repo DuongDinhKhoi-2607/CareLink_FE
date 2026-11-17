@@ -235,7 +235,7 @@ export default function CaregiverLayout() {
     return (
         <div className="h-screen bg-[#f4f7f9] flex flex-col font-sans overflow-hidden">
             {/* ── Top Bar (Cố định ở trên cùng) ── */}
-            <header className="h-16 shrink-0 bg-white border-b border-slate-200/80 shadow-xs z-40 flex items-center px-4 sm:px-6 gap-4">
+            <header className="h-16 shrink-0 bg-white border-b border-slate-200/80 shadow-xs z-40 flex items-center px-3 sm:px-6 gap-2 sm:gap-4">
                 {/* Mobile hamburger */}
                 <button
                     type="button"
@@ -274,7 +274,7 @@ export default function CaregiverLayout() {
 
                     if (isApproved) {
                         return (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200" title="Tài khoản đã được duyệt">
+                            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200" title="Tài khoản đã được duyệt">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                                 <span className="text-xs font-semibold text-emerald-700 hidden sm:block">Đã xác minh</span>
                             </div>
@@ -282,7 +282,7 @@ export default function CaregiverLayout() {
                     }
                     if (isPending) {
                         return (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200" title="Đang chờ Quản trị viên duyệt">
+                            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200" title="Đang chờ Quản trị viên duyệt">
                                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                                 <span className="text-xs font-semibold text-amber-700 hidden sm:block">Đang xác minh</span>
                             </div>
@@ -290,14 +290,14 @@ export default function CaregiverLayout() {
                     }
                     if (isRejected) {
                         return (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200" title="Hồ sơ cần cập nhật hoặc bổ sung">
+                            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200" title="Hồ sơ cần cập nhật hoặc bổ sung">
                                 <span className="w-2 h-2 rounded-full bg-rose-500" />
                                 <span className="text-xs font-semibold text-rose-700 hidden sm:block">Cần bổ sung</span>
                             </div>
                         );
                     }
                     return (
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200" title="Chưa nộp hồ sơ chứng thực">
+                        <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200" title="Chưa nộp hồ sơ chứng thực">
                             <span className="w-2 h-2 rounded-full bg-slate-400" />
                             <span className="text-xs font-semibold text-slate-600 hidden sm:block">Chưa nộp hồ sơ</span>
                         </div>
@@ -308,7 +308,7 @@ export default function CaregiverLayout() {
                 <button
                     type="button"
                     onClick={() => setGuideOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100/90 text-[#00677c] hover:text-[#005466] border border-teal-200/90 transition-all text-xs font-semibold shadow-2xs hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-teal-50 hover:bg-teal-100/90 text-[#00677c] hover:text-[#005466] border border-teal-200/90 transition-all text-xs font-semibold shadow-2xs hover:scale-105 active:scale-95 cursor-pointer shrink-0"
                     title="Cẩm nang hướng dẫn sử dụng toàn diện Dashboard"
                 >
                     <span className="relative flex h-2 w-2">
@@ -366,7 +366,7 @@ export default function CaregiverLayout() {
                     <button
                         type="button"
                         onClick={() => setShowLogoutModal(true)}
-                        className="w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 flex items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
+                        className="hidden sm:flex w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
                         title="Đăng xuất khỏi hệ thống"
                         aria-label="Đăng xuất khỏi hệ thống"
                     >

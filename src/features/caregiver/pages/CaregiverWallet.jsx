@@ -416,7 +416,8 @@ export default function CaregiverWallet() {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left text-xs">
                         <thead>
                             <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase text-[11px]">
@@ -456,6 +457,41 @@ export default function CaregiverWallet() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden space-y-3">
+                    {payouts.map((p) => (
+                        <div key={p.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="font-mono text-xs font-bold text-[#002045]">
+                                    {p.id}
+                                </span>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold border ${p.statusColor}`}>
+                                    {p.statusLabel}
+                                </span>
+                            </div>
+
+                            <div className="flex items-baseline justify-between gap-2">
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-800">{p.bankName}</p>
+                                    <p className="text-[11px] text-slate-400 font-mono">{p.accountNumber}</p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="font-extrabold text-teal-800 text-sm">
+                                        {p.amount.toLocaleString("vi-VN")} ₫
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-100">
+                                <span>{p.createdAt}</span>
+                                <span className="text-[10.5px] truncate max-w-[160px]">
+                                    {p.referenceCode ? `Ref: ${p.referenceCode}` : p.note || ""}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 

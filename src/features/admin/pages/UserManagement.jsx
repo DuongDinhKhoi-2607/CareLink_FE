@@ -142,6 +142,92 @@ function UserRow({ user, onToggleLock, isCaregiver }) {
     );
 }
 
+// ── USER MOBILE CARD ───────────────────────────────────────────────────────────
+function UserMobileCard({ user, onToggleLock, isCaregiver }) {
+    const isLocked = user.status === "Bị khóa";
+    return (
+        <div className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div
+                        className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center border shrink-0 text-sm ${isCaregiver
+                                ? "bg-sky-50 text-sky-600 border-sky-100"
+                                : "bg-teal-50 text-[#00677c] border-teal-100"
+                            }`}
+                    >
+                        {user.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs sm:text-sm truncate">{user.name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{user.id}</div>
+                    </div>
+                </div>
+
+                <span
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 ${isLocked
+                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        }`}
+                >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isLocked ? "bg-rose-500" : "bg-emerald-500"}`} />
+                    {user.status}
+                </span>
+            </div>
+
+            <div className="space-y-1 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 text-slate-500 text-[11px] truncate">
+                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{user.email}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{user.phone}</span>
+                </div>
+                {isCaregiver ? (
+                    <div className="flex items-center justify-between text-[11px] pt-1">
+                        <span className="font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md">
+                            {user.role}
+                        </span>
+                        <span className="text-slate-500">
+                            {user.completedShifts} ca · ⭐ {user.rating}
+                        </span>
+                    </div>
+                ) : (
+                    <div className="text-[11px] text-slate-500 pt-1">
+                        {user.totalBookings} lượt đặt · {user.location}
+                    </div>
+                )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                <span className="text-[10.5px] text-slate-400 flex items-center gap-1">
+                    <CalendarDays className="w-3 h-3" /> {user.joinDate}
+                </span>
+                <button
+                    type="button"
+                    onClick={() => onToggleLock(user.id)}
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 ${isLocked
+                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200"
+                            : "bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white border border-rose-200"
+                        }`}
+                >
+                    {isLocked ? (
+                        <>
+                            <Unlock className="w-3.5 h-3.5" />
+                            <span>Mở khóa</span>
+                        </>
+                    ) : (
+                        <>
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Khóa</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────────
 export default function UserManagement() {
     const [families, setFamilies] = useState([]);
@@ -392,7 +478,8 @@ export default function UserManagement() {
 
             {/* ── TABLE ── */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -443,6 +530,41 @@ export default function UserManagement() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                    {activeTab === "family" ? (
+                        filteredFamilies.length === 0 ? (
+                            <div className="py-12 text-center text-slate-400 text-xs">
+                                <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                <p className="font-semibold">Không tìm thấy tài khoản gia đình nào</p>
+                            </div>
+                        ) : (
+                            filteredFamilies.map((u) => (
+                                <UserMobileCard
+                                    key={u.id}
+                                    user={u}
+                                    onToggleLock={handleToggleFamilyLock}
+                                    isCaregiver={false}
+                                />
+                            ))
+                        )
+                    ) : filteredCaregivers.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                            <ShieldCheck className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                            <p className="font-semibold">Không tìm thấy tài khoản điều dưỡng nào</p>
+                        </div>
+                    ) : (
+                        filteredCaregivers.map((u) => (
+                            <UserMobileCard
+                                key={u.id}
+                                user={u}
+                                onToggleLock={handleToggleCaregiverLock}
+                                isCaregiver={true}
+                            />
+                        ))
+                    )}
                 </div>
 
                 {/* Footer */}

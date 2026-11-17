@@ -627,9 +627,9 @@ export default function CaregiverPricing() {
                                     </div>
 
                                     {/* Right: Pricing configuration */}
-                                    <div className="flex flex-wrap sm:flex-nowrap items-end gap-3 sm:gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                                    <div className="grid grid-cols-2 sm:flex sm:flex-nowrap items-end gap-3 sm:gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                                         {/* Giá chuẩn hệ thống */}
-                                        <div className="min-w-[110px] text-left sm:text-right">
+                                        <div className="w-full sm:min-w-[110px] text-left sm:text-right">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                                                 Giá chuẩn hệ thống
                                             </span>
@@ -641,7 +641,7 @@ export default function CaregiverPricing() {
                                         </div>
 
                                         {/* Thời lượng ước tính */}
-                                        <div className="w-28 sm:w-32">
+                                        <div className="w-full sm:w-32">
                                             <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block mb-1.5 truncate">
                                                 Thời lượng ước tính
                                             </label>
@@ -672,7 +672,7 @@ export default function CaregiverPricing() {
                                         </div>
 
                                         {/* Đơn giá riêng của điều dưỡng */}
-                                        <div className="w-36 sm:w-40">
+                                        <div className="col-span-2 sm:col-span-1 w-full sm:w-40">
                                             <label className="text-[10px] font-bold text-[#00677c] uppercase tracking-wider block mb-1.5 truncate">
                                                 Đơn giá của bạn (VNĐ)
                                             </label>

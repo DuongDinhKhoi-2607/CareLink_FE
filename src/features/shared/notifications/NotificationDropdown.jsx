@@ -384,9 +384,9 @@ export default function NotificationDropdown({ userRole = "", align = "right" })
             {/* Dropdown Popover */}
             {isOpen && (
                 <div
-                    className={`absolute ${
-                        align === "left" ? "left-0" : "right-0"
-                    } mt-2.5 w-[350px] sm:w-[390px] bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,32,69,0.22),0_10px_20px_-5px_rgba(0,0,0,0.08)] border border-slate-200/90 ring-1 ring-slate-900/10 overflow-hidden z-50 animate-modal-pop origin-top-right`}
+                    className={`fixed inset-x-3 top-16 sm:inset-auto sm:top-auto sm:absolute ${
+                        align === "left" ? "sm:left-0" : "sm:right-0"
+                    } sm:mt-2.5 max-w-[390px] sm:w-[390px] mx-auto sm:mx-0 bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,32,69,0.22),0_10px_20px_-5px_rgba(0,0,0,0.08)] border border-slate-200/90 ring-1 ring-slate-900/10 overflow-hidden z-50 animate-modal-pop sm:origin-top-right`}
                 >
                     {/* Đường viền dải màu Gradient thương hiệu CareLink ở đỉnh Popover */}
                     <div className="h-[2.5px] w-full bg-gradient-to-r from-teal-500 via-[#00677c] to-emerald-400" />

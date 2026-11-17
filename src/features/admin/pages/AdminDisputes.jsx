@@ -347,7 +347,8 @@ export default function AdminDisputes() {
 
             {/* ── BẢNG DANH SÁCH KHIẾU NẠI ── */}
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left text-xs">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-[11px]">
@@ -442,6 +443,78 @@ export default function AdminDisputes() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                    {loading ? (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                            <span className="inline-flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+                                Đang tải danh sách khiếu nại...
+                            </span>
+                        </div>
+                    ) : filteredDisputes.length === 0 ? (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                            {fetchError
+                                ? "Không thể hiển thị danh sách khiếu nại do lỗi kết nối."
+                                : "Không tìm thấy khiếu nại nào phù hợp với bộ lọc."}
+                        </div>
+                    ) : (
+                        filteredDisputes.map((d) => (
+                            <div key={d.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div>
+                                        <span className="font-mono text-xs font-bold text-[#002045]">#{d.id}</span>
+                                        <span className="text-[10.5px] text-slate-400 block mt-0.5">{d.createdAt}</span>
+                                    </div>
+                                    <span
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 ${
+                                            d.status === "pending"
+                                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                : d.status === "refunded"
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-rose-50 text-rose-700 border-rose-200/90"
+                                        }`}
+                                    >
+                                        {d.status === "pending" && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                                        {d.status === "rejected" && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
+                                        {d.status === "refunded" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                                        {d.statusLabel}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-1.5 text-xs">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-slate-400 text-[11px]">Ca chăm sóc:</span>
+                                        <span className="font-semibold text-teal-800 font-mono">{d.bookingId} ({d.service})</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-slate-400 text-[11px]">Người khiếu nại:</span>
+                                        <span className="font-bold text-slate-800">{d.family.name}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-slate-400 text-[11px]">Điều dưỡng:</span>
+                                        <span className="font-semibold text-slate-700">{d.caregiver.name}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-slate-400 text-[11px]">Số tiền ca:</span>
+                                        <span className="font-black text-slate-900">{d.totalAmount.toLocaleString("vi-VN")} ₫</span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-slate-100 flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenResolution(d)}
+                                        className="w-full sm:w-auto px-4 py-2 rounded-xl bg-teal-50 hover:bg-[#00677c] text-[#00677c] hover:text-white font-bold text-xs transition-colors shadow-2xs text-center cursor-pointer"
+                                    >
+                                        {d.status === "pending" ? "Phân xử ngay" : "Xem chi tiết"}
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

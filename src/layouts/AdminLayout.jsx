@@ -229,13 +229,13 @@ export default function AdminLayout() {
     return (
         <div className="h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-800 antialiased overflow-hidden">
             {/* ── TOP HEADER (Cố định ở trên cùng) ── */}
-            <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)] z-40 flex items-center justify-between px-4 sm:px-6">
-                <div className="flex items-center gap-3 sm:gap-4">
+            <header className="h-16 shrink-0 bg-white border-b border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)] z-40 flex items-center justify-between px-3 sm:px-6">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                     {/* Mobile Hamburger toggle */}
                     <button
                         type="button"
                         onClick={() => setMobileOpen(true)}
-                        className="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                        className="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                         aria-label="Mở menu di động"
                         aria-expanded={mobileOpen}
                     >
@@ -243,17 +243,19 @@ export default function AdminLayout() {
                     </button>
 
                     {/* Breadcrumbs thuần Tiếng Việt sát lề trái thanh lịch */}
-                    <nav className="flex items-center gap-2 text-xs sm:text-sm">
-                        <Link to="/" className="text-slate-400 hover:text-[#00677c] transition-colors flex items-center gap-1.5 font-medium">
-                            <Home className="w-3.5 h-3.5" />
-                            Trang chủ
-                        </Link>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                        <Link to="/admin" className="text-slate-500 hover:text-[#00677c] transition-colors font-medium">
-                            Cổng Quản trị
-                        </Link>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                        <span className="text-[#00677c] font-bold">{getBreadcrumbTitle()}</span>
+                    <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
+                        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
+                            <Link to="/" className="text-slate-400 hover:text-[#00677c] transition-colors flex items-center gap-1.5 font-medium">
+                                <Home className="w-3.5 h-3.5" />
+                                Trang chủ
+                            </Link>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                            <Link to="/admin" className="text-slate-500 hover:text-[#00677c] transition-colors font-medium">
+                                Cổng Quản trị
+                            </Link>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                        </div>
+                        <span className="text-[#00677c] font-bold truncate">{getBreadcrumbTitle()}</span>
                     </nav>
                 </div>
 
@@ -313,7 +315,7 @@ export default function AdminLayout() {
                         <button
                             type="button"
                             onClick={() => setShowLogoutModal(true)}
-                            className="w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 flex items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
+                            className="hidden sm:flex w-8.5 h-8.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/80 items-center justify-center transition-all shadow-2xs cursor-pointer hover:scale-105 shrink-0"
                             title="Đăng xuất khỏi hệ thống"
                             aria-label="Đăng xuất khỏi hệ thống"
                         >

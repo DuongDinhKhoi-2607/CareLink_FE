@@ -868,7 +868,7 @@ export default function DirectBookingModal({
 
     return (
         <div
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/65 p-3 sm:p-4 md:p-6 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/65 p-2 sm:p-4 md:p-6 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget && !isSubmitting) onClose();
             }}
@@ -876,7 +876,7 @@ export default function DirectBookingModal({
             <div
                 role="dialog"
                 aria-modal="true"
-                className="relative w-full max-w-3xl overflow-hidden rounded-[26px] sm:rounded-[30px] border border-slate-200/90 bg-white shadow-2xl my-auto m-auto max-h-[92vh] flex flex-col"
+                className="relative w-full max-w-3xl overflow-hidden rounded-2xl sm:rounded-[30px] border border-slate-200/90 bg-white shadow-2xl my-auto m-auto max-h-[94vh] sm:max-h-[92vh] flex flex-col"
             >
                 {/* ── HEADER MODAL ── */}
                 <div className="relative border-b border-slate-100 bg-gradient-to-r from-teal-50/90 via-white to-slate-50/70 p-5 sm:p-6 pb-4 shrink-0">

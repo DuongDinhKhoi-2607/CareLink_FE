@@ -318,7 +318,7 @@ export default function AdminAppointments() {
 
             {/* ── DATA TABLE ── */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -407,6 +407,61 @@ export default function AdminAppointments() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3">
+                    {filtered.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400">
+                            <CalendarClock className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                            <p className="font-semibold text-xs">Không tìm thấy ca nào phù hợp</p>
+                        </div>
+                    ) : (
+                        filtered.map((a) => {
+                            const sc = STATUS_CONFIG[a.status];
+                            return (
+                                <div key={a.id} className="p-3.5 bg-slate-50/60 rounded-2xl border border-slate-200/80 space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="font-mono text-xs font-black text-[#00677c]">
+                                            #{a.id}
+                                        </span>
+                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${sc.badge}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                                            {a.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1.5 text-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400 text-[11px]">Gia đình:</span>
+                                            <span className="font-bold text-slate-800">{a.family}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400 text-[11px]">Điều dưỡng:</span>
+                                            <span className="font-semibold text-slate-700">{a.caregiver}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-400 text-[11px]">Dịch vụ:</span>
+                                            <span className="text-slate-600 truncate max-w-[200px]">{a.service}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                        <div className="text-[11px] text-slate-500 font-medium">
+                                            <span>{a.date}</span> · <span className="text-slate-400">{a.time}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedAppointment(a)}
+                                            className="px-3 py-1.5 rounded-xl bg-teal-50 text-[#00677c] hover:bg-[#00677c] hover:text-white font-bold text-xs transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
+                                        >
+                                            Chi tiết <ChevronRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
 
                 {/* Table Footer */}
