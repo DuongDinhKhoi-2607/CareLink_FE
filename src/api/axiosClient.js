@@ -57,6 +57,14 @@ const getInitialBaseURL = () => {
 const PRIMARY_URL = getInitialBaseURL();
 const isInitialLocal = PRIMARY_URL.includes("localhost") || PRIMARY_URL.includes("127.0.0.1");
 
+// Tự động gửi ping đánh thức ngầm Render Backend (Warm-up ping) khi mở web trên Production,
+// giúp server thức dậy trước khi người dùng thực hiện các thao tác đăng nhập / gọi API
+if (typeof window !== "undefined" && import.meta.env.PROD) {
+    try {
+        fetch(`${RENDER_BACKEND_URL}/api/v1/health`, { method: "GET", mode: "no-cors" }).catch(() => {});
+    } catch {}
+}
+
 const axiosClient = axios.create({
     baseURL: PRIMARY_URL,
     headers: {
