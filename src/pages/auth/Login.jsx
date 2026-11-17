@@ -164,8 +164,8 @@ export default function Login() {
             let errorMessage = "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
             if (err.response?.status === 401 || err.response?.status === 400) {
                 errorMessage = err.response?.data?.detail || err.response?.data?.message || "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!";
-            } else if (err.code === "ERR_NETWORK" || !err.response) {
-                errorMessage = "Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra kết nối mạng!";
+            } else if (err.code === "ERR_NETWORK" || err.code === "ECONNABORTED" || !err.response) {
+                errorMessage = "Hệ thống đang khởi động hoặc kết nối mạng không ổn định. Vui lòng đợi vài giây và bấm đăng nhập lại!";
             } else if (err.response?.data?.detail) {
                 errorMessage = err.response.data.detail;
             } else if (err.response?.data?.message) {
@@ -248,8 +248,8 @@ export default function Login() {
             const msg =
                 apiErr.response?.data?.message ||
                 apiErr.response?.data?.detail ||
-                (apiErr.code === "ERR_NETWORK" || !apiErr.response
-                    ? "Không thể kết nối đến máy chủ để xác thực Google. Vui lòng kiểm tra lại mạng!"
+                (apiErr.code === "ERR_NETWORK" || apiErr.code === "ECONNABORTED" || !apiErr.response
+                    ? "Hệ thống đang khởi động hoặc kết nối mạng gián đoạn. Vui lòng thử lại sau ít giây!"
                     : "Đăng nhập bằng tài khoản Google chưa thành công. Vui lòng thử lại!");
             setToast({
                 type: "error",

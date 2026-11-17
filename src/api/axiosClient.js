@@ -62,7 +62,7 @@ const axiosClient = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: isInitialLocal ? 3000 : 25000,
+    timeout: isInitialLocal ? 3000 : 45000,
 });
 
 
@@ -82,11 +82,11 @@ axiosClient.interceptors.request.use(
         if (config.data instanceof FormData) {
             delete config.headers["Content-Type"];
         }
-        // Tinh chỉnh timeout: Localhost chỉ cần 2.5s - 3s để failover tức thì nếu chưa bật BE; Render cho 25s phòng cold start
+        // Tinh chỉnh timeout: Localhost chỉ cần 2.5s - 3s để failover tức thì nếu chưa bật BE; Render cho 45s phòng cold start
         const targetBase = config.baseURL || axiosClient.defaults.baseURL || PRIMARY_URL;
         const isTargetLocal = targetBase.includes("localhost") || targetBase.includes("127.0.0.1");
         if (!config._customTimeoutSet) {
-            config.timeout = isTargetLocal ? 3000 : 25000;
+            config.timeout = isTargetLocal ? 3000 : 45000;
         }
         return config;
     },

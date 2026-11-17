@@ -515,12 +515,12 @@ export default function Register() {
                 return;
             }
 
-            if (err.code === "ERR_NETWORK" || !err.response) {
+            if (err.code === "ERR_NETWORK" || err.code === "ECONNABORTED" || !err.response) {
                 setToast({
                     type: "error",
-                    title: "Không thể kết nối máy chủ",
+                    title: "Kết nối gián đoạn",
                     message:
-                        "Không thể kết nối đến máy chủ để hoàn tất đăng ký. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                        "Hệ thống đang khởi động hoặc kết nối mạng chưa ổn định. Vui lòng đợi vài giây và thử lại.",
                 });
                 setIsLoading(false);
                 return;
@@ -602,12 +602,12 @@ export default function Register() {
                 apiErr
             );
 
-            if (apiErr.code === "ERR_NETWORK" || !apiErr.response) {
+            if (apiErr.code === "ERR_NETWORK" || apiErr.code === "ECONNABORTED" || !apiErr.response) {
                 setToast({
                     type: "error",
-                    title: "Không thể kết nối máy chủ",
+                    title: "Kết nối gián đoạn",
                     message:
-                        "Không kết nối được đến máy chủ để xác thực Google. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                        "Không thể kết nối đến hệ thống xác thực Google. Vui lòng thử lại sau ít giây.",
                 });
             } else {
                 const msg =
