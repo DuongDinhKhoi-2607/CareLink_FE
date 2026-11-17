@@ -118,6 +118,7 @@ const caregivers = [
         role: "Cử nhân Điều dưỡng - ĐH Y Dược TP.HCM",
         rating: "5.0",
         image: "/images/nurses/mai-lan.jpg",
+        imagePosition: "center 8%",
         skills: ["TIÊM TRUYỀN", "THAY BĂNG", "VẬT LÝ TRỊ LIỆU"],
         quote: `"Luôn coi bệnh nhân như người thân trong gia đình, chăm sóc bằng cả trái tim và kiến thức chuyên môn."`,
     },
@@ -126,6 +127,7 @@ const caregivers = [
         role: "Cử nhân Điều dưỡng - ĐH Y khoa Phạm Ngọc Thạch",
         rating: "4.9",
         image: "/images/nurses/van-minh.jpg",
+        imagePosition: "center 22%",
         skills: ["CHĂM SÓC SAU MỔ", "THAY BĂNG VÔ KHUẨN"],
         quote: `"Chuyên môn vững vàng, bình tĩnh trong mọi tình huống. Luôn nỗ lực đem lại sự thoải mái nhất cho bệnh nhân."`,
     },
@@ -134,6 +136,7 @@ const caregivers = [
         role: "Sinh viên Y đa khoa năm 5 - ĐH Y Dược TP.HCM",
         rating: "4.8",
         image: "/images/nurses/le-thao.jpg",
+        imagePosition: "center 35%",
         skills: ["CHĂM SÓC CƠ BẢN", "THEO DÕI SINH HIỆU"],
         quote: `"Kết hợp kiến thức y khoa bài bản và sự tận tâm để đồng hành chăm sóc sức khỏe cho ông bà mỗi ngày."`,
     },
@@ -203,10 +206,13 @@ const FeatureCard = ({ feature, index }) => (
 const CaregiverCard = ({ caregiver }) => (
     <article className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-[0_4px_18px_rgba(15,35,45,0.045)] hover:shadow-[0_14px_35px_rgba(15,35,45,0.10)] hover:-translate-y-1 transition-all duration-300">
 
-        <div className="h-48 w-full relative overflow-hidden bg-slate-100">
+        <div className="h-56 sm:h-60 w-full relative overflow-hidden bg-slate-100">
             <div
-                className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                style={{ backgroundImage: `url(${caregiver.image})` }}
+                className="w-full h-full bg-cover group-hover:scale-105 transition-transform duration-700"
+                style={{
+                    backgroundImage: `url(${caregiver.image})`,
+                    backgroundPosition: caregiver.imagePosition || "center center",
+                }}
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
