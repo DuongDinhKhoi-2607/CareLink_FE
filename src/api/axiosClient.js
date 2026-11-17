@@ -58,10 +58,11 @@ const PRIMARY_URL = getInitialBaseURL();
 const isInitialLocal = PRIMARY_URL.includes("localhost") || PRIMARY_URL.includes("127.0.0.1");
 
 // Tự động gửi ping đánh thức ngầm Render Backend (Warm-up ping) khi mở web trên Production,
-// giúp server thức dậy trước khi người dùng thực hiện các thao tác đăng nhập / gọi API
+// Sử dụng endpoint công khai chuẩn của Backend: GET /api/v1/system/public-config
+// giúp server và kết nối cơ sở dữ liệu khởi động trước khi người dùng thực hiện đăng nhập / gọi API
 if (typeof window !== "undefined" && import.meta.env.PROD) {
     try {
-        fetch(`${RENDER_BACKEND_URL}/api/v1/health`, { method: "GET", mode: "no-cors" }).catch(() => {});
+        fetch(`${RENDER_BACKEND_URL}/api/v1/system/public-config`, { method: "GET", mode: "no-cors" }).catch(() => {});
     } catch {}
 }
 
